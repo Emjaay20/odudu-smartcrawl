@@ -9,6 +9,7 @@ export interface PickerState<T> {
   search: (query: string) => void;
   more: boolean;
   loadingMore: boolean;
+  loadLimited: boolean;
   loadMore: () => void;
   retry: () => void;
 }

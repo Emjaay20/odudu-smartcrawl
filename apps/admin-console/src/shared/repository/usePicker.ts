@@ -39,6 +39,7 @@ export function usePicker<T>({
     search: setQuery,
     more: pages.next !== null,
     loadingMore: pages.loadingMore,
+    loadLimited: pages.loadLimited,
     loadMore: pages.loadMore,
     retry: pages.retry,
   };

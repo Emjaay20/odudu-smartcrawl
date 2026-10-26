@@ -49,6 +49,7 @@ function Children({
           compact
           noun={`groups under ${parent.path}`}
           loading={children.loadingMore}
+          limited={children.loadLimited}
           onPress={children.loadMore}
         />
       )}

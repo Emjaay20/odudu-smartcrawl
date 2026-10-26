@@ -13,12 +13,13 @@ import { sql } from 'drizzle-orm';
 import { type LightMyRequestResponse } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { etagOf } from '#/service/etag';
-import { startAdminFixture, type AdminFixture } from '#/testing/admin-fixture';
+import { startAdminFixture, type AdminFixture, etagAt } from '#/testing/admin-fixture';
 import {
   amendScope,
   createScope,
   deleteScope,
   listScopeClients,
+  readScopeRoles,
   setScopeRoles,
   unassignScopeFromClient,
   type ScopeAuditEvent,
@@ -213,7 +214,11 @@ describe('PUT /admin/tenants/{t}/scopes/{id}/roles', () => {
       method: 'PUT',
       url: `/admin/tenants/${t.name}/scopes/${id}/roles`,
       headers: {
-        'if-match': '*',
+        'if-match': await etagAt(
+          fixture.http,
+          `/admin/tenants/${t.name}/scopes/${id}/roles`,
+          token,
+        ),
         authorization: `Bearer ${token}`,
         'content-type': 'application/json',
       },
@@ -226,7 +231,11 @@ describe('PUT /admin/tenants/{t}/scopes/{id}/roles', () => {
       method: 'PUT',
       url: `/admin/tenants/${t.name}/scopes/${id}/roles`,
       headers: {
-        'if-match': '*',
+        'if-match': await etagAt(
+          fixture.http,
+          `/admin/tenants/${t.name}/scopes/${id}/roles`,
+          token,
+        ),
         authorization: `Bearer ${token}`,
         'content-type': 'application/json',
       },
@@ -250,7 +259,7 @@ describe('PUT /admin/tenants/{t}/scopes/{id}/roles', () => {
       method: 'PUT',
       url,
       headers: {
-        'if-match': '*',
+        'if-match': await etagAt(fixture.http, url, token),
         authorization: `Bearer ${token}`,
         'content-type': 'application/json',
       },
@@ -304,7 +313,11 @@ describe('PUT /admin/tenants/{t}/scopes/{id}/roles', () => {
       method: 'PUT',
       url: `/admin/tenants/${t.name}/scopes/${id}/roles`,
       headers: {
-        'if-match': '*',
+        'if-match': await etagAt(
+          fixture.http,
+          `/admin/tenants/${t.name}/scopes/${id}/roles`,
+          token,
+        ),
         authorization: `Bearer ${token}`,
         'content-type': 'application/json',
       },
@@ -324,7 +337,11 @@ describe('PUT /admin/tenants/{t}/scopes/{id}/roles', () => {
       method: 'PUT',
       url: `/admin/tenants/${t.name}/scopes/${id}/roles`,
       headers: {
-        'if-match': '*',
+        'if-match': await etagAt(
+          fixture.http,
+          `/admin/tenants/${t.name}/scopes/${id}/roles`,
+          token,
+        ),
         authorization: `Bearer ${token}`,
         'content-type': 'application/json',
       },
@@ -826,7 +843,11 @@ describe('PUT /admin/tenants/{t}/scopes/{id}/roles — the capability ceiling', 
       method: 'PUT',
       url: `/admin/tenants/${t.name}/scopes/${id}/roles`,
       headers: {
-        'if-match': '*',
+        'if-match': await etagAt(
+          fixture.http,
+          `/admin/tenants/${t.name}/scopes/${id}/roles`,
+          token,
+        ),
         authorization: `Bearer ${token}`,
         'content-type': 'application/json',
       },
@@ -847,7 +868,11 @@ describe('PUT /admin/tenants/{t}/scopes/{id}/roles — the capability ceiling', 
       method: 'PUT',
       url: `/admin/tenants/${t.name}/scopes/${id}/roles`,
       headers: {
-        'if-match': '*',
+        'if-match': await etagAt(
+          fixture.http,
+          `/admin/tenants/${t.name}/scopes/${id}/roles`,
+          token,
+        ),
         authorization: `Bearer ${token}`,
         'content-type': 'application/json',
       },
@@ -1232,6 +1257,7 @@ describe('audit', () => {
     const tenantAdminId = await capabilityRoleId(t.id, TENANT_ADMIN);
 
     const ok = collector();
+    const firstTag = await scopeRolesTag(t.id, scope.id);
     const set = await withTenant(fixture.app.db, t.id, (tx) =>
       setScopeRoles(
         tx,
@@ -1240,7 +1266,7 @@ describe('audit', () => {
           scopeId: scope.id,
           roleIds: [plain],
           callerCapabilities: new Set(['manage-tenant']),
-          ifMatch: '*',
+          ifMatch: firstTag,
           actorSubjectId: 'test',
           actorTenantId: 'test-tenant',
           actorClientId: 'test-client',
@@ -1251,6 +1277,7 @@ describe('audit', () => {
     expect(ok.events).toHaveLength(1);
 
     const refused = collector();
+    const secondTag = await scopeRolesTag(t.id, scope.id);
     const outcome = await withTenant(fixture.app.db, t.id, (tx) =>
       setScopeRoles(
         tx,
@@ -1259,7 +1286,7 @@ describe('audit', () => {
           scopeId: scope.id,
           roleIds: [tenantAdminId],
           callerCapabilities: new Set(['manage-tenant']),
-          ifMatch: '*',
+          ifMatch: secondTag,
           actorSubjectId: 'test',
           actorTenantId: 'test-tenant',
           actorClientId: 'test-client',
@@ -1272,6 +1299,12 @@ describe('audit', () => {
     expect(refused.events.map((event) => event.outcome)).toEqual(['refused']);
   });
 });
+
+async function scopeRolesTag(tenantId: string, scopeId: string): Promise<string> {
+  const read = await withTenant(fixture.app.db, tenantId, (tx) => readScopeRoles(tx, scopeId));
+  if (read.kind !== 'ok') throw new Error('fixture: the scope has no role list');
+  return read.etag;
+}
 
 async function seedNamed(tenantName: string, name: string): Promise<string> {
   const token = await fixture.adminToken(tenantName, ['manage-tenant']);

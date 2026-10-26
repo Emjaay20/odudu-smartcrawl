@@ -52,7 +52,7 @@ so it is renamable, through this same `PATCH`, behind the tenant setting
 is refused with `400` naming the setting. With it on, the new name is held to
 the rule creation holds one to (a non-empty string, `usernameSchema` in
 `@odudu/contracts`), and `If-Match` is **mandatory** whenever `username` is
-in the body — `428` without it, the precedent `redirect_uris` sets on
+in the body — `428` without it, or with `*`, which names no version — the precedent `redirect_uris` sets on
 `PATCH /clients/{id}` — because one administrator's rename silently undoing
 another's is what the precondition exists to stop. A name another subject
 in the tenant holds refuses the whole request with `409`: the unique index

@@ -93,7 +93,12 @@ function Rows({ tenant, page }: { tenant: string; page: Delivery }) {
             {page.masked ? <p className={recordTab.rule}>{MASKED_NOTE}</p> : null}
             {list.more ? (
               <div className={recordTab.actions}>
-                <LoadMore noun="messages" loading={list.loadingMore} onPress={list.loadMore} />
+                <LoadMore
+                  noun="messages"
+                  loading={list.loadingMore}
+                  limited={list.loadLimited}
+                  onPress={list.loadMore}
+                />
               </div>
             ) : null}
             {list.loadMoreFailed ? <LoadMoreFailed noun="messages" /> : null}

@@ -214,7 +214,7 @@ export const DEFINED: Readonly<Record<string, Defined>> = {
     'scopes/view/ScopesPage/RestoreScopes.tsx',
     '>Restore built-in scopes<',
   ),
-  Restore: feature('scopes/view/ScopesPage/RestoreScopes.tsx', 'confirmLabel="Restore"'),
+  Restore: feature('scopes/service/restore.ts', "RESTORE_CONFIRM_LABEL = 'Restore'"),
   'Include all roles in tokens': feature(
     'clients/service/tokens.ts',
     "FULL_SCOPE_LABEL = 'Include all roles in tokens'",

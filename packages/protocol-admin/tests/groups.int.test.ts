@@ -13,11 +13,12 @@ import { type LightMyRequestResponse } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { etagOf } from '#/service/etag';
 import { storedFields } from '#/testing/stored-fields';
-import { startAdminFixture, type AdminFixture } from '#/testing/admin-fixture';
+import { startAdminFixture, type AdminFixture, etagAt } from '#/testing/admin-fixture';
 import {
   amendGroup,
   createGroup,
   deleteGroup,
+  readGroupRoles,
   setGroupRoles,
   type GroupAuditEvent,
 } from '#/usecase/groups';
@@ -51,6 +52,12 @@ async function plainRole(tenantId: string): Promise<string> {
 // The role id a tenant's own admin client carries for a capability name —
 // the same helper subjects.int.test.ts and roles.int.test.ts use for the
 // identical lookup.
+async function groupRolesTag(tenantId: string, groupId: string): Promise<string> {
+  const read = await withTenant(fixture.app.db, tenantId, (tx) => readGroupRoles(tx, groupId));
+  if (read.kind !== 'ok') throw new Error('fixture: the group has no role list');
+  return read.etag;
+}
+
 async function capabilityRoleId(tenantId: string, name: string): Promise<string> {
   return withTenant(fixture.app.db, tenantId, async (tx) => {
     const adminClient = await clientRepository(tx).byClientId(ADMIN_CLIENT_ID);
@@ -377,7 +384,11 @@ describe('PUT /admin/tenants/{t}/groups/{id}/roles', () => {
       method: 'PUT',
       url: `/admin/tenants/${t.name}/groups/${id}/roles`,
       headers: {
-        'if-match': '*',
+        'if-match': await etagAt(
+          fixture.http,
+          `/admin/tenants/${t.name}/groups/${id}/roles`,
+          token,
+        ),
         authorization: `Bearer ${token}`,
         'content-type': 'application/json',
       },
@@ -390,7 +401,11 @@ describe('PUT /admin/tenants/{t}/groups/{id}/roles', () => {
       method: 'PUT',
       url: `/admin/tenants/${t.name}/groups/${id}/roles`,
       headers: {
-        'if-match': '*',
+        'if-match': await etagAt(
+          fixture.http,
+          `/admin/tenants/${t.name}/groups/${id}/roles`,
+          token,
+        ),
         authorization: `Bearer ${token}`,
         'content-type': 'application/json',
       },
@@ -411,7 +426,11 @@ describe('PUT /admin/tenants/{t}/groups/{id}/roles', () => {
       method: 'PUT',
       url: `/admin/tenants/${t.name}/groups/${id}/roles`,
       headers: {
-        'if-match': '*',
+        'if-match': await etagAt(
+          fixture.http,
+          `/admin/tenants/${t.name}/groups/${id}/roles`,
+          token,
+        ),
         authorization: `Bearer ${token}`,
         'content-type': 'application/json',
       },
@@ -431,7 +450,11 @@ describe('PUT /admin/tenants/{t}/groups/{id}/roles', () => {
       method: 'PUT',
       url: `/admin/tenants/${t.name}/groups/${id}/roles`,
       headers: {
-        'if-match': '*',
+        'if-match': await etagAt(
+          fixture.http,
+          `/admin/tenants/${t.name}/groups/${id}/roles`,
+          token,
+        ),
         authorization: `Bearer ${token}`,
         'content-type': 'application/json',
       },
@@ -510,7 +533,11 @@ describe('PUT /admin/tenants/{t}/groups/{id}/roles — the capability ceiling', 
       method: 'PUT',
       url: `/admin/tenants/${t.name}/groups/${id}/roles`,
       headers: {
-        'if-match': '*',
+        'if-match': await etagAt(
+          fixture.http,
+          `/admin/tenants/${t.name}/groups/${id}/roles`,
+          token,
+        ),
         authorization: `Bearer ${token}`,
         'content-type': 'application/json',
       },
@@ -531,7 +558,11 @@ describe('PUT /admin/tenants/{t}/groups/{id}/roles — the capability ceiling', 
       method: 'PUT',
       url: `/admin/tenants/${t.name}/groups/${id}/roles`,
       headers: {
-        'if-match': '*',
+        'if-match': await etagAt(
+          fixture.http,
+          `/admin/tenants/${t.name}/groups/${id}/roles`,
+          token,
+        ),
         authorization: `Bearer ${token}`,
         'content-type': 'application/json',
       },
@@ -552,7 +583,11 @@ describe('PUT /admin/tenants/{t}/groups/{id}/roles — the capability ceiling', 
       method: 'PUT',
       url: `/admin/tenants/${t.name}/groups/${id}/roles`,
       headers: {
-        'if-match': '*',
+        'if-match': await etagAt(
+          fixture.http,
+          `/admin/tenants/${t.name}/groups/${id}/roles`,
+          token,
+        ),
         authorization: `Bearer ${token}`,
         'content-type': 'application/json',
       },
@@ -577,7 +612,11 @@ describe('PATCH /admin/tenants/{t}/groups/{id} — the reparent capability ceili
       method: 'PUT',
       url: `/admin/tenants/${t.name}/groups/${adminGroup.id}/roles`,
       headers: {
-        'if-match': '*',
+        'if-match': await etagAt(
+          fixture.http,
+          `/admin/tenants/${t.name}/groups/${adminGroup.id}/roles`,
+          adminToken,
+        ),
         authorization: `Bearer ${adminToken}`,
         'content-type': 'application/json',
       },
@@ -618,7 +657,11 @@ describe('PATCH /admin/tenants/{t}/groups/{id} — the reparent capability ceili
       method: 'PUT',
       url: `/admin/tenants/${t.name}/groups/${adminAncestor.id}/roles`,
       headers: {
-        'if-match': '*',
+        'if-match': await etagAt(
+          fixture.http,
+          `/admin/tenants/${t.name}/groups/${adminAncestor.id}/roles`,
+          adminToken,
+        ),
         authorization: `Bearer ${adminToken}`,
         'content-type': 'application/json',
       },
@@ -649,7 +692,11 @@ describe('PATCH /admin/tenants/{t}/groups/{id} — the reparent capability ceili
       method: 'PUT',
       url: `/admin/tenants/${t.name}/groups/${adminGroup.id}/roles`,
       headers: {
-        'if-match': '*',
+        'if-match': await etagAt(
+          fixture.http,
+          `/admin/tenants/${t.name}/groups/${adminGroup.id}/roles`,
+          token,
+        ),
         authorization: `Bearer ${token}`,
         'content-type': 'application/json',
       },
@@ -676,7 +723,11 @@ describe('PATCH /admin/tenants/{t}/groups/{id} — the reparent capability ceili
       method: 'PUT',
       url: `/admin/tenants/${t.name}/groups/${adminGroup.id}/roles`,
       headers: {
-        'if-match': '*',
+        'if-match': await etagAt(
+          fixture.http,
+          `/admin/tenants/${t.name}/groups/${adminGroup.id}/roles`,
+          tenantAdmin,
+        ),
         authorization: `Bearer ${tenantAdmin}`,
         'content-type': 'application/json',
       },
@@ -813,6 +864,7 @@ describe('audit', () => {
     // through role_composites by the composition root (effectiveRoles) —
     // tenant-admin composites every capability below, so the setup call
     // here has to hand it the same expanded set rather than the bare name.
+    const heldTag = await groupRolesTag(t.id, adminGroup.id);
     const setResult = await withTenant(fixture.app.db, t.id, (tx) =>
       setGroupRoles(
         tx,
@@ -821,7 +873,7 @@ describe('audit', () => {
           groupId: adminGroup.id,
           roleIds: [tenantAdminId],
           callerCapabilities: new Set([TENANT_ADMIN, ...TENANT_CAPABILITIES]),
-          ifMatch: '*',
+          ifMatch: heldTag,
           actorSubjectId: 'test',
           actorTenantId: 'test-tenant',
           actorClientId: 'test-client',
@@ -898,6 +950,7 @@ describe('audit', () => {
     const tenantAdminId = await capabilityRoleId(t.id, TENANT_ADMIN);
 
     const ok = collector();
+    const firstTag = await groupRolesTag(t.id, group.id);
     const set = await withTenant(fixture.app.db, t.id, (tx) =>
       setGroupRoles(
         tx,
@@ -906,7 +959,7 @@ describe('audit', () => {
           groupId: group.id,
           roleIds: [plain],
           callerCapabilities: new Set(['manage-tenant']),
-          ifMatch: '*',
+          ifMatch: firstTag,
           actorSubjectId: 'test',
           actorTenantId: 'test-tenant',
           actorClientId: 'test-client',
@@ -917,6 +970,7 @@ describe('audit', () => {
     expect(ok.events).toHaveLength(1);
 
     const refused = collector();
+    const secondTag = await groupRolesTag(t.id, group.id);
     const outcome = await withTenant(fixture.app.db, t.id, (tx) =>
       setGroupRoles(
         tx,
@@ -925,7 +979,7 @@ describe('audit', () => {
           groupId: group.id,
           roleIds: [tenantAdminId],
           callerCapabilities: new Set(['manage-tenant']),
-          ifMatch: '*',
+          ifMatch: secondTag,
           actorSubjectId: 'test',
           actorTenantId: 'test-tenant',
           actorClientId: 'test-client',

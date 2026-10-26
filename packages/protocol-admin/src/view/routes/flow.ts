@@ -42,10 +42,11 @@ function stepPath(steps: readonly { authenticator: string }[], name: string, nth
 function replaceFlowProblem(
   outcome: Exclude<ReplaceFlowOutcome, { kind: 'ok' }>,
   steps: readonly { authenticator: string }[],
+  sent: string | string[] | undefined,
 ): Problem {
   switch (outcome.kind) {
     case 'precondition_required':
-      return ifMatchRequired('a tenant\u2019s authentication flow');
+      return ifMatchRequired('a tenant\u2019s authentication flow', sent);
     case 'precondition_failed':
       return ifMatchStale();
     case 'empty':
@@ -105,7 +106,11 @@ export function replaceFlowHandler(deps: FlowRouteDeps): AdminRouteHandler {
     );
 
     if (outcome.kind !== 'ok') {
-      return sendProblem(reply, request, replaceFlowProblem(outcome, steps));
+      return sendProblem(
+        reply,
+        request,
+        replaceFlowProblem(outcome, steps, request.headers['if-match']),
+      );
     }
     reply.header('etag', outcome.etag);
     return reply.code(200).send({ items: outcome.items, available: outcome.available });

@@ -45,7 +45,7 @@ import {
   BUILTIN_ADMIN_AMENDABLE_FIELDS,
   refusalFor,
 } from '#/service/client-patch';
-import { etagOf, matches } from '#/service/etag';
+import { etagOf, hasPrecondition, matches } from '#/service/etag';
 import { publicJwks } from '#/service/public-jwks';
 import {
   guardLastAdministrator,
@@ -1271,7 +1271,7 @@ export async function amendClient(
   }
 
   const requiredIfMatchField = WHOLESALE_LIST_FIELDS.find((field) => field in input.values);
-  if (requiredIfMatchField !== undefined && input.ifMatch === undefined) {
+  if (requiredIfMatchField !== undefined && !hasPrecondition(input.ifMatch)) {
     return { kind: 'precondition_required', field: requiredIfMatchField };
   }
 

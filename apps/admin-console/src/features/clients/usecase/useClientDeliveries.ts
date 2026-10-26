@@ -12,6 +12,7 @@ export interface ClientDeliveries {
     rows: readonly LogoutDelivery[];
     more: boolean;
     loadingMore: boolean;
+    loadLimited: boolean;
     loadMore: () => void;
     retry: () => void;
   };
@@ -28,6 +29,7 @@ export function useClientDeliveries(tenant: string, client: Client): ClientDeliv
       rows: pages.rows,
       more: pages.next !== null,
       loadingMore: pages.loadingMore,
+      loadLimited: pages.loadLimited,
       loadMore: pages.loadMore,
       retry: pages.retry,
     },

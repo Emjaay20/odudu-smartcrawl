@@ -417,7 +417,11 @@ export function setGroupRolesHandler(deps: GroupsRouteDeps): AdminRouteHandler {
       case 'default_group_capability':
         return sendProblem(reply, request, defaultGroupCapabilityProblem(outcome.capabilities));
       case 'precondition_required':
-        return sendProblem(reply, request, ifMatchRequired('a group\u2019s roles'));
+        return sendProblem(
+          reply,
+          request,
+          ifMatchRequired('a group\u2019s roles', request.headers['if-match']),
+        );
       case 'precondition_failed':
         return sendProblem(reply, request, ifMatchStale());
       case 'ok': {

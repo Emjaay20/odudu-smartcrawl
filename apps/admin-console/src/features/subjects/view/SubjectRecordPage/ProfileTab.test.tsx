@@ -426,6 +426,16 @@ it('says a service subject has no profile to edit', async () => {
   expect(screen.queryByRole('textbox', { name: 'Full name' })).toBeNull();
 });
 
+it('offers no delete for a service subject, and says to delete its client', async () => {
+  const bot = subject(ADA_ID, null, { type: 'service' });
+  renderConsoleAt(
+    ADA_AT,
+    subjectRoutes(undefined, { [`GET ${S}/${ADA_ID}`]: json(bot, 200, { etag: '"b1"' }) }),
+  );
+  expect(await screen.findByText(/it cannot be deleted on its own/u)).toBeVisible();
+  expect(screen.queryByRole('button', { name: /^Delete/u })).toBeNull();
+});
+
 it('passes axe in both themes, with the deletion open', async () => {
   const user = userEvent.setup();
   expect(

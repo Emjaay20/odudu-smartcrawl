@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { etagOf, matches } from '#/service/etag';
+import { etagOf, hasPrecondition, matches, requiredPrecondition } from '#/service/etag';
 
 describe('etagOf', () => {
   it('is stable for equal records and differs for different ones', () => {
@@ -31,5 +31,37 @@ describe('matches', () => {
     // `*` means "if the resource exists" — already true by the time
     // `current` is in hand, since it was read from the resource itself.
     expect(matches('*', '"abc"')).toBe('match');
+  });
+});
+
+describe('a list of validators', () => {
+  it('matches when any member equals the current tag', () => {
+    expect(matches('"a", "abc", "b"', '"abc"')).toBe('match');
+    expect(matches('"a","abc"', '"abc"')).toBe('match');
+    expect(matches('"a", "b"', '"abc"')).toBe('mismatch');
+  });
+  it('never matches a weak validator, since If-Match compares strongly', () => {
+    expect(matches('W/"abc"', '"abc"')).toBe('mismatch');
+  });
+  it('is a mismatch, so a required write answers 412, when the header holds nothing', () => {
+    expect(matches('', '"abc"')).toBe('mismatch');
+  });
+});
+
+describe('a write that must name the version it read', () => {
+  it('is refused as required when the header is absent or only a wildcard', () => {
+    expect(requiredPrecondition(undefined, '"abc"')).toBe('required');
+    expect(requiredPrecondition('*', '"abc"')).toBe('required');
+    expect(requiredPrecondition('"x", *', '"abc"')).toBe('required');
+  });
+  it('passes on a tag in the list, and fails on a stale one', () => {
+    expect(requiredPrecondition('"x", "abc"', '"abc"')).toBe('ok');
+    expect(requiredPrecondition('"stale"', '"abc"')).toBe('failed');
+  });
+  it('counts a wildcard as no precondition at all', () => {
+    expect(hasPrecondition(undefined)).toBe(false);
+    expect(hasPrecondition('*')).toBe(false);
+    expect(hasPrecondition(' * ')).toBe(false);
+    expect(hasPrecondition('"abc"')).toBe(true);
   });
 });

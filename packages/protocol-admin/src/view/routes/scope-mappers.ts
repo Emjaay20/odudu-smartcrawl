@@ -87,7 +87,11 @@ export function setScopeMappersHandler(deps: ScopeMappersRouteDeps): AdminRouteH
           ),
         );
       case 'precondition_required':
-        return sendProblem(reply, request, ifMatchRequired('a scope\u2019s claim mapper bindings'));
+        return sendProblem(
+          reply,
+          request,
+          ifMatchRequired('a scope\u2019s claim mapper bindings', request.headers['if-match']),
+        );
       case 'precondition_failed':
         return sendProblem(reply, request, ifMatchStale());
       case 'ok':

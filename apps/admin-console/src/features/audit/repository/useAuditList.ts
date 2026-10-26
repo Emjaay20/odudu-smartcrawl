@@ -32,6 +32,7 @@ export interface AuditList {
   // The server stopped the read at its time bound.
   tooBroad: boolean;
   loadingMore: boolean;
+  loadLimited: boolean;
   loadMoreFailed: boolean;
   setTrail: (trail: CursorTrail) => void;
   loadMore: () => void;
@@ -63,6 +64,7 @@ export function useAuditList(tenant: string): AuditList {
     staleCursor: pages.staleCursor,
     tooBroad: isTooBroad(pages.failure),
     loadingMore: pages.loadingMore,
+    loadLimited: pages.loadLimited,
     loadMoreFailed: pages.loadMoreFailed,
     setTrail: (next) => {
       go(trailToSearch(next, params));

@@ -15,6 +15,7 @@ const LIST: ResourceListState<{ id: string }> = {
   trail: [],
   next: null,
   loadingMore: false,
+  loadLimited: false,
   loadMoreFailed: false,
   setSearch: () => undefined,
   setFilter: () => undefined,

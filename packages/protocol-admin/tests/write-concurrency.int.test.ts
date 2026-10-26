@@ -7,7 +7,7 @@ import { eq, sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { startAdminFixture, type AdminFixture } from '#/testing/admin-fixture';
 import { amendGroup } from '#/usecase/groups';
-import { replaceFlow } from '#/usecase/flow';
+import { listFlow, replaceFlow } from '#/usecase/flow';
 import { retireKey } from '#/usecase/keys';
 import { putSmtp } from '#/usecase/smtp';
 
@@ -80,6 +80,7 @@ describe('two concurrent flow replacements against a tenant with no flow', () =>
     await withTenant(fixture.app.db, t.id, (tx) =>
       tx.delete(authenticationExecutions).where(eq(authenticationExecutions.tenantId, t.id)),
     );
+    const before = await withTenant(fixture.app.db, t.id, (tx) => listFlow(tx, t.id));
     const held = gate();
 
     const first = withTenant(fixture.app.db, t.id, async (tx) => {
@@ -89,7 +90,7 @@ describe('two concurrent flow replacements against a tenant with no flow', () =>
         {
           tenantId: t.id,
           steps: [{ authenticator: 'password', requirement: 'required' }],
-          ifMatch: '*',
+          ifMatch: before.etag,
           ...ACTOR,
         },
       );
@@ -109,7 +110,7 @@ describe('two concurrent flow replacements against a tenant with no flow', () =>
             { authenticator: 'password', requirement: 'required' },
             { authenticator: 'otp', requirement: 'conditional' },
           ],
-          ifMatch: '*',
+          ifMatch: before.etag,
           ...ACTOR,
         },
       ),
@@ -119,11 +120,11 @@ describe('two concurrent flow replacements against a tenant with no flow', () =>
     held.release();
 
     expect((await first).kind).toBe('ok');
-    expect((await second).kind).toBe('ok');
+    expect((await second).kind).toBe('precondition_failed');
     const after = await withTenant(fixture.app.db, t.id, (tx) =>
       tx.select().from(authenticationExecutions),
     );
-    expect(after.map((row) => row.authenticator).sort()).toEqual(['otp', 'password']);
+    expect(after.map((row) => row.authenticator)).toEqual(['password']);
   });
 });
 

@@ -17,6 +17,14 @@ export function signsInAsItself(subject: Pick<Subject, 'type'>): boolean {
   return subject.type !== 'user';
 }
 
+// Keyed on the subject's type alone: the server refuses on a client naming
+// the subject, and every service subject the product makes has one.
+export function deletionRefusal(subject: Pick<Subject, 'type'>): string | null {
+  return subject.type === 'service'
+    ? "This is a client's service account. Delete the client instead; it cannot be deleted on its own."
+    : null;
+}
+
 export function enabledVerb(enabled: boolean): 'enabled' | 'disabled' {
   return enabled ? 'enabled' : 'disabled';
 }

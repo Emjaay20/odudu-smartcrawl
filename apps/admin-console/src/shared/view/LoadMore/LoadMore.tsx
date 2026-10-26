@@ -1,27 +1,42 @@
+import { useRef } from 'react';
+import { LOAD_LIMIT_NOTICE } from '#/shared/service/resourceList';
+import { useFocusWhen } from '#/shared/usecase/useFocusWhen';
 import { Button } from '#/shared/view/Button';
 import styles from '#/shared/view/LoadMore/LoadMore.module.css';
 
 // The button that appends the next page to a list already on screen. `compact`
-// is the small quiet one a tree or a picker draws inside its own box.
+// is the small quiet one a tree or a picker draws inside its own box, and
+// `limited` swaps the button for the sentence that says the list is full.
 export function LoadMore({
   noun,
   loading,
   onPress,
   compact = false,
+  limited,
 }: {
   noun: string;
   loading: boolean;
   onPress: () => void;
   compact?: boolean;
+  limited: boolean;
 }) {
+  const notice = useRef<HTMLParagraphElement>(null);
+  useFocusWhen(notice, limited);
   return (
-    <Button
-      {...(compact ? { size: 'small', variant: 'quiet' } : {})}
-      isDisabled={loading}
-      onPress={onPress}
-    >
-      {loading ? `Loading more ${noun}…` : `Load more ${noun}`}
-    </Button>
+    <>
+      {limited ? null : (
+        <Button
+          {...(compact ? { size: 'small', variant: 'quiet' } : {})}
+          isDisabled={loading}
+          onPress={onPress}
+        >
+          {loading ? `Loading more ${noun}…` : `Load more ${noun}`}
+        </Button>
+      )}
+      <p ref={notice} role="status" tabIndex={-1} className={styles.limit}>
+        {limited ? LOAD_LIMIT_NOTICE : null}
+      </p>
+    </>
   );
 }
 

@@ -12,10 +12,11 @@ export interface PagedList {
   setTrail: (trail: CursorTrail) => void;
   loadMore?: () => void;
   loadingMore?: boolean;
+  loadLimited?: boolean;
 }
 
 export function Pager({ label, list }: { label: string; list: PagedList }) {
-  const { trail, next, setTrail, loadMore, loadingMore = false } = list;
+  const { trail, next, setTrail, loadMore, loadingMore = false, loadLimited = false } = list;
   const noun = label.toLowerCase();
   const limitReason = useId();
   const atLimit = next !== null && !canAdvance(trail, next);
@@ -28,6 +29,7 @@ export function Pager({ label, list }: { label: string; list: PagedList }) {
         <LoadMore
           noun={noun}
           loading={loadingMore}
+          limited={loadLimited}
           onPress={() => {
             setAppendedOn(trail.join(' '));
             loadMore();

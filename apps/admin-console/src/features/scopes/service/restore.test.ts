@@ -1,5 +1,7 @@
 import { expect, it } from 'vitest';
 import {
+  RESTORE_CONFIRM_LABEL,
+  RESTORE_DIALOG_TITLE,
   restoredText,
   restoreFailureText,
   restoreHeld,
@@ -78,4 +80,9 @@ it('says why a refused restore was, and a lost answer as unknown', () => {
   expect(restoreFailureText({ ok: false, kind: 'network' })).toMatch(
     /Could not confirm whether the restore of the built-in scopes was done/u,
   );
+});
+
+it('words the dialog that asks for the restore', () => {
+  expect(RESTORE_DIALOG_TITLE).toBe('Restore built-in scopes?');
+  expect(RESTORE_CONFIRM_LABEL).toBe('Restore');
 });

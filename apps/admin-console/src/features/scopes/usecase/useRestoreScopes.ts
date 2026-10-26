@@ -16,8 +16,8 @@ export interface RestoreScopes {
   problem: string | null;
   // What the dialog says: what is missing, or that nothing is.
   text: string;
-  // False while nothing is known to be missing, so a press could only do nothing.
-  settled: boolean;
+  // True unless something is known to be missing, so a press could only do nothing.
+  held: boolean;
   ask: () => void;
   cancel: () => void;
   confirm: () => void;
@@ -42,7 +42,7 @@ export function useRestoreScopes(tenant: string): RestoreScopes {
     busy: asking.busy,
     problem: asking.problem,
     text: restoreText(offer),
-    settled: restoreHeld(offer),
+    held: restoreHeld(offer),
     ask: asking.ask,
     cancel: asking.cancel,
     confirm: asking.confirm,

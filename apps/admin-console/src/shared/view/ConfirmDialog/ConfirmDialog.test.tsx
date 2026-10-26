@@ -210,7 +210,7 @@ describe('a refusal', () => {
   });
 });
 
-it('holds its action once settled, however it was confirmed', async () => {
+it('holds its action while held, however it was confirmed', async () => {
   render(
     <ConfirmDialog
       isOpen
@@ -218,7 +218,7 @@ it('holds its action once settled, however it was confirmed', async () => {
       consequence="ada loses tenant-admin."
       confirmLabel="Revoke"
       typed="ada"
-      settled
+      held
       onConfirm={vi.fn()}
       onCancel={vi.fn()}
     />,

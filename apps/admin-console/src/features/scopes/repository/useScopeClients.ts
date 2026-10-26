@@ -21,6 +21,7 @@ export interface ScopeClients {
   rows: readonly ScopeClient[];
   more: boolean;
   loadingMore: boolean;
+  loadLimited: boolean;
   loadMoreFailed: boolean;
   loadMore: () => void;
   retry: () => void;
@@ -41,6 +42,7 @@ export function useScopeClients(tenant: string, id: string, enabled = true): Sco
     rows: pages.rows,
     more: pages.next !== null,
     loadingMore: pages.loadingMore,
+    loadLimited: pages.loadLimited,
     loadMoreFailed: pages.loadMoreFailed,
     loadMore: pages.loadMore,
     retry: pages.retry,

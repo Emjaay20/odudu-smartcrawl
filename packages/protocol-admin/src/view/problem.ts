@@ -65,12 +65,14 @@ export function cursorProblem(): Problem {
  * names what the caller has to read first, since the header is the only
  * thing missing from an otherwise valid request.
  */
-export function ifMatchRequired(resource: string): Problem {
+export function ifMatchRequired(resource: string, sent: string | string[] | undefined): Problem {
   return problem(
     428,
     'about:blank',
     'Precondition Required',
-    `If-Match is required to replace ${resource}`,
+    sent === undefined
+      ? `If-Match is required to replace ${resource}`
+      : `If-Match must name a version you read; * is not accepted when replacing ${resource}`,
   );
 }
 

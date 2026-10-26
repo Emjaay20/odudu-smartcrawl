@@ -3821,3 +3821,21 @@ Each finding was checked against the repository before it was changed.
 - **Owner settings read from the live repository** with `gh api`: the `github-pages` environment's
   deployment policies (`main` branch, `v*` tag), the `release tags` ruleset (creation, deletion and
   non-fast-forward on `refs/tags/v*`) and the branch protection contexts (now with `gate`).
+
+## Fixes from the whole-phase review (console and admin API)
+
+- **Load more.** `useListPages` stops appending at `ROW_BUDGET` (1,000 rows) and exposes `loadLimited`;
+  `LoadMore` and the pager then say "This is as far as the list can load. Narrow it to see further."
+  in place of the button. Next still pages on, since it replaces the rows.
+- **Service subjects.** `deletionRefusal` (subjects service) replaces the Delete panel's button for a
+  `service` subject. The subject carries no client id, so the sentence names no client.
+- **`If-Match: *`.** `requiredPrecondition` and the client list-field check read `*`, alone or in a
+  list, as no precondition (428). `matches` takes a comma-separated list and any member; `*` still
+  matches on routes where the precondition is optional. Integration tests that used `*` as a stand-in
+  now read the ETag (`etagAt` in the admin fixture); the lock tests hold a real tag, so the second
+  writer is refused with 412 where it used to overwrite. verified:
+  `vitest run --project integration packages/protocol-admin/tests`, 82 files green.
+- **Error ID.** The tour page says the ID is made in the browser and is not in the server's logs.
+  Sending it to the server is a P4h row in `docs/NEXT.md`, on the roadmap and in section 11.
+- **Restore dialog.** `RESTORE_DIALOG_TITLE` and `RESTORE_CONFIRM_LABEL` live in `service/restore.ts`;
+  the `settled` flag is `held` in `useRestoreScopes` and `ConfirmDialog`.

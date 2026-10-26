@@ -909,3 +909,20 @@ export async function startAdminFixture(options: AdminFixtureOptions = {}): Prom
     failNextWriteAfterAudit,
   };
 }
+
+/**
+ * The `ETag` a read of `url` answers, for a write that must name the version
+ * it read. A read the caller is refused answers none, and the tag stands in
+ * so the write meets its own refusal rather than the missing precondition.
+ * A test that expects a 403 this way relies on the capability check running
+ * before the precondition.
+ */
+export async function etagAt(http: FastifyInstance, url: string, token: string): Promise<string> {
+  const read = await http.inject({
+    method: 'GET',
+    url,
+    headers: { authorization: `Bearer ${token}` },
+  });
+  const etag = read.headers.etag;
+  return typeof etag === 'string' ? etag : '"unread"';
+}

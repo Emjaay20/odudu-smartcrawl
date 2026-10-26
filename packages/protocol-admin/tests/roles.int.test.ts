@@ -14,7 +14,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { capabilitiesReachableFrom } from '#/service/capability-ceiling';
 import { etagOf } from '#/service/etag';
 import { storedFields } from '#/testing/stored-fields';
-import { startAdminFixture, type AdminFixture } from '#/testing/admin-fixture';
+import { startAdminFixture, type AdminFixture, etagAt } from '#/testing/admin-fixture';
 import {
   addRoleComposite,
   amendRole,
@@ -1272,12 +1272,14 @@ describe('DELETE /admin/tenants/{t}/roles/{id}/composites/{childId}', () => {
     const client = await fixture.createConfidentialClient(t.name, {
       grantTypes: ['client_credentials'],
     });
+    const clientUrl = `/admin/tenants/${t.name}/clients/${client.id}`;
+    const clientsToken = await fixture.adminToken(t.name, ['manage-clients']);
     const patched = await fixture.http.inject({
       method: 'PATCH',
-      url: `/admin/tenants/${t.name}/clients/${client.id}`,
+      url: clientUrl,
       headers: {
-        ...auth(await fixture.adminToken(t.name, ['manage-clients'])),
-        'if-match': '*',
+        ...auth(clientsToken),
+        'if-match': await etagAt(fixture.http, clientUrl, clientsToken),
       },
       payload: { client_credentials_scopes: ['roles'], full_scope_allowed: true },
     });

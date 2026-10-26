@@ -133,6 +133,7 @@ const CLAIMS: readonly (readonly [phase: string, sentence: string, ...criterion:
     'a locale switch',
     'right-to-left locale',
   ],
+  ['P4h', 'It also sends the failure screen', "failure screen's error id sent to the server"],
   [
     'P4i',
     'Official libraries',
@@ -277,6 +278,7 @@ describe('the roadmap and section 11 of the design spec agree', () => {
       'a test maintenance note for the boot rework',
     ],
     ['Localization has its catalogue', ['P4b', 'P4h'], ['translated pages and mail', 'catalogue']],
+    ["The console's failure ID", ['P4h'], ['failure screen']],
     ['No scope means anything', ['P9'], ['resource server as a first-class thing']],
     [
       '`/introspect` answers every registered client',

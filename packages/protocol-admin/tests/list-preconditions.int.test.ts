@@ -146,6 +146,21 @@ const ROUTES: readonly ListRoute[] = [
     },
   },
   {
+    name: "a subject's group memberships",
+    capabilities: ['manage-users', 'manage-tenant'],
+    prepare: async (token, tenantName) => {
+      const subject = await createdId(token, tenantName, 'subjects', {
+        username: `u-${newId()}`,
+      });
+      const group = await createdId(token, tenantName, 'groups', { name: `g-${newId()}` });
+      return {
+        url: `/admin/tenants/${tenantName}/subjects/${subject}/groups`,
+        first: { group_ids: [group] },
+        second: { group_ids: [] },
+      };
+    },
+  },
+  {
     name: "a tenant's authentication flow",
     capabilities: ['manage-tenant'],
     prepare: (token, tenantName) =>
@@ -197,5 +212,58 @@ describe.each(ROUTES)('$name is replaced only under a fresh If-Match', (route) =
 
     const after = await get(token, url);
     expect(after.headers.etag).toEqual(applied.headers.etag);
+  });
+
+  it('counts If-Match: * as no precondition, alone or in a list', async () => {
+    const t = await fixture.createTenant(`acme-${newId()}`);
+    const token = await fixture.adminToken(t.name, [...route.capabilities]);
+    const { url, first } = await route.prepare(token, t.name);
+    const etag = String((await get(token, url)).headers.etag);
+
+    for (const header of ['*', ` ${etag}, *`]) {
+      const refused = await put(token, url, first, header);
+      expect(refused.statusCode, header).toBe(428);
+      expect(refused.json<{ detail: string }>().detail, header).toContain('is not accepted');
+    }
+    expect((await get(token, url)).headers.etag).toEqual(etag);
+  });
+
+  it('takes a list of validators and matches any member, refusing a list of stale ones', async () => {
+    const t = await fixture.createTenant(`acme-${newId()}`);
+    const token = await fixture.adminToken(t.name, [...route.capabilities]);
+    const { url, first } = await route.prepare(token, t.name);
+    const etag = String((await get(token, url)).headers.etag);
+
+    const stale = await put(token, url, first, '"one", "two"');
+    expect(stale.statusCode).toBe(412);
+
+    const applied = await put(token, url, first, `"one", ${etag}`);
+    expect(applied.statusCode).toBe(200);
+  });
+});
+
+describe('a write whose If-Match is optional', () => {
+  async function patchSettings(token: string, tenantName: string, ifMatch: string) {
+    return fixture.http.inject({
+      method: 'PATCH',
+      url: `/admin/tenants/${tenantName}/settings`,
+      headers: {
+        authorization: `Bearer ${token}`,
+        'content-type': 'application/json',
+        'if-match': ifMatch,
+      },
+      payload: { client_registration_policy: 'open' },
+    });
+  }
+
+  it('matches any member of a list, still takes *, and refuses a list of stale tags', async () => {
+    const t = await fixture.createTenant(`acme-${newId()}`);
+    const token = await fixture.adminToken(t.name, ['manage-tenant']);
+    const url = `/admin/tenants/${t.name}/settings`;
+    const etag = String((await get(token, url)).headers.etag);
+
+    expect((await patchSettings(token, t.name, '"one", "two"')).statusCode).toBe(412);
+    expect((await patchSettings(token, t.name, `"one", ${etag}`)).statusCode).toBe(200);
+    expect((await patchSettings(token, t.name, '*')).statusCode).toBe(200);
   });
 });

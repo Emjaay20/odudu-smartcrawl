@@ -15,6 +15,7 @@ export {
   USERNAME_RULE_TEXT,
   usernameProblem,
   signsInAsItself,
+  deletionRefusal,
   confirmationOf,
   enabledVerb,
   subjectWriteFailure,

@@ -32,6 +32,7 @@ function state(overrides: Partial<ResourceListState<AuditEvent>> = {}) {
     trail: [],
     next: null,
     loadingMore: false,
+    loadLimited: false,
     loadMoreFailed: false,
     setSearch: vi.fn(),
     setFilter: vi.fn(),

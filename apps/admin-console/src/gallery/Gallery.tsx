@@ -329,6 +329,7 @@ function ClientList() {
     trail,
     next: search === null ? 'c4' : null,
     loadingMore: false,
+    loadLimited: false,
     loadMoreFailed: false,
     setSearch: (next) => {
       setSearch(next.query === '' ? null : next);
@@ -424,6 +425,7 @@ function listOf<T>(rows: readonly T[], next: string | null): ResourceListState<T
     trail: [],
     next,
     loadingMore: false,
+    loadLimited: false,
     loadMoreFailed: false,
     setSearch: NOTHING,
     setFilter: NOTHING,
@@ -442,6 +444,7 @@ function pickerOf<T>(options: readonly T[], more: boolean): PickerState<T> {
     search: NOTHING,
     more,
     loadingMore: false,
+    loadLimited: false,
     loadMore: NOTHING,
     retry: NOTHING,
   };
@@ -822,8 +825,8 @@ function RecordPieces() {
         </Specimen>
         <Specimen label="LoadMore: regular, compact and busy, and its failure">
           <div className={styles.stack}>
-            <LoadMore noun="deliveries" loading={false} onPress={NOTHING} />
-            <LoadMore compact noun="groups under /eng" loading onPress={NOTHING} />
+            <LoadMore noun="deliveries" loading={false} limited={false} onPress={NOTHING} />
+            <LoadMore compact noun="groups under /eng" loading limited={false} onPress={NOTHING} />
             <LoadMoreFailed noun="deliveries" />
           </div>
         </Specimen>

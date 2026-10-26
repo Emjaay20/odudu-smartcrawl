@@ -287,7 +287,9 @@ function amendmentProblem(
           428,
           'about:blank',
           'Precondition Required',
-          `If-Match is required to amend ${outcome.field}`,
+          request.headers['if-match'] === undefined
+            ? `If-Match is required to amend ${outcome.field}`
+            : `If-Match must name a version you read; * is not accepted when amending ${outcome.field}`,
         ),
       );
     case 'precondition_failed':

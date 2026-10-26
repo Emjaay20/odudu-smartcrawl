@@ -3,8 +3,12 @@ import { clientScopeRepository, TENANT_CAPABILITIES } from '@odudu/domain-tenant
 import { newId } from '@odudu/kernel';
 import { standardClaimMappers } from '@odudu/protocol-oidc';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { startAdminFixture, type AdminFixture } from '#/testing/admin-fixture';
-import { setScopeMappers, type ScopeMapperAuditEvent } from '#/usecase/scope-mappers';
+import { startAdminFixture, type AdminFixture, etagAt } from '#/testing/admin-fixture';
+import {
+  readScopeMappers,
+  setScopeMappers,
+  type ScopeMapperAuditEvent,
+} from '#/usecase/scope-mappers';
 
 let fixtureHandle: AdminFixture | undefined;
 let fixture: AdminFixture;
@@ -35,12 +39,29 @@ function readMappers(token: string, tenantName: string, scopeId: string) {
   });
 }
 
-function putMappers(token: string, tenantName: string, scopeId: string, mapperNames: string[]) {
+async function mappersTag(tenantId: string, scopeId: string): Promise<string> {
+  const read = await withTenant(fixture.app.db, tenantId, (tx) =>
+    readScopeMappers(tx, standardClaimMappers(), scopeId),
+  );
+  if (read.kind !== 'ok') throw new Error('fixture: the scope has no mapper list');
+  return read.etag;
+}
+
+async function putMappers(
+  token: string,
+  tenantName: string,
+  scopeId: string,
+  mapperNames: string[],
+) {
   return fixture.http.inject({
     method: 'PUT',
     url: `/admin/tenants/${tenantName}/scopes/${scopeId}/mappers`,
     headers: {
-      'if-match': '*',
+      'if-match': await etagAt(
+        fixture.http,
+        `/admin/tenants/${tenantName}/scopes/${scopeId}/mappers`,
+        token,
+      ),
       authorization: `Bearer ${token}`,
       'content-type': 'application/json',
     },
@@ -213,6 +234,7 @@ describe('audit', () => {
     const claimMappers = standardClaimMappers();
 
     const ok = collector();
+    const firstTag = await mappersTag(t.id, scopeId);
     await withTenant(fixture.app.db, t.id, (tx) =>
       setScopeMappers(
         tx,
@@ -220,7 +242,7 @@ describe('audit', () => {
         { audit: ok.audit },
         {
           scopeId,
-          ifMatch: '*',
+          ifMatch: firstTag,
           mapperNames: ['sub'],
           actorSubjectId: 'test',
           actorTenantId: 'test-tenant',
@@ -232,6 +254,7 @@ describe('audit', () => {
     expect(ok.events[0]?.action).toBe('scope.mappers_set');
 
     const refused = collector();
+    const secondTag = await mappersTag(t.id, scopeId);
     const outcome = await withTenant(fixture.app.db, t.id, (tx) =>
       setScopeMappers(
         tx,
@@ -239,7 +262,7 @@ describe('audit', () => {
         { audit: refused.audit },
         {
           scopeId,
-          ifMatch: '*',
+          ifMatch: secondTag,
           mapperNames: ['not-a-real-mapper'],
           actorSubjectId: 'test',
           actorTenantId: 'test-tenant',

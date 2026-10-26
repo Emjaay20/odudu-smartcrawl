@@ -61,7 +61,12 @@ function Carriers({ scope, page }: { scope: ClientScope; page: ScopeClientsTab }
       {body}
       {list.more ? (
         <div className={recordTab.actions}>
-          <LoadMore noun="clients" loading={list.loadingMore} onPress={list.loadMore} />
+          <LoadMore
+            noun="clients"
+            loading={list.loadingMore}
+            limited={list.loadLimited}
+            onPress={list.loadMore}
+          />
         </div>
       ) : null}
       {list.loadMoreFailed ? (

@@ -57,7 +57,7 @@ export function DeleteZone({
         confirmLabel={`Delete ${name}`}
         tone="danger"
         {...(typed === undefined ? {} : { typed })}
-        settled={held}
+        held={held}
         busy={deletion.busy}
         problem={
           deletion.problem ??

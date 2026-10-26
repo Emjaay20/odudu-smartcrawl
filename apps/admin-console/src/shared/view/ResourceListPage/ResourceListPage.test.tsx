@@ -30,6 +30,7 @@ function state(overrides: Partial<ResourceListState<Row>> = {}): ResourceListSta
     trail: [],
     next: 'b2Zmc2V0LTE.dGFnMQ',
     loadingMore: false,
+    loadLimited: false,
     loadMoreFailed: false,
     setSearch: vi.fn(),
     setFilter: vi.fn(),
@@ -193,7 +194,7 @@ it('says what happened to a row just above the rows, from a notice the page give
       notice={<p role="status">Billing portal still holds a secret.</p>}
     />,
   );
-  const notice = screen.getByRole('status');
+  const notice = screen.getByText('Billing portal still holds a secret.');
   const grid = screen.getByRole('grid', { name: 'Clients' });
   expect(notice).toHaveTextContent('Billing portal still holds a secret.');
   expect(notice.compareDocumentPosition(grid) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
