@@ -178,6 +178,9 @@ and that sentence, differ from the earlier capture.
 The `GET /admin/openapi.json` block was run again when the subject delete's description
 grew. It ran on the project `odudu-p4g-31p` on port `3197`, a freshly built stack.
 
+It ran again when the `If-Match` rule was reworded: on the project `odudu-p4g-consolefix`,
+port `3480` in place of the `3197` the command shows, a freshly built stack.
+
 Registration, the reset request, the reset form and the actions form then began to
 come back as the same form when they refuse, and the sign-in form began to offer the
 pages beside it. The blocks that show those responses were run again against a stack
