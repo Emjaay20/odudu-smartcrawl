@@ -107,8 +107,14 @@ const CLAIMS: readonly (readonly [phase: string, sentence: string, ...criterion:
     'mail templates',
   ],
   ['P4b', 'Translated pages and mail', 'translated pages and mail'],
-  ['P4b', 'It also closes two logout gaps', 'anti-forgery token', 'leaked id token'],
+  ['P4b', 'It also fixes two weak spots in sign-out', 'anti-forgery token', 'leaked id token'],
   ['P5a', 'The admin API as tools', 'read-only by default', 'protect an mcp server with odudu'],
+  [
+    'P5a',
+    'The server does not yet publish',
+    'protected-resource and authorization-server metadata',
+    '`idempotency-key` header',
+  ],
   ['P5a', 'A retried request', '`idempotency-key` header'],
   ['P4f', 'A "me" API', '"me" api', 'application-initiated actions'],
   [

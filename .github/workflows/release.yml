@@ -243,11 +243,12 @@ jobs:
           gh release create "$TAG" assets/compose.yaml assets/odudu-sbom.json assets/SHA256SUMS \
             --verify-tag --title "$TAG" --notes-file notes.md "${kind[@]}"
 
-  # Only after the release exists, and never for a release candidate, so a
-  # failed release leaves the live site as it was. pages.yml does the work.
+  # Only after the release exists, and only for the newest stable release, so a
+  # candidate or a patch to an older line never replaces the live site, and a
+  # failed release leaves it as it was. pages.yml does the work.
   site:
     needs: [prepare, release]
-    if: needs.prepare.outputs.prerelease == 'false'
+    if: needs.prepare.outputs.prerelease == 'false' && needs.prepare.outputs.latest == 'true'
     permissions:
       contents: read
       pages: write

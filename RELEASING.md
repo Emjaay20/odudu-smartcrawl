@@ -23,7 +23,8 @@ Release marked as a pre-release, and nothing that follows `latest` moves.
 
 1. Write the changelog first. In `CHANGELOG.md`, give the changes under
    `Unreleased` a heading `## [X.Y.Z] - YYYY-MM-DD` and update the links at the
-   foot. The date must be a real `YYYY-MM-DD`; a test checks it. The workflow
+   foot. The date is a real `YYYY-MM-DD` in UTC, the day GitHub shows for the
+   release; a test checks the form. The workflow
    takes the release notes from that section and stops without it.
 2. Merge to `main` and wait for the `gate` check to pass on that commit. The
    workflow refuses a commit it has not passed on. A stable tag must point at
@@ -137,7 +138,7 @@ These are settings only the owner can change. They are done:
 - **Private vulnerability reporting is on**, and `SECURITY.md` links to it.
 - **GitHub Pages uses GitHub Actions as its source.** The site is at
   `https://wizzywit.github.io/odudu/`. To republish it, open Actions, pages,
-  Run workflow, from `main`. Each stable tag redeploys it.
+  Run workflow, from `main`. Each newest stable release redeploys it.
 
 ## Before the stable release
 
@@ -169,8 +170,8 @@ on custom domains for Pages, read on 2026-10-16.
    `2606:50c0:8003::153`. For `www`, add a `CNAME` to `wizzywit.github.io`.
 4. Commit one change to `apps/docs/site.config.ts`: `SITE_ORIGIN` to
    `https://<domain>` and `PAGES_BASE` to `/`.
-5. The next stable release redeploys the site. It is published on stable tags
-   only, so the site always matches a release.
+5. The next stable release redeploys the site. It is published only for the
+   newest stable release, so the site matches the latest release.
 6. In Google Search Console add the domain as a property with a DNS `TXT`
    record, and submit `https://<domain>/sitemap.xml`. Leave the old property's
    sitemap in place until the old addresses stop being served.

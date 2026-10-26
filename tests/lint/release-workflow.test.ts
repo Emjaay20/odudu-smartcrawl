@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { parse } from 'yaml';
 import { releaseNotes } from '../../tools/release/src/notes.ts';
 import { stampCompose } from '../../tools/release/src/stamp.ts';
 import { parseTag } from '../../tools/release/src/version.ts';
@@ -199,6 +200,14 @@ describe('the release workflow', () => {
     expect(release).toContain('LATEST: ${{ needs.prepare.outputs.latest }}');
     expect(release).toContain('--latest=false');
     expect(release).not.toContain('kind=(--latest)\n');
+  });
+
+  it('publishes the site only for the newest stable release, never a candidate or an older line', () => {
+    const { jobs } = parse(WORKFLOW) as { jobs: Record<string, { if?: string; uses?: string }> };
+    expect(jobs.site?.if).toBe(
+      "needs.prepare.outputs.prerelease == 'false' && needs.prepare.outputs.latest == 'true'",
+    );
+    expect(jobs.site?.uses).toBe(LOCAL_PAGES);
   });
 
   it('refuses a stable tag that is not on main, and names the tag and the fix', () => {

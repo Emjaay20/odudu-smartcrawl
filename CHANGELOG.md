@@ -15,7 +15,6 @@ All notable changes to Odudu are written here, newest first. The format follows
 
 - Logout shows every front-channel logout frame before it redirects to a matched post-logout address.
 - Code blocks in the documentation are coloured when the site is built, and read well in both themes.
-- Dependencies are updated again.
 - A stable tag must point at a commit on `main`, and `latest` moves only to the newest stable release.
 - Every GitHub Action in the workflows is pinned to a commit, and Dependabot waits two days before it proposes a version.
 
@@ -29,7 +28,7 @@ All notable changes to Odudu are written here, newest first. The format follows
 
 - A mailed link that sets a password now ends every session and token the person had, and proves the address.
 - When an address is verified or changed, the account is no longer treated as self-registered. A reset removes authenticators and recovery codes only on an account that registered itself and was never verified.
-- Logout tokens carry the issuer of the request, and a server in production refuses to start when `ODUDU_TLS` and the `https` or `http` of the public base address disagree.
+- Logout tokens now name the address the request came to, and a server in production refuses to start when `ODUDU_TLS` and the `https` or `http` of the public base address disagree.
 
 ## [0.1.0-rc.3] - 2026-10-24
 
@@ -44,7 +43,7 @@ The third release candidate. Odudu is not production ready: it has had no securi
 
 - A flaky registration test and two lint findings that newer tooling raised.
 
-## [0.1.0-rc.2] - 2026-10-24
+## [0.1.0-rc.2] - 2026-10-23
 
 The second release candidate. Odudu is not production ready: it has had no security review.
 
