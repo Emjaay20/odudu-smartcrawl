@@ -37,6 +37,7 @@ let http: FastifyInstance;
 const LOGIN_CLIENT_ID = 'frontchannel-login-client';
 const LOGIN_CLIENT_SECRET = 'frontchannel-login-client-secret';
 const REDIRECT_URI = 'https://login-app.example/callback';
+const POST_LOGOUT_URI = 'https://login-app.example/signed-out';
 const USERNAME = 'ada';
 const PASSWORD = 'correct horse battery staple';
 const KEK = Buffer.alloc(32, 21);
@@ -81,6 +82,16 @@ const RP_MALFORMED: RpClientSpec = {
   frontchannelLogoutUri: 'not a url at all',
   frontchannelLogoutSessionRequired: false,
 };
+const RP_HOSTILE_SCRIPT: RpClientSpec = {
+  hostname: 'rp-hostile-script.example',
+  frontchannelLogoutUri: 'javascript:alert(1)',
+  frontchannelLogoutSessionRequired: false,
+};
+const RP_HOSTILE_DATA: RpClientSpec = {
+  hostname: 'rp-hostile-data.example',
+  frontchannelLogoutUri: 'data:text/html,<script>alert(1)</script>',
+  frontchannelLogoutSessionRequired: false,
+};
 const RP_DISABLED: RpClientSpec = {
   hostname: 'rp-disabled.example',
   frontchannelLogoutUri: 'https://rp-disabled.example/logout',
@@ -120,6 +131,7 @@ async function setupTenant(
       clientId: loginClientDbId,
       tenantId,
       redirectUris: [REDIRECT_URI],
+      postLogoutRedirectUris: [POST_LOGOUT_URI],
       grantTypes: ['authorization_code'],
       tokenEndpointAuthMethod: 'client_secret_basic',
       audiences: [],
@@ -534,5 +546,166 @@ describe('the logout page frames each relying party that used the session', () =
     const policy = String(res.headers['content-security-policy']);
     expect(policy).toContain('frame-src');
     expect(policy).toContain('https://rp-one.example');
+  });
+});
+
+describe('a logout that names a matched post_logout_redirect_uri', () => {
+  const redirectParams = { client_id: LOGIN_CLIENT_ID, post_logout_redirect_uri: POST_LOGOUT_URI };
+
+  async function signedInWith(
+    label: string,
+    specs: readonly RpClientSpec[],
+    grantTo: readonly RpClientSpec[],
+  ): Promise<{ tenantName: string; cookie: string; hint: string }> {
+    const tenantName = `frontchannel-${label}-${newId()}`;
+    const { tenantId, subjectId, rpClientIds } = await setupTenant(tenantName, specs);
+    const cookie = await signIn(tenantName);
+    const sessionId = sessionIdFromCookie(cookie);
+    for (const spec of grantTo) {
+      const dbId = rpClientIds.get(spec.hostname);
+      if (dbId === undefined) throw new Error(`no client for ${spec.hostname}`);
+      await grantUnderSession(tenantId, dbId, subjectId, sessionId);
+    }
+    return { tenantName, cookie, hint: await mintIdToken(tenantName, subjectId, sessionId) };
+  }
+
+  it('[OIDC-FRONTCHANNEL-3-REDIRECT-01] renders the frames first and then leads to the redirect', async () => {
+    const { tenantName, cookie, hint } = await signedInWith(
+      'redirect',
+      [RP_ONE, RP_TWO],
+      [RP_ONE, RP_TWO],
+    );
+    const res = await http.inject({
+      url: logoutUrl(tenantName, hint, { ...redirectParams, state: 'xyz' }),
+      headers: { cookie },
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.headers.location).toBeUndefined();
+    expect(res.body).toContain('<iframe src="https://rp-one.example/logout?');
+    expect(res.body).toContain('<iframe src="https://rp-two.example/logout?');
+    expect(res.body).toContain(`<a id="continue" href="${POST_LOGOUT_URI}?state=xyz">`);
+    expect(res.body).toContain(
+      `<meta http-equiv="refresh" content="5;url=${POST_LOGOUT_URI}?state=xyz">`,
+    );
+
+    const policy = String(res.headers['content-security-policy']);
+    const frameSrc = /frame-src ([^;]*)/.exec(policy)?.[1]?.split(' ') ?? [];
+    expect(new Set(frameSrc)).toEqual(
+      new Set(['https://rp-one.example', 'https://rp-two.example']),
+    );
+    const nonce = /<script nonce="([^"]+)">/.exec(res.body)?.[1];
+    expect(nonce).toBeDefined();
+    expect(policy).toContain(`script-src 'nonce-${nonce ?? ''}'`);
+    expect(res.headers['cache-control']).toBe('no-store');
+    expect(res.headers['set-cookie']).toBeDefined();
+  });
+
+  it('ends the session before the frames render, so a replay redirects at once and ends nothing', async () => {
+    const { tenantName, cookie, hint } = await signedInWith('replay', [RP_ONE], [RP_ONE]);
+    const url = logoutUrl(tenantName, hint, redirectParams);
+    const first = await http.inject({ url, headers: { cookie } });
+    expect(first.statusCode).toBe(200);
+
+    const replay = await http.inject({ url, headers: { cookie } });
+    expect(replay.statusCode).toBe(302);
+    expect(replay.headers.location).toBe(POST_LOGOUT_URI);
+  });
+
+  it('redirects at once when no client of the session registered a front-channel URI', async () => {
+    const { tenantName, cookie, hint } = await signedInWith(
+      'plain',
+      [RP_NO_FRONTCHANNEL],
+      [RP_NO_FRONTCHANNEL],
+    );
+    const res = await http.inject({
+      url: logoutUrl(tenantName, hint, { ...redirectParams, state: 'xyz' }),
+      headers: { cookie },
+    });
+    expect(res.statusCode).toBe(302);
+    expect(res.headers.location).toBe(`${POST_LOGOUT_URI}?state=xyz`);
+  });
+
+  it('never frames a javascript: or data: front-channel URI, and redirects at once', async () => {
+    const { tenantName, cookie, hint } = await signedInWith(
+      'hostile',
+      [RP_HOSTILE_SCRIPT, RP_HOSTILE_DATA],
+      [RP_HOSTILE_SCRIPT, RP_HOSTILE_DATA],
+    );
+    const res = await http.inject({
+      url: logoutUrl(tenantName, hint, redirectParams),
+      headers: { cookie },
+    });
+    expect(res.statusCode).toBe(302);
+    expect(res.body).not.toContain('<iframe');
+  });
+
+  it('frames only the front-channel URIs that are safe, beside a hostile one', async () => {
+    const { tenantName, cookie, hint } = await signedInWith(
+      'mixed',
+      [RP_ONE, RP_HOSTILE_SCRIPT],
+      [RP_ONE, RP_HOSTILE_SCRIPT],
+    );
+    const res = await http.inject({
+      url: logoutUrl(tenantName, hint, redirectParams),
+      headers: { cookie },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toContain('<iframe src="https://rp-one.example/logout?');
+    expect(res.body).not.toContain('javascript:');
+    expect(String(res.headers['content-security-policy'])).not.toContain('javascript:');
+  });
+
+  it("never frames another tenant's client", async () => {
+    const other = await signedInWith('foreign', [RP_TWO], [RP_TWO]);
+    expect(other.cookie).toBeDefined();
+    const { tenantName, cookie, hint } = await signedInWith('own', [RP_ONE], [RP_ONE]);
+    const res = await http.inject({
+      url: logoutUrl(tenantName, hint, redirectParams),
+      headers: { cookie },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.body).not.toContain('rp-two.example');
+    expect(String(res.headers['content-security-policy'])).not.toContain('rp-two.example');
+  });
+
+  it('refuses an unmatched redirect as before, and still frames', async () => {
+    const { tenantName, cookie, hint } = await signedInWith('unmatched', [RP_ONE], [RP_ONE]);
+    const res = await http.inject({
+      url: logoutUrl(tenantName, hint, {
+        client_id: LOGIN_CLIENT_ID,
+        post_logout_redirect_uri: 'https://elsewhere.example/after',
+      }),
+      headers: { cookie },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.body).not.toContain('elsewhere.example');
+  });
+
+  it('renders the frames after the confirmation form too', async () => {
+    const { tenantName, cookie } = await signedInWith('confirm', [RP_ONE], [RP_ONE]);
+    const path = `/tenants/${tenantName}/protocol/openid-connect/logout`;
+    const asked = await http.inject({
+      url: `${path}?${new URLSearchParams(redirectParams).toString()}`,
+      headers: { cookie },
+    });
+    expect(asked.statusCode).toBe(200);
+    const field = (name: string): string =>
+      new RegExp(`name="${name}" value="([^"]*)"`).exec(asked.body)?.[1] ?? '';
+
+    const confirmed = await http.inject({
+      method: 'POST',
+      url: path,
+      headers: { cookie, 'content-type': 'application/x-www-form-urlencoded' },
+      payload: new URLSearchParams({
+        session_id: field('session_id'),
+        csrf: field('csrf'),
+        client_id: LOGIN_CLIENT_ID,
+        post_logout_redirect_uri: POST_LOGOUT_URI,
+      }).toString(),
+    });
+    expect(confirmed.statusCode).toBe(200);
+    expect(confirmed.body).toContain('<iframe src="https://rp-one.example/logout?');
+    expect(confirmed.body).toContain(`<a id="continue" href="${POST_LOGOUT_URI}">`);
   });
 });

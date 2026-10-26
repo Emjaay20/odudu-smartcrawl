@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { decideLogout, type LogoutSession } from '#/usecase/logout';
+import { MAX_FRONT_CHANNEL_FRAMES } from '#/service/frontchannel-logout';
+import { decideLogout, frontChannelLogoutUrls, type LogoutSession } from '#/usecase/logout';
 
 const registered = ['https://app.example/after-logout'];
 const session: LogoutSession = { id: 's1', subjectId: 'u1' };
@@ -171,5 +172,29 @@ describe('decideLogout', () => {
         }),
       ).toEqual({ kind: 'end', redirectTo: 'https://app.example/after-logout' });
     });
+  });
+});
+
+describe('frontChannelLogoutUrls', () => {
+  it('asks for no more than the frame bound, and builds a URL per client', async () => {
+    const asked: number[] = [];
+    const urls = await frontChannelLogoutUrls(
+      {
+        frontChannelClientsForSession: (_tenant, _session, limit) => {
+          asked.push(limit);
+          return Promise.resolve([
+            {
+              frontchannelLogoutUri: 'https://rp.example/logout',
+              frontchannelLogoutSessionRequired: true,
+            },
+          ]);
+        },
+      },
+      'tenant',
+      'https://issuer.example',
+      's1',
+    );
+    expect(asked).toEqual([MAX_FRONT_CHANNEL_FRAMES]);
+    expect(urls).toHaveLength(1);
   });
 });

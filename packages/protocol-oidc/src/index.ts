@@ -910,9 +910,9 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
       // Front-Channel Logout 1.0 §3's "set of logged-in RPs" — read after
       // endSession above has already revoked the session's grants, since
       // revoking one only stamps revoked_at rather than removing it.
-      clientsForSession: (tenantId, sessionId) =>
+      frontChannelClientsForSession: (tenantId, sessionId, limit) =>
         withTenant(deps.database.db, tenantId, (tx) =>
-          tokenGrantRepository(tx).clientsForSession(sessionId),
+          tokenGrantRepository(tx).frontChannelClientsForSession(sessionId, limit),
         ),
     });
     // Own encapsulation scope: `@fastify/cors`'s delegator-driven hook adds

@@ -1151,6 +1151,109 @@ and `frontchannel_logout_session_supported` — all four unconditionally
 `true` for every tenant, since a client opts in per client rather than per
 tenant (see [Discovery](./path-a-authorization-code-with-pkce.md#1-discovery) above).
 
+## A matched redirect, after the frames
+
+The redirect used at the top of this document had nobody to tell: `demo-spa`
+was the only client with a grant under the session, and it registered no
+`frontchannel_logout_uri`, so there was nothing to frame and the answer was a
+`302` at once. When another client of the session did register one, the
+browser has to load that client's logout address before it leaves, or the
+client keeps its own session. The server then answers `200` with the frames
+and sends the browser on afterwards.
+
+This section ran on a freshly built stack of its own, published on **port
+3180**, seeded only with `demo`, `demo-spa` and `ada` as
+[Bootstrap](./bootstrap.md) does, and with `reports-widget` set up as in the
+section above (a front-channel address of `http://localhost:9100/logout`
+asking for `sid`). `demo-spa`'s redirect list is the one set at the top of this
+document. A session was then signed in as [Path A](./path-a-authorization-code-with-pkce.md)
+does, with a grant under each client, exactly as in the section above. The
+same request as at the top of this document:
+
+```bash
+curl -sS -i -b cookies.txt --get \
+  --data-urlencode "id_token_hint=$ID_TOKEN" \
+  --data-urlencode 'client_id=demo-spa' \
+  --data-urlencode 'post_logout_redirect_uri=http://localhost:8080/logged-out' \
+  --data-urlencode 'state=xyz-bye' \
+  "http://localhost:3180/tenants/demo/protocol/openid-connect/logout"
+```
+
+```
+HTTP/1.1 200 OK
+set-cookie: demo-session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
+set-cookie: demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
+content-type: text/html
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'; script-src 'nonce-tW40DdCrVfzNY1Xy6D9Wow=='; frame-src http://localhost:9100
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+x-content-type-options: nosniff
+content-language: en
+content-length: 1740
+
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Signed out</title>
+<link rel="stylesheet" href="/instrument/instrument.css">
+<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
+</head>
+<body>
+<main class="page">
+<p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
+<meta http-equiv="refresh" content="5;url=http://localhost:8080/logged-out?state=xyz-bye">
+<h1>Signed out</h1>
+<p>You have been signed out. Taking you back to the app.</p>
+<p><a id="continue" href="http://localhost:8080/logged-out?state=xyz-bye">Continue</a></p>
+<iframe src="http://localhost:9100/logout?iss=http%3A%2F%2Flocalhost%3A3180%2Ftenants%2Fdemo&amp;sid=01a177ef-bcdd-791d…"></iframe>
+<script nonce="tW40DdCrVfzNY1Xy6D9Wow==">
+(function () {
+  var next = document.getElementById('continue').href;
+  var frames = document.querySelectorAll('iframe');
+  var pending = frames.length;
+  var left = false;
+  function leave() { if (!left) { left = true; location.replace(next); } }
+  frames.forEach(function (frame) {
+    frame.addEventListener('load', function () {
+      if (frame.dataset.seen) return;
+      frame.dataset.seen = '1';
+      pending -= 1;
+      if (pending === 0) leave();
+    });
+  });
+  setTimeout(leave, 2000);
+})();
+</script>
+</main>
+</body>
+</html>
+```
+
+(`sid` shortened, and `x-request-id`, `Date` and the keep-alive headers
+omitted. The `script-src` nonce is different on every response.) The session
+is already ended when this page is sent. The policy licenses the one origin the
+page frames and the one script it carries, nothing more. The script waits for
+the frame to load, for two seconds at most, then goes to the link on the page,
+which is the registered address with `state` added. A browser that does not run
+script follows the `refresh` element after five seconds. A frame that never
+answers, or a client that is down, costs those two seconds and no more.
+
+Sending the same request again finds no session to end. The address still
+matches, so the answer is the plain redirect, with no frames and nothing ended
+twice:
+
+```
+HTTP/1.1 302 Found
+cache-control: no-store
+location: http://localhost:8080/logged-out?state=xyz-bye
+content-length: 0
+```
+
 ## Offline access
 
 `offline_access` is a scope, seeded into every tenant alongside

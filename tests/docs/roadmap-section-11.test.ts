@@ -98,8 +98,7 @@ const CLAIMS: readonly (readonly [phase: string, sentence: string, ...criterion:
   ],
   ['P4g', 'Until it ships'],
   ['P4b', 'Every page the server shows', "tenant's supplied theme"],
-  ['P4b', 'It also fixes one gap', 'redirecting branch'],
-  ['P4b', 'The same work binds', 'anti-forgery token', 'leaked id token'],
+  ['P4b', 'It also closes two logout gaps', 'anti-forgery token', 'leaked id token'],
   ['P4b', 'Translated pages and mail', 'translated pages and mail'],
   [
     'P5a',
@@ -273,7 +272,6 @@ describe('the roadmap and section 11 of the design spec agree', () => {
       ['P4f'],
       'carried by the gap-audit capability check above',
     ],
-    ['`/logout` delivers no front-channel frames', ['P4b'], ['front-channel frames']],
     ['`/logout` has two hardening gaps', ['P4b'], ['anti-forgery token', 'leaked id token']],
     ['The `codes`/`spent` count', ['P4f'], 'a transcript re-capture, no product behaviour'],
     [

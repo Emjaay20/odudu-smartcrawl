@@ -101,6 +101,42 @@ them on an OP page with no way back — so `decideLogout` still redirects
 when `post_logout_redirect_uri` exactly matches the client's own
 registration, even with no live session, which is what Keycloak does too.
 
+### A matched redirect waits for the front-channel frames
+
+§3 says where the OP sends the browser once the session has ended; Front-Channel
+Logout 1.0 §3 says the OP reaches the relying parties of that session through a
+page of `<iframe>` tags. A `302` at once leaves before any frame loads, so an
+app registered only for front-channel logout would keep its own session.
+`respondToOutcome` therefore answers `200` with `renderLoggedOutRedirectPage`
+whenever a matched redirect comes with at least one `frontchannel_logout_uri`
+to frame, and a `302` straight away when there is none.
+
+The page leaves by script when every frame has loaded or after two seconds,
+whichever comes first. The script reads the target from the page's own link,
+so nothing is spliced into it. The policy takes its `script-src` from the nonce
+the renderer returns (ADR 0018's amendment). A browser that does not run
+script is moved on by a `<meta http-equiv="refresh">` after five seconds; a
+meta refresh is not a script or a form, so the policy that blocks everything
+inline does not stop it. The target is the one `decideLogout` already matched,
+with `state` added, so no unregistered address is reachable this way.
+
+Two limits. The two seconds are a ceiling: leaving cancels a frame still in
+flight, so a slow relying party may not finish clearing its session. And the
+`refresh` element sits in the page body, which HTML does not allow; browsers
+honour it there (observed in Chromium), and the script path does not depend on it.
+
+The session ends before the page renders, so a replay of the same request finds
+no session and, the redirect still matching, answers `302`: nothing is ended
+twice and no frame is shown again. `frame-src` names the origins of the framed
+URIs only, because a source expression with a path is not an origin and the
+policy's one builder takes origins. At most 25 clients are framed
+(`MAX_FRONT_CHANNEL_FRAMES`), chosen in client-id order, where a tenant's
+session could otherwise reach all 10,000; the rest are still told by
+back-channel logout where they registered one. A `frontchannel_logout_uri`
+that is not `http` or `https` is never framed. Covered by
+`[OIDC-FRONTCHANNEL-3-REDIRECT-01]` and its neighbours in
+`frontchannel-logout.int.test.ts`.
+
 ### The exact registration match is §3's "other means"
 
 §3 has two prohibitions, and only one of them is about the value matching.

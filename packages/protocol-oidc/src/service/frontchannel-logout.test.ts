@@ -54,4 +54,15 @@ describe('frontChannelLogoutUrl', () => {
     );
     expect(built).toBeNull();
   });
+
+  // The URL lands in an iframe `src`, so a scheme that runs script or
+  // inlines a document must never reach one, whatever a row holds.
+  it.each([
+    'javascript:alert(1)',
+    'data:text/html,<script>alert(1)</script>',
+    'ftp://rp.example/logout',
+    'file:///etc/passwd',
+  ])('returns null for %s, which is not an http(s) URL', (registered) => {
+    expect(frontChannelLogoutUrl(registered, 'https://issuer.example', 's', false)).toBeNull();
+  });
 });

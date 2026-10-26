@@ -114,12 +114,15 @@ const ownMarkup = (renderers: readonly Renderer[]): string[] =>
     .filter((r) => OWN_MARKUP.test(read(r.text).literals))
     .map((r) => relative(r.path));
 
-// Only `<iframe` is allowed where the renderer is named; the rest of the list
-// still applies to it.
+// Only `<iframe` and a meta refresh (the redirect a browser without script
+// still follows once the frames have had their turn) are allowed where the
+// renderer is named; the rest of the list still applies to it.
 const otherMarkupInFramingRenderers = (renderers: readonly Renderer[]): string[] =>
   renderers
     .filter((r) => MAY_FRAME.includes(relative(r.path)))
-    .filter((r) => OWN_MARKUP.test(read(r.text).literals.replace(/<iframe\b/giu, '')))
+    .filter((r) =>
+      OWN_MARKUP.test(read(r.text).literals.replace(/<iframe\b|<meta http-equiv="refresh"/giu, '')),
+    )
     .map((r) => relative(r.path));
 
 // A renderer's test must be a real one: a file that has at least one `it` or

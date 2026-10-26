@@ -346,3 +346,133 @@ describe('a grant and the session it belongs to', () => {
     expect(found).toEqual([]);
   });
 });
+
+describe('the front-channel clients of a session', () => {
+  it('returns only clients with a front-channel URI, at most the limit asked for, in a stable order', async () => {
+    const tenantId = newId();
+    const sessionId = newId();
+    const { clientDbId, subjectId } = await withTenant(app.db, tenantId, (tx) =>
+      seedTenantClientSubject(tx, tenantId),
+    );
+    await withTenant(app.db, tenantId, async (tx) => {
+      await sessionRepository(tx).create({
+        id: sessionId,
+        tenantId,
+        subjectId,
+        expiresAt: new Date(Date.now() + 3_600_000),
+        authenticators: [],
+        secretHash: SessionEntry.issue(sessionId).secretHash(),
+      });
+      // The seeded client registers no front-channel URI: it must not count
+      // against the limit.
+      await clientOidcConfigRepository(tx).create({
+        clientId: clientDbId,
+        tenantId,
+        redirectUris: ['https://seed.example/callback'],
+        grantTypes: ['authorization_code'],
+        tokenEndpointAuthMethod: 'client_secret_basic',
+        audiences: [],
+        accessTokenTtlSeconds: 300,
+        refreshTokenTtlSeconds: 1_209_600,
+      });
+      await tokenGrantRepository(tx).create({
+        id: newId(),
+        tenantId,
+        clientId: clientDbId,
+        subjectId,
+        scope: 'openid',
+        audience: [],
+        sessionId,
+      });
+      for (const name of ['c', 'a', 'b']) {
+        const id = newId();
+        await tx.insert(clients).values({
+          id,
+          tenantId,
+          clientId: `fc-${name}`,
+          name,
+          type: 'confidential',
+          secretHash: 'hashed:secret',
+        });
+        await provisionClientDefaults(tx, id);
+        await clientOidcConfigRepository(tx).create({
+          clientId: id,
+          tenantId,
+          redirectUris: [`https://${name}.example/callback`],
+          grantTypes: ['authorization_code'],
+          tokenEndpointAuthMethod: 'client_secret_basic',
+          audiences: [],
+          accessTokenTtlSeconds: 300,
+          refreshTokenTtlSeconds: 1_209_600,
+          frontchannelLogoutUri: `https://${name}.example/logout`,
+        });
+        await tokenGrantRepository(tx).create({
+          id: newId(),
+          tenantId,
+          clientId: id,
+          subjectId,
+          scope: 'openid',
+          audience: [],
+          sessionId,
+        });
+      }
+    });
+
+    const found = await withTenant(app.db, tenantId, (tx) =>
+      tokenGrantRepository(tx).frontChannelClientsForSession(sessionId, 2),
+    );
+    expect(found.map((target) => target.frontchannelLogoutUri)).toEqual([
+      'https://a.example/logout',
+      'https://b.example/logout',
+    ]);
+  });
+
+  it('cannot find a foreign tenant’s front-channel client behind a session', async () => {
+    const theirsTenantId = newId();
+    const mineTenantId = newId();
+    const sessionId = newId();
+    await withTenant(app.db, mineTenantId, (tx) => seedTenantClientSubject(tx, mineTenantId));
+    const { clientDbId, subjectId } = await withTenant(app.db, theirsTenantId, (tx) =>
+      seedTenantClientSubject(tx, theirsTenantId),
+    );
+    await withTenant(app.db, theirsTenantId, async (tx) => {
+      await sessionRepository(tx).create({
+        id: sessionId,
+        tenantId: theirsTenantId,
+        subjectId,
+        expiresAt: new Date(Date.now() + 3_600_000),
+        authenticators: [],
+        secretHash: SessionEntry.issue(sessionId).secretHash(),
+      });
+      await clientOidcConfigRepository(tx).create({
+        clientId: clientDbId,
+        tenantId: theirsTenantId,
+        redirectUris: ['https://rp.example/callback'],
+        grantTypes: ['authorization_code'],
+        tokenEndpointAuthMethod: 'client_secret_basic',
+        audiences: [],
+        accessTokenTtlSeconds: 300,
+        refreshTokenTtlSeconds: 1_209_600,
+        frontchannelLogoutUri: 'https://rp.example/logout',
+      });
+      await tokenGrantRepository(tx).create({
+        id: newId(),
+        tenantId: theirsTenantId,
+        clientId: clientDbId,
+        subjectId,
+        scope: 'openid',
+        audience: [],
+        sessionId,
+      });
+    });
+
+    const own = await withTenant(app.db, theirsTenantId, (tx) =>
+      tokenGrantRepository(tx).frontChannelClientsForSession(sessionId, 5),
+    );
+    expect(own).toHaveLength(1);
+    const foreign = await withTenant(app.db, mineTenantId, (tx) =>
+      tokenGrantRepository(tx).frontChannelClientsForSession(sessionId, 5),
+    );
+    expect(foreign).toEqual([]);
+  });
+});

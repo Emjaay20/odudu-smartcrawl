@@ -10,6 +10,7 @@ import {
 } from '#/usecase/logout';
 import {
   renderLoggedOutPage,
+  renderLoggedOutRedirectPage,
   renderLogoutConfirmationPage,
   renderLogoutRedirectRefusedPage,
   renderLogoutUnauthenticatedPage,
@@ -104,6 +105,13 @@ async function respondToOutcome(
   }
   const target = new URL(outcome.redirectTo);
   if (outcome.state !== null) target.searchParams.set('state', outcome.state);
+  if (outcome.frontChannelLogoutUrls.length > 0) {
+    return sendHtml(
+      reply,
+      200,
+      renderLoggedOutRedirectPage(outcome.frontChannelLogoutUrls, target.toString(), locale),
+    );
+  }
   reply.header('cache-control', 'no-store');
   return reply.code(302).header('location', target.toString()).send();
 }

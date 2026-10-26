@@ -1,6 +1,6 @@
 import { type TenantScopedDatabase } from '@odudu/db';
 import { clients } from '@odudu/domain-tenant';
-import { and, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { and, asc, eq, inArray, isNotNull, isNull, sql } from 'drizzle-orm';
 import { clientOidcConfig } from '#/schema/client-oidc-config';
 import { tokenGrants, type TokenGrantRecord } from '#/schema/token-grants';
 
@@ -69,7 +69,43 @@ export interface NewTokenGrant {
   requestedUserinfoClaims?: readonly string[] | null;
 }
 
+// What a front-channel logout page needs of a client; the rest of
+// `ClientLogoutTarget` is for back-channel delivery.
+export interface FrontChannelTarget {
+  frontchannelLogoutUri: string;
+  frontchannelLogoutSessionRequired: boolean;
+}
+
 export function tokenGrantRepository(tx: TenantScopedDatabase) {
+  // One read behind both ways of asking for a session's clients, so the
+  // join and the `enabled` filter cannot differ between them.
+  async function sessionClients(
+    sessionId: string,
+    only?: { frontChannelOnly: true; limit: number },
+  ): Promise<ClientLogoutTarget[]> {
+    const query = tx
+      .selectDistinct({
+        clientId: clientOidcConfig.clientId,
+        oauthClientId: clients.clientId,
+        frontchannelLogoutUri: clientOidcConfig.frontchannelLogoutUri,
+        frontchannelLogoutSessionRequired: clientOidcConfig.frontchannelLogoutSessionRequired,
+        backchannelLogoutUri: clientOidcConfig.backchannelLogoutUri,
+        backchannelLogoutSessionRequired: clientOidcConfig.backchannelLogoutSessionRequired,
+      })
+      .from(tokenGrants)
+      .innerJoin(clientOidcConfig, eq(clientOidcConfig.clientId, tokenGrants.clientId))
+      .innerJoin(clients, eq(clients.id, tokenGrants.clientId))
+      .where(
+        and(
+          eq(tokenGrants.sessionId, sessionId),
+          eq(clients.enabled, true),
+          only === undefined ? undefined : isNotNull(clientOidcConfig.frontchannelLogoutUri),
+        ),
+      )
+      .$dynamic();
+    return only === undefined ? query : query.orderBy(asc(clients.clientId)).limit(only.limit);
+  }
+
   return {
     async create(input: NewTokenGrant): Promise<TokenGrantRecord> {
       const rows = await tx
@@ -184,20 +220,28 @@ export function tokenGrantRepository(tx: TenantScopedDatabase) {
     // so the join needs no third table. Filtered to `enabled`, the same way
     // `webOriginAllowed` (client-oidc-config.ts) is.
     async clientsForSession(sessionId: string): Promise<ClientLogoutTarget[]> {
-      const rows = await tx
-        .selectDistinct({
-          clientId: clientOidcConfig.clientId,
-          oauthClientId: clients.clientId,
-          frontchannelLogoutUri: clientOidcConfig.frontchannelLogoutUri,
-          frontchannelLogoutSessionRequired: clientOidcConfig.frontchannelLogoutSessionRequired,
-          backchannelLogoutUri: clientOidcConfig.backchannelLogoutUri,
-          backchannelLogoutSessionRequired: clientOidcConfig.backchannelLogoutSessionRequired,
-        })
-        .from(tokenGrants)
-        .innerJoin(clientOidcConfig, eq(clientOidcConfig.clientId, tokenGrants.clientId))
-        .innerJoin(clients, eq(clients.id, tokenGrants.clientId))
-        .where(and(eq(tokenGrants.sessionId, sessionId), eq(clients.enabled, true)));
-      return rows;
+      return sessionClients(sessionId);
+    },
+
+    // The clients of `clientsForSession` that registered a front-channel
+    // logout URI, in a stable order and at most `limit` of them: the page
+    // that frames them is served from one request, so how many it carries
+    // is a bound rather than whatever a tenant's session accumulated.
+    async frontChannelClientsForSession(
+      sessionId: string,
+      limit: number,
+    ): Promise<FrontChannelTarget[]> {
+      const rows = await sessionClients(sessionId, { frontChannelOnly: true, limit });
+      return rows.flatMap((row) =>
+        row.frontchannelLogoutUri === null
+          ? []
+          : [
+              {
+                frontchannelLogoutUri: row.frontchannelLogoutUri,
+                frontchannelLogoutSessionRequired: row.frontchannelLogoutSessionRequired,
+              },
+            ],
+      );
     },
 
     // The batched form of `clientsForSession`, one round trip for a whole

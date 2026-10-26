@@ -2,6 +2,7 @@ import { DEFAULT_PAGE_LOCALE } from '@odudu/kernel';
 import { describe, expect, it, vi } from 'vitest';
 import {
   renderLoggedOutPage,
+  renderLoggedOutRedirectPage,
   renderLogoutConfirmationPage,
   renderLogoutRedirectRefusedPage,
   renderLogoutUnauthenticatedPage,
@@ -151,5 +152,53 @@ describe('the text of every logout page', () => {
     expect(p.confirm.body).toContain(en['logout.confirm.body']);
     expect(p.noSession.title).toBe('Already signed out');
     expect(pages(ARABIC).done.html).toContain('<html lang="ar" dir="rtl">');
+  });
+});
+
+describe('renderLoggedOutRedirectPage', () => {
+  const target = 'https://app.example/after?state=a&b=2';
+  const frames = ['https://rp-one.example/logout?iss=a', 'https://rp-two.example/logout?iss=a'];
+
+  it('frames each URL and licenses exactly those origins', () => {
+    const page = renderLoggedOutRedirectPage(frames, target, DEFAULT_PAGE_LOCALE);
+    expect(page.body).toContain('<iframe src="https://rp-one.example/logout?iss=a"></iframe>');
+    expect(page.body).toContain('<iframe src="https://rp-two.example/logout?iss=a"></iframe>');
+    expect(page.frames).toEqual(['https://rp-one.example', 'https://rp-two.example']);
+    expectFragment(page);
+  });
+
+  it('carries a link to the target, escaped, for the script and for a reader', () => {
+    const page = renderLoggedOutRedirectPage(frames, target, DEFAULT_PAGE_LOCALE);
+    expect(page.body).toContain(
+      '<a id="continue" href="https://app.example/after?state=a&amp;b=2">',
+    );
+  });
+
+  it('falls back to a meta refresh that works without script', () => {
+    const page = renderLoggedOutRedirectPage(frames, target, DEFAULT_PAGE_LOCALE);
+    expect(page.body).toContain(
+      '<meta http-equiv="refresh" content="5;url=https://app.example/after?state=a&amp;b=2">',
+    );
+  });
+
+  it('declares the nonce its own script carries, and no request of its own', () => {
+    const page = renderLoggedOutRedirectPage(frames, target, DEFAULT_PAGE_LOCALE);
+    const nonce = page.script?.nonce;
+    expect(nonce).toBeDefined();
+    expect(page.body).toContain(`<script nonce="${nonce ?? ''}">`);
+    expect(page.script?.fetchesSameOrigin).toBe(false);
+  });
+
+  it('never interpolates the target into the script', () => {
+    const hostile = 'https://app.example/</script><script>alert(1)</script>';
+    const page = renderLoggedOutRedirectPage(frames, hostile, DEFAULT_PAGE_LOCALE);
+    const script = /<script nonce="[^"]*">([\s\S]*?)<\/script>/.exec(page.body)?.[1] ?? '';
+    expect(script).not.toContain('app.example');
+    expect(page.body).not.toContain('<script>alert(1)');
+  });
+
+  it('counts a frame once however often it fires load', () => {
+    const page = renderLoggedOutRedirectPage(frames, target, DEFAULT_PAGE_LOCALE);
+    expect(page.body).toContain('frame.dataset.seen');
   });
 });
