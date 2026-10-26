@@ -6,6 +6,10 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # pnpm refuses a version younger than minimumReleaseAge (1440 minutes),
+    # so a pull request for one would fail to install.
+    cooldown:
+      default-days: 2
     open-pull-requests-limit: 5
     # fastify is a dependency of several workspace packages; one update per
     # package cannot keep the shared lockfile consistent, so they move together.
@@ -24,6 +28,10 @@ updates:
     directory: /examples/web-app
     schedule:
       interval: weekly
+    # pnpm refuses a version younger than minimumReleaseAge (1440 minutes),
+    # so a pull request for one would fail to install.
+    cooldown:
+      default-days: 2
     groups:
       example-minor-patch:
         patterns: ['*']
@@ -38,6 +46,10 @@ updates:
     directory: /examples/single-page-app
     schedule:
       interval: weekly
+    # pnpm refuses a version younger than minimumReleaseAge (1440 minutes),
+    # so a pull request for one would fail to install.
+    cooldown:
+      default-days: 2
     groups:
       example-minor-patch:
         patterns: ['*']
@@ -52,6 +64,10 @@ updates:
     directory: /examples/api
     schedule:
       interval: weekly
+    # pnpm refuses a version younger than minimumReleaseAge (1440 minutes),
+    # so a pull request for one would fail to install.
+    cooldown:
+      default-days: 2
     groups:
       example-minor-patch:
         patterns: ['*']
@@ -66,6 +82,10 @@ updates:
     directory: /examples/machine-to-machine
     schedule:
       interval: weekly
+    # pnpm refuses a version younger than minimumReleaseAge (1440 minutes),
+    # so a pull request for one would fail to install.
+    cooldown:
+      default-days: 2
     groups:
       example-minor-patch:
         patterns: ['*']
