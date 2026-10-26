@@ -81,6 +81,7 @@ describe('where the documentation lives', () => {
       /^assets\//u,
       /^brand\//u,
       /^console\//u,
+      /^server-pages\//u,
       /^licenses\//u,
       /^openapi\//u,
       /^docs\//u,

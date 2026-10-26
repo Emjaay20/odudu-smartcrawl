@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { JOURNEYS, SECTIONS } from '@site/nav';
 import { Browse } from '@site/src/features/landing/view/Browse/Browse';
 import { markupOf } from '@site/tests/support/markup';
-import { PAGES_BASE, PAGES_DOCS_BASE } from '@site/site.config';
+import { PAGES_DOCS_BASE } from '@site/site.config';
 
 describe('Browse', () => {
   it('links every section and every journey', () => {
@@ -19,11 +19,8 @@ describe('Browse', () => {
     expect($('a[data-docs-home]').attr('href')).toBe(PAGES_DOCS_BASE);
   });
 
-  it('tells assistants about llms.txt and says the MCP server is planned and not built', () => {
+  it('leaves what is built for AI agents to its own section', () => {
     const $ = markupOf(<Browse />);
-    const agents = $('[data-section="agents"]');
-    expect(agents.find(`a[href="${PAGES_BASE}llms.txt"]`)).toHaveLength(1);
-    expect(agents.text()).toMatch(/planned/u);
-    expect(agents.text()).toMatch(/not built yet/u);
+    expect($('[data-section="agents"]')).toHaveLength(0);
   });
 });

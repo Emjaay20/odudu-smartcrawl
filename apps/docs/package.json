@@ -16,6 +16,7 @@
     "test": "vitest run --config ../../vitest.config.ts --project unit --reporter=default --reporter=json --outputFile=trace-report.json",
     "test:browser": "vitest run --config ../../vitest.config.ts --project browser",
     "screenshots": "node --no-warnings scripts/console-shots/run.ts",
+    "page-shots": "node --no-warnings scripts/page-shots/run.ts",
     "gif": "node --no-warnings scripts/console-shots/gif.ts"
   },
   "browserslist": {

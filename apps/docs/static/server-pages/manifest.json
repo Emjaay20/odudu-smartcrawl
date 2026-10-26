@@ -1,0 +1,22 @@
+{
+  "sign-in": {
+    "width": 460,
+    "height": 508
+  },
+  "create-account": {
+    "width": 460,
+    "height": 724
+  },
+  "reset-password": {
+    "width": 460,
+    "height": 357
+  },
+  "second-factor": {
+    "width": 460,
+    "height": 485
+  },
+  "sign-in-branded": {
+    "width": 460,
+    "height": 508
+  }
+}
