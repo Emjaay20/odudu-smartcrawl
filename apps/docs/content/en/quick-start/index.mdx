@@ -32,6 +32,12 @@ One command downloads the file that describes the stack and starts it. The first
 curl -fsSLO https://github.com/wizzywit/odudu/releases/download/v0.1.0-rc.3/compose.yaml && docker compose up -d
 ```
 
+In Windows PowerShell, `curl` is another command and `&&` is not available, so use `curl.exe` and a semicolon:
+
+```text
+curl.exe -fsSLO https://github.com/wizzywit/odudu/releases/download/v0.1.0-rc.3/compose.yaml; docker compose up -d
+```
+
 This is a release candidate; once 0.1.0 is out, the command uses `latest`.
 
 The file starts three things: Postgres, a one-time setup step that creates the database roles and the first administrator, and the server.
