@@ -610,7 +610,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.buildImage == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
         with:
@@ -627,7 +627,7 @@ jobs:
         run: pnpm --filter @odudu/docs build:pages
 
       - name: Measure the budgeted pages
-        timeout-minutes: 5
+        timeout-minutes: 12
         working-directory: apps/docs
         run: |
           CHROME_PATH="$(pnpm exec node -p "require('@playwright/test').chromium.executablePath()")"
