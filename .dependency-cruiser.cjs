@@ -193,7 +193,7 @@ module.exports = {
       severity: 'error',
       comment:
         'A docs service is pure: it imports other services, its own or shared/service, the ' +
-        "site's nav.ts and the console picture manifest, and nothing else. A feature index.ts " +
+        "site's nav.ts and the picture manifests, and nothing else. A feature index.ts " +
         'is refused too, since it reaches views and usecases.',
       from: {
         path: '(^|/)apps/docs/src/(?:service|.*/service)(?:/|\\.tsx?$)',
@@ -201,7 +201,7 @@ module.exports = {
       },
       to: {
         pathNot:
-          '(^|/)apps/docs/src/(?:service|.*/service)(?:/|\\.tsx?$)|(^|/)apps/docs/nav\\.ts$|(^|/)apps/docs/static/console/manifest\\.json$',
+          '(^|/)apps/docs/src/(?:service|.*/service)(?:/|\\.tsx?$)|(^|/)apps/docs/nav\\.ts$|(^|/)apps/docs/static/(?:console|server-pages)/manifest\\.json$',
       },
     },
     {

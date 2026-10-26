@@ -1,0 +1,18 @@
+import { describe, expect, it } from 'vitest';
+import { pageShotAddress, pageShotSize } from '@site/src/features/landing/service/pageShot';
+
+describe('the server page pictures', () => {
+  it('names the two captures of a page under the server-pages folder', () => {
+    expect(pageShotAddress('sign-in', 'light')).toBe('/server-pages/sign-in-light.webp');
+    expect(pageShotAddress('sign-in', 'dark')).toBe('/server-pages/sign-in-dark.webp');
+  });
+
+  it('reads a size from the manifest the capture wrote', () => {
+    expect(pageShotSize('sign-in').width).toBe(460);
+    expect(pageShotSize('sign-in-branded')).toEqual(pageShotSize('sign-in'));
+  });
+
+  it('refuses a page the manifest does not know', () => {
+    expect(() => pageShotSize('no-such-page')).toThrow('no server page capture named no-such-page');
+  });
+});

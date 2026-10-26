@@ -1,0 +1,24 @@
+.cards {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.pane {
+  composes: pane from '@site/src/features/landing/view/Section/Section.module.css';
+}
+
+.title {
+  composes: cardTitle from '@site/src/features/landing/view/Section/Section.module.css';
+}
+
+.body {
+  composes: cardBody from '@site/src/features/landing/view/Section/Section.module.css';
+}
+
+@media (min-width: 800px) {
+  .cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

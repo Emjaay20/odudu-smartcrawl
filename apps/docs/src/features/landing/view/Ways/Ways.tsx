@@ -1,7 +1,12 @@
 import { DocsLink } from '@site/src/shared/view/DocsLink/DocsLink';
 import type { ReactElement } from 'react';
 import { REPOSITORY_URL } from '@site/nav';
-import { EXAMPLES, EXAMPLES_URL_PATH, READERS } from '@site/src/features/landing/service/content';
+import {
+  EXAMPLES,
+  EXAMPLES_URL_PATH,
+  READERS,
+  WORDPRESS,
+} from '@site/src/features/landing/service/content';
 import { CardList } from '@site/src/features/landing/view/CardList/CardList';
 import { Section } from '@site/src/features/landing/view/Section/Section';
 import styles from '@site/src/features/landing/view/Ways/Ways.module.css';
@@ -29,6 +34,11 @@ export function Ways(): ReactElement {
             examples folder<span className="visually-hidden"> (opens in a new tab)</span>
           </a>
           .
+        </p>
+        <p className={styles.guideLine} data-example="wordpress">
+          {WORDPRESS.lead}
+          <DocsLink to={WORDPRESS.to}>{WORDPRESS.link}</DocsLink>
+          {WORDPRESS.end}
         </p>
       </div>
     </Section>

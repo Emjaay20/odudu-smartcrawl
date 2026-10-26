@@ -3734,3 +3734,32 @@ red against 200). A 4x slowdown applied to a slower host is a harsher profile, s
 runner luck and not on a regression. LCP (at most 2,500 ms, measured 1.6 to 2.1 s on both) and the other bounds do not move.
 350 ms sits above the slowest measured page (300 ms, the subjects reference) and well under 600 ms, where Lighthouse scores
 TBT as poor; a real regression in script cost still crosses it.
+
+## Landing additions
+
+A strip of the server pages, a "Built for AI agents" band, a "Branding and theming" item and a WordPress line.
+
+- **The four pages are the real renderers' markup.** `pnpm page-shots` (`apps/docs/scripts/page-shots/run.ts`) calls
+  `renderLoginForm`, `renderRegistrationForm` and `renderResetRequestForm`, serves the result with the built
+  `packages/instrument/dist` stylesheet and fonts, and photographs the card in Chromium, light and dark, into
+  `static/server-pages/` as WebP (about 8 KB each) with a `manifest.json` of sizes. The second-factor page is
+  `renderLoginForm` with the `otp` step. Nothing is drawn by hand.
+- **The branded picture is the same markup with colour tokens swapped.** `scripts/page-shots/brand.ts` injects one
+  `<style>:root{...}</style>` that replaces ten colour tokens of `tokens.css`; a test holds each one to a token the
+  stylesheet declares. The wordmark and layout are untouched, so only colours differ, which is all the picture claims.
+- **The swap needs no script.** Two radio buttons and `:has()` choose which of four lazy images shows (look by theme);
+  the fieldset legend says it is an illustration of a planned feature. First-load JavaScript did not change.
+- **Planned claims are tied to the roadmap by `apps/docs/tests/landing-planned.test.ts`.** Each item in `content.ts`
+  carries `quotes`, phrases it repeats word for word; the test fails if the roadmap's Next or Later lines stop saying
+  one, or the built landing page does. Chips read "Planned" and each item links `roadmap/#next`; no phase, date or
+  "soon" appears in the sections, which a test also checks.
+- **One roadmap sentence was added** to the theming bullet ("A tenant sets its own logo, colours, wording and default
+  language, and its mail follows the same theme"), because the page named none of the items the theming item lists.
+  Section 11's P4b row already has each of them; `tests/docs/roadmap-section-11.test.ts` maps the sentence.
+- **The MCP claim is the roadmap's, not "a scoped short-lived token".** The roadmap says the admin API as tools for an
+  agent, held to the same capabilities as everyone else, and a guide to protecting an MCP server with Odudu; the
+  landing repeats that. A second planned item, agent identity, quotes the P5 line.
+- **The old assistants pane left the documentation band** (it named a phase). The landing has ten bands now, and the
+  cap in `landing.test.ts` moved from eight to ten.
+- Lighthouse (local, mobile throttling, landing, three runs): performance 97, 97, 98; LCP 1,960, 1,951 and 1,929 ms;
+  CLS 0; TBT 23 to 26 ms. All budgets pass; the other four pages too.

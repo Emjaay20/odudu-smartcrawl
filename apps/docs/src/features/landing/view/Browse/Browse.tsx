@@ -1,12 +1,10 @@
 import { DocsLink } from '@site/src/shared/view/DocsLink/DocsLink';
 import type { ReactElement } from 'react';
 import { JOURNEYS, SECTIONS } from '@site/nav';
-import { useAssetUrls } from '@site/src/features/landing/usecase/useAssetUrls';
 import { Section } from '@site/src/features/landing/view/Section/Section';
 import styles from '@site/src/features/landing/view/Browse/Browse.module.css';
 
 export function Browse(): ReactElement {
-  const { llms } = useAssetUrls();
   return (
     <Section
       id="home-browse"
@@ -48,16 +46,6 @@ export function Browse(): ReactElement {
                 </li>
               ))}
             </ol>
-          </div>
-          <div data-reveal="" className={styles.pane} data-section="agents">
-            <h3 className={styles.cardTitle}>For AI assistants</h3>
-            <p className={styles.cardBody}>
-              Every page of this site is also plain Markdown, and <a href={llms}>llms.txt</a> lists
-              them all, so an assistant can read the documentation without scraping it. An MCP
-              server, which would let an agent administer Odudu through the same checks as everyone
-              else, is planned (P5a) and is not built yet.{' '}
-              <DocsLink to="/roadmap/#next">See where it sits on the roadmap.</DocsLink>
-            </p>
           </div>
         </div>
       </div>

@@ -3,6 +3,7 @@ import type { ReactElement } from 'react';
 import { REPOSITORY_URL } from '@site/nav';
 import { LICENSING_URL_PATH } from '@site/src/features/landing/service/content';
 import { useAssetUrls } from '@site/src/features/landing/usecase/useAssetUrls';
+import { Chip } from '@site/src/features/landing/view/Chip/Chip';
 import { Section } from '@site/src/features/landing/view/Section/Section';
 import styles from '@site/src/features/landing/view/Where/Where.module.css';
 
@@ -22,7 +23,7 @@ export function Where(): ReactElement {
         </div>
         <div data-reveal="" className={styles.pane} data-section="hosted">
           <h3 className={styles.cardTitle}>
-            Hosted Odudu <span className={styles.badge}>In the works</span>
+            Hosted Odudu <Chip>In the works</Chip>
           </h3>
           <p className={styles.cardBody}>
             A hosted Odudu, run for you, is in the works. It has no date. Nothing in the open source

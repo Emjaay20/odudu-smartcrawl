@@ -70,8 +70,7 @@ describe('the landing page as built', () => {
     expect(text).toMatch(/release candidate/iu);
     const ai = landing.find('[data-section="agents"]');
     expect(ai).toHaveLength(1);
-    expect(ai.text()).toMatch(/planned/iu);
-    expect(ai.text()).toMatch(/not built yet/iu);
+    expect(ai.find('[data-planned]').length).toBeGreaterThanOrEqual(2);
     expect(hrefs(ai)).toContain(`${PAGES_BASE}llms.txt`);
     expect(exists(`${PAGES_BASE}llms.txt`)).toBe(true);
   });
@@ -124,7 +123,7 @@ describe('the landing page as built', () => {
   it('shows the four examples, each beside the guide that walks through it', () => {
     const examples = landing.find('[data-section="examples"] li');
     expect(examples).toHaveLength(4);
-    const guides = hrefs(landing.find('[data-section="examples"]')).filter((href) =>
+    const guides = hrefs(landing.find('[data-section="examples"] li')).filter((href) =>
       href.startsWith(`${PAGES_DOCS_BASE}guides/`),
     );
     expect(guides.sort()).toEqual(
@@ -259,6 +258,35 @@ describe('the sign-in scene', () => {
   });
 });
 
+describe('the pages your users see', () => {
+  const strip = landing.find('[data-section="pages"]');
+
+  it('shows the four pages as real captures, in both themes, each page named', () => {
+    const shots = strip.find('[data-strip] figure');
+    expect(shots).toHaveLength(4);
+    const names = shots
+      .find('figcaption')
+      .map((_, element) => $(element).text())
+      .get();
+    expect(names).toEqual(['Sign in', 'Create an account', 'Reset a password', 'Second factor']);
+    for (const element of shots.find('img').get()) {
+      const src = $(element).attr('src') ?? '';
+      expect(src).toMatch(/\/server-pages\/[a-z-]+-(light|dark)\.webp$/u);
+      expect(exists(src), src).toBe(true);
+    }
+  });
+});
+
+describe('the WordPress line', () => {
+  it('is one plain line under the four apps, linking the guide the build wrote', () => {
+    const line = landing.find('[data-example="wordpress"]');
+    expect(line.text()).toBe('Also a hand-tested guide: sign in to WordPress.');
+    expect(hrefs(line)).toEqual([`${PAGES_DOCS_BASE}guides/wordpress/`]);
+    expect(exists(`${PAGES_DOCS_BASE}guides/wordpress/`)).toBe(true);
+    expect(landing.find('[data-section="examples"] li')).toHaveLength(4);
+  });
+});
+
 describe('the hero terminal', () => {
   it('replays only what the quick start shows', () => {
     const quick = readFileSync(path.join(DOCS_ROOT, 'content/en/quick-start/index.mdx'), 'utf8');
@@ -309,9 +337,12 @@ describe('the landing page keeps its promises small', () => {
     expect(quick.includes(RELEASE_CAVEAT), advice).toBe(!stable);
   });
 
-  it('has at most eight bands, with one console picture and no second one', () => {
-    expect(landing.find('> header, > section').length).toBeLessThanOrEqual(8);
-    expect(landing.find('img')).toHaveLength(2);
+  it('has at most ten bands, and no picture below the first screen is fetched eagerly', () => {
+    expect(landing.find('> header, > section').length).toBeLessThanOrEqual(10);
+    const images = landing.find('img');
+    const eager = images.filter((_, element) => $(element).attr('loading') !== 'lazy');
+    expect(eager).toHaveLength(1);
+    expect(eager.attr('fetchpriority')).toBe('high');
   });
 
   it('keeps the mark printable: the mask gives way to the file itself', () => {

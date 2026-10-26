@@ -2,11 +2,13 @@ import Head from '@docusaurus/Head';
 import type { ReactElement } from 'react';
 import { CAPABILITIES } from '@site/src/features/landing/service/content';
 import { useLandingPage } from '@site/src/features/landing/usecase/useLandingPage';
+import { Agents } from '@site/src/features/landing/view/Agents/Agents';
 import { Browse } from '@site/src/features/landing/view/Browse/Browse';
 import { CardList } from '@site/src/features/landing/view/CardList/CardList';
 import { Compare } from '@site/src/features/landing/view/Compare/Compare';
 import { Hero } from '@site/src/features/landing/view/Hero/Hero';
 import { FONT_PRELOADS } from '@site/src/features/landing/view/LandingPage/preloads';
+import { Pages } from '@site/src/features/landing/view/Pages/Pages';
 import { Section } from '@site/src/features/landing/view/Section/Section';
 import { SignInFlow } from '@site/src/features/landing/view/SignInFlow/SignInFlow';
 import { Steps } from '@site/src/features/landing/view/Steps/Steps';
@@ -54,8 +56,10 @@ export function LandingPage(): ReactElement {
         >
           <CardList cards={CAPABILITIES} columns={4} />
         </Section>
+        <Pages />
         <Steps />
         <Ways />
+        <Agents />
         <Compare />
         <Where />
         <Browse />

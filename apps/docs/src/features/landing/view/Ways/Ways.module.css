@@ -18,3 +18,8 @@
   padding: 0;
   list-style: none;
 }
+
+.guideLine {
+  composes: cardBody from '@site/src/features/landing/view/Section/Section.module.css';
+  margin-block-start: var(--space-2);
+}

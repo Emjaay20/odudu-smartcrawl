@@ -144,6 +144,105 @@ export const EXAMPLES: Card[] = [
   },
 ];
 
+export const WORDPRESS = {
+  lead: 'Also a hand-tested guide: ',
+  link: 'sign in to WordPress',
+  end: '.',
+  to: '/guides/wordpress/',
+};
+
+export interface PageShotCard {
+  name: string;
+  caption: string;
+  alt: string;
+}
+
+export const PAGE_SHOTS: PageShotCard[] = [
+  {
+    name: 'sign-in',
+    caption: 'Sign in',
+    alt: 'The sign-in page: a username and a password, a Remember me box, and links to reset a password or create an account.',
+  },
+  {
+    name: 'create-account',
+    caption: 'Create an account',
+    alt: 'The create-account page: a username, an email address and a password, with the rules the password has to meet.',
+  },
+  {
+    name: 'reset-password',
+    caption: 'Reset a password',
+    alt: 'The reset page: an email address, a Send reset link button and a link back to sign in.',
+  },
+  {
+    name: 'second-factor',
+    caption: 'Second factor',
+    alt: 'The second-factor page: a field for the code from an authenticator app, and one for a recovery code.',
+  },
+];
+
+export const PLANNED_LABEL = 'Planned';
+export const SHIPPED_LABEL = 'Works today';
+export const ROADMAP_NEXT = '/roadmap/#next';
+
+// A claim about work that has not shipped. Each quote is a phrase of the
+// roadmap's Next or Later lines that the claim repeats word for word, and a
+// test fails when either side stops saying it.
+export interface Planned {
+  id: string;
+  title: string;
+  claim: string;
+  quotes: string[];
+}
+
+export const AGENT_ITEMS: Planned[] = [
+  {
+    id: 'mcp-server',
+    title: 'An MCP server',
+    claim:
+      'The admin API as tools for an AI agent, read-only by default and held to the same capabilities as everyone else, and a guide to protecting an MCP server with Odudu.',
+    quotes: [
+      'The admin API as tools for an AI agent',
+      'read-only by default',
+      'held to the same capabilities as everyone else',
+      'a guide to protecting an MCP server with Odudu',
+    ],
+  },
+  {
+    id: 'agent-identity',
+    title: 'Agent identity',
+    claim: 'Budgets and approval for AI agents acting for a person.',
+    quotes: ['Budgets', 'approval for AI agents acting for a person'],
+  },
+];
+
+export const AGENTS_SHIPPED = {
+  title: 'Documentation an agent can read',
+  before: 'Every page of this site is also plain Markdown, and ',
+  link: 'llms.txt',
+  after: ' lists them all.',
+};
+
+export interface BrandingItem extends Planned {
+  today: string;
+  illustration: string;
+}
+
+export const BRANDING: BrandingItem = {
+  id: 'branding',
+  title: 'Branding and theming',
+  claim:
+    "Every page the server shows will render in a tenant's theme and a client's branding. A tenant sets its own logo, colours, wording and default language, and its mail follows the same theme.",
+  quotes: [
+    "render in a tenant's theme and a client's branding",
+    'sets its own logo, colours, wording and default language',
+    'its mail follows the same theme',
+  ],
+  today:
+    'Today every tenant shares one design, and page text comes from catalogues, so pages can be localized.',
+  illustration:
+    'An illustration of a planned feature: the same sign-in page with only its colours changed.',
+};
+
 export const EXAMPLES_URL_PATH = '/tree/main/examples';
 export const LICENSING_URL_PATH = '/blob/main/LICENSING.md';
 
