@@ -32,3 +32,10 @@ minimumReleaseAgeExclude:
 # `publicHoistPattern` in the resulting node_modules/.modules.yaml).
 publicHoistPattern:
   - '@node-rs/argon2*'
+
+# @lhci/cli's puppeteer-core pulls chromium-bidi, which declares zod 3. The
+# console holds the lockfile to the one zod it validates with (the contracts'
+# pin). verified: `lhci collect` and `lhci assert` run with zod 4 here; they
+# drive Chrome over CDP, and chromium-bidi is the WebDriver BiDi client.
+overrides:
+  'chromium-bidi>zod': 4.6.7

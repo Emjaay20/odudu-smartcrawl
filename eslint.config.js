@@ -6,6 +6,7 @@ export default tseslint.config(
     ignores: [
       '**/dist/**',
       '**/.docusaurus/**',
+      '**/.lighthouseci/**',
       '**/.turbo/**',
       '**/coverage/**',
       '**/playwright-report/**',

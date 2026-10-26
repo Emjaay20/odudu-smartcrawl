@@ -1,0 +1,40 @@
+{
+  "ci": {
+    "collect": {
+      "url": [
+        "http://127.0.0.1:4291/odudu/",
+        "http://127.0.0.1:4291/odudu/docs/quick-start/",
+        "http://127.0.0.1:4291/odudu/docs/guides/sign-a-user-in/",
+        "http://127.0.0.1:4291/odudu/docs/reference/generated/admin-api/subjects/",
+        "http://127.0.0.1:4291/odudu/docs/concepts/tokens/"
+      ],
+      "numberOfRuns": 3,
+      "startServerCommand": "node scripts/serve.mjs dist/pages --base /odudu/ --port 4291",
+      "startServerReadyPattern": "Serving",
+      "settings": {
+        "chromeFlags": "--no-sandbox --headless=new",
+        "formFactor": "mobile",
+        "throttlingMethod": "devtools",
+        "throttling": { "rttMs": 150, "throughputKbps": 1638.4, "cpuSlowdownMultiplier": 4 }
+      }
+    },
+    "assert": {
+      "assertions": {
+        "largest-contentful-paint": [
+          "error",
+          { "maxNumericValue": 2500, "aggregationMethod": "median" }
+        ],
+        "cumulative-layout-shift": [
+          "error",
+          { "maxNumericValue": 0.1, "aggregationMethod": "median" }
+        ],
+        "total-blocking-time": ["error", { "maxNumericValue": 350, "aggregationMethod": "median" }],
+        "categories:performance": ["error", { "minScore": 0.9, "aggregationMethod": "median" }],
+        "categories:accessibility": ["error", { "minScore": 0.95, "aggregationMethod": "median" }],
+        "categories:best-practices": ["error", { "minScore": 0.95, "aggregationMethod": "median" }],
+        "categories:seo": ["error", { "minScore": 1, "aggregationMethod": "median" }]
+      }
+    },
+    "upload": { "target": "filesystem", "outputDir": ".lighthouseci" }
+  }
+}

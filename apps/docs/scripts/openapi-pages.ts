@@ -452,14 +452,48 @@ export function coverageLine(coverage: Coverage): string {
   return `Documentation coverage: ${String(coverage.described)} of ${String(coverage.total)} fields described (${String(percent)}%).`;
 }
 
+// A subject has enough calls to make one page too heavy to read and to
+// scroll, so what hangs off one is split by what a reader is doing.
+const SUBJECT_AREAS: Readonly<Record<string, string>> = {
+  profile: 'subjects',
+  credentials: 'subject-sign-in',
+  password: 'subject-sign-in',
+  'password-reset': 'subject-sign-in',
+  verification: 'subject-sign-in',
+  'actions-email': 'subject-sign-in',
+  lockout: 'subject-sign-in',
+  'recovery-codes': 'subject-sign-in',
+  'required-actions': 'subject-sign-in',
+  roles: 'subject-access',
+  'effective-roles': 'subject-access',
+  'admin-capabilities': 'subject-access',
+  groups: 'subject-access',
+  consents: 'subject-sessions',
+  sessions: 'subject-sessions',
+  grants: 'subject-sessions',
+};
+
+function subjectArea(id: string | undefined, resource: string | undefined, path: string): string {
+  if (id === undefined || !id.startsWith('{') || resource === undefined) return 'subjects';
+  const area = SUBJECT_AREAS[resource];
+  if (area === undefined) {
+    throw new Error(
+      `${path} has no page: add ${resource} to SUBJECT_AREAS (subjects, subject-sign-in, subject-access or subject-sessions)`,
+    );
+  }
+  return area;
+}
+
 export function areaOf(path: string): string {
   const parts = path.split('/').filter((part) => part !== '');
   const [, first, second, third] = parts;
   if (first === 'tenant-imports') return 'tenants';
   if (first === 'tenants') {
     if (second === undefined || second === 'count') return 'tenants';
-    if (second.startsWith('{'))
+    if (second.startsWith('{')) {
+      if (third === 'subjects') return subjectArea(parts[4], parts[5], path);
       return third === undefined || third === 'export' ? 'tenants' : third;
+    }
   }
   return first ?? 'other';
 }
@@ -487,10 +521,26 @@ export function operationsOf(doc: OpenApiDocument): Map<string, Operation[]> {
   return areas;
 }
 
+// How a reader says an area, where the folder name is not it.
+const AREA_TITLES: Readonly<Record<string, string>> = {
+  'subject-sign-in': 'Subject sign-in',
+  'subject-access': 'Subject access',
+  'subject-sessions': 'Subject sessions',
+};
+const AREA_SUBJECTS: Readonly<Record<string, string>> = {
+  'subject-sign-in': "a subject's sign-in",
+  'subject-access': "a subject's access",
+  'subject-sessions': "a subject's sessions",
+};
+
+function titleOf(area: string): string {
+  return AREA_TITLES[area] ?? titleCase(area);
+}
+
 function areaPage(area: string, operations: readonly Operation[], doc: OpenApiDocument): string {
-  const label = titleCase(area);
+  const label = titleOf(area);
   const noun = operations.length === 1 ? 'operation' : 'operations';
-  const subject = area.replaceAll('-', ' ');
+  const subject = AREA_SUBJECTS[area] ?? area.replaceAll('-', ' ');
   const description =
     `${String(operations.length)} ${noun} of the Odudu admin API on ${subject}, ` +
     'each with its method, path, required capability, parameters, request body and responses.';
@@ -536,7 +586,7 @@ function indexPage(areas: ReadonlyMap<string, readonly Operation[]>, doc: OpenAp
     '',
     ...[...areas].map(
       ([area, operations]) =>
-        `- [${titleCase(area)}](./${area}.md): ${String(operations.length)} ${operations.length === 1 ? 'operation' : 'operations'}.`,
+        `- [${titleOf(area)}](./${area}.md): ${String(operations.length)} ${operations.length === 1 ? 'operation' : 'operations'}.`,
     ),
     '',
     '## Problem details',

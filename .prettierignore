@@ -6,6 +6,7 @@ tests/boundaries/fixtures
 playwright-report
 test-results
 .docusaurus
+.lighthouseci
 apps/docs/content/en/reference/generated
 apps/docs/static/openapi
 examples/*/package-lock.json

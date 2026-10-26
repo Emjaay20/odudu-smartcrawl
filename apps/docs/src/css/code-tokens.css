@@ -1,0 +1,92 @@
+/* Written from the two Prism themes by themeCss in plugins/code-tokens.ts. */
+:root:not([data-theme='dark']) .theme-code-block pre {
+  color: #393a34;
+}
+:root:not([data-theme='dark']) .tok-comment,
+:root:not([data-theme='dark']) .tok-prolog,
+:root:not([data-theme='dark']) .tok-doctype,
+:root:not([data-theme='dark']) .tok-cdata {
+  color: #999988;
+  font-style: italic;
+}
+:root:not([data-theme='dark']) .tok-namespace {
+  opacity: 0.7;
+}
+:root:not([data-theme='dark']) .tok-string,
+:root:not([data-theme='dark']) .tok-attr-value {
+  color: #d81067;
+}
+:root:not([data-theme='dark']) .tok-punctuation,
+:root:not([data-theme='dark']) .tok-operator {
+  color: #393a34;
+}
+:root:not([data-theme='dark']) .tok-entity,
+:root:not([data-theme='dark']) .tok-url,
+:root:not([data-theme='dark']) .tok-symbol,
+:root:not([data-theme='dark']) .tok-number,
+:root:not([data-theme='dark']) .tok-boolean,
+:root:not([data-theme='dark']) .tok-variable,
+:root:not([data-theme='dark']) .tok-constant,
+:root:not([data-theme='dark']) .tok-property,
+:root:not([data-theme='dark']) .tok-regex,
+:root:not([data-theme='dark']) .tok-inserted {
+  color: #287e7d;
+}
+:root:not([data-theme='dark']) .tok-atrule,
+:root:not([data-theme='dark']) .tok-keyword,
+:root:not([data-theme='dark']) .tok-attr-name,
+:root:not([data-theme='dark']) .tok-selector {
+  color: #0079a1;
+}
+:root:not([data-theme='dark']) .tok-function,
+:root:not([data-theme='dark']) .tok-deleted,
+:root:not([data-theme='dark']) .tok-tag {
+  color: #cc3745;
+}
+:root:not([data-theme='dark']) .tok-function-variable {
+  color: #6f42c1;
+}
+:root:not([data-theme='dark']) .tok-tag,
+:root:not([data-theme='dark']) .tok-selector,
+:root:not([data-theme='dark']) .tok-keyword {
+  color: #00009f;
+}
+[data-theme='dark'] .theme-code-block pre {
+  color: #f8f8f2;
+}
+[data-theme='dark'] .tok-prolog,
+[data-theme='dark'] .tok-constant,
+[data-theme='dark'] .tok-builtin {
+  color: #bd93f9;
+}
+[data-theme='dark'] .tok-inserted,
+[data-theme='dark'] .tok-function {
+  color: #50fa7b;
+}
+[data-theme='dark'] .tok-deleted {
+  color: #ff5555;
+}
+[data-theme='dark'] .tok-changed {
+  color: #ffb86c;
+}
+[data-theme='dark'] .tok-punctuation,
+[data-theme='dark'] .tok-symbol {
+  color: #f8f8f2;
+}
+[data-theme='dark'] .tok-string,
+[data-theme='dark'] .tok-char,
+[data-theme='dark'] .tok-tag,
+[data-theme='dark'] .tok-selector {
+  color: #ff79c6;
+}
+[data-theme='dark'] .tok-keyword,
+[data-theme='dark'] .tok-variable {
+  color: #bd93f9;
+  font-style: italic;
+}
+[data-theme='dark'] .tok-comment {
+  color: rgb(98, 114, 164);
+}
+[data-theme='dark'] .tok-attr-name {
+  color: #f1fa8c;
+}

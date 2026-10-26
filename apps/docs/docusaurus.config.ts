@@ -3,6 +3,8 @@ import type * as Preset from '@docusaurus/preset-classic';
 import { themes } from 'prism-react-renderer';
 import path from 'node:path';
 import agentCopies from './plugins/agent-copies';
+import codeHighlight from './plugins/code-highlight';
+import codeTokens from './plugins/code-tokens';
 import { contentDir } from './plugins/content-dir';
 import { requireDescriptions } from './plugins/descriptions';
 import imageStrip from './plugins/image-strip';
@@ -37,6 +39,7 @@ function withSurface(theme: PrismTheme): PrismTheme {
 const preset: Preset.Options = {
   docs: {
     path: CONTENT,
+    remarkPlugins: [codeTokens],
     routeBasePath: image ? '/' : 'docs',
     sidebarPath: './sidebars.ts',
     // A directory's index is the page its category links to, so it is not
@@ -154,6 +157,7 @@ const config: Config = {
         description: DESCRIPTION,
       },
     ],
+    codeHighlight,
     ...(image ? [imageStrip, robots] : [notFound, robots]),
   ],
   presets: [['classic', preset]],

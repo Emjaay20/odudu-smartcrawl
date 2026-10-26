@@ -1,5 +1,6 @@
 @import '../../../admin-console/src/shared/view/tokens.css';
 @import './fonts.css';
+@import './code-tokens.css';
 
 /*
  * What shows while Plex downloads. Each face is a system font scaled to Plex's
@@ -220,6 +221,15 @@ a.button:hover {
   text-decoration: underline;
 }
 
+.sidebar-heading {
+  padding: 0.25rem 0.75rem;
+  color: var(--ink-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .menu__link--active:not(.menu__link--sublist) {
   font-weight: 600;
 }
@@ -246,6 +256,7 @@ a.button:hover {
  * screen does not look as if the line simply ends.
  */
 .theme-code-block pre {
+  background-color: var(--code-surface);
   scrollbar-color: var(--border-strong) transparent;
   scrollbar-width: thin;
   background-image:

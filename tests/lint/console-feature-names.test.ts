@@ -35,7 +35,7 @@ describe("the console's feature folders", () => {
 
   it('are named the same way in the docs app, whose rules substitute them too', async () => {
     const folders = await featureFolders(DOCS_SRC);
-    expect(folders).toEqual(['docs-home', 'landing', 'not-found']);
+    expect(folders).toEqual(['code-block', 'docs-home', 'landing', 'not-found']);
     expect(misnamed(folders)).toEqual([]);
   });
 
