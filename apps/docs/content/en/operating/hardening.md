@@ -24,7 +24,7 @@ These are the checks the server makes when it starts. Each one stops it with a m
 
 These the server does not check when it starts, so only you can.
 
-- [ ] **The serving role is restricted.** `ODUDU_APP_DATABASE_URL` names a role that is neither a superuser nor able to bypass row-level security, and is not the owner's. The server only refuses to start when the variable is missing. The commands that serve every tenant at once, `odudu reap`, `odudu send-mail` and `odudu send-logouts`, check the role and refuse a bad one, but a server started on the wrong role runs. Check: `SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = 'odudu_svc';` shows two `f`. A boot check for this is on the [roadmap](../roadmap.md) with P12.
+- [ ] **The serving role is restricted.** `ODUDU_APP_DATABASE_URL` names a role that is neither a superuser nor able to bypass row-level security, and is not the owner's. The server only refuses to start when the variable is missing. The commands that serve every tenant at once, `odudu reap`, `odudu send-mail` and `odudu send-logouts`, check the role and refuse a bad one, but a server started on the wrong role runs. Check: `SELECT rolsuper, rolbypassrls FROM pg_roles WHERE rolname = 'odudu_svc';` shows two `f`. A boot check for this is planned under [operational readiness](../roadmap.md#later) on the roadmap.
 - [ ] **The proxy overwrites `X-Forwarded-*`.** Appending is not enough. See [Deploying](./deploying.md), step 5.
 - [ ] **The proxy strips the client-certificate header and verifies the certificate**, if you use `tls_client_auth`.
 - [ ] **Odudu has a host of its own**, served at the root, not under a path.

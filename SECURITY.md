@@ -45,4 +45,4 @@ Odudu is a release candidate and has not had an independent security review,
 as the [README](README.md) says.
 
 Out of scope: findings that depend on a deployment that switches off a boot
-guard or ignores the [production settings](https://wizzywit.github.io/odudu/docs/operating/configuration/).
+guard or ignores the [production settings](apps/docs/content/en/operating/configuration.md).

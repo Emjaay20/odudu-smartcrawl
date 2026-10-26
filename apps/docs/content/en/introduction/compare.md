@@ -40,13 +40,11 @@ Each row links to a page that shows the capability working, with the requests th
 
 ## Other projects
 
-These are well-known alternatives you can run yourself. This page makes no claim about them.
+These are well-known alternatives you can run yourself. Their own documentation is the place to read what they do today.
 
-| Project   | How it compares                                            |
-| --------- | ---------------------------------------------------------- |
-| Keycloak  | For features, limits and licence, see their documentation. |
-| Ory       | For features, limits and licence, see their documentation. |
-| Zitadel   | For features, limits and licence, see their documentation. |
-| Authentik | For features, limits and licence, see their documentation. |
+- [Keycloak](https://www.keycloak.org/documentation)
+- [Ory](https://www.ory.sh/docs/)
+- [Zitadel](https://zitadel.com/docs)
+- [Authentik](https://docs.goauthentik.io/)
 
 If you are coming from Keycloak, [Move from Keycloak](../guides/keycloak.md) maps its terms to Odudu's.

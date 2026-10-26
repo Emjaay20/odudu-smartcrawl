@@ -7,7 +7,7 @@ description: Move a running Odudu server to a newer version, safely and one inst
 
 You will replace the running Odudu container with one from a newer image. Migrations run when the new server starts, so the database changes the moment it boots. Plan for a short stop, take a backup first, and check the new version answers before you call it done.
 
-Odudu has no rolling upgrade yet. A rolling upgrade needs more than one instance running at once, and Odudu runs one ([Scaling](./scaling.md), and [the roadmap](../roadmap.md), P11). Expect the server to be unavailable from the moment you stop the old container until the new one answers.
+Odudu has no rolling upgrade yet. A rolling upgrade needs more than one instance running at once, and Odudu runs one ([Scaling](./scaling.md), and [many instances on the roadmap](../roadmap.md#later)). Expect the server to be unavailable from the moment you stop the old container until the new one answers.
 
 ## 1. Take a backup
 

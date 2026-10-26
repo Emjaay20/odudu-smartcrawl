@@ -13,8 +13,8 @@ which one covers it.
 | `apps/docs/content` | Apache-2.0    |
 | `examples/*`        | Apache-2.0    |
 
-The `.` row is the root `package.json`. The two Apache-2.0 rows apply when those directories are added: the example
-applications under `examples/` and the site's prose under `apps/docs/content`.
+The `.` row is the root `package.json`. The two Apache-2.0 rows are the example applications under `examples/` and the
+site's prose under `apps/docs/content`.
 A `package.json` that appears under either path without `Apache-2.0` fails
 `tests/lint/licence-fields.test.ts`.
 
@@ -33,9 +33,11 @@ has the reasoning and the alternatives rejected.
 ## Third-party material
 
 The fonts the product serves are IBM Plex Sans and IBM Plex Mono, under the SIL
-Open Font License 1.1. [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md) lists
-them with their copyright lines, and the documentation site publishes the
-licence text beside the fonts.
+Open Font License 1.1. The list of common passwords the server refuses comes
+from SecLists, under the MIT licence.
+[`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md) lists them with their
+copyright lines, and the documentation site publishes the font licence text
+beside the fonts.
 
 ## Headers
 
@@ -55,8 +57,8 @@ requires you to offer them your modified source.
 ## Commercial licence
 
 A commercial licence is offered to organisations whose policy forbids the
-AGPL. Until a sales address exists, send an enquiry to the security contact
-in [`SECURITY.md`](SECURITY.md).
+AGPL. Until a sales address exists, email the contact address in
+[`SECURITY.md`](SECURITY.md) with `[odudu licence]` in the subject.
 
 ## The name and the mark
 

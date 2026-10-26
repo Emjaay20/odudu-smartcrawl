@@ -305,9 +305,7 @@ curl -s "http://localhost:18925/api/v1/message/$ID" | jq -r .HTML | grep -o '<a 
 ```
 
 The plain-text part carries the link on a line of its own, then the same
-reason line and footer after a `--` line. The mails as a mail client draws
-them, in both palettes, at 600px and 375px, are in the
-[mail gallery](https://github.com/wizzywit/odudu/blob/main/docs/phases/p4g.md#mail-gallery).
+reason line and footer after a `--` line.
 
 The text of every mail comes from the mail package's own message catalogue (`en`
 today), in the language of the recipient's `locale` where the sender knows it
