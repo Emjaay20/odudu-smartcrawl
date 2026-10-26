@@ -1,31 +1,16 @@
 import { DocsLink } from '@site/src/shared/view/DocsLink/DocsLink';
 import type { ReactElement } from 'react';
 import { BRANDING, PLANNED_LABEL, ROADMAP_NEXT } from '@site/src/features/landing/service/content';
-import { usePageShot } from '@site/src/features/landing/usecase/usePageShot';
+import { useBrandingPictures } from '@site/src/features/landing/usecase/useBrandingPictures';
 import { Chip } from '@site/src/features/landing/view/Chip/Chip';
 import styles from '@site/src/features/landing/view/Branding/Branding.module.css';
 
-const ODUDU_ALT = "The sign-in page in Odudu's own colours.";
-const OTHER_ALT = "The same sign-in page in another brand's purple colours.";
+const LOOKS = { odudu: styles.odudu, other: styles.other };
+const SCHEMES = { light: styles.light, dark: styles.dark };
 const LEGEND = 'Illustration of a planned feature: the same sign-in page in two looks';
 
 export function Branding(): ReactElement {
-  const odudu = usePageShot('sign-in');
-  const other = usePageShot('sign-in-branded');
-  const pictures = [
-    { ...odudu, look: styles.odudu, alt: ODUDU_ALT },
-    { ...other, look: styles.other, alt: OTHER_ALT },
-  ].flatMap(({ look, alt, light, dark, size }) =>
-    [
-      { scheme: styles.light, src: light },
-      { scheme: styles.dark, src: dark },
-    ].map(({ scheme, src }) => ({
-      className: [styles.picture, look, scheme].join(' '),
-      src,
-      alt,
-      ...size,
-    })),
-  );
+  const pictures = useBrandingPictures();
   return (
     <div className={styles.branding} data-planned={BRANDING.id} data-reveal="">
       <h3 className={styles.title}>
@@ -60,7 +45,7 @@ export function Branding(): ReactElement {
           {pictures.map((picture) => (
             <img
               key={picture.src}
-              className={picture.className}
+              className={[styles.picture, LOOKS[picture.look], SCHEMES[picture.scheme]].join(' ')}
               src={picture.src}
               alt={picture.alt}
               width={picture.width}
@@ -68,7 +53,7 @@ export function Branding(): ReactElement {
               loading="lazy"
             />
           ))}
-          <figcaption className={styles.caption}>{BRANDING.illustration}</figcaption>
+          <figcaption className={styles.caption}>{BRANDING.caption}</figcaption>
         </figure>
       </div>
     </div>

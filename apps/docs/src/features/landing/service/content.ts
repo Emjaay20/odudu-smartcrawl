@@ -199,11 +199,10 @@ export const AGENT_ITEMS: Planned[] = [
     id: 'mcp-server',
     title: 'An MCP server',
     claim:
-      'The admin API as tools for an AI agent, read-only by default and held to the same capabilities as everyone else, and a guide to protecting an MCP server with Odudu.',
+      'The admin API as tools for an AI agent, read-only by default. A guide to protecting an MCP server with Odudu.',
     quotes: [
       'The admin API as tools for an AI agent',
       'read-only by default',
-      'held to the same capabilities as everyone else',
       'a guide to protecting an MCP server with Odudu',
     ],
   },
@@ -224,7 +223,8 @@ export const AGENTS_SHIPPED = {
 
 export interface BrandingItem extends Planned {
   today: string;
-  illustration: string;
+  caption: string;
+  alt: { odudu: string; other: string };
 }
 
 export const BRANDING: BrandingItem = {
@@ -238,9 +238,12 @@ export const BRANDING: BrandingItem = {
     'its mail follows the same theme',
   ],
   today:
-    'Today every tenant shares one design, and page text comes from catalogues, so pages can be localized.',
-  illustration:
-    'An illustration of a planned feature: the same sign-in page with only its colours changed.',
+    'Today every tenant shares one design. Pages are ready for translation, but none are translated yet.',
+  caption: 'Only the colours change.',
+  alt: {
+    odudu: "The sign-in page in Odudu's own colours.",
+    other: "The same sign-in page in another brand's purple colours.",
+  },
 };
 
 export const EXAMPLES_URL_PATH = '/tree/main/examples';

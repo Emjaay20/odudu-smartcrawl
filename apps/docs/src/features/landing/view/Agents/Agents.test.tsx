@@ -27,6 +27,11 @@ describe('Agents', () => {
     });
   });
 
+  it('does not head the band as if everything in it were built', () => {
+    const $ = markupOf(<Agents />);
+    expect($('h2').text()).toMatch(/planned/iu);
+  });
+
   it('names no phase, no date and no "coming soon"', () => {
     const $ = markupOf(<Agents />);
     expect($.text()).not.toMatch(/\bP\d+[a-z]?\b|coming soon|\b20\d\d\b|\bsoon\b/iu);

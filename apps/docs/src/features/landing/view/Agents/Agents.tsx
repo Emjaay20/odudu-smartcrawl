@@ -18,7 +18,7 @@ export function Agents(): ReactElement {
     <Section
       id="home-agents"
       kicker="For AI agents"
-      title="Built for AI agents"
+      title="For AI agents: what works and what is planned"
       section="agents"
       tone="sunken"
     >

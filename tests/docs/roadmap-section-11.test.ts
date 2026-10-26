@@ -98,7 +98,14 @@ const CLAIMS: readonly (readonly [phase: string, sentence: string, ...criterion:
   ],
   ['P4g', 'Until it ships'],
   ['P4b', 'Every page the server shows', "tenant's supplied theme"],
-  ['P4b', 'A tenant sets its own logo', 'own logo', 'default locale', 'mail templates'],
+  [
+    'P4b',
+    'A tenant sets its own logo',
+    'own logo',
+    'default locale',
+    'message overrides',
+    'mail templates',
+  ],
   ['P4b', 'It also closes two logout gaps', 'anti-forgery token', 'leaked id token'],
   ['P4b', 'Translated pages and mail', 'translated pages and mail'],
   [

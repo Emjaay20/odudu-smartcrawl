@@ -66,8 +66,17 @@ describe('every Planned claim on the landing page', () => {
 });
 
 describe('what ships today beside the branding claim', () => {
-  it('is said once, and is true of the roadmap: the roadmap still lists theming as ahead', () => {
+  it('is said once, and says nothing that the roadmap still lists as ahead', () => {
     expect(landing.find('[data-today]').text()).toBe(BRANDING.today);
     expect(ahead).toContain("a tenant's theme");
+    expect(ahead).toContain('translated pages and mail');
+    expect(BRANDING.today).toContain('none are translated yet');
+    expect(BRANDING.today).not.toMatch(/catalogue|localized/iu);
+  });
+});
+
+describe('a Planned claim is short', () => {
+  it.each(AGENT_ITEMS)('$id is at most 25 words', (item) => {
+    expect(item.claim.split(/\s+/u).length).toBeLessThanOrEqual(25);
   });
 });

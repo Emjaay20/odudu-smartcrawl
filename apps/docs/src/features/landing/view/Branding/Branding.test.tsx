@@ -39,6 +39,12 @@ describe('Branding', () => {
     });
   });
 
+  it('says the illustration once: in the legend, with a short caption', () => {
+    const $ = markupOf(<Branding />);
+    expect($('legend').text()).toMatch(/illustration of a planned feature/iu);
+    expect($('figcaption').text()).toBe('Only the colours change.');
+  });
+
   it('says what ships today in a line of its own', () => {
     const $ = markupOf(<Branding />);
     expect($('[data-today]').text()).toBe(BRANDING.today);

@@ -3757,9 +3757,13 @@ A strip of the server pages, a "Built for AI agents" band, a "Branding and themi
   language, and its mail follows the same theme"), because the page named none of the items the theming item lists.
   Section 11's P4b row already has each of them; `tests/docs/roadmap-section-11.test.ts` maps the sentence.
 - **The MCP claim is the roadmap's, not "a scoped short-lived token".** The roadmap says the admin API as tools for an
-  agent, held to the same capabilities as everyone else, and a guide to protecting an MCP server with Odudu; the
-  landing repeats that. A second planned item, agent identity, quotes the P5 line.
+  agent, read-only by default, and a guide to protecting an MCP server with Odudu; the landing repeats those two
+  sentences. A second planned item, agent identity, quotes the P5 line.
 - **The old assistants pane left the documentation band** (it named a phase). The landing has ten bands now, and the
   cap in `landing.test.ts` moved from eight to ten.
 - Lighthouse (local, mobile throttling, landing, three runs): performance 97, 97, 98; LCP 1,960, 1,951 and 1,929 ms;
   CLS 0; TBT 23 to 26 ms. All budgets pass; the other four pages too.
+- **Fix round after review.** A browser test (`tests/branding.browser.test.ts`) holds the swap: one picture visible by
+  default in each theme, the keyboard on the radio switches to the branded one and back, and the picture loads at its
+  size. The band heading says what is planned; the "ships today" line says no page is translated yet and is checked
+  against the roadmap's "Translated pages and mail".

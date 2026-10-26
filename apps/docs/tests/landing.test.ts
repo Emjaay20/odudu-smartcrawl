@@ -343,6 +343,7 @@ describe('the landing page keeps its promises small', () => {
     const eager = images.filter((_, element) => $(element).attr('loading') !== 'lazy');
     expect(eager).toHaveLength(1);
     expect(eager.attr('fetchpriority')).toBe('high');
+    expect(landing.find('img[src*="/console/"]').length).toBeLessThanOrEqual(2);
   });
 
   it('keeps the mark printable: the mask gives way to the file itself', () => {
