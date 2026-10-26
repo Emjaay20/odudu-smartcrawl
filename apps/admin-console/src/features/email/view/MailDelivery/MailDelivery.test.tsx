@@ -1,6 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
+import { ROW_BUDGET } from '#/shared/service/resourceList';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { inTurn, json, pending, problem } from '#/testing/fakeTransport';
 import { resetConsole } from '#/testing/resetConsole';
@@ -160,6 +161,28 @@ it('holds the Load more button while the next page is on its way', async () => {
   );
   await user.click(await screen.findByRole('button', { name: 'Load more messages' }));
   expect(await screen.findByRole('button', { name: 'Loading more messages…' })).toBeDisabled();
+});
+
+it('says the list cannot load further instead of offering a Load more that does nothing', async () => {
+  const user = userEvent.setup();
+  const rows = (from: number) =>
+    Array.from({ length: ROW_BUDGET / 2 }, (_, index) =>
+      mailMessage(`m${String(from + index)}`, 'sent'),
+    );
+  renderConsoleAt(
+    AT,
+    emailRoutes(undefined, {
+      [`GET ${MAIL}`]: (request) =>
+        json(
+          request.search.get('cursor') === 'c2'
+            ? { items: rows(ROW_BUDGET / 2), next: 'c3' }
+            : { items: rows(0), next: 'c2' },
+        )(request),
+    }),
+  );
+  await user.click(await screen.findByRole('button', { name: 'Load more messages' }));
+  expect(await screen.findByText(/Narrow it to see further/u)).toBeVisible();
+  expect(screen.queryByRole('button', { name: /Load more messages/u })).toBeNull();
 });
 
 it('passes axe in both themes with mail, empty and failed', async () => {

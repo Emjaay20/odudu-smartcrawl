@@ -12,9 +12,9 @@ import {
   isNarrowed,
   listFromSearch,
   listPagesState,
+  loadLimited,
   listToSearch,
   moreFailed,
-  rowBudgetReached,
   staleCursorOf,
   firstPageFailureOf,
   type ListNarrowing,
@@ -71,7 +71,7 @@ export function useListPages<T>({
   const loadable = canLoadMore(pages.hasNextPage, pages.isFetching, state.rows.length);
   return {
     ...state,
-    loadLimited: pages.hasNextPage && rowBudgetReached(state.rows.length),
+    loadLimited: loadLimited(pages.hasNextPage, state.rows.length),
     staleCursor: staleCursorOf(pages.data, pages.error),
     failure: firstPageFailureOf(pages.data, pages.error),
     loadingMore: pages.isFetchingNextPage,

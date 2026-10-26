@@ -167,14 +167,19 @@ export function staleCursorOf(
   return isStaleCursor(firstPageFailureOf(data, error));
 }
 
-// Rows "Load more" may append to one list. A page is at most 200 rows, so
-// this is a handful of pages; past it the list says to narrow it instead.
+// About how many rows "Load more" appends to one list: the check runs before
+// each page, so a list can end up to one page over. Past it the list says to
+// narrow it instead.
 export const ROW_BUDGET = 1_000;
 
 export const LOAD_LIMIT_NOTICE = 'This is as far as the list can load. Narrow it to see further.';
 
 export function rowBudgetReached(rowCount: number): boolean {
   return rowCount >= ROW_BUDGET;
+}
+
+export function loadLimited(hasNextPage: boolean, rowCount: number): boolean {
+  return hasNextPage && rowBudgetReached(rowCount);
 }
 
 export function canLoadMore(hasNextPage: boolean, isFetching: boolean, rowCount: number): boolean {

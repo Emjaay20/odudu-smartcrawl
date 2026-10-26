@@ -146,6 +146,12 @@ it('says there is nothing to choose from yet', () => {
   expect(screen.getByText('There are no scopes yet.')).toBeVisible();
 });
 
+it('says the list cannot load further instead of offering a Load more that does nothing', () => {
+  render(scopes(state({ more: true, loadLimited: true })));
+  expect(screen.queryByRole('button', { name: /load more/iu })).toBeNull();
+  expect(screen.getByRole('status')).toHaveTextContent(/Narrow it to see further/u);
+});
+
 it('passes axe in both themes', async () => {
   expect(await axeInBothThemes(() => scopes(state({ more: true }), vi.fn(), ['s1']))).toEqual({
     light: [],

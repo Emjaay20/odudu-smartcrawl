@@ -26,7 +26,7 @@ describe('the username', () => {
 describe('when a subject cannot be deleted on its own', () => {
   it('says to delete the client for a service subject, which the server always refuses', () => {
     expect(deletionRefusal({ type: 'service' })).toBe(
-      "This is a client's service account. It is removed when you delete the client; it cannot be deleted on its own.",
+      "This is a client's service account. Delete the client instead; it cannot be deleted on its own.",
     );
   });
 

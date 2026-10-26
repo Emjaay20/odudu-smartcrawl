@@ -13,6 +13,7 @@ export interface MailDelivery {
     rows: readonly MailMessage[];
     more: boolean;
     loadingMore: boolean;
+    loadLimited: boolean;
     loadMoreFailed: boolean;
     loadMore: () => void;
     refresh: () => void;
@@ -33,6 +34,7 @@ export function useMailDelivery(tenant: string): MailDelivery {
       rows: pages.rows,
       more,
       loadingMore: pages.loadingMore,
+      loadLimited: pages.loadLimited,
       loadMoreFailed: pages.loadMoreFailed,
       loadMore: pages.loadMore,
       refresh: pages.retry,

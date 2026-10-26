@@ -1,4 +1,6 @@
+import { useRef } from 'react';
 import { LOAD_LIMIT_NOTICE } from '#/shared/service/resourceList';
+import { useFocusWhen } from '#/shared/usecase/useFocusWhen';
 import { Button } from '#/shared/view/Button';
 import styles from '#/shared/view/LoadMore/LoadMore.module.css';
 
@@ -10,23 +12,31 @@ export function LoadMore({
   loading,
   onPress,
   compact = false,
-  limited = false,
+  limited,
 }: {
   noun: string;
   loading: boolean;
   onPress: () => void;
   compact?: boolean;
-  limited?: boolean;
+  limited: boolean;
 }) {
-  if (limited) return <p className={styles.limit}>{LOAD_LIMIT_NOTICE}</p>;
+  const notice = useRef<HTMLParagraphElement>(null);
+  useFocusWhen(notice, limited);
   return (
-    <Button
-      {...(compact ? { size: 'small', variant: 'quiet' } : {})}
-      isDisabled={loading}
-      onPress={onPress}
-    >
-      {loading ? `Loading more ${noun}…` : `Load more ${noun}`}
-    </Button>
+    <>
+      {limited ? null : (
+        <Button
+          {...(compact ? { size: 'small', variant: 'quiet' } : {})}
+          isDisabled={loading}
+          onPress={onPress}
+        >
+          {loading ? `Loading more ${noun}…` : `Load more ${noun}`}
+        </Button>
+      )}
+      <p ref={notice} role="status" tabIndex={-1} className={styles.limit}>
+        {limited ? LOAD_LIMIT_NOTICE : null}
+      </p>
+    </>
   );
 }
 

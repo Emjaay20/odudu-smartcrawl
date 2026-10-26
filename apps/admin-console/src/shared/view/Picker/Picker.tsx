@@ -235,6 +235,7 @@ function Options<T>({
           compact
           noun={noun.other}
           loading={picker.loadingMore}
+          limited={picker.loadLimited}
           onPress={picker.loadMore}
         />
       ) : null}

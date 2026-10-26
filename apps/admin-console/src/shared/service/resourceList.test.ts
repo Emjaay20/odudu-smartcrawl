@@ -8,6 +8,7 @@ import {
   listFromSearch,
   listStatusOf,
   listPagesState,
+  loadLimited,
   staleCursorOf,
   firstPageFailureOf,
   listToSearch,
@@ -142,6 +143,11 @@ describe('what a list does while paging', () => {
     expect(canLoadMore(true, false, 50)).toBe(true);
     expect(canLoadMore(false, false, 50)).toBe(false);
     expect(canLoadMore(true, true, 50)).toBe(false);
+  });
+  it('says the list is limited only while rows remain beyond the budget', () => {
+    expect(loadLimited(true, ROW_BUDGET)).toBe(true);
+    expect(loadLimited(true, ROW_BUDGET - 1)).toBe(false);
+    expect(loadLimited(false, ROW_BUDGET)).toBe(false);
   });
   it('stops appending once the row budget is read, and says the budget is reached', () => {
     expect(rowBudgetReached(ROW_BUDGET - 1)).toBe(false);

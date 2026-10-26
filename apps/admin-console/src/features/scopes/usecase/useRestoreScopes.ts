@@ -16,7 +16,7 @@ export interface RestoreScopes {
   problem: string | null;
   // What the dialog says: what is missing, or that nothing is.
   text: string;
-  // True until the read has named what is missing, so a press could only do nothing.
+  // True unless something is known to be missing, so a press could only do nothing.
   held: boolean;
   ask: () => void;
   cancel: () => void;

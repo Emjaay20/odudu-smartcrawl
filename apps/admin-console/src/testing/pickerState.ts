@@ -13,6 +13,7 @@ export function pickerState<T>(
     search: vi.fn(),
     more: false,
     loadingMore: false,
+    loadLimited: false,
     loadMore: vi.fn(),
     retry: vi.fn(),
     ...overrides,
