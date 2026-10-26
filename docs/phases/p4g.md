@@ -3790,3 +3790,11 @@ The pages band, the branding item and the agents band were redone after an owner
   scroll and frames of one height and width per row; and each of the three bands' content spans the container.
 - Band heights at 1440 (before, after): pages with branding 1,543 to pages 1,447 plus branding 729; agents 437 to 430. Branding plus agents together are 1,159. Lighthouse (local, three runs, landing): performance 0.97, LCP 1,991 ms
   median, TBT 37 ms median, CLS 0.
+
+**Fix round.** The large pair is cut to one 460:724 canvas and the small pair to one 460:449 canvas, centred on the
+page's own grid, so no page floats in blank colour or is cropped (the sign-in capture now offers a passkey, which is
+what the server shows when it can; the second-factor capture drops "Remember me"). The branding pictures are their own
+captures (`look-odudu`, `look-other`). The strip is three columns at 900 px and up: the large pair, then the small pair
+stacked. Band padding at 997 px and up is 4rem, not 5rem. The layout test now measures leaf content, and was shown
+to fail with a left-aligned branding picture and with narrowed agent cards. Page length at 1440: 7,760 before, 7,609
+now.

@@ -34,18 +34,23 @@ interface Shot {
   render: (locale: PageLocale) => RenderedPage;
 }
 
+// Pictures in a group are cut to one canvas, so a row of frames has one height
+// whatever the page's own; a "natural" picture is the page and its margin only.
+export type Group = 'large' | 'small' | 'natural';
+
 export interface Job extends Shot {
   file: string;
   brand: boolean;
+  group: Group;
 }
 
-function login(form: string, locale: PageLocale): RenderedPage {
+function login(form: string, locale: PageLocale, remember = true): RenderedPage {
   return renderLoginForm(
     'acme',
     'a-session',
     form,
-    false,
-    true,
+    form === 'password',
+    remember,
     undefined,
     false,
     'Notes',
@@ -65,16 +70,27 @@ const SHOTS: Shot[] = [
     name: 'reset-password',
     render: (locale) => renderResetRequestForm('acme', { signInPath: SIGN_IN_PATH }, locale),
   },
-  { name: 'second-factor', render: (locale) => login('otp', locale) },
+  { name: 'second-factor', render: (locale) => login('otp', locale, false) },
 ];
 
+const GROUPS: Record<string, Group> = {
+  'sign-in': 'large',
+  'create-account': 'large',
+  'reset-password': 'small',
+  'second-factor': 'small',
+};
+
 export const JOBS: Job[] = [
-  ...SHOTS.map((shot) => ({ ...shot, file: shot.name, brand: false })),
-  ...SHOTS.filter((shot) => shot.name === 'sign-in').map((shot) => ({
+  ...SHOTS.map((shot) => ({
     ...shot,
-    file: 'sign-in-branded',
-    brand: true,
+    file: shot.name,
+    brand: false,
+    group: GROUPS[shot.name] ?? 'natural',
   })),
+  ...SHOTS.filter((shot) => shot.name === 'sign-in').flatMap((shot) => [
+    { ...shot, file: 'look-odudu', brand: false, group: 'natural' as const },
+    { ...shot, file: 'look-other', brand: true, group: 'natural' as const },
+  ]),
 ];
 
 export function markupFor(job: Job, theme: Theme): string {

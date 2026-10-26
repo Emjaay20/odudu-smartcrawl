@@ -39,10 +39,10 @@ describe('Branding', () => {
       .map((_, image) => $(image).attr('src'))
       .get();
     expect(sources).toEqual([
-      `${PAGES_BASE}server-pages/sign-in-light.webp`,
-      `${PAGES_BASE}server-pages/sign-in-dark.webp`,
-      `${PAGES_BASE}server-pages/sign-in-branded-light.webp`,
-      `${PAGES_BASE}server-pages/sign-in-branded-dark.webp`,
+      `${PAGES_BASE}server-pages/look-odudu-light.webp`,
+      `${PAGES_BASE}server-pages/look-odudu-dark.webp`,
+      `${PAGES_BASE}server-pages/look-other-light.webp`,
+      `${PAGES_BASE}server-pages/look-other-dark.webp`,
     ]);
     $('img').each((_, element) => {
       expect($(element).attr('loading')).toBe('lazy');

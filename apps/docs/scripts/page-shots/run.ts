@@ -9,12 +9,27 @@
 import { mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { chromium, type BrowserContext } from '@playwright/test';
-import { JOBS, THEMES, markupFor, renderedHash } from './shots.ts';
+import {
+  JOBS,
+  THEMES,
+  markupFor,
+  renderedHash,
+  type Group,
+  type Job,
+  type Theme,
+} from './shots.ts';
+
+interface Box {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
 
 const ORIGIN = 'http://pages.test';
 const INSTRUMENT = path.resolve(import.meta.dirname, '../../../../packages/instrument/dist');
 const OUT = path.resolve(import.meta.dirname, '../../static/server-pages');
-const VIEWPORT = { width: 520, height: 1000 };
+const VIEWPORT = { width: 520, height: 1400 };
 const MARGIN = 20;
 const QUALITY = 0.82;
 const SCALE = 2;
@@ -76,6 +91,26 @@ try {
   });
 
   mkdirSync(OUT, { recursive: true });
+
+  async function measure(job: Job, theme: Theme): Promise<Box> {
+    pending = markupFor(job, theme);
+    const page = await context.newPage();
+    await page.goto(`${ORIGIN}/page`);
+    await page.evaluate(() => document.fonts.ready);
+    const box = await page.locator('main').boundingBox();
+    await page.close();
+    if (box === null) throw new Error(`${job.file} has no main element`);
+    return box;
+  }
+
+  const canvas: Partial<Record<Group, number>> = {};
+  for (const job of JOBS) {
+    for (const theme of THEMES) {
+      const box = await measure(job, theme);
+      canvas[job.group] = Math.max(canvas[job.group] ?? 0, Math.ceil(box.height + 2 * MARGIN));
+    }
+  }
+
   const sizes: Record<string, { width: number; height: number; hash: string }> = {};
   for (const job of JOBS) {
     for (const theme of THEMES) {
@@ -85,12 +120,14 @@ try {
       await page.evaluate(() => document.fonts.ready);
       const box = await page.locator('main').boundingBox();
       if (box === null) throw new Error(`${job.file} has no main element`);
+      const height = job.group === 'natural' ? box.height + 2 * MARGIN : (canvas[job.group] ?? 0);
       const clip = {
         x: Math.floor(box.x - MARGIN),
-        y: Math.floor(box.y - MARGIN),
+        y: Math.floor(box.y + box.height / 2 - height / 2),
         width: Math.ceil(box.width + 2 * MARGIN),
-        height: Math.ceil(box.height + 2 * MARGIN),
+        height: Math.ceil(height),
       };
+      if (clip.y < 0) throw new Error(`${job.file} does not fit the viewport`);
       const png = await page.screenshot({ clip });
       await page.close();
       writeFileSync(path.join(OUT, `${job.file}-${theme}.webp`), await toWebp(context, png));

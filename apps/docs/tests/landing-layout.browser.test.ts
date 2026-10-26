@@ -94,7 +94,7 @@ describe.each(WIDTHS)('the landing page at %i px', (width) => {
     },
   );
 
-  it.each(BANDS)('has its %s band spanning the container, with no empty side', async (band) => {
+  it.each(BANDS)('has its %s band filling the container, with no empty side', async (band) => {
     const page = await open(width, 'dark');
     try {
       const box = await page.evaluate((name) => {
@@ -103,24 +103,57 @@ describe.each(WIDTHS)('the landing page at %i px', (width) => {
         if (!wrap) throw new Error(`no ${name} band`);
         const style = getComputedStyle(wrap);
         const outer = wrap.getBoundingClientRect();
-        let left = Infinity;
-        let right = 0;
-        for (const element of wrap.querySelectorAll('*')) {
+        const shown = (element: Element): DOMRect | null => {
           const rect = element.getBoundingClientRect();
-          const shown = getComputedStyle(element);
-          if (rect.width === 0 || rect.height === 0 || shown.display === 'none') continue;
-          left = Math.min(left, rect.left);
-          right = Math.max(right, rect.right);
-        }
+          return rect.width > 0 && rect.height > 0 && getComputedStyle(element).display !== 'none'
+            ? rect
+            : null;
+        };
+        const hasText = (element: Element): boolean =>
+          [...element.childNodes].some(
+            (node) => node.nodeType === Node.TEXT_NODE && (node.textContent ?? '').trim() !== '',
+          );
+        const leaves = [...wrap.querySelectorAll('*')]
+          .filter((element) => element.tagName === 'IMG' || hasText(element))
+          .map(shown)
+          .filter((rect): rect is DOMRect => rect !== null);
+        const edge = (selector: string): number[] =>
+          [...wrap.querySelectorAll(selector)]
+            .map(shown)
+            .filter((rect): rect is DOMRect => rect !== null)
+            .map((rect) => rect.right);
+        const pictures = [...wrap.querySelectorAll('img')]
+          .map(shown)
+          .filter((rect): rect is DOMRect => rect !== null);
         return {
           containerLeft: outer.left + parseFloat(style.paddingLeft),
           containerRight: outer.right - parseFloat(style.paddingRight),
-          left,
-          right,
+          leftmost: Math.min(...leaves.map((rect) => rect.left)),
+          rightmost: Math.max(...leaves.map((rect) => rect.right)),
+          pictureRights: pictures.map((rect) => rect.right),
+          pictureLefts: pictures.map((rect) => rect.left),
+          pictureWidths: pictures.map((rect) => rect.width),
+          textRights: [...wrap.querySelectorAll('*')]
+            .filter((element) => hasText(element) && !element.closest('[data-aside]'))
+            .map(shown)
+            .filter((rect): rect is DOMRect => rect !== null)
+            .map((rect) => rect.right),
+          cardRights: edge('[data-planned]'),
         };
       }, band);
-      expect(Math.abs(box.left - box.containerLeft)).toBeLessThan(TOLERANCE);
-      expect(Math.abs(box.right - box.containerRight)).toBeLessThan(TOLERANCE);
+      expect(Math.abs(box.leftmost - box.containerLeft)).toBeLessThan(TOLERANCE);
+      if (band === 'agents') {
+        expect(box.cardRights).toHaveLength(2);
+        expect(Math.abs(Math.max(...box.cardRights) - box.containerRight)).toBeLessThan(TOLERANCE);
+      } else {
+        expect(Math.abs(Math.max(...box.pictureRights) - box.containerRight)).toBeLessThan(
+          TOLERANCE,
+        );
+      }
+      if (band === 'branding' && width >= 800) {
+        expect(Math.min(...box.pictureWidths)).toBeGreaterThan(400);
+        expect(Math.min(...box.pictureLefts)).toBeGreaterThan(Math.max(...box.textRights) - 1);
+      }
     } finally {
       await page.context().close();
     }

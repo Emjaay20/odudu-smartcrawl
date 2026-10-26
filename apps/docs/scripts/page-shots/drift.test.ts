@@ -1,14 +1,14 @@
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { JOBS, renderedHash } from './shots.ts';
+import { JOBS, markupFor, renderedHash } from './shots.ts';
 
-const manifest: Record<string, { hash?: string }> = JSON.parse(
+const manifest: Record<string, { hash?: string; width?: number; height?: number }> = JSON.parse(
   readFileSync(
     path.resolve(import.meta.dirname, '../../static/server-pages/manifest.json'),
     'utf8',
   ),
-) as Record<string, { hash?: string }>;
+) as Record<string, { hash?: string; width?: number; height?: number }>;
 
 describe('the pages strip on the landing', () => {
   it('has a capture for every page the renderers produce, and no other', () => {
@@ -27,9 +27,27 @@ describe('the pages strip on the landing', () => {
     },
   );
 
-  it('hashes the same render to the same value', () => {
-    const [job] = JOBS;
-    if (job === undefined) throw new Error('no jobs');
-    expect(renderedHash(job)).toBe(renderedHash(job));
+  it('hashes two renders alike, though each draws its own script nonce', () => {
+    const second = JOBS.find((job) => job.file === 'sign-in');
+    if (second === undefined) throw new Error('no sign-in job');
+    expect(markupFor(second, 'light')).not.toBe(markupFor(second, 'light'));
+    expect(renderedHash(second)).toBe(renderedHash(second));
+  });
+
+  it('cuts the pictures of a group to one size, and the frames are that shape', () => {
+    const css = readFileSync(
+      path.resolve(import.meta.dirname, '../../src/features/landing/view/Frame/Frame.module.css'),
+      'utf8',
+    );
+    const ratio = (kind: string): string =>
+      new RegExp(`\\.${kind} \\{\\s*aspect-ratio: ([^;]+);`, 'u').exec(css)?.[1] ?? '';
+    const shape = (file: string): string =>
+      `${String(manifest[file]?.width)} / ${String(manifest[file]?.height)}`;
+    expect(shape('sign-in')).toBe(shape('create-account'));
+    expect(shape('reset-password')).toBe(shape('second-factor'));
+    expect(shape('look-odudu')).toBe(shape('look-other'));
+    expect(ratio('large')).toBe(shape('sign-in'));
+    expect(ratio('small')).toBe(shape('reset-password'));
+    expect(ratio('look')).toBe(shape('look-odudu'));
   });
 });

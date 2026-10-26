@@ -69,7 +69,7 @@ describe.each(['light', 'dark'] as const)('the branding swap in %s', (theme) => 
     const { page, close } = await open();
     try {
       expect(await visibleSources(page)).toEqual([
-        `${PAGES_BASE}server-pages/sign-in-${theme}.webp`,
+        `${PAGES_BASE}server-pages/look-odudu-${theme}.webp`,
       ]);
     } finally {
       await close();
@@ -83,11 +83,11 @@ describe.each(['light', 'dark'] as const)('the branding swap in %s', (theme) => 
       await odudu.focus();
       await page.keyboard.press('ArrowDown');
       expect(await visibleSources(page)).toEqual([
-        `${PAGES_BASE}server-pages/sign-in-branded-${theme}.webp`,
+        `${PAGES_BASE}server-pages/look-other-${theme}.webp`,
       ]);
       await page.keyboard.press('ArrowUp');
       expect(await visibleSources(page)).toEqual([
-        `${PAGES_BASE}server-pages/sign-in-${theme}.webp`,
+        `${PAGES_BASE}server-pages/look-odudu-${theme}.webp`,
       ]);
     } finally {
       await close();

@@ -7,10 +7,10 @@ describe('useBrandingPictures', () => {
   it('lists the Odudu look then the other brand, light then dark, each sized', () => {
     const pictures = resultOf(useBrandingPictures);
     expect(pictures.map(({ look, scheme, src }) => [look, scheme, src])).toEqual([
-      ['odudu', 'light', `${PAGES_BASE}server-pages/sign-in-light.webp`],
-      ['odudu', 'dark', `${PAGES_BASE}server-pages/sign-in-dark.webp`],
-      ['other', 'light', `${PAGES_BASE}server-pages/sign-in-branded-light.webp`],
-      ['other', 'dark', `${PAGES_BASE}server-pages/sign-in-branded-dark.webp`],
+      ['odudu', 'light', `${PAGES_BASE}server-pages/look-odudu-light.webp`],
+      ['odudu', 'dark', `${PAGES_BASE}server-pages/look-odudu-dark.webp`],
+      ['other', 'light', `${PAGES_BASE}server-pages/look-other-light.webp`],
+      ['other', 'dark', `${PAGES_BASE}server-pages/look-other-dark.webp`],
     ]);
     for (const picture of pictures) {
       expect(picture.width).toBe(460);

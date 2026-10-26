@@ -13,7 +13,7 @@ describe('the server page pictures', () => {
 
   it('reads a size from the manifest the capture wrote', () => {
     expect(pageShotSize('sign-in').width).toBe(460);
-    expect(pageShotSize('sign-in-branded')).toEqual(pageShotSize('sign-in'));
+    expect(pageShotSize('look-other')).toEqual(pageShotSize('look-odudu'));
   });
 
   it('refuses a page the manifest does not know', () => {

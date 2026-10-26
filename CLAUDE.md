@@ -254,8 +254,8 @@ where to read the page again rather than trust a green build.
     same commit with `pnpm --filter @odudu/docs page-shots` (after
     `pnpm --filter @odudu/instrument build`).
   - Checked by: `apps/docs/scripts/page-shots/drift.test.ts` (a hash of each
-    page's markup and stylesheet against the manifest the pictures came with;
-    no browser). That the pictures read well: no check.
+    page's markup and the three stylesheet sources against the manifest the
+    pictures came with, no browser; font binaries are not hashed). That the pictures read well: no check.
 - **The mark or any brand asset**
   - Update: `brand/` (the PNGs and the ICO are rebuilt from the SVGs by
     `brand/build.ts`), `brand/README.md`, the copies in the console, the docs

@@ -1,8 +1,8 @@
 {
   "sign-in": {
     "width": 460,
-    "height": 508,
-    "hash": "477b4c942c2daa9a"
+    "height": 724,
+    "hash": "f9838fd592b3ae8d"
   },
   "create-account": {
     "width": 460,
@@ -11,17 +11,22 @@
   },
   "reset-password": {
     "width": 460,
-    "height": 357,
+    "height": 449,
     "hash": "e71ba485c0531bc6"
   },
   "second-factor": {
     "width": 460,
-    "height": 485,
-    "hash": "d18866f9107cbf3d"
+    "height": 449,
+    "hash": "da5c0c334dc65ce1"
   },
-  "sign-in-branded": {
+  "look-odudu": {
     "width": 460,
-    "height": 508,
-    "hash": "a0276e295fe393c2"
+    "height": 564,
+    "hash": "f9838fd592b3ae8d"
+  },
+  "look-other": {
+    "width": 460,
+    "height": 564,
+    "hash": "f353b6be0ba41509"
   }
 }

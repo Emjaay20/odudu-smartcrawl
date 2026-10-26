@@ -15,8 +15,8 @@ export interface BrandingPicture {
 
 // The same sign-in page in each look and each colour scheme, in the order the swap shows them.
 export function useBrandingPictures(): BrandingPicture[] {
-  const odudu = usePageShot('sign-in');
-  const other = usePageShot('sign-in-branded');
+  const odudu = usePageShot('look-odudu');
+  const other = usePageShot('look-other');
   return [
     { look: 'odudu' as const, alt: BRANDING.alt.odudu, shot: odudu },
     { look: 'other' as const, alt: BRANDING.alt.other, shot: other },

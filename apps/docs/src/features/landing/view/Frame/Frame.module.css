@@ -17,15 +17,15 @@
 }
 
 .large {
-  aspect-ratio: 460 / 690;
+  aspect-ratio: 460 / 724;
 }
 
 .small {
-  aspect-ratio: 460 / 480;
+  aspect-ratio: 460 / 449;
 }
 
 .look {
-  aspect-ratio: 460 / 508;
+  aspect-ratio: 460 / 564;
 }
 
 .frame > img {
