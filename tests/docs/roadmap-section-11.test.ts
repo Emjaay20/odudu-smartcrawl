@@ -137,6 +137,22 @@ const CLAIMS: readonly (readonly [phase: string, sentence: string, ...criterion:
     'a locale switch',
     'right-to-left locale',
   ],
+  [
+    'P4i',
+    'Official libraries',
+    'framework-neutral javascript core',
+    'a react package',
+    'a next.js package',
+    'node middleware',
+  ],
+  ['P4i', 'A single-page app can run', 'backend-for-frontend option', 'rfc 10017'],
+  [
+    'P4i',
+    'A typed admin API client',
+    'typed admin api client generated from the published openapi',
+  ],
+  ['P4i', 'Each ships with a guide', 'a runnable example in ci', 'a version of its own'],
+  ['P4i', 'They wrap what exists', 'the "me" api wrapped'],
   ['P5', 'Budgets, attenuation and approval', 'ciba approvals'],
   ['P5b', 'The irreversible tools', 'out-of-band approval'],
   ['P6', 'Sign in with Google', 'upstream oidc idp'],
@@ -177,6 +193,9 @@ const CLAIMS: readonly (readonly [phase: string, sentence: string, ...criterion:
     'self_signed_tls_client_auth',
     'acr_values',
   ],
+  ['P14', 'More platforms', 'vue, svelte and angular', 'rfc 8252', 'go, java, .net, php and ruby'],
+  ['P14', 'Headless sign-in components', 'flow api', 'headless sign-in components'],
+  ['P14', 'An agent library', 'agent library for delegation'],
 ];
 
 const sentencesOf = (text: string): string[] => text.split(/(?<=\.)\s+(?=[A-Z])/u);
