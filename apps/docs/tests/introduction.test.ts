@@ -42,8 +42,7 @@ describe('the introduction', () => {
   it('points every capability it lists at a page that shows it', () => {
     const rows = page('compare.md')
       .split('\n')
-      .filter((line) => /^\| (?!-)/u.test(line))
-      .filter((line) => !/^\| Feature/u.test(line));
+      .filter((line) => /^\| [^-F]/u.test(line));
     expect(rows.length).toBeGreaterThan(5);
     for (const row of rows) expect(row, row).toMatch(/\]\(\.\.?\/[^)]*\.md/u);
   });
