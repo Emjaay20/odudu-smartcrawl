@@ -32,7 +32,7 @@ docker compose -p odudu-t8d -f infra/docker/compose.yaml exec -T postgres \
 ```
 
 ```
-{"created":true,"tenant":"expiry-demo","tenantId":"01a10b6c-\u2026","clientId":"expiry-spa","userSubjectId":"01a10b6c-\u2026"}
+{"created":true,"tenant":"expiry-demo","tenantId":"01a10b6c-…","clientId":"expiry-spa","userSubjectId":"01a10b6c-…"}
 {"command":"tenant","created":false,"tenant":"expiry-demo","tenantId":"01a10b6c-99d6-7be3-8938-3d002dc8dc15","settings":["password_max_age_days","password_history_depth"]}
 UPDATE 1
 ```
