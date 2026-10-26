@@ -5,6 +5,7 @@ import { en } from '#/view/messages';
 import {
   renderResetLinkFailedPage,
   renderResetPasswordForm,
+  renderResetPasswordFactorsRemovedPage,
   renderResetPasswordSucceededPage,
   renderResetRequestedPage,
   renderResetRequestFailedPage,
@@ -265,6 +266,13 @@ describe('renderResetPasswordForm', () => {
 });
 
 describe('renderResetPasswordSucceededPage', () => {
+  it('says what was removed only when something was', () => {
+    expect(renderResetPasswordFactorsRemovedPage(null, EN).body).toContain(
+      'We removed the authenticator app, passkeys and recovery codes',
+    );
+    expect(renderResetPasswordSucceededPage(null, EN).body).not.toContain('We removed');
+  });
+
   it('returns a body fragment and a title beside the document', () => {
     const page = renderResetPasswordSucceededPage(null, EN);
     expect(page.title).toBe('Password reset');

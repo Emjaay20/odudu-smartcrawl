@@ -171,6 +171,19 @@ export function tokenGrantRepository(tx: TenantScopedDatabase) {
       return rows.length;
     },
 
+    // `revokeForSession` for many sessions in one statement.
+    async revokeForSessions(sessionIds: readonly string[], revokedAt: Date): Promise<number> {
+      if (sessionIds.length === 0) return 0;
+      const rows = await tx
+        .update(tokenGrants)
+        .set({
+          revokedAt: sql`coalesce(${tokenGrants.revokedAt}, ${revokedAt.toISOString()}::timestamptz)`,
+        })
+        .where(inArray(tokenGrants.sessionId, [...sessionIds]))
+        .returning({ id: tokenGrants.id });
+      return rows.length;
+    },
+
     // The admin API's consent-revoke write: every grant a subject holds
     // against one client, live or offline alike — narrower than
     // `revokeForSession`, which only ever reaches one session's own bound

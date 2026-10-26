@@ -10,6 +10,7 @@ import {
 import { expectCrossTenantMethodProbe, expectTenantIsolation } from '@odudu/db/testing';
 import { newId, OduduError } from '@odudu/kernel';
 import { createAppRole, startTestDatabase, type TestDatabase } from '@odudu/testkit';
+import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { credentialRepository } from '#/repository/credentials';
 import { loginFailureRepository } from '#/repository/login-failures';
@@ -946,6 +947,129 @@ describe('credentialRepository', () => {
       verifyTenantAUnaffected: async (tx, subjectId) => {
         expect(await credentialRepository(tx).passwordFor(subjectId)).toBe('$argon2id$fake-hash');
         expect(await credentialRepository(tx).passwordHistory(subjectId)).toEqual([]);
+      },
+    });
+  });
+});
+
+describe('userRepository.claimSelfRegistered', () => {
+  async function seedUser(tx: TenantScopedDatabase, tenantId: string, selfRegistered: boolean) {
+    await seedTenant(tx, tenantId);
+    const subjectId = await insertSubject(tx, tenantId);
+    await insertUserRow(tx, subjectId, tenantId, { email: 'ada@example.test', selfRegistered });
+    return subjectId;
+  }
+
+  it('verifies the address once, for a self-registered account, and only for the mailed address', async () => {
+    const tenantId = newId();
+    const result = await withTenant(app.db, tenantId, async (tx) => {
+      const subjectId = await seedUser(tx, tenantId, true);
+      const users = userRepository(tx);
+      const other = await users.claimSelfRegistered(subjectId, 'else@example.test');
+      const first = await users.claimSelfRegistered(subjectId, 'ada@example.test');
+      const second = await users.claimSelfRegistered(subjectId, 'ada@example.test');
+      return { other, first, second, user: await users.bySubjectId(subjectId) };
+    });
+    expect([result.other, result.first, result.second]).toEqual([false, true, false]);
+    expect(result.user?.emailVerified).toBe(true);
+  });
+
+  it('stops being claimable once the address is verified through the mailed link', async () => {
+    const tenantId = newId();
+    const claimed = await withTenant(app.db, tenantId, async (tx) => {
+      const subjectId = await seedUser(tx, tenantId, true);
+      await userRepository(tx).markEmailVerified(subjectId);
+      await tx.update(users).set({ emailVerified: false }).where(eq(users.subjectId, subjectId));
+      return userRepository(tx).claimSelfRegistered(subjectId, 'ada@example.test');
+    });
+    expect(claimed).toBe(false);
+  });
+
+  it('does nothing for an account that did not register itself', async () => {
+    const tenantId = newId();
+    const claimed = await withTenant(app.db, tenantId, async (tx) => {
+      const subjectId = await seedUser(tx, tenantId, false);
+      return userRepository(tx).claimSelfRegistered(subjectId, 'ada@example.test');
+    });
+    expect(claimed).toBe(false);
+  });
+
+  it("cannot claim a foreign tenant's account", async () => {
+    await expectCrossTenantMethodProbe(app.db, {
+      seed: (tx, tenantId) => seedUser(tx, tenantId, true),
+      verifySeeded: async (tx, subjectId) => {
+        expect((await userRepository(tx).bySubjectId(subjectId))?.emailVerified).toBe(false);
+      },
+      attempt: async (tx, subjectId) =>
+        userRepository(tx).claimSelfRegistered(subjectId, 'ada@example.test'),
+      expectBlocked: (result) => {
+        expect(result).toBe(false);
+      },
+      verifyTenantAUnaffected: async (tx, subjectId) => {
+        expect((await userRepository(tx).bySubjectId(subjectId))?.emailVerified).toBe(false);
+      },
+    });
+  });
+});
+
+describe('credentialRepository.deleteSecondFactors', () => {
+  async function seedFactors(tx: TenantScopedDatabase, tenantId: string): Promise<string> {
+    await seedTenant(tx, tenantId);
+    const subject = await subjectRepository(tx).create({ tenantId, type: 'user' });
+    const credentials = [
+      ['password', { hash: 'h' }],
+      ['password-history', { hash: 'old' }],
+      ['totp', { secret: 'JBSWY3DPEHPK3PXP', digits: 6, lastStep: 0 }],
+      ['webauthn', { publicKey: 'cHVi', counter: 0, transports: [] }],
+      ['recovery-code', { hash: 'c1' }],
+      ['recovery-code', { hash: 'c2', usedAt: '2026-01-01T00:00:00.000Z' }],
+    ] as const;
+    for (const [type, secretData] of credentials) {
+      await tx.insert(userCredentials).values({
+        id: newId(),
+        tenantId,
+        subjectId: subject.id,
+        type,
+        secretData,
+        ...(type === 'webauthn' ? { lookupKey: `k-${newId()}` } : {}),
+      });
+    }
+    return subject.id;
+  }
+
+  async function typesOf(tx: TenantScopedDatabase, subjectId: string): Promise<string[]> {
+    const rows = await tx
+      .select({ type: userCredentials.type })
+      .from(userCredentials)
+      .where(eq(userCredentials.subjectId, subjectId));
+    return rows.map((row) => row.type).sort();
+  }
+
+  it('removes the one-time-code, passkey and recovery-code rows and keeps the password', async () => {
+    const tenantId = newId();
+    const result = await withTenant(app.db, tenantId, async (tx) => {
+      const subjectId = await seedFactors(tx, tenantId);
+      const removed = await credentialRepository(tx).deleteSecondFactors(subjectId);
+      return { removed, left: await typesOf(tx, subjectId) };
+    });
+    expect(result.removed).toBe(4);
+    expect(result.left).toEqual(['password', 'password-history']);
+  });
+
+  it("cannot delete a foreign tenant's factors", async () => {
+    await expectCrossTenantMethodProbe(app.db, {
+      seed: seedFactors,
+      verifySeeded: async (tx, subjectId) => {
+        expect(await credentialRepository(tx).listFor(subjectId, 'totp')).toHaveLength(1);
+      },
+      attempt: async (tx, subjectId) => credentialRepository(tx).deleteSecondFactors(subjectId),
+      expectBlocked: (result) => {
+        expect(result).toBe(0);
+      },
+      verifyTenantAUnaffected: async (tx, subjectId) => {
+        expect(await credentialRepository(tx).listFor(subjectId, 'totp')).toHaveLength(1);
+        expect(await credentialRepository(tx).listFor(subjectId, 'webauthn')).toHaveLength(1);
+        expect(await credentialRepository(tx).listFor(subjectId, 'recovery-code')).toHaveLength(2);
       },
     });
   });

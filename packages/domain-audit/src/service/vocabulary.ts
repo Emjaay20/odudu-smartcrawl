@@ -27,6 +27,7 @@ export const AUDIT_ACTIONS = {
   credential: [
     'account.registered',
     'account.registration_duplicate',
+    'account.address_proved',
     'email.verified',
     'password.reset',
     'password.changed',
@@ -179,6 +180,7 @@ type CredentialInput = EventCommon & {
   readonly action:
     | 'account.registered'
     | 'account.registration_duplicate'
+    | 'account.address_proved'
     | 'email.verified'
     | 'password.reset'
     | 'password.changed'

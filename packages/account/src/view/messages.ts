@@ -87,6 +87,8 @@ export const en = {
   'reset.succeeded.next':
     'Return to the application you were signing in to and sign in with your new password.',
   'reset.succeeded.nextWithLink': 'Sign in with your new password.',
+  'reset.succeeded.factorsRemoved':
+    'We removed the authenticator app, passkeys and recovery codes on this account. Set them up again after you sign in.',
   'reset.linkFailed.title': "Can't use this link",
   'reset.linkFailed.heading': "This link can't be used",
   'reset.linkFailed.reason':

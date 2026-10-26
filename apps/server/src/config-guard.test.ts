@@ -71,6 +71,50 @@ describe('[RFC6749-3.1-02] assertProductionTls', () => {
       assertProductionTls(config);
     }).not.toThrow();
   });
+
+  it('throws on ODUDU_TLS=true with an http base URL, console on or off', () => {
+    for (const ODUDU_CONSOLE of ['true', 'false']) {
+      const config = loadConfig({
+        ...base,
+        NODE_ENV: 'production',
+        ODUDU_TLS: 'true',
+        ODUDU_PUBLIC_BASE_URL: 'http://idp.example.test',
+        ODUDU_CONSOLE,
+      });
+      expect(() => {
+        assertProductionTls(config);
+      }).toThrow(/ODUDU_TLS.*ODUDU_PUBLIC_BASE_URL|ODUDU_PUBLIC_BASE_URL.*ODUDU_TLS/su);
+    }
+  });
+
+  it('throws on an https base URL while ODUDU_TLS is off, console on or off', () => {
+    for (const ODUDU_CONSOLE of ['true', 'false']) {
+      const config = loadConfig({
+        ...base,
+        NODE_ENV: 'production',
+        ODUDU_PUBLIC_BASE_URL: 'https://idp.example.test',
+        ODUDU_CONSOLE,
+      });
+      expect(() => {
+        assertProductionTls(config);
+      }).toThrow(/ODUDU_TLS/u);
+    }
+  });
+
+  it('passes an https base URL with ODUDU_TLS on, and no base URL at all', () => {
+    for (const ODUDU_PUBLIC_BASE_URL of ['https://idp.example.test', undefined]) {
+      const config = loadConfig({
+        ...base,
+        NODE_ENV: 'production',
+        ODUDU_TLS: 'true',
+        ODUDU_CONSOLE: 'false',
+        ...(ODUDU_PUBLIC_BASE_URL === undefined ? {} : { ODUDU_PUBLIC_BASE_URL }),
+      });
+      expect(() => {
+        assertProductionTls(config);
+      }).not.toThrow();
+    }
+  });
 });
 
 describe('assertProductionNoPrivateClientUrls', () => {

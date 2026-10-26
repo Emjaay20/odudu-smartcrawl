@@ -3,6 +3,7 @@ import {
   MIGRATIONS_DIR,
   tenants,
   runMigrations,
+  withTenant,
   type DatabaseHandle,
   type TenantScopedDatabase,
 } from '@odudu/db';
@@ -149,6 +150,70 @@ describe('sessionRepository', () => {
         expect(found?.expiresAt).toEqual(originalExpiry);
       },
     });
+  });
+});
+
+describe('sessionRepository, for many sessions at once', () => {
+  async function seedSession(tx: TenantScopedDatabase, tenantId: string, expiresAt: Date) {
+    await seedTenant(tx, tenantId);
+    const subject = await subjectRepository(tx).create({ tenantId, type: 'user' });
+    const id = newId();
+    await sessionRepository(tx).create({
+      id,
+      tenantId,
+      subjectId: subject.id,
+      expiresAt,
+      authenticators: [],
+      secretHash: SessionEntry.issue(id).secretHash(),
+    });
+    return { id, subjectId: subject.id };
+  }
+
+  it('cannot end a session under a different tenant context, and leaves it live', async () => {
+    const originalExpiry = new Date(Date.now() + 3_600_000);
+    await expectCrossTenantMethodProbe(app.db, {
+      seed: (tx, tenantId) => seedSession(tx, tenantId, originalExpiry),
+      verifySeeded: async (tx, seeded) => {
+        expect((await sessionRepository(tx).byId(seeded.id))?.expiresAt).toEqual(originalExpiry);
+      },
+      attempt: async (tx, seeded) => sessionRepository(tx).endAll([seeded.id], new Date()),
+      expectBlocked: (ended) => {
+        expect(ended).toEqual([]);
+      },
+      verifyTenantAUnaffected: async (tx, seeded) => {
+        expect((await sessionRepository(tx).byId(seeded.id))?.expiresAt).toEqual(originalExpiry);
+      },
+    });
+  });
+
+  it("cannot list a foreign tenant's sessions of a subject", async () => {
+    await expectCrossTenantMethodProbe(app.db, {
+      seed: (tx, tenantId) => seedSession(tx, tenantId, new Date(Date.now() + 3_600_000)),
+      verifySeeded: async (tx, seeded) => {
+        expect(await sessionRepository(tx).liveIdsFor(seeded.subjectId, new Date(), 10)).toEqual([
+          seeded.id,
+        ]);
+      },
+      attempt: async (tx, seeded) =>
+        sessionRepository(tx).liveIdsFor(seeded.subjectId, new Date(), 10),
+      expectBlocked: (ids) => {
+        expect(ids).toEqual([]);
+      },
+    });
+  });
+
+  it('ends only the live ones, and says which', async () => {
+    const tenantId = newId();
+    const result = await withTenant(app.db, tenantId, async (tx) => {
+      const live = await seedSession(tx, tenantId, new Date(Date.now() + 3_600_000));
+      const listed = await sessionRepository(tx).liveIdsFor(live.subjectId, new Date(), 10);
+      const ended = await sessionRepository(tx).endAll([live.id, newId()], new Date());
+      const again = await sessionRepository(tx).endAll([live.id], new Date(Date.now() + 1000));
+      return { live: live.id, listed, ended, again };
+    });
+    expect(result.listed).toEqual([result.live]);
+    expect(result.ended).toEqual([result.live]);
+    expect(result.again).toEqual([]);
   });
 });
 

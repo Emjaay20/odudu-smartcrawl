@@ -401,6 +401,7 @@ export interface ComposeUserSubjectInput {
   readonly tenantId: string;
   readonly username: string;
   readonly email: string | null;
+  readonly selfRegistered?: boolean;
 }
 
 // Shared by self-registration (`createAccount`, apps/server/src/app.ts) and
@@ -420,6 +421,7 @@ export async function composeUserSubject(
     tenantId: input.tenantId,
     username: input.username,
     email: input.email,
+    ...(input.selfRegistered === true ? { selfRegistered: true } : {}),
   });
   await grantNewSubjectDefaults(tx, subject.id);
   return { subjectId: subject.id };
@@ -432,6 +434,14 @@ export interface CreateSubjectInput {
   readonly actorSubjectId: string;
   readonly actorTenantId: string;
   readonly actorClientId: string;
+}
+
+/** An account already holds the address, in any case; thrown to roll the creation back. */
+export class EmailTakenError extends Error {
+  constructor() {
+    super('an account already holds this address');
+    this.name = 'EmailTakenError';
+  }
 }
 
 export interface CreateSubjectDeps {
@@ -449,6 +459,12 @@ export async function createSubject(
   deps: CreateSubjectDeps,
   input: CreateSubjectInput,
 ): Promise<SubjectView> {
+  if (input.email !== null) {
+    await lockEmailForCreation(tx, input.tenantId, input.email);
+    if ((await userRepository(tx).holderOfEmail(input.email)) !== null) {
+      throw new EmailTakenError();
+    }
+  }
   const { subjectId } = await composeUserSubject(tx, {
     tenantId: input.tenantId,
     username: input.username,

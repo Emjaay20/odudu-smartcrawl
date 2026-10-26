@@ -6,6 +6,7 @@ import { auditRepository } from '@odudu/domain-audit';
 import {
   credentialRepository,
   hashPassword,
+  lockEmailForCreation,
   loginFailureRepository,
   subjectRepository,
   userRepository,
@@ -32,6 +33,7 @@ import {
 } from '#/testing/sign-in';
 import {
   amendSubject,
+  composeUserSubject,
   createSubject,
   deleteCredential,
   deleteSubject,
@@ -74,6 +76,61 @@ describe('POST /admin/tenants/{t}/subjects', () => {
     });
     const listed = list.json<{ items: { username: string | null }[] }>().items;
     expect(listed.map((s) => s.username)).toContain(username);
+  });
+
+  it('answers 409 for an address held in another case', async () => {
+    const t = await fixture.createTenant(`acme-${newId()}`);
+    const token = await fixture.adminToken(t.name, ['manage-users']);
+    const create = (username: string, email: string) =>
+      fixture.http.inject({
+        method: 'POST',
+        url: `/admin/tenants/${t.name}/subjects`,
+        headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+        payload: { username, email },
+      });
+    expect((await create(`first-${newId()}`, 'ada@example.com')).statusCode).toBe(201);
+
+    const second = await create(`second-${newId()}`, 'Ada@Example.com');
+    expect(second.statusCode).toBe(409);
+    expect(second.json<{ detail: string }>().detail).toBe(
+      'the email "Ada@Example.com" is already in use',
+    );
+  });
+
+  it('lets the second of two creations for one address find what the first committed', async () => {
+    const t = await fixture.createTenant(`acme-${newId()}`);
+    const token = await fixture.adminToken(t.name, ['manage-users']);
+    let release: () => void = () => undefined;
+    const released = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let locked: () => void = () => undefined;
+    const hasLock = new Promise<void>((resolve) => {
+      locked = resolve;
+    });
+    const first = withTenant(fixture.app.db, t.id, async (tx) => {
+      await lockEmailForCreation(tx, t.id, 'ada@example.com');
+      locked();
+      await released;
+      await composeUserSubject(tx, {
+        tenantId: t.id,
+        username: `first-${newId()}`,
+        email: 'ada@example.com',
+      });
+    });
+    await hasLock;
+
+    const second = fixture.http.inject({
+      method: 'POST',
+      url: `/admin/tenants/${t.name}/subjects`,
+      headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+      payload: { username: `second-${newId()}`, email: 'Ada@Example.com' },
+    });
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    release();
+    await first;
+
+    expect((await second).statusCode).toBe(409);
   });
 
   // The other half of "no password field": a created subject owes

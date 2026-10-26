@@ -70,6 +70,13 @@ export interface RegisterDeps {
     tenantId: string,
     input: NewAccountInput,
   ) => Promise<CreateAccountResult>;
+  // Taken before findTaken asks, so two registrations for one address in two
+  // cases take turns and the second finds what the first committed.
+  readonly lockAddress: (
+    tx: TenantScopedDatabase,
+    tenantId: string,
+    email: string,
+  ) => Promise<void>;
   // Asked in the transaction, before anything is written, for the same
   // reason: the identity tables belong to @odudu/domain-identity.
   readonly findTaken: (
@@ -176,6 +183,7 @@ export async function register(
       deps.database.db,
       deps.tenantId,
       async (tx): Promise<RegisterOutcome> => {
+        await deps.lockAddress(tx, deps.tenantId, input.email);
         const taken = await deps.findTaken(tx, deps.tenantId, input);
         if (taken.username) return { kind: 'username_taken' };
         if (taken.emailOwner !== null) return { kind: 'email_taken' };

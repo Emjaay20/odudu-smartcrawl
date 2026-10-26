@@ -62,6 +62,27 @@ export function renderRequiredActionsSucceededPage(
   signInPath: string | null,
   locale: PageLocale,
 ): RenderedPage {
+  return requiredActionsSucceeded(remaining, signInPath, locale, false);
+}
+
+// The same page for a link that also removed the account's factors.
+export function renderRequiredActionsFactorsRemovedPage(
+  remaining: readonly LinkedRequiredAction[],
+  signInPath: string | null,
+  locale: PageLocale,
+): RenderedPage {
+  return requiredActionsSucceeded(remaining, signInPath, locale, true);
+}
+
+function requiredActionsSucceeded(
+  remaining: readonly LinkedRequiredAction[],
+  signInPath: string | null,
+  locale: PageLocale,
+  factorsRemoved: boolean,
+): RenderedPage {
+  const removed = factorsRemoved
+    ? `\n<p>${tHtml(locale, 'reset.succeeded.factorsRemoved')}</p>`
+    : '';
   const rest =
     remaining.length === 0
       ? signInPath === null
@@ -71,7 +92,7 @@ export function renderRequiredActionsSucceededPage(
 ${listHtml(remaining, locale)}`;
   return page(
     t(locale, 'requiredActions.succeeded.title'),
-    `<h1>${tHtml(locale, 'requiredActions.succeeded.heading')}</h1>${rest}${
+    `<h1>${tHtml(locale, 'requiredActions.succeeded.heading')}</h1>${removed}${rest}${
       signInPath === null
         ? ''
         : links([{ href: signInPath, text: tHtml(locale, 'link.continueToSignIn') }])

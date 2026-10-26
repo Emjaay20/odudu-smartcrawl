@@ -122,10 +122,44 @@ export async function enqueueResetLink(
   });
 }
 
-export interface CompletePasswordResetDeps {
+export interface AccountRecoveryDeps {
   // Ends every session and revokes every grant the subject holds. A reset is how
   // an account is recovered, and whoever held it before must not keep it.
   readonly endAccess: (tx: TenantScopedDatabase, subjectId: string) => Promise<void>;
+  // A link mailed to an address proves its mailbox. Where the account
+  // registered itself and nobody verified the address, whoever registered it
+  // may have enrolled a factor, so the factors go and the address is marked
+  // verified. Returns how many factors went, or null when this account is not
+  // one of those or the address is no longer the one the link was mailed to.
+  readonly proveAddress: (
+    tx: TenantScopedDatabase,
+    subjectId: string,
+    mailedTo: string | null,
+  ) => Promise<number | null>;
+}
+
+/** What redeeming a link that sets a password owes the account it recovers. True when it removed factors. */
+export async function recoverAccount(
+  tx: TenantScopedDatabase,
+  deps: AccountRecoveryDeps,
+  subjectId: string,
+  mailedTo: string | null,
+): Promise<boolean> {
+  await deps.endAccess(tx, subjectId);
+  const removed = await deps.proveAddress(tx, subjectId, mailedTo);
+  if (removed === null) return false;
+  await auditRepository(tx).record({
+    eventType: 'credential',
+    action: 'account.address_proved',
+    outcome: 'allowed',
+    actorSubjectId: subjectId,
+    resourceType: 'subject',
+    resourceId: subjectId,
+  });
+  return removed > 0;
+}
+
+export interface CompletePasswordResetDeps extends AccountRecoveryDeps {
   readonly database: DatabaseHandle;
   readonly tenantId: string;
   readonly request: RequestContext;
@@ -169,7 +203,7 @@ export interface CompletePasswordResetDeps {
 }
 
 export type CompletePasswordResetResult =
-  | { kind: 'reset' }
+  | { kind: 'reset'; factorsRemoved: boolean }
   | { kind: 'invalid' }
   | { kind: 'invalid_password'; violations: PolicyViolation[] };
 
@@ -215,7 +249,7 @@ export async function completePasswordReset(
       if (record === null) return { kind: 'invalid' };
 
       await deps.setPassword(tx, record.subjectId, newPassword);
-      await deps.endAccess(tx, record.subjectId);
+      const factorsRemoved = await recoverAccount(tx, deps, record.subjectId, record.email);
       await deps.clearPasswordUpdateAction(tx, record.subjectId);
       await actionTokenRepository(tx).invalidateOutstandingPasswordLinks(record.subjectId);
       await auditRepository(tx).record({
@@ -226,7 +260,7 @@ export async function completePasswordReset(
         resourceType: 'subject',
         resourceId: record.subjectId,
       });
-      return { kind: 'reset' };
+      return { kind: 'reset', factorsRemoved };
     },
     deps.request,
   );

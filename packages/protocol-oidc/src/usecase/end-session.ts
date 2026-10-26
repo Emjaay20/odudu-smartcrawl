@@ -1,16 +1,15 @@
-import { sessionRepository, sessions } from '@odudu/authn-flows';
+import { sessionRepository } from '@odudu/authn-flows';
 import { signingKeyRepository, signJwt } from '@odudu/crypto';
 import { type TenantScopedDatabase } from '@odudu/db';
 import { auditRepository } from '@odudu/domain-audit';
 import { newId } from '@odudu/kernel';
-import { and, eq, gt } from 'drizzle-orm';
 import { tokenGrantRepository, type ClientLogoutTarget } from '#/repository/grants';
 import { logoutDeliveryRepository } from '#/repository/logout-deliveries';
 import { logoutTokenClaims, LOGOUT_TOKEN_TYP } from '#/service/logout-token';
 
-function hasBackchannelLogoutUri(
-  target: ClientLogoutTarget,
-): target is ClientLogoutTarget & { backchannelLogoutUri: string } {
+function hasBackchannelLogoutUri<Target extends ClientLogoutTarget>(
+  target: Target,
+): target is Target & { backchannelLogoutUri: string } {
   return target.backchannelLogoutUri !== null;
 }
 
@@ -39,21 +38,47 @@ export async function endSession(
   deps: EndSessionDeps,
   input: EndSessionInput,
 ): Promise<void> {
-  const ended = await sessionRepository(tx).end(input.sessionId, input.now);
-  if (ended) {
-    await auditRepository(tx).record({
-      eventType: 'session',
-      action: 'session.ended',
-      outcome: 'allowed',
+  await endSessions(tx, deps, {
+    tenantId: input.tenantId,
+    sessionIds: [input.sessionId],
+    subjectId: input.subjectId,
+    now: input.now,
+    issuer: input.issuer,
+    via: input.via,
+  });
+}
+
+interface EndSessionsInput {
+  readonly tenantId: string;
+  readonly sessionIds: readonly string[];
+  readonly subjectId: string;
+  readonly now: Date;
+  readonly issuer: string;
+  readonly via: 'logout' | 'admin';
+}
+
+// `endSession` for several sessions of one subject, in a fixed number of
+// statements however many there are.
+async function endSessions(
+  tx: TenantScopedDatabase,
+  deps: EndSessionDeps,
+  input: EndSessionsInput,
+): Promise<void> {
+  const ended = await sessionRepository(tx).endAll(input.sessionIds, input.now);
+  await auditRepository(tx).recordAll(
+    ended.map((sessionId) => ({
+      eventType: 'session' as const,
+      action: 'session.ended' as const,
+      outcome: 'allowed' as const,
       actorSubjectId: input.subjectId,
       resourceType: 'session',
-      resourceId: input.sessionId,
+      resourceId: sessionId,
       detail: { via: input.via },
-    });
-  }
-  await tokenGrantRepository(tx).revokeForSession(input.sessionId, input.now);
+    })),
+  );
+  await tokenGrantRepository(tx).revokeForSessions(input.sessionIds, input.now);
 
-  const targets = await tokenGrantRepository(tx).clientsForSession(input.sessionId);
+  const targets = await tokenGrantRepository(tx).clientsForSessions(input.sessionIds);
   const backchannelTargets = targets.filter(hasBackchannelLogoutUri);
   if (backchannelTargets.length === 0) return;
 
@@ -64,7 +89,7 @@ export async function endSession(
         issuer: input.issuer,
         audience: target.oauthClientId,
         subject: input.subjectId,
-        sessionId: input.sessionId,
+        sessionId: target.sessionId,
         now: input.now,
       });
       const logoutToken = await signJwt(
@@ -75,7 +100,7 @@ export async function endSession(
         id: newId(),
         tenantId: input.tenantId,
         clientId: target.clientId,
-        sessionId: input.sessionId,
+        sessionId: target.sessionId,
         endpoint: target.backchannelLogoutUri,
         logoutToken,
         nextAttemptAt: input.now,
@@ -92,6 +117,11 @@ export interface EndAllAccessInput {
   readonly issuer: string;
 }
 
+// Sessions ended per batch: bounds the tokens signed and rows written by one
+// statement set, so a subject with a great many sessions takes more rounds,
+// not larger ones.
+const SESSIONS_PER_BATCH = 100;
+
 // What recovering an account owes whoever else is signed in to it: every session
 // of the subject ended the way a logout ends one (grants revoked, back-channel
 // deliveries queued), then every grant left, offline ones included, revoked.
@@ -101,14 +131,16 @@ export async function endAllAccess(
   deps: EndSessionDeps,
   input: EndAllAccessInput,
 ): Promise<void> {
-  const live = await tx
-    .select({ id: sessions.id })
-    .from(sessions)
-    .where(and(eq(sessions.subjectId, input.subjectId), gt(sessions.expiresAt, input.now)));
-  for (const { id } of live) {
-    await endSession(tx, deps, {
+  for (;;) {
+    const batch = await sessionRepository(tx).liveIdsFor(
+      input.subjectId,
+      input.now,
+      SESSIONS_PER_BATCH,
+    );
+    if (batch.length === 0) break;
+    await endSessions(tx, deps, {
       tenantId: input.tenantId,
-      sessionId: id,
+      sessionIds: batch,
       subjectId: input.subjectId,
       now: input.now,
       issuer: input.issuer,

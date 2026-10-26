@@ -113,6 +113,30 @@ export function sessionRepository(tx: TenantScopedDatabase) {
       return ended.length > 0;
     },
 
+    // `end` for many sessions in one statement. Returns the ids this call
+    // ended, so a caller records only what it did.
+    async endAll(ids: readonly string[], now: Date): Promise<string[]> {
+      if (ids.length === 0) return [];
+      const ended = await tx
+        .update(sessions)
+        .set({ expiresAt: now })
+        .where(and(inArray(sessions.id, [...ids]), gt(sessions.expiresAt, now)))
+        .returning({ id: sessions.id });
+      return ended.map((row) => row.id);
+    },
+
+    // A subject's live sessions, a page at a time in id order. Served by
+    // sessions_by_subject.
+    async liveIdsFor(subjectId: string, now: Date, limit: number): Promise<string[]> {
+      const rows = await tx
+        .select({ id: sessions.id })
+        .from(sessions)
+        .where(and(eq(sessions.subjectId, subjectId), gt(sessions.expiresAt, now)))
+        .orderBy(sessions.id)
+        .limit(limit);
+      return rows.map((row) => row.id);
+    },
+
     // The read a browser's cookie is resolved through. The secret is
     // checked in the same pass as liveness, after a select keyed on the ids
     // alone, so an entry with a wrong secret costs the same statement as an

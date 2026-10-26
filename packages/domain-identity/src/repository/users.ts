@@ -111,6 +111,8 @@ export interface NewUser {
   tenantId: string;
   username: string;
   email?: string | null;
+  // Made by the account's own registration form (migration 0105).
+  selfRegistered?: boolean;
 }
 
 export function userRepository(tx: TenantScopedDatabase) {
@@ -208,6 +210,7 @@ export function userRepository(tx: TenantScopedDatabase) {
           tenantId: input.tenantId,
           username: input.username,
           email,
+          selfRegistered: input.selfRegistered ?? false,
         })
         .returning();
       const row = rows[0];
@@ -273,7 +276,12 @@ export function userRepository(tx: TenantScopedDatabase) {
 
       const rows = await tx
         .update(users)
-        .set({ ...patch, profileUpdatedAt: new Date() })
+        // A verified address is no longer one a stranger registered.
+        .set({
+          ...patch,
+          ...(patch.emailVerified === true ? { selfRegistered: false } : {}),
+          profileUpdatedAt: new Date(),
+        })
         .where(eq(users.subjectId, subjectId))
         .returning();
       const row = rows[0];
@@ -314,7 +322,7 @@ export function userRepository(tx: TenantScopedDatabase) {
       }
       const rows = await tx
         .update(users)
-        .set({ email, emailVerified: false })
+        .set({ email, emailVerified: false, selfRegistered: false })
         .where(eq(users.subjectId, subjectId))
         .returning();
       const row = rows[0];
@@ -345,6 +353,26 @@ export function userRepository(tx: TenantScopedDatabase) {
       return toUser(row);
     },
 
+    // A mailed link has proved the mailbox of an account that registered
+    // itself and never verified the address: the address becomes verified and
+    // the account stops being one this can happen to again. True only for
+    // the call that did it, and only while `mailedTo` is still the address.
+    async claimSelfRegistered(subjectId: string, mailedTo: string): Promise<boolean> {
+      const rows = await tx
+        .update(users)
+        .set({ emailVerified: true, selfRegistered: false })
+        .where(
+          and(
+            eq(users.subjectId, subjectId),
+            eq(users.selfRegistered, true),
+            eq(users.emailVerified, false),
+            eq(users.email, mailedTo),
+          ),
+        )
+        .returning({ subjectId: users.subjectId });
+      return rows.length > 0;
+    },
+
     // Deliberately not folded into updateProfile: emailVerified is a claim
     // about the current value of email, set only by consuming a matching
     // verify_email action token (packages/account/src/usecase/verify-email.ts),
@@ -352,7 +380,7 @@ export function userRepository(tx: TenantScopedDatabase) {
     async markEmailVerified(subjectId: string): Promise<UserRecord> {
       const rows = await tx
         .update(users)
-        .set({ emailVerified: true })
+        .set({ emailVerified: true, selfRegistered: false })
         .where(eq(users.subjectId, subjectId))
         .returning();
       const row = rows[0];

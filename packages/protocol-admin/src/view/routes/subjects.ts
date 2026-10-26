@@ -40,6 +40,7 @@ import {
   credentialWireShape,
   deleteCredential,
   deleteSubject,
+  EmailTakenError,
   listCredentials,
   listSubjects,
   readRequiredActions,
@@ -232,7 +233,10 @@ export function createSubjectHandler(deps: SubjectsRouteDeps): AdminRouteHandler
           ),
         );
       }
-      if (isUniqueViolationNaming(error, 'users_email_unique')) {
+      if (
+        isUniqueViolationNaming(error, 'users_email_unique') ||
+        error instanceof EmailTakenError
+      ) {
         return sendProblem(
           reply,
           request,

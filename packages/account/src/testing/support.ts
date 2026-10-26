@@ -63,6 +63,7 @@ export const openMailGate: MailGate = () => true;
 
 export const accountTestDeps = {
   endAccess: () => Promise.resolve(),
+  proveAddress: () => Promise.resolve(null),
   findTaken,
   createVerifiedAccount,
   lockAddress,

@@ -299,6 +299,28 @@ describe('address verification', () => {
     expect(second.statusCode).toBe(400);
   });
 
+  it('answers a refused submission with the page the opened link shows', async () => {
+    await sendVerificationEmail(deps, { subjectId: subject, email: 'ada@example.test' });
+    await drainOutbox();
+    const message = sender.sent[0];
+    if (message === undefined) throw new Error('no mail sent');
+    const link = extractLink(message);
+    const url = new URL(link, 'http://localhost');
+    const key = url.searchParams.get('key') ?? '';
+    expect((await pressLink(link)).statusCode).toBe(200);
+
+    const opened = await httpApp.inject({ url: `${url.pathname}${url.search}` });
+    const posted = await httpApp.inject({
+      method: 'POST',
+      url: `/tenants/${tenantName}/login-actions/action-token`,
+      payload: new URLSearchParams({ key }).toString(),
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    });
+    expect(posted.statusCode).toBe(400);
+    expect(posted.body).toBe(opened.body);
+    expect(posted.body).toContain('<title>Can&#39;t verify this link</title>');
+  });
+
   it('invalidates an outstanding token when the address changes', async () => {
     await sendVerificationEmail(deps, { subjectId: subject, email: 'ada@example.test' });
     await drainOutbox();

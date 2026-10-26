@@ -252,3 +252,54 @@ every grant of the account, so the registrant's access dies when the owner recov
 password". The risk that remains is a person who confirms a mail they did not expect and never resets.
 With `verify_email` off nothing is mailed, the form says the address is registered as before, and no
 row is written.
+
+## Amendment, 2026-10-26 — what a mailed link proves
+
+A link mailed to an address proves one thing: whoever redeems it reads that mailbox. Two links
+set a password, the reset link and a required-actions link that asks for `update-password`. They
+now do the same work, in the transaction that sets it.
+
+- **Sessions and grants.** Every session of the account ends and every grant is revoked, offline
+  ones too. The required-actions link used to skip this. Its back-channel logout tokens carry the
+  issuer the logout route uses.
+- **A self-registered account nobody verified.** The users table records which accounts their
+  own registration form made (`self_registered`, migration 0105). Where such an account's address
+  is still unverified and is the one the link was mailed to, redeeming the link deletes the
+  account's authenticator app, passkeys and recovery codes, marks the address verified and clears
+  the mark, so it happens once. The row `account.address_proved` records it, and the page the
+  person sees says what was removed. The case it answers: in a tenant without `verify_email`
+  anybody can register an address with a password of their choosing and enrol a factor. A passkey
+  is a complete first factor, and an authenticator app locks the real owner out behind a code
+  they do not hold. The password and its history stay. Nothing else is touched: an account an
+  administrator or the seed command made, a verified address, and every other factor keep theirs.
+  The mark clears when the address is verified or changed by any route. Accounts that registered
+  before migration 0105 are unmarked, so they never lose factors this way: the safe side.
+  The owner-notice mail has no template for this, so there is no mail.
+- **What this costs.** For such an account the mailbox outranks the factors: whoever reads it can
+  reset the password and the link removes the second factor, so a mailbox compromise is a
+  second-factor bypass. Accepted: the mailbox is already the only recovery path for an account
+  nobody verified, and the alternative leaves a stranger's passkey signed in to it. A person who
+  registered themselves, enrolled a factor and never verified the address loses it at their next
+  reset and enrols again.
+- **Case.** A reset request finds the account by the address ignoring ASCII case, as
+  registration does, and mails the stored address. Registration and an administrator's creation
+  take the address lock before they look for an existing holder. No unique index is added: rows
+  that differ only by case may exist, and a migration that fails on data already there is worse
+  than the gap. Reconciling them, then adding the index, is P4f's (`docs/NEXT.md`).
+
+**Accepted.**
+
+- **Spending an address's mail budget.** Anybody may use up the three mails an hour for an
+  address, so its owner's reset or registration mail is not sent that hour, and the page says
+  the same thing either way. A repeat registration request replaces the address's pending row,
+  so a link already mailed dies. Bounding what one person can do is the per-origin throttle on
+  the forms; the mail itself tells a real owner what was asked. A limiter shared across
+  instances, with more to go on, is P11's. Not replacing a pending row inside the cooldown needs
+  no shared limiter but was left: it would let a stranger's earlier request block the owner's own
+  registration, which today overrides it.
+- **A registration the victim confirms.** Somebody who confirms a "finish registration" mail
+  they did not ask for gets the account its sender chose, and the sender may then enrol a
+  factor, since the address is verified from that click. The mail and the confirm page name the
+  account. Asking for more than the click is registration flow, so P4f's.
+- **Timing on old rows.** A password that is not in NFC form costs one more hash check on an
+  account whose hash predates normalising. The row converts at its next sign-in.

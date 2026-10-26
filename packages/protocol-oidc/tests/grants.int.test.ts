@@ -192,6 +192,44 @@ describe('tokenGrantRepository', () => {
     });
   });
 
+  it('leaves a session’s grants unrevoked when revokeForSessions runs under a different tenant context', async () => {
+    await expectCrossTenantMethodProbe(app.db, {
+      seed: async (tx, tenantId) => {
+        const { clientDbId, subjectId } = await seedTenantClientSubject(tx, tenantId);
+        const sessionId = newId();
+        await sessionRepository(tx).create({
+          id: sessionId,
+          tenantId,
+          subjectId,
+          expiresAt: new Date(Date.now() + 3_600_000),
+          authenticators: [],
+          secretHash: SessionEntry.issue(sessionId).secretHash(),
+        });
+        const grant = await tokenGrantRepository(tx).create({
+          id: newId(),
+          tenantId,
+          clientId: clientDbId,
+          subjectId,
+          scope: 'openid',
+          audience: AUDIENCE,
+          sessionId,
+        });
+        return { grant, sessionId };
+      },
+      verifySeeded: async (tx, seeded) => {
+        expect((await tokenGrantRepository(tx).byId(seeded.grant.id))?.revokedAt).toBeNull();
+      },
+      attempt: async (tx, seeded) =>
+        tokenGrantRepository(tx).revokeForSessions([seeded.sessionId], new Date()),
+      expectBlocked: (result) => {
+        expect(result).toBe(0);
+      },
+      verifyTenantAUnaffected: async (tx, seeded) => {
+        expect((await tokenGrantRepository(tx).byId(seeded.grant.id))?.revokedAt).toBeNull();
+      },
+    });
+  });
+
   it('revokes every grant a subject holds against one client, live or offline, and keeps the first revocation time', async () => {
     const tenantId = newId();
     const { clientDbId, subjectId } = await withTenant(app.db, tenantId, (tx) =>

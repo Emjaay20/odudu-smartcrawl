@@ -8,6 +8,7 @@ import {
   type NewAccountInput,
   type PasswordPolicy,
   type PolicyViolation,
+  type RegisterDeps,
   type TakenIdentifiers,
 } from '#/usecase/register';
 import { type MailGate } from '#/service/mail-gate';
@@ -58,6 +59,7 @@ export interface RegistrationRouteDeps {
     tenantId: string,
     input: NewAccountInput,
   ) => Promise<CreateAccountResult>;
+  readonly lockAddress: RegisterDeps['lockAddress'];
   readonly findTaken: (
     tx: TenantScopedDatabase,
     tenantId: string,
@@ -201,6 +203,7 @@ export function registerRegistrationRoute(app: FastifyInstance, deps: Registrati
         authenticationSessionId: referenceToResume(held, returnTo),
         now: deps.now,
         createAccount: deps.createAccount,
+        lockAddress: deps.lockAddress,
         findTaken: deps.findTaken,
         hashPassword: deps.hashPassword,
         isEmailAddress: deps.isEmailAddress,
