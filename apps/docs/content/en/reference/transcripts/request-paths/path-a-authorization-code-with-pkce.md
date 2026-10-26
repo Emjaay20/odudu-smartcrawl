@@ -849,6 +849,7 @@ same nonce the policy names:
 ```
 HTTP/1.1 200 OK
 x-request-id: 01a13fbe-5240-7c96-8789-6be19bcf58ab
+set-cookie: odudu-sign-in=01a17a85-9fd8-7a3b-884a-3d516ef4d141._AOgPuOPokggVhZBE9a3mKwiyCh8FWYJW40gYg0HqkA; HttpOnly; SameSite=Lax; Path=/tenants/demo/; Max-Age=1800
 content-type: text/html
 content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-A4EUaub9ChHrn95wQwVmDg=='; connect-src 'self'
 x-frame-options: DENY
