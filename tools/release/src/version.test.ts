@@ -6,6 +6,7 @@ describe('parseTag', () => {
     expect(parseTag('v1.2.3')).toEqual({
       version: '1.2.3',
       prerelease: false,
+      latest: true,
       tags: ['1.2.3', '1.2', 'latest'],
     });
   });
@@ -14,6 +15,7 @@ describe('parseTag', () => {
     expect(parseTag('v0.1.0-rc.4')).toEqual({
       version: '0.1.0-rc.4',
       prerelease: true,
+      latest: false,
       tags: ['0.1.0-rc.4'],
     });
   });
@@ -41,6 +43,44 @@ describe('parseTag', () => {
   });
 });
 
+describe('parseTag beside the tags that exist', () => {
+  const existing = ['v0.9.0', 'v1.0.0', 'v1.0.1', 'v1.1.0', 'v1.2.0-rc.1', 'v2.0.0'];
+
+  it('moves latest and the minor tag to a release that is the newest of each', () => {
+    expect(parseTag('v2.0.1', existing)).toMatchObject({
+      latest: true,
+      tags: ['2.0.1', '2.0', 'latest'],
+    });
+  });
+
+  it('leaves latest where it is when an older line is patched, and moves its minor tag', () => {
+    expect(parseTag('v1.1.1', existing)).toMatchObject({
+      latest: false,
+      tags: ['1.1.1', '1.1'],
+    });
+  });
+
+  it('leaves the minor tag too when a patch is older than one that exists', () => {
+    expect(parseTag('v1.0.0', existing)).toMatchObject({ latest: false, tags: ['1.0.0'] });
+  });
+
+  it('ignores candidates, and the tag being released, when finding the newest', () => {
+    expect(parseTag('v2.0.0', existing)).toMatchObject({ latest: true });
+    expect(parseTag('v1.2.0', existing)).toMatchObject({ latest: false, tags: ['1.2.0', '1.2'] });
+  });
+
+  it('never gives a candidate latest, and says so', () => {
+    expect(parseTag('v3.0.0-rc.1', existing)).toMatchObject({ latest: false });
+  });
+
+  it('keeps latest for the first stable release, when none exists', () => {
+    expect(parseTag('v0.1.0', ['v0.1.0-rc.1', 'v0.1.0-rc.3'])).toMatchObject({
+      latest: true,
+      tags: ['0.1.0', '0.1', 'latest'],
+    });
+  });
+});
+
 describe('imageTags', () => {
   it('names each tag on a lower-cased repository', () => {
     expect(imageTags('ghcr.io/WizzyWit/Odudu', parseTag('v1.2.3'))).toEqual([
@@ -62,6 +102,7 @@ describe('githubOutput', () => {
     expect(lines).toEqual([
       'version=1.0.0-rc.1',
       'prerelease=true',
+      'latest=false',
       'tags<<ODUDU_TAGS',
       'ghcr.io/o/odudu:1.0.0-rc.1',
       'ODUDU_TAGS',

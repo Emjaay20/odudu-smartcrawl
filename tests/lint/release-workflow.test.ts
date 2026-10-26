@@ -190,6 +190,32 @@ describe('the release workflow', () => {
     expect(prepare).toContain('index.ts stamp-compose quickstart/compose.yaml "$VERSION"');
   });
 
+  it('moves latest only to the newest stable release, on the image and on the GitHub Release', () => {
+    const prepare = job('prepare');
+    expect(prepare).toContain('git tag --list \'v*\' > "$RUNNER_TEMP/tags.txt"');
+    expect(prepare).toContain('index.ts tags "$TAG" "$IMAGE" "$RUNNER_TEMP/tags.txt"');
+    expect(prepare).toContain('latest: ${{ steps.release.outputs.latest }}');
+    const release = job('release');
+    expect(release).toContain('LATEST: ${{ needs.prepare.outputs.latest }}');
+    expect(release).toContain('--latest=false');
+    expect(release).not.toContain('kind=(--latest)\n');
+  });
+
+  it('refuses a stable tag that is not on main, and names the tag and the fix', () => {
+    const prepare = job('prepare');
+    expect(prepare).toMatch(
+      /uses: actions\/checkout@\S+[^\n]*\n\s+with:\n\s+persist-credentials: false\n\s+fetch-depth: 0\n/u,
+    );
+    const [step = ''] = steps(prepare).filter((each) => each.includes('is not on main'));
+    expect(step).toContain(
+      "if: github.event_name == 'push' && steps.release.outputs.prerelease == 'false'",
+    );
+    expect(step).toContain('git merge-base --is-ancestor "$GITHUB_SHA" origin/main');
+    expect(step).toContain('$TAG');
+    expect(step).toMatch(/Merge the commit to main/u);
+    expect(step).toContain('exit 1');
+  });
+
   it('serialises runs of one ref without cancelling a publish halfway', () => {
     expect(WORKFLOW).toMatch(
       /^concurrency:\n {2}group: release-\$\{\{ github\.ref \}\}\n {2}cancel-in-progress: false$/mu,
@@ -268,16 +294,20 @@ describe('RELEASING.md', () => {
     expect(text).toContain('releases/download/<tag>/compose.yaml');
   });
 
-  it('lists the steps only the owner can take', async () => {
+  it('lists the owner settings that are done and the steps still to take', async () => {
     const text = await releasing();
-    for (const step of [
-      'Make the package public',
-      'Require the checks',
-      'private vulnerability reporting',
-      'GitHub Pages',
+    for (const setting of [
+      'The package is public',
+      '`gate`',
+      '`release tags` ruleset',
+      '`github-pages` environment allows `main` and `v*` tags',
+      'Private vulnerability reporting is on',
+      'GitHub Pages uses GitHub Actions',
     ]) {
-      expect(text, step).toContain(step);
+      expect(text, setting).toContain(setting);
     }
+    expect(text).toMatch(/## Before the stable release/u);
+    expect(text).toContain('sha256sum -c');
   });
 
   it('documents the domain swap', async () => {
