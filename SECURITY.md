@@ -41,5 +41,8 @@ The parts most likely to be subtly wrong:
 - sessions, cookies and logout
 - second factors and recovery codes
 
-Out of scope: findings that depend on a deployment ignoring the
-[not production ready](README.md) notice and running Odudu in production anyway.
+Odudu is a release candidate and has not had an independent security review,
+as the [README](README.md) says.
+
+Out of scope: findings that depend on a deployment that switches off a boot
+guard or ignores the [production settings](https://wizzywit.github.io/odudu/docs/operating/configuration/).
