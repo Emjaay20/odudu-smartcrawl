@@ -37,7 +37,8 @@ export const PLATFORM_SECTIONS: readonly SettingsSection[] = [
         label: 'Most clients',
         control: 'count',
         unit: 'clients',
-        description: 'A tenant at this many refuses further registration.',
+        description:
+          'A tenant with this many clients refuses to make more, however they are created.',
       },
     ],
   },

@@ -198,7 +198,7 @@ Open: any application may register
 Most clients
 clients
 200 clients
-A tenant at this many refuses further registration. At least 0 clients.
+A tenant with this many clients refuses to make more, however they are created. At least 0 clients.
 Audit retention
 How long the audit trail is kept, and which events it records.
 Keep events for
