@@ -306,6 +306,9 @@ describe('the roadmap and section 11 of the design spec agree', () => {
     ['The audit trail can be rewritten', ['P12'], ['audit trail']],
     ['Self-service credential gaps', ['P4f'], ['other sessions', 'passkey']],
     ['No composite index serves', ['P11'], 'an index decision that waits on the measurement'],
+    ['An address can be spent by anyone', ['P11'], ['per-address mail limit']],
+    ['A person who confirms a "finish registration"', ['P11'], ['per-address mail limit']],
+    ['Accounts that differ only by the case', ['P4f'], ['differ only by case']],
   ];
 
   function nextPlacements(): { start: string; phases: string[] }[] {

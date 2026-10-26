@@ -252,3 +252,41 @@ every grant of the account, so the registrant's access dies when the owner recov
 password". The risk that remains is a person who confirms a mail they did not expect and never resets.
 With `verify_email` off nothing is mailed, the form says the address is registered as before, and no
 row is written.
+
+## Amendment, 2026-10-26 — what a mailed link proves
+
+A link mailed to an address proves one thing: whoever redeems it reads that mailbox. Two links
+set a password, the reset link and a required-actions link that asks for `update-password`. They
+now do the same work, in the transaction that sets it.
+
+- **Sessions and grants.** Every session of the account ends and every grant is revoked, offline
+  ones too. The required-actions link used to skip this. Its back-channel logout tokens carry the
+  issuer the logout route uses.
+- **An address nobody verified.** Where the account's address is unverified and is the one the
+  link was mailed to, the account's authenticator app, passkeys and recovery codes are deleted,
+  and the address is marked verified. The row `account.address_proved` records it. A tenant
+  without `verify_email` lets anybody register an address with a password of their choosing and
+  enrol a factor on it. A passkey is a complete first factor, and an authenticator app locks the
+  real owner out behind a code they do not hold. The password and its history stay. A verified
+  address keeps its factors: its holder enrolled them. An owner who enrolled one before ever
+  verifying the address loses it and enrols again.
+- **Case.** A reset request finds the account by the address ignoring ASCII case, as
+  registration does, and mails the stored address. Registration and an administrator's creation
+  take the address lock before they look for an existing holder. No unique index is added: rows
+  that differ only by case may exist, and a migration that fails on data already there is worse
+  than the gap. Reconciling them, then adding the index, is P4f's (`docs/NEXT.md`).
+
+**Accepted.**
+
+- **Spending an address's mail budget.** Anybody may use up the three mails an hour for an
+  address, so its owner's reset or registration mail is not sent that hour, and the page says
+  the same thing either way. A repeat registration request replaces the address's pending row,
+  so a link already mailed dies. Bounding what one person can do is the per-origin throttle on
+  the forms; the mail itself tells a real owner what was asked. A limiter shared across
+  instances, with more to go on, is P11's.
+- **A registration the victim confirms.** Somebody who confirms a "finish registration" mail
+  they did not ask for gets the account its sender chose, and the sender may then enrol a
+  factor, since the address is verified from that click. The mail and the confirm page name the
+  account. Asking for more than the click is P11's, with the limiter.
+- **Timing on old rows.** A password that is not in NFC form costs one more hash check on an
+  account whose hash predates normalising. The row converts at its next sign-in.
