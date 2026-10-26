@@ -1,15 +1,19 @@
 import { DocsLink } from '@site/src/shared/view/DocsLink/DocsLink';
 import type { ReactElement } from 'react';
 import { JOURNEYS, SECTIONS } from '@site/nav';
+import { MARKDOWN_LINE } from '@site/src/features/landing/service/content';
+import { useAssetUrls } from '@site/src/features/landing/usecase/useAssetUrls';
 import { Section } from '@site/src/features/landing/view/Section/Section';
 import styles from '@site/src/features/landing/view/Browse/Browse.module.css';
 
 export function Browse(): ReactElement {
+  const { llms } = useAssetUrls();
   return (
     <Section
       id="home-browse"
       kicker="The documentation"
       title="Everything else is a click away"
+      section="browse"
       tone="sunken"
     >
       <div className={styles.pair}>
@@ -47,6 +51,11 @@ export function Browse(): ReactElement {
               ))}
             </ol>
           </div>
+          <p className={styles.cardBody} data-markdown="" data-reveal="">
+            {MARKDOWN_LINE.before}
+            <a href={llms}>{MARKDOWN_LINE.link}</a>
+            {MARKDOWN_LINE.after}
+          </p>
         </div>
       </div>
     </Section>

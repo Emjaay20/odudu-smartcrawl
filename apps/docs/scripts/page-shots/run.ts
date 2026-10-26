@@ -1,71 +1,38 @@
 // Photographs the pages a person sees while signing in, for the landing page
 // (pnpm page-shots). The markup is what the server's own renderers return, in
 // the stylesheet the server serves, so nothing here is drawn by hand. Writes
-// static/server-pages/<page>-<theme>.webp, a "branded" copy of the sign-in
-// page with only colour tokens swapped, and manifest.json with each size.
+// static/server-pages/<page>-<theme>.webp at twice the page's size, a
+// "branded" copy of the sign-in page with only colour tokens swapped, and
+// manifest.json with each size and a hash of what produced it.
 // Each picture is the card and a margin of the page's grid around it.
 // Needs packages/instrument/dist (pnpm --filter @odudu/instrument build).
 import { mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { chromium, type BrowserContext } from '@playwright/test';
-import { DEFAULT_PAGE_LOCALE, type PageLocale, type RenderedPage } from '@odudu/kernel';
-import { renderRegistrationForm } from '../../../../packages/account/src/view/registration-html.ts';
-import { renderResetRequestForm } from '../../../../packages/account/src/view/reset-html.ts';
-import { renderLoginForm } from '../../../../packages/protocol-oidc/src/view/authorize-html.ts';
-import { brandStyle } from './brand.ts';
+import {
+  JOBS,
+  THEMES,
+  markupFor,
+  renderedHash,
+  type Group,
+  type Job,
+  type Theme,
+} from './shots.ts';
 
-const THEMES = ['light', 'dark'] as const;
-type Theme = (typeof THEMES)[number];
+interface Box {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
 
 const ORIGIN = 'http://pages.test';
 const INSTRUMENT = path.resolve(import.meta.dirname, '../../../../packages/instrument/dist');
 const OUT = path.resolve(import.meta.dirname, '../../static/server-pages');
-const VIEWPORT = { width: 520, height: 1000 };
+const VIEWPORT = { width: 520, height: 1400 };
 const MARGIN = 20;
 const QUALITY = 0.82;
-
-const SIGN_IN_PATH = '/tenants/acme/protocol/openid-connect/auth?client_id=notes';
-const RULES = {
-  minLength: 15,
-  requireDigit: false,
-  requireUppercase: false,
-  requireLowercase: false,
-  requireSpecial: false,
-};
-
-interface Shot {
-  name: string;
-  render: (locale: PageLocale) => RenderedPage;
-}
-
-function login(form: string, locale: PageLocale): RenderedPage {
-  return renderLoginForm(
-    'acme',
-    'a-session',
-    form,
-    false,
-    true,
-    undefined,
-    false,
-    'Notes',
-    { createAccount: '/create', resetPassword: '/reset' },
-    locale,
-  );
-}
-
-const SHOTS: Shot[] = [
-  { name: 'sign-in', render: (locale) => login('password', locale) },
-  {
-    name: 'create-account',
-    render: (locale) =>
-      renderRegistrationForm('acme', { rules: RULES, signInPath: SIGN_IN_PATH }, locale),
-  },
-  {
-    name: 'reset-password',
-    render: (locale) => renderResetRequestForm('acme', { signInPath: SIGN_IN_PATH }, locale),
-  },
-  { name: 'second-factor', render: (locale) => login('otp', locale) },
-];
+const SCALE = 2;
 
 const TYPES: Record<string, string> = {
   '.css': 'text/css',
@@ -106,7 +73,7 @@ const browser = await chromium.launch();
 try {
   const context = await browser.newContext({
     viewport: VIEWPORT,
-    deviceScaleFactor: 1,
+    deviceScaleFactor: SCALE,
     locale: 'en-US',
     timezoneId: 'UTC',
   });
@@ -124,35 +91,47 @@ try {
   });
 
   mkdirSync(OUT, { recursive: true });
-  const sizes: Record<string, { width: number; height: number }> = {};
-  const jobs = [
-    ...SHOTS.map((shot) => ({ ...shot, file: shot.name, brand: false })),
-    ...SHOTS.filter((shot) => shot.name === 'sign-in').map((shot) => ({
-      ...shot,
-      file: 'sign-in-branded',
-      brand: true,
-    })),
-  ];
-  for (const job of jobs) {
+
+  async function measure(job: Job, theme: Theme): Promise<Box> {
+    pending = markupFor(job, theme);
+    const page = await context.newPage();
+    await page.goto(`${ORIGIN}/page`);
+    await page.evaluate(() => document.fonts.ready);
+    const box = await page.locator('main').boundingBox();
+    await page.close();
+    if (box === null) throw new Error(`${job.file} has no main element`);
+    return box;
+  }
+
+  const canvas: Partial<Record<Group, number>> = {};
+  for (const job of JOBS) {
     for (const theme of THEMES) {
-      const locale: PageLocale = { ...DEFAULT_PAGE_LOCALE, theme: theme satisfies Theme };
-      const html = job.render(locale).html;
-      pending = job.brand ? html.replace('</head>', `${brandStyle()}\n</head>`) : html;
+      const box = await measure(job, theme);
+      canvas[job.group] = Math.max(canvas[job.group] ?? 0, Math.ceil(box.height + 2 * MARGIN));
+    }
+  }
+
+  const sizes: Record<string, { width: number; height: number; hash: string }> = {};
+  for (const job of JOBS) {
+    for (const theme of THEMES) {
+      pending = markupFor(job, theme);
       const page = await context.newPage();
       await page.goto(`${ORIGIN}/page`);
       await page.evaluate(() => document.fonts.ready);
       const box = await page.locator('main').boundingBox();
       if (box === null) throw new Error(`${job.file} has no main element`);
+      const height = job.group === 'natural' ? box.height + 2 * MARGIN : (canvas[job.group] ?? 0);
       const clip = {
         x: Math.floor(box.x - MARGIN),
-        y: Math.floor(box.y - MARGIN),
+        y: Math.floor(box.y + box.height / 2 - height / 2),
         width: Math.ceil(box.width + 2 * MARGIN),
-        height: Math.ceil(box.height + 2 * MARGIN),
+        height: Math.ceil(height),
       };
+      if (clip.y < 0) throw new Error(`${job.file} does not fit the viewport`);
       const png = await page.screenshot({ clip });
       await page.close();
       writeFileSync(path.join(OUT, `${job.file}-${theme}.webp`), await toWebp(context, png));
-      sizes[job.file] = { width: clip.width, height: clip.height };
+      sizes[job.file] = { width: clip.width, height: clip.height, hash: renderedHash(job) };
     }
   }
   writeFileSync(path.join(OUT, 'manifest.json'), `${JSON.stringify(sizes, null, 2)}\n`);

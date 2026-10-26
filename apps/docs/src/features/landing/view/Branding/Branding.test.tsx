@@ -5,6 +5,17 @@ import { Branding } from '@site/src/features/landing/view/Branding/Branding';
 import { markupOf } from '@site/tests/support/markup';
 
 describe('Branding', () => {
+  it('is a band of its own, with its text beside one framed picture', () => {
+    const $ = markupOf(<Branding />);
+    const band = $('section[data-section="branding"]');
+    expect(band).toHaveLength(1);
+    expect(band.find('h2').text()).toBe(BRANDING.title);
+    expect(band.find('[data-planned="branding"]')).toHaveLength(1);
+    expect(band.find('[data-aside] [data-frame="look"]')).toHaveLength(1);
+    expect(band.find('[data-aside] fieldset')).toHaveLength(0);
+    expect(band.find('fieldset')).toHaveLength(1);
+  });
+
   it('is labelled Planned and links the roadmap, with no phase name', () => {
     const $ = markupOf(<Branding />);
     const item = $('[data-planned="branding"]');
@@ -28,10 +39,10 @@ describe('Branding', () => {
       .map((_, image) => $(image).attr('src'))
       .get();
     expect(sources).toEqual([
-      `${PAGES_BASE}server-pages/sign-in-light.webp`,
-      `${PAGES_BASE}server-pages/sign-in-dark.webp`,
-      `${PAGES_BASE}server-pages/sign-in-branded-light.webp`,
-      `${PAGES_BASE}server-pages/sign-in-branded-dark.webp`,
+      `${PAGES_BASE}server-pages/look-odudu-light.webp`,
+      `${PAGES_BASE}server-pages/look-odudu-dark.webp`,
+      `${PAGES_BASE}server-pages/look-other-light.webp`,
+      `${PAGES_BASE}server-pages/look-other-dark.webp`,
     ]);
     $('img').each((_, element) => {
       expect($(element).attr('loading')).toBe('lazy');

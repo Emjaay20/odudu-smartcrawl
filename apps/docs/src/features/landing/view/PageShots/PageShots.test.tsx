@@ -25,6 +25,29 @@ describe('PageShots', () => {
     );
   });
 
+  it('puts the sign-in and create-account pages large, the other two small', () => {
+    const $ = markupOf(<PageShots />);
+    const named = (row: string): string[] =>
+      $(`[data-row="${row}"] figcaption [data-caption]`)
+        .map((_, caption) => $(caption).text())
+        .get();
+    expect(named('large')).toEqual(['Sign in', 'Create an account']);
+    expect(named('small')).toEqual(['Reset a password', 'Second factor']);
+    expect($('[data-row="large"] [data-frame="large"]')).toHaveLength(2);
+    expect($('[data-row="small"] [data-frame="small"]')).toHaveLength(2);
+  });
+
+  it('says in a sentence what each small page is for', () => {
+    const $ = markupOf(<PageShots />);
+    const notes = $('[data-row="small"] [data-note]')
+      .map((_, note) => $(note).text())
+      .get();
+    expect(notes).toEqual(
+      PAGE_SHOTS.filter((shot) => shot.size === 'small').map((shot) => shot.note),
+    );
+    for (const note of notes) expect(note.length).toBeGreaterThan(20);
+  });
+
   it('sizes every picture, describes it and fetches it lazily', () => {
     const $ = markupOf(<PageShots />);
     $('img').each((_, element) => {
@@ -39,7 +62,7 @@ describe('PageShots', () => {
   it('captions each page with its name', () => {
     const $ = markupOf(<PageShots />);
     expect(
-      $('figcaption')
+      $('[data-caption]')
         .map((_, caption) => $(caption).text())
         .get(),
     ).toEqual(PAGE_SHOTS.map((shot) => shot.caption));

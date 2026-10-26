@@ -102,9 +102,39 @@
   }
 }
 
+.main {
+  min-inline-size: 0;
+}
+
+.aside {
+  min-inline-size: 0;
+}
+
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-6);
+}
+
+@media (min-width: 800px) {
+  .split {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 30rem);
+    gap: var(--space-8);
+    align-items: center;
+  }
+
+  .split .heading {
+    margin-block-end: var(--space-4);
+  }
+}
+
 @media (min-width: 997px) {
+  .split {
+    gap: 4rem;
+  }
+
   .band,
   .bandSunken {
-    padding-block: 5rem;
+    padding-block: 4rem;
   }
 }

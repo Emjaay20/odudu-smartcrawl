@@ -52,7 +52,9 @@ describe('every Planned claim on the landing page', () => {
   });
 
   it('names no phase, no date and nothing that sounds like a promise of timing', () => {
-    const text = landing.find('[data-section="agents"], [data-section="pages"]').text();
+    const text = landing
+      .find('[data-section="agents"], [data-section="pages"], [data-section="branding"]')
+      .text();
     expect(text).not.toMatch(
       /\bP\d+[a-z]?\b|coming soon|\bsoon\b|\b20\d\d\b|\bnext (week|month|quarter|year)\b/iu,
     );

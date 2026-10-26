@@ -248,6 +248,14 @@ where to read the page again rather than trust a green build.
   - Checked by: `tests/docs/recovery-codes.test.ts`, `password-policy.test.ts`,
     `required-action-order.test.ts`, `brute-force.test.ts`, `throttle.test.ts`:
     the values they read from code. Wording around them: no check.
+- **A server page or its stylesheet** (the markup a `*-html.ts` renderer
+  returns, or `tokens.css`, `fonts.css`, `pages.css`)
+  - Update: the screenshots on the landing page's strip, regenerated in the
+    same commit with `pnpm --filter @odudu/docs page-shots` (after
+    `pnpm --filter @odudu/instrument build`).
+  - Checked by: `apps/docs/scripts/page-shots/drift.test.ts` (a hash of each
+    page's markup and the three stylesheet sources against the manifest the
+    pictures came with, no browser; font binaries are not hashed). That the pictures read well: no check.
 - **The mark or any brand asset**
   - Update: `brand/` (the PNGs and the ICO are rebuilt from the SVGs by
     `brand/build.ts`), `brand/README.md`, the copies in the console, the docs

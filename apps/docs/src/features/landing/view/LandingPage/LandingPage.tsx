@@ -3,6 +3,7 @@ import type { ReactElement } from 'react';
 import { CAPABILITIES } from '@site/src/features/landing/service/content';
 import { useLandingPage } from '@site/src/features/landing/usecase/useLandingPage';
 import { Agents } from '@site/src/features/landing/view/Agents/Agents';
+import { Branding } from '@site/src/features/landing/view/Branding/Branding';
 import { Browse } from '@site/src/features/landing/view/Browse/Browse';
 import { CardList } from '@site/src/features/landing/view/CardList/CardList';
 import { Compare } from '@site/src/features/landing/view/Compare/Compare';
@@ -57,6 +58,7 @@ export function LandingPage(): ReactElement {
           <CardList cards={CAPABILITIES} columns={4} />
         </Section>
         <Pages />
+        <Branding />
         <Steps />
         <Ways />
         <Agents />

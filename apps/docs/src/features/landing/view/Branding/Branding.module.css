@@ -1,28 +1,23 @@
-.branding {
-  margin-block-start: var(--space-8);
-  padding-block-start: var(--space-6);
-  border-block-start: var(--hairline);
+.status {
+  margin: 0 0 var(--space-3);
 }
 
-.title {
-  composes: cardTitle from '@site/src/features/landing/view/Section/Section.module.css';
+.status [data-chip] {
+  margin-inline-start: 0;
 }
 
 .body {
   composes: cardBody from '@site/src/features/landing/view/Section/Section.module.css';
-  max-inline-size: 44rem;
-  margin-block-end: var(--space-2);
-}
-
-.stage {
-  margin-block-start: var(--space-4);
+  max-inline-size: 40rem;
+  margin-block-end: var(--space-3);
+  font-size: 1rem;
 }
 
 .looks {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2) var(--space-6);
-  margin: 0 0 var(--space-3);
+  margin: var(--space-4) 0 0;
   padding: 0;
   border: 0;
 }
@@ -47,34 +42,37 @@
   accent-color: var(--signal-active-ink);
 }
 
-.frame {
+.figure {
   margin: 0;
 }
 
 .picture {
   display: none;
-  max-inline-size: min(100%, 460px);
-  block-size: auto;
-  border-radius: 6px;
 }
 
-.stage:has(.pickOdudu:checked) .odudu.light,
-.stage:has(.pickOther:checked) .other.light {
+:global([data-section='branding']):has(.pickOdudu:checked) .odudu.light,
+:global([data-section='branding']):has(.pickOther:checked) .other.light {
   display: block;
 }
 
-:global([data-theme='dark']) .stage:has(.pickOdudu:checked) .odudu.light,
-:global([data-theme='dark']) .stage:has(.pickOther:checked) .other.light {
+:global([data-theme='dark'])
+  :global([data-section='branding']):has(.pickOdudu:checked)
+  .odudu.light,
+:global([data-theme='dark'])
+  :global([data-section='branding']):has(.pickOther:checked)
+  .other.light {
   display: none;
 }
 
-:global([data-theme='dark']) .stage:has(.pickOdudu:checked) .odudu.dark,
-:global([data-theme='dark']) .stage:has(.pickOther:checked) .other.dark {
+:global([data-theme='dark']) :global([data-section='branding']):has(.pickOdudu:checked) .odudu.dark,
+:global([data-theme='dark'])
+  :global([data-section='branding']):has(.pickOther:checked)
+  .other.dark {
   display: block;
 }
 
 .caption {
-  margin-block-start: var(--space-2);
+  margin-block-start: var(--space-3);
   color: var(--ink-muted);
   font-size: 0.9375rem;
 }
