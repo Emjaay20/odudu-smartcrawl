@@ -505,13 +505,13 @@ curl -sS -i -X POST http://localhost:3000/tenants/reset-demo/login-actions/authe
 
 ```
 HTTP/1.1 302 Found
-set-cookie: reset-demo-session=01a0cb18-68f6-…; HttpOnly; SameSite=Lax; Path=/
+set-cookie: reset-demo-session=01a17a94-2e98-…:frBZEYIu2fH3…; HttpOnly; SameSite=Lax; Path=/
 set-cookie: reset-demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
-location: http://localhost:8080/callback?code=IO_8jS6voHd3FYEquHGgvuUlTYOYFKJBc7qJj8SZFBQ&state=xyz123&iss=http%3A%2F%2Flocalhost%3A3000%2Ftenants%2Freset-demo
+set-cookie: odudu-sign-in=; HttpOnly; SameSite=Lax; Path=/tenants/reset-demo/; Max-Age=0
+location: http://localhost:8080/callback?code=OF6tNtIVtws0…&state=xyz123&iss=http%3A%2F%2Flocalhost%3A3000%2Ftenants%2Freset-demo
 ```
 
-(This predates the session cookie's secret, so the cookie shown is a truncated
-bare id; it is now `<session id>:<secret>`.)
+(Session entry and code truncated.)
 
 The same link a second time is refused — minted for one redemption, the
 same as a verify-email token, and `action_tokens.consumed_at` is now set:
@@ -579,7 +579,7 @@ grep -o '<a href="[^"]*">Forgot password?' page.html | sed 's/&amp;/\&/g'
 ```
 
 ```
-<a href="/tenants/back-demo/login-actions/reset-password?return_to=%2Ftenants%2Fback-demo%2Fprotocol%2Fopenid-connect%2Fauth%3Fresponse_type%3Dcode%26client_id%3Dback-spa%26redirect_uri%3Dhttp%253A%252F%252Flocalhost%253A8080%252Fcallback%26scope%3Dopenid%26code_challenge%3DE9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM%26code_challenge_method%3DS256%26state%3Dxyz123%26nonce%3Dabc123">Forgot password?</a>
+<a href="/tenants/back-demo/login-actions/reset-password?return_to=%2Ftenants%2Fback-demo%2Fprotocol%2Fopenid-connect%2Fauth%3Fresponse_type%3Dcode%26client_id%3Dback-spa%26redirect_uri%3Dhttp%253A%252F%252Flocalhost%253A8080%252Fcallback%26scope%3Dopenid%26code_challenge%3DE9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM%26code_challenge_method%3DS256%26state%3Dxyz123%26nonce%3Dabc123">Forgot password?
 ```
 
 Asking for the reset twice from that page, as the browser holding the cookie, with the

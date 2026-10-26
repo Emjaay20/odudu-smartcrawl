@@ -416,7 +416,7 @@ the same `$VERIFIER` the login above's `$CHALLENGE` was built from:
 
 ```bash
 sleep 37
-CODE=$(curl -sS -b cookies.txt --get \
+CODE=$(curl -sS -b cookies.txt -D - -o /dev/null --get \
   --data-urlencode 'response_type=code' \
   --data-urlencode 'client_id=demo-spa' \
   --data-urlencode 'redirect_uri=http://localhost:8080/callback' \
@@ -439,11 +439,11 @@ curl -sS \
 ```
 
 ```
-1790114730 1790114767
+1793058507 1793058545
 ```
 
-`auth_time` is `2026-09-22 22:05:30 UTC`, the login at the top of this
-section; `iat` is `2026-09-22 22:06:07 UTC`, this redemption, 37 seconds
+`auth_time` is `2026-10-26 23:48:27 UTC`, the login at the top of this
+section; `iat` is `2026-10-26 23:49:05 UTC`, this redemption, 38 seconds
 later.
 
 `auth_time` is the login's own moment, not the moment this token was
@@ -526,25 +526,24 @@ otherwise):
 
 ```
 HTTP/1.1 302 Found
-set-cookie: cap-demo-session=01a0cb28-70b2-…; HttpOnly; SameSite=Lax; Path=/
+set-cookie: cap-demo-session=01a17aa1-2304-…:apbh0c0f0axp…; HttpOnly; SameSite=Lax; Path=/
 ```
 
 ```
 HTTP/1.1 302 Found
-set-cookie: cap-demo-session=01a0cb28-70b2-….01a0cb28-710c-…; HttpOnly; SameSite=Lax; Path=/
+set-cookie: cap-demo-session=01a17aa1-2304-…:apbh0c0f0axp….01a17aa1-2368-…:cJlQ59sYOvtX…; HttpOnly; SameSite=Lax; Path=/
 ```
 
 ```
 HTTP/1.1 302 Found
-set-cookie: cap-demo-session=01a0cb28-710c-….01a0cb28-715b-…; HttpOnly; SameSite=Lax; Path=/
+set-cookie: cap-demo-session=01a17aa1-2368-…:cJlQ59sYOvtX….01a17aa1-23c3-…:cMjvGbQ-cR0v…; HttpOnly; SameSite=Lax; Path=/
 ```
 
-(Session ids truncated; each response also carried the cleared persistent
-cookie, `Max-Age=0`, omitted here since nothing about it changes. This run
-predates the session cookie's secret, so each entry was then a bare id; an
-entry is now `<id>:<secret>`, and a login writes back the entries its
-browser presented, secrets unchanged.) The third login's list still holds
-two ids, not three: `70b2`, the first
+(Entries truncated to the start of the id and of the secret; each response
+also carried the cleared persistent cookie, `Max-Age=0`, and the cleared
+sign-in cookie, omitted here since nothing about them changes. A login writes
+back the entries its browser presented, secrets unchanged.) The third login's
+list still holds two entries, not three: `2304`, the first
 login's session, is gone, evicted by `admitSession` as the least recently
 active once a third session tried to join a browser already at the cap —
 the second and third logins' own ids are exactly what survive. Nothing
@@ -646,7 +645,7 @@ grep session cookies.txt
 ```
 
 ```
-#HttpOnly_localhost	FALSE	/	FALSE	0	demo-session	01a0cb29-64de-7524-9fa8-6010a80148bb.01a0cb29-652b-7714-9d32-50e37b35e21a
+#HttpOnly_localhost	FALSE	/	FALSE	0	demo-session	01a17a9e-acbd-…:zJRqGDdMlrcd….01a17a9e-ad18-…:owS7TJJUZxCd…
 ```
 
 A third `/authorize`, the same cookie jar, no `prompt` at all: the browser
@@ -692,6 +691,7 @@ cat chooser.html
   <button type="submit" name="use_other" value="1" class="quiet">Use another account</button>
 </form>
 </main>
+<script nonce="uqvJ6PTdMJzOzZrbzuj+mQ==">window.addEventListener('pageshow', function (event) { if (event.persisted) location.reload(); });</script>
 </body>
 </html>
 ```
@@ -706,7 +706,7 @@ fake:
 
 ```bash
 AUTH3=$(sed -n '/name="auth_session_id"/{s/.*value="\([^"]*\)".*/\1/p;q;}' chooser.html)
-ADA_SESSION=$(grep -o 'name="session_id" value="[^"]*">ada' chooser.html \
+ADA_SESSION=$(grep -o 'name="session_id" value="[^"]*" class="secondary choice"><bdi>ada</bdi>' chooser.html \
   | sed -E 's/.*value="([^"]*)".*/\1/')
 
 curl -sS -b cookies.txt -D - -o /dev/null \

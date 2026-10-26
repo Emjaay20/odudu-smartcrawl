@@ -209,6 +209,9 @@ curl -sS -w '\n' -X POST \
 <p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
 <h1>This link can&#39;t be used</h1>
 <p>It may have already been used or expired. Request a new one and try again.</p>
+<p class="links">
+<a href="/tenants/required-actions-demo/login-actions/reset-password">Request a new link</a>
+</p>
 </main>
 </body>
 </html>
