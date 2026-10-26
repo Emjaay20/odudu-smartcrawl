@@ -28,7 +28,11 @@ describe('the introduction', () => {
   it('compares with Keycloak, Ory, Zitadel and Authentik without asserting facts about them', () => {
     const text = page('compare.md');
     for (const name of ['Keycloak', 'Ory', 'Zitadel', 'Authentik']) {
-      expect(text, name).toMatch(new RegExp(`^- \\[${name}\\]\\(https://[^)]+\\)$`, 'mu'));
+      expect(text, name).toContain(name);
+    }
+    expect(text).toMatch(/own documentation is the place to read what they do today/u);
+    for (const name of ['Keycloak', 'Ory', 'Zitadel', 'Authentik']) {
+      expect(text, name).not.toMatch(new RegExp(`${name} (?:has|does|supports|is)\\b`, 'u'));
     }
   });
 
