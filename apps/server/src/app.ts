@@ -42,7 +42,7 @@ import {
   clientKeySet,
   configureIssuerBase,
   endAllAccess,
-  tenantIssuer,
+  tenantIssuerFor,
   oidcRoutes,
   answerNotFound,
   answerServerError,
@@ -536,7 +536,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     now: () => systemClock.now(),
     findTaken,
     lockAddress: (tx, tenantId, email) => lockEmailForCreation(tx, tenantId, email),
-    endAccess: (tx, tenant, subjectId) =>
+    endAccess: (tx, tenant, subjectId, request) =>
       endAllAccess(
         tx,
         { kek: deps.kek },
@@ -544,9 +544,18 @@ export function buildApp(deps: AppDeps): FastifyInstance {
           tenantId: tenant.id,
           subjectId,
           now: systemClock.now(),
-          issuer: tenantIssuer(deps.publicBaseUrl ?? '', tenant.name),
+          issuer: tenantIssuerFor(request, tenant.name),
         },
       ),
+    proveAddress: async (tx, subjectId, mailedTo) => {
+      const user = await userRepository(tx).bySubjectId(subjectId);
+      if (user === null || user.emailVerified || user.email === null || user.email !== mailedTo) {
+        return null;
+      }
+      const removed = await credentialRepository(tx).deleteSecondFactors(subjectId);
+      await userRepository(tx).markEmailVerified(subjectId);
+      return removed;
+    },
     createVerifiedAccount,
     findTenant: (name) => tenantSettingsRepository(deps.ownerDatabase.db).byName(name),
     getCurrentEmail: async (tx, subjectId) =>
@@ -601,6 +610,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     publicBaseUrl: deps.publicBaseUrl,
     now: () => systemClock.now(),
     createAccount,
+    lockAddress: lockEmailForCreation,
     findTaken,
     hashPassword: hashUserPassword,
     isEmailAddress,
@@ -616,7 +626,9 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     now: () => systemClock.now(),
     mailGate,
     findByEmail: async (tx, email) => {
-      const user = await userRepository(tx).byEmail(email);
+      const users = userRepository(tx);
+      const holder = await users.holderOfEmail(email);
+      const user = holder === null ? null : await users.bySubjectId(holder);
       return user?.email == null
         ? null
         : { subjectId: user.subjectId, email: user.email, locale: user.locale };

@@ -1,12 +1,13 @@
 import { type TenantScopedDatabase } from '@odudu/db';
 import { sql } from 'drizzle-orm';
 
-// Everything that creates an account for an address takes this first, so two
-// of them for one address (any case) take turns, and the one that comes second
-// finds what the first committed. Held until the transaction ends, and shared
-// by every creator: `composeUserSubject` takes it for administrators, the seed
-// command and self-registration alike. The match is the ASCII lower-casing
-// Postgres' lower() does under the C collation, as users.email_search is.
+// Taken before the check for an address and held until the transaction ends,
+// so two creations for one address (any case) take turns and the one that
+// comes second finds what the first committed. Self-registration, a
+// registration link and the administrator door each take it before they look;
+// the seed command, run by an operator, does not. The match is the ASCII
+// lower-casing Postgres' lower() does under the C collation, as
+// users.email_search is.
 export async function lockEmailForCreation(
   tx: TenantScopedDatabase,
   tenantId: string,

@@ -434,6 +434,14 @@ export interface CreateSubjectInput {
   readonly actorClientId: string;
 }
 
+/** An account already holds the address, in any case; thrown to roll the creation back. */
+export class EmailTakenError extends Error {
+  constructor() {
+    super('an account already holds this address');
+    this.name = 'EmailTakenError';
+  }
+}
+
 export interface CreateSubjectDeps {
   readonly audit: Audit;
 }
@@ -449,6 +457,12 @@ export async function createSubject(
   deps: CreateSubjectDeps,
   input: CreateSubjectInput,
 ): Promise<SubjectView> {
+  if (input.email !== null) {
+    await lockEmailForCreation(tx, input.tenantId, input.email);
+    if ((await userRepository(tx).holderOfEmail(input.email)) !== null) {
+      throw new EmailTakenError();
+    }
+  }
   const { subjectId } = await composeUserSubject(tx, {
     tenantId: input.tenantId,
     username: input.username,
