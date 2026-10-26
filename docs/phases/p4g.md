@@ -3573,6 +3573,44 @@ is OPTIONAL metadata the suite does not validate. No module's path changes.
 document gains `prompt_values_supported`), and a new section of Self-registration, _Starting at
 the registration page_, with the open and the closed tenant.
 
+## Increment 31c: front-channel frames before a matched redirect
+
+A logout that named a matched `post_logout_redirect_uri` answered `302` at once, so a client
+registered only for front-channel logout was never framed and kept its session. The frames list
+was built only where `redirectTo` was null, and the other session-ending door, the confirmation
+form's POST, had the same gate. Both now build it whenever a session ended.
+
+**What it does.** With a matched redirect and at least one framed client the answer is `200`
+with `renderLoggedOutRedirectPage`: one hidden iframe per client, a link to the target
+(`state` added), a script that follows the link when every frame has loaded or after two
+seconds, and a `meta refresh` at five seconds for a browser without script. With no framed
+client it is the same `302` as before. `frame-src` and `script-src` come from the returned
+`RenderedPage`, as ADR 0018's amendment asks.
+
+**Findings.**
+
+- `frontChannelLogoutUrl` accepted any scheme `URL` parses, so a row holding `javascript:` or
+  `data:` would have reached an iframe `src`; the CSP refused it, but only because `new
+URL(...).origin` is `null` there. It now returns null for anything but `http` and `https`.
+- The `clientsForSession` read was unbounded: a session can hold a grant for every client of a
+  tenant. A new `frontChannelClientsForSession(sessionId, limit)` returns only clients with a
+  front-channel address, in client-id order, at most `MAX_FRONT_CHANNEL_FRAMES` (25). The rest
+  are still told by back-channel logout. The back-channel path keeps `clientsForSession`.
+- `frame-src` lists the origins of the framed addresses, not the addresses, because the
+  policy's one builder (`pageHeaders`) takes origins; a path-level source is not available.
+- The renderer lint (`instrument-reach.test.ts`) allowed `<iframe` in the logout renderer
+  only; it now allows a meta refresh there too. The literal-text lint reads a standalone
+  constant as text, so the script sits inline in the template, where only its quoted strings
+  are checked.
+- verified: Chromium (the Claude Code browser pane) on the built page and its headers: a
+  refused frame redirects at once, a frame that never answers redirects, and with `script-src`
+  removed the page still redirects after five seconds, so a `meta refresh` placed in `<main>`
+  is honoured.
+
+**Still on P4b.** The confirmation form's `client_id` and redirect fields are still not in the
+anti-forgery token, and a leaked ID token still forces a `GET` logout. Neither falls out of this
+change, so the roadmap keeps them on P4b and says so in one sentence.
+
 ## What P4g shipped and what it left
 
 **Shipped, by what a person can do.** A stranger with Docker runs one command and gets
@@ -3589,8 +3627,6 @@ The README, SECURITY, CONTRIBUTING, code of conduct, trademark policy and CLA ar
 
 **Left in P4g, not built (the release candidate ships without them).**
 
-- 31c, front-channel logout when a matched post-logout redirect is named. The roadmap still
-  places the gap on P4b, which stays true until 31c ships and moves that clause.
 - 31b, Core Web Vitals and Lighthouse budgets enforced in CI (the method is in the 31 notes).
 - The landing additions: a "pages your users see" strip, "Planned" sections for agents and for
   theming, and the WordPress line under "Four small apps that work".
