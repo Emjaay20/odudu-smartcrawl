@@ -1,6 +1,5 @@
 import { DocsLink } from '@site/src/shared/view/DocsLink/DocsLink';
 import type { ReactElement } from 'react';
-import { Branding } from '@site/src/features/landing/view/Branding/Branding';
 import { PageShots } from '@site/src/features/landing/view/PageShots/PageShots';
 import { Section } from '@site/src/features/landing/view/Section/Section';
 import styles from '@site/src/features/landing/view/Pages/Pages.module.css';
@@ -18,7 +17,6 @@ export function Pages(): ReactElement {
         <DocsLink to="/guides/sign-a-user-in/">See a sign-in end to end</DocsLink>
       </p>
       <PageShots />
-      <Branding />
     </Section>
   );
 }

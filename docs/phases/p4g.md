@@ -3767,3 +3767,26 @@ A strip of the server pages, a "Built for AI agents" band, a "Branding and themi
   default in each theme, the keyboard on the radio switches to the branded one and back, and the picture loads at its
   size. The band heading says what is planned; the "ships today" line says no page is translated yet and is checked
   against the roadmap's "Translated pages and mail".
+
+## Landing design pass
+
+The pages band, the branding item and the agents band were redone after an owner review at 1440 px.
+
+- **The strip is two rows.** Sign in and Create an account are large, side by side; Reset a password and Second factor
+  are small, each with a sentence beside it. Every screenshot sits in a `Frame` of one fixed aspect ratio per row
+  (large 460:690, small 460:480): a taller page is cropped at the bottom, a shorter one is centred on the page
+  background, so a row never changes height. The images keep their intrinsic `width` and `height`.
+- **The pictures are taken at twice the size** (`deviceScaleFactor` 2, still 8 to 24 KB each) so the large pair stays
+  sharp at 540 px. The manifest keeps CSS pixel sizes and now holds a hash per page.
+- **Drift guard.** `scripts/page-shots/shots.ts` holds the pages and `renderedHash` (markup in both themes with the
+  random script nonce removed, plus `tokens.css`, `fonts.css` and `pages.css`). `drift.test.ts` fails, naming
+  `pnpm page-shots`, when a hash differs from the manifest. CLAUDE.md's documentation list names it.
+- **Branding is its own band.** `Section` takes an `aside`: text, the Planned chip, the "ships today" line, the legend
+  and the swap on the left; one framed picture on the right. The swap still needs no script (`:has()` on the band);
+  the picture loads at 920 px wide now.
+- **The agents band holds only the two Planned items**, as two wide cards. The Markdown line moved to the
+  documentation band: "Every page also comes as Markdown, and llms.txt lists them."
+- **Browser test** `tests/landing-layout.browser.test.ts`: at 1440, 1024 and 400 px, in both themes, no horizontal
+  scroll and frames of one height and width per row; and each of the three bands' content spans the container.
+- Band heights at 1440 (before, after): pages with branding 1,543 to pages 1,447 plus branding 729; agents 437 to 430. Branding plus agents together are 1,159. Lighthouse (local, three runs, landing): performance 0.97, LCP 1,991 ms
+  median, TBT 37 ms median, CLS 0.

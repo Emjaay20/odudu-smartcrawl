@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { pageShotAddress, pageShotSize } from '@site/src/features/landing/service/pageShot';
+import {
+  pageShotAddress,
+  pageShotSize,
+  shotsOfSize,
+} from '@site/src/features/landing/service/pageShot';
 
 describe('the server page pictures', () => {
   it('names the two captures of a page under the server-pages folder', () => {
@@ -14,5 +18,13 @@ describe('the server page pictures', () => {
 
   it('refuses a page the manifest does not know', () => {
     expect(() => pageShotSize('no-such-page')).toThrow('no server page capture named no-such-page');
+  });
+
+  it('splits the four pages into the large pair and the small pair, in order', () => {
+    expect(shotsOfSize('large').map((shot) => shot.name)).toEqual(['sign-in', 'create-account']);
+    expect(shotsOfSize('small').map((shot) => shot.name)).toEqual([
+      'reset-password',
+      'second-factor',
+    ]);
   });
 });

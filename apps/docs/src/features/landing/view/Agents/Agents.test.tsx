@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { PAGES_BASE, PAGES_DOCS_BASE } from '@site/site.config';
+import { PAGES_DOCS_BASE } from '@site/site.config';
 import { AGENT_ITEMS } from '@site/src/features/landing/service/content';
 import { Agents } from '@site/src/features/landing/view/Agents/Agents';
 import { markupOf } from '@site/tests/support/markup';
 
 describe('Agents', () => {
-  it('offers the Markdown copies as shipped, linking llms.txt', () => {
+  it('holds only what is planned: two items and nothing that already works', () => {
     const $ = markupOf(<Agents />);
-    const shipped = $('[data-shipped]');
-    expect(shipped).toHaveLength(1);
-    expect(shipped.find(`a[href="${PAGES_BASE}llms.txt"]`)).toHaveLength(1);
-    expect(shipped.find('[data-chip]').text()).toBe('Works today');
+    expect($('[data-planned]')).toHaveLength(2);
+    expect($('[data-shipped]')).toHaveLength(0);
+    expect($('a[href$="llms.txt"]')).toHaveLength(0);
+    expect($('[data-chip]').filter((_, chip) => $(chip).text() !== 'Planned')).toHaveLength(0);
   });
 
   it('labels each planned item Planned and links it to the roadmap', () => {
@@ -27,7 +27,7 @@ describe('Agents', () => {
     });
   });
 
-  it('does not head the band as if everything in it were built', () => {
+  it('heads the band as what is planned', () => {
     const $ = markupOf(<Agents />);
     expect($('h2').text()).toMatch(/planned/iu);
   });

@@ -3,11 +3,11 @@ import { LandingPage } from '@site/src/features/landing/view/LandingPage/Landing
 import { markupOf } from '@site/tests/support/markup';
 
 describe('LandingPage', () => {
-  it('is the page marked as the landing, with a hero and nine more bands', () => {
+  it('is the page marked as the landing, with a hero and ten more bands', () => {
     const $ = markupOf(<LandingPage />);
     expect($('main[data-page="landing"]')).toHaveLength(1);
     expect($('main > header')).toHaveLength(1);
-    expect($('main > section')).toHaveLength(9);
+    expect($('main > section')).toHaveLength(10);
     expect($('h1')).toHaveLength(1);
   });
 

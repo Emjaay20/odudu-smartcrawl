@@ -70,8 +70,11 @@ describe('the landing page as built', () => {
     expect(text).toMatch(/release candidate/iu);
     const ai = landing.find('[data-section="agents"]');
     expect(ai).toHaveLength(1);
-    expect(ai.find('[data-planned]').length).toBeGreaterThanOrEqual(2);
-    expect(hrefs(ai)).toContain(`${PAGES_BASE}llms.txt`);
+    expect(ai.find('[data-planned]')).toHaveLength(2);
+    expect(hrefs(ai)).not.toContain(`${PAGES_BASE}llms.txt`);
+    expect(hrefs(landing.find('[data-section="browse"] [data-markdown]'))).toEqual([
+      `${PAGES_BASE}llms.txt`,
+    ]);
     expect(exists(`${PAGES_BASE}llms.txt`)).toBe(true);
   });
 
@@ -264,8 +267,10 @@ describe('the pages your users see', () => {
   it('shows the four pages as real captures, in both themes, each page named', () => {
     const shots = strip.find('[data-strip] figure');
     expect(shots).toHaveLength(4);
+    expect(strip.find('[data-row="large"] figure')).toHaveLength(2);
+    expect(strip.find('[data-row="small"] figure')).toHaveLength(2);
     const names = shots
-      .find('figcaption')
+      .find('[data-caption]')
       .map((_, element) => $(element).text())
       .get();
     expect(names).toEqual(['Sign in', 'Create an account', 'Reset a password', 'Second factor']);
@@ -337,8 +342,8 @@ describe('the landing page keeps its promises small', () => {
     expect(quick.includes(RELEASE_CAVEAT), advice).toBe(!stable);
   });
 
-  it('has at most ten bands, and no picture below the first screen is fetched eagerly', () => {
-    expect(landing.find('> header, > section').length).toBeLessThanOrEqual(10);
+  it('has at most eleven bands, and no picture below the first screen is fetched eagerly', () => {
+    expect(landing.find('> header, > section').length).toBeLessThanOrEqual(11);
     const images = landing.find('img');
     const eager = images.filter((_, element) => $(element).attr('loading') !== 'lazy');
     expect(eager).toHaveLength(1);
