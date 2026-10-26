@@ -42,11 +42,13 @@ jobs:
     outputs:
       version: ${{ steps.release.outputs.version }}
       prerelease: ${{ steps.release.outputs.prerelease }}
+      latest: ${{ steps.release.outputs.latest }}
       tags: ${{ steps.release.outputs.tags }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
@@ -58,7 +60,9 @@ jobs:
         id: release
         env:
           TAG: ${{ github.event_name == 'push' && github.ref_name || format('v{0}', inputs.version) }}
-        run: node tools/release/src/index.ts tags "$TAG" "$IMAGE"
+        run: |
+          git tag --list 'v*' > "$RUNNER_TEMP/tags.txt"
+          node tools/release/src/index.ts tags "$TAG" "$IMAGE" "$RUNNER_TEMP/tags.txt"
 
       - name: Require release notes for this version
         env:
@@ -69,6 +73,18 @@ jobs:
         env:
           VERSION: ${{ steps.release.outputs.version }}
         run: node tools/release/src/index.ts stamp-compose quickstart/compose.yaml "$VERSION" > /dev/null
+
+      # A stable version is the one that becomes `latest`, so it must be a
+      # commit that went through main. A candidate may be a pull request's head.
+      - name: Require a stable tag to point at a commit on main
+        if: github.event_name == 'push' && steps.release.outputs.prerelease == 'false'
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::The stable tag $TAG points at $GITHUB_SHA, which is not on main. Merge the commit to main, then delete the tag and tag the merged commit."
+            exit 1
+          fi
 
       # The check `verify` ends in. A tag pushed before CI finished fails here:
       # run the workflow again once `gate` is green.
@@ -219,17 +235,20 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
           PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
+          LATEST: ${{ needs.prepare.outputs.latest }}
         run: |
-          kind=(--latest)
+          kind=(--latest=false)
           if [ "$PRERELEASE" = "true" ]; then kind=(--prerelease); fi
+          if [ "$LATEST" = "true" ]; then kind=(--latest); fi
           gh release create "$TAG" assets/compose.yaml assets/odudu-sbom.json assets/SHA256SUMS \
             --verify-tag --title "$TAG" --notes-file notes.md "${kind[@]}"
 
-  # Only after the release exists, and never for a release candidate, so a
-  # failed release leaves the live site as it was. pages.yml does the work.
+  # Only after the release exists, and only for the newest stable release, so a
+  # candidate or a patch to an older line never replaces the live site, and a
+  # failed release leaves it as it was. pages.yml does the work.
   site:
     needs: [prepare, release]
-    if: needs.prepare.outputs.prerelease == 'false'
+    if: needs.prepare.outputs.prerelease == 'false' && needs.prepare.outputs.latest == 'true'
     permissions:
       contents: read
       pages: write

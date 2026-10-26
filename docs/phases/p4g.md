@@ -3628,18 +3628,14 @@ password rules follow NIST SP 800-63B-4; every cookie follows one TLS setting; t
 configured public base; built-in scopes can be deleted and restored; a reset ends all access.
 The README, SECURITY, CONTRIBUTING, code of conduct, trademark policy and CLA are in place.
 
-**Left in P4g, not built (the release candidate ships without them).**
+**Left in P4g after the first candidate: built since.** The Core Web Vitals and Lighthouse
+budgets (31b), the landing additions and the `max_clients` console wording are done; see the
+whole-phase review fixes at the end of this note.
 
-- 31b, Core Web Vitals and Lighthouse budgets enforced in CI (the method is in the 31 notes).
-- The landing additions: a "pages your users see" strip, "Planned" sections for agents and for
-  theming, and the WordPress line under "Four small apps that work".
-- The `max_clients` console description (it limits every way of creating a client), with the
-  next `pnpm docs:screenshots`.
-
-**Owner steps still open** (`RELEASING.md`, "Owner steps"): make the GHCR package public after
-the first rc; require `gate` and `quickstart` (and the CLA check) once each has passed, after an
-owner-assisted pull request test; approve the CLA text; run the quick start by hand on a Mac, on
-Windows and on arm64; a domain is optional. Done: private vulnerability reporting and Pages.
+**Owner steps** (`RELEASING.md`): the package is public, `gate` is required on `main`, a
+`release tags` ruleset covers `v*` and the `github-pages` environment allows `v*` tags. Still
+open: run the quick start by hand on a Mac, on Windows and on arm64, and test the CLA from a
+second account before adding `cla` to the required checks.
 
 **Rulings I made** (in the session ledger, which is not committed):
 
@@ -3798,3 +3794,30 @@ captures (`look-odudu`, `look-other`). The strip is three columns at 900 px and 
 stacked. Band padding at 997 px and up is 4rem, not 5rem. The layout test now measures leaf content, and was shown
 to fail with a left-aligned branding picture and with narrowed agent cards. Page length at 1440: 7,760 before, 7,609
 now.
+
+## Fixes from the whole-phase review (docs and release)
+
+Each finding was checked against the repository before it was changed.
+
+- **Placement text.** The roadmap no longer says the image is unpublished; its P5a, P4f and P4b
+  bullets are short, with the detail left in section 11 and `docs/NEXT.md`. NEXT.md's position, the
+  P4g row and ordering line (now ending P4i) and the changelog's `[Unreleased]` match main. rc.2's
+  changelog date follows its tag (24 October).
+- **Security wording.** SECURITY.md, `security/disclosure.md` and `security/index.md` cite what the
+  README says (a release candidate, no independent security review) and scope out a deployment
+  that switches off a boot guard.
+- **Windows.** The README and the quick start give `curl.exe ...; docker compose up -d` beside the
+  bash line; tests hold both.
+- **Client cap and subjects wording.** `max_clients` says it holds however a client is made; the
+  subjects page says people and services; `pnpm docs:screenshots` recaptured the records.
+- **Release machinery.** `release.yml` refuses a stable tag that is not on `main`
+  (`git merge-base --is-ancestor`), and `latest`, `X.Y` and the GitHub Release's latest mark move
+  only to the newest release (`tools/release`, tested). Every action is pinned
+  (`tests/lint/actions-pinned.test.ts`), Dependabot has a two-day cooldown beyond pnpm's
+  `minimumReleaseAge`, and `packageManager` carries the integrity hash `corepack use` computes.
+- **cosign.** verified: `gh api repos/sigstore/cosign-installer/contents/action.yml?ref=<pinned sha>`
+  shows the signing step installs cosign v3.0.6. cosign is not installed here, so "3.0 or newer"
+  is inferred from that and stated as a plain minimum.
+- **Owner settings read from the live repository** with `gh api`: the `github-pages` environment's
+  deployment policies (`main` branch, `v*` tag), the `release tags` ruleset (creation, deletion and
+  non-fast-forward on `refs/tags/v*`) and the branch protection contexts (now with `gate`).

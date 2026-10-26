@@ -21,7 +21,7 @@ Each page below does one job. It says what the area is for, walks through the co
 
 ### Identity
 
-2. [Subjects](./subjects.mdx): the people, services and agents that sign in.
+2. [Subjects](./subjects.mdx): the people and services that sign in.
 3. [Groups](./groups.mdx): sets of subjects that share roles.
 4. [Roles](./roles.mdx): the names that tokens carry, and what holds them.
 

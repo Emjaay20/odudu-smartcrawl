@@ -40,13 +40,13 @@ jobs:
       buildImage: ${{ steps.classify.outputs.buildImage }}
       docsOnly: ${{ steps.classify.outputs.docsOnly }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # The diff needs the merge base, so real history.
           fetch-depth: 0
           persist-credentials: false
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
 
@@ -61,7 +61,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -88,7 +88,7 @@ jobs:
       # fix, and a cache that only a green run may write starts that rerun cold.
       - name: Save the Turborepo cache
         if: always() && !cancelled()
-        uses: actions/cache/save@v6.1.0
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .turbo/cache
           key: turbo-${{ runner.os }}-static-${{ github.sha }}
@@ -120,7 +120,7 @@ jobs:
           - { name: server-2, package: '@odudu/server', shard: '2/2' }
     name: test ${{ matrix.name }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -149,7 +149,7 @@ jobs:
             printf '%s\n' "$SHARD" > "reports/${{ matrix.name }}/$(dirname "$f")/trace-shard"
           done
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: success()
         with:
           name: trace-${{ matrix.name }}
@@ -166,7 +166,7 @@ jobs:
       # fix, and a cache that only a green run may write starts that rerun cold.
       - name: Save the Turborepo cache
         if: always() && !cancelled()
-        uses: actions/cache/save@v6.1.0
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .turbo/cache
           key: turbo-${{ runner.os }}-test-${{ matrix.name }}-${{ github.sha }}
@@ -181,7 +181,7 @@ jobs:
     env:
       FILTER: ${{ needs.changes.outputs.server == 'true' && '--filter=!@odudu/protocol-oidc --filter=!@odudu/protocol-admin --filter=!@odudu/admin-console --filter=!@odudu/server --filter=!@odudu/docs' || '--filter=@odudu/repo-checks' }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -204,7 +204,7 @@ jobs:
             echo 1/1 > "reports/rest/$(dirname "$f")/trace-shard"
           done
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: success()
         with:
           name: trace-rest
@@ -221,7 +221,7 @@ jobs:
       # fix, and a cache that only a green run may write starts that rerun cold.
       - name: Save the Turborepo cache
         if: always() && !cancelled()
-        uses: actions/cache/save@v6.1.0
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .turbo/cache
           key: turbo-${{ runner.os }}-test-rest-${{ github.sha }}
@@ -234,18 +234,18 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
       - name: Enable corepack
         run: corepack enable
 
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
 
-      - uses: actions/download-artifact@v8
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           pattern: trace-*
           path: reports
@@ -268,7 +268,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -304,7 +304,7 @@ jobs:
           cp apps/docs/trace-report.json reports/docs/apps/docs/
           echo 1/1 > reports/docs/apps/docs/trace-shard
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: success()
         with:
           name: trace-docs
@@ -321,7 +321,7 @@ jobs:
       # fix, and a cache that only a green run may write starts that rerun cold.
       - name: Save the Turborepo cache
         if: always() && !cancelled()
-        uses: actions/cache/save@v6.1.0
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .turbo/cache
           key: turbo-${{ runner.os }}-docs-${{ github.sha }}
@@ -351,7 +351,7 @@ jobs:
     env:
       QUERY_PLANS_OUT: ${{ github.workspace }}/query-plans-out
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -362,7 +362,7 @@ jobs:
 
       - name: Upload the plan inventory
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: query-plans-inventory
           path: query-plans-out
@@ -374,7 +374,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -410,7 +410,7 @@ jobs:
         shard: ['1/3', '2/3', '3/3']
     name: e2e ${{ matrix.shard }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -438,7 +438,7 @@ jobs:
 
       - name: Upload the Playwright report
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: playwright-report-${{ strategy.job-index }}
           path: |
@@ -480,7 +480,7 @@ jobs:
       COMPOSE_PROJECT_NAME: odudu-quickstart-stack
       ODUDU_IMAGE: odudu-smoke-odudu
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -545,7 +545,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -579,7 +579,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -612,7 +612,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -635,7 +635,7 @@ jobs:
           pnpm exec lhci collect
           pnpm exec lhci assert
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: lighthouse-reports
@@ -650,12 +650,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
       - name: Cache the conformance suite's Maven repository
-        uses: actions/cache@v6.1.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: /tmp/conformance-m2
           key: conformance-suite-m2-release-v5.1.36
@@ -690,12 +690,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # The check reads commit messages, so it needs real history.
           fetch-depth: 0
           persist-credentials: false
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
 
@@ -720,7 +720,7 @@ jobs:
           done
           exit $status
 
-  # The check to require. A job that was skipped, because `changes` found
+  # The check `main` requires. A job that was skipped, because `changes` found
   # nothing it could affect, passes; one that failed or was cancelled does not.
   gate:
     needs:

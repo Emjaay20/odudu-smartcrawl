@@ -29,7 +29,7 @@ export type { Asking };
 
 export interface SubjectCredentials {
   name: string;
-  // A service or agent subject, which holds none of this.
+  // A service subject, which holds none of this.
   itself: boolean;
   credentials: Read<ListCredentialsResponse>;
   lockout: Read<Lockout>;

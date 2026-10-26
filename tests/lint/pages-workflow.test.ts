@@ -85,7 +85,9 @@ describe('the site job of the release workflow', () => {
 
   it('calls the pages workflow only after the release exists, and never for a candidate', () => {
     expect(block).toMatch(/^ {4}needs: \[prepare, release\]$/mu);
-    expect(block).toMatch(/^ {4}if: needs\.prepare\.outputs\.prerelease == 'false'$/mu);
+    expect(block).toMatch(
+      /^ {4}if: needs\.prepare\.outputs\.prerelease == 'false' && needs\.prepare\.outputs\.latest == 'true'$/mu,
+    );
     expect(block).toMatch(/^ {4}uses: \.\/\.github\/workflows\/pages\.yml$/mu);
   });
 

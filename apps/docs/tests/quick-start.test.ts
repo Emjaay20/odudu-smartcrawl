@@ -45,6 +45,12 @@ describe('the quick start', () => {
     expect(first.split('\n').filter((line) => line.trim() !== '')).toHaveLength(1);
   });
 
+  it('gives the PowerShell form of the command in the next block', () => {
+    const second = code(nodes.slice(firstCode + 1).find((node) => node.type === 'code'));
+    expect(second).toBe(`curl.exe -fsSLO ${DOWNLOAD}\ndocker compose up -d`);
+    expect(toString(nodes[firstCode + 1])).toMatch(/PowerShell/u);
+  });
+
   it('is under 400 words before the first command', () => {
     const before = nodes
       .slice(0, firstCode)

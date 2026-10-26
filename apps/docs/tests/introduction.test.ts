@@ -28,7 +28,11 @@ describe('the introduction', () => {
   it('compares with Keycloak, Ory, Zitadel and Authentik without asserting facts about them', () => {
     const text = page('compare.md');
     for (const name of ['Keycloak', 'Ory', 'Zitadel', 'Authentik']) {
-      expect(text, name).toMatch(new RegExp(`^\\| ${name}\\s*\\|.*see their documentation`, 'imu'));
+      expect(text, name).toContain(name);
+    }
+    expect(text).toMatch(/own documentation is the place to read what they do today/u);
+    for (const name of ['Keycloak', 'Ory', 'Zitadel', 'Authentik']) {
+      expect(text, name).not.toMatch(new RegExp(`${name} (?:has|does|supports|is)\\b`, 'u'));
     }
   });
 
@@ -42,8 +46,7 @@ describe('the introduction', () => {
   it('points every capability it lists at a page that shows it', () => {
     const rows = page('compare.md')
       .split('\n')
-      .filter((line) => /^\| (?!Keycloak|Ory|Zitadel|Authentik|-)/u.test(line))
-      .filter((line) => !/^\| (Feature|Project)/u.test(line));
+      .filter((line) => /^\| [^-F]/u.test(line));
     expect(rows.length).toBeGreaterThan(5);
     for (const row of rows) expect(row, row).toMatch(/\]\(\.\.?\/[^)]*\.md/u);
   });

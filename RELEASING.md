@@ -23,11 +23,13 @@ Release marked as a pre-release, and nothing that follows `latest` moves.
 
 1. Write the changelog first. In `CHANGELOG.md`, give the changes under
    `Unreleased` a heading `## [X.Y.Z] - YYYY-MM-DD` and update the links at the
-   foot. The date must be a real `YYYY-MM-DD`; a test checks it. The workflow
+   foot. The date is a real `YYYY-MM-DD` in UTC, the day GitHub shows for the
+   release; a test checks the form. The workflow
    takes the release notes from that section and stops without it.
 2. Merge to `main` and wait for the `gate` check to pass on that commit. The
-   workflow refuses a commit it has not passed on. A release candidate can be
-   tagged on a pull request's head instead.
+   workflow refuses a commit it has not passed on. A stable tag must point at
+   a commit on `main`, and the workflow refuses one that does not. A release
+   candidate can be tagged on a pull request's head instead.
 3. Tag the commit and push the tag:
 
    ```text
@@ -47,7 +49,8 @@ on `main` for the tab to offer it.
 ## What the workflow does
 
 - **prepare** checks the tag has the right shape, that `CHANGELOG.md` has its
-  section, that the compose file can be stamped and that `gate` passed.
+  section, that the compose file can be stamped, that a stable tag is on `main`
+  and that `gate` passed.
 - **image** builds `linux/amd64` and `linux/arm64`, pushes them with an SBOM and
   build provenance, checks both architectures are in the pushed image, signs
   it by digest without a key, and verifies the signature it just made.
@@ -57,16 +60,22 @@ on `main` for the tab to offer it.
   A release candidate never replaces the live site, and a failed release leaves
   it as it was. `pages.yml` can also be run by hand, on its own.
 
-A stable tag gets the tags `X.Y.Z`, `X.Y` and `latest`. A release candidate gets
-only `X.Y.Z-rc.N`. Each job holds only the permissions it uses, and the one
+A stable tag gets the tag `X.Y.Z`. It also moves `X.Y` when no newer patch of
+that line exists, and `latest` when no newer stable release exists, so patching
+an older line leaves `latest` where it is. A release candidate gets only
+`X.Y.Z-rc.N`. Each job holds only the permissions it uses, and the one
 credential is the workflow's own token.
 
-If a run fails after the image was pushed, run it again from the Actions tab
-(re-run the failed jobs). It pushes the same tags and signs the same digest.
+If a run fails after the `image` job succeeded, run it again from the Actions
+tab (re-run the failed jobs). The image keeps its digest. If `image` itself
+failed, the rerun builds again, and the build record holds times, so the new
+image has a new digest: the tags move to it and it is signed.
 
 ## Verify an image
 
-The signature says this workflow built the image from this repository:
+The signature says this workflow built the image from this repository. You
+need cosign 3.0 or newer: it is the line the workflow signs with, and an older
+one is not known to read the signature.
 
 ```text
 cosign verify ghcr.io/wizzywit/odudu:<version> --certificate-identity-regexp '^https://github.com/wizzywit/odudu/.github/workflows/release.yml@refs/tags/v' --certificate-oidc-issuer https://token.actions.githubusercontent.com
@@ -78,6 +87,15 @@ The contents list and the build record are in the image:
 docker buildx imagetools inspect ghcr.io/wizzywit/odudu:<version> --format '{{ json .SBOM }}'
 docker buildx imagetools inspect ghcr.io/wizzywit/odudu:<version> --format '{{ json .Provenance }}'
 ```
+
+Check the compose file against the list of checksums published with it:
+
+```text
+curl -fsSLO https://github.com/wizzywit/odudu/releases/download/<tag>/SHA256SUMS
+grep ' compose.yaml$' SHA256SUMS | sha256sum -c -
+```
+
+On macOS use `shasum -a 256 -c -` in place of `sha256sum -c -`.
 
 ## Where the image and compose file come from
 
@@ -103,40 +121,36 @@ Do not move a tag and do not reuse a version number.
 Deleting a package version cannot be undone, so only the owner does it, from
 the package's page on GitHub.
 
-## Owner steps
+## Owner settings
 
-Only the owner can do these, because they change repository settings or make
-something public.
+These are settings only the owner can change. They are done:
 
-1. **Make the package public.** The first release candidate creates the package
-   as private. On GitHub open your profile, Packages, `odudu`, Package settings,
-   Change visibility, Public. Then check that
-   `docker pull ghcr.io/wizzywit/odudu:0.1.0-rc.1` works with no login, and that
-   the package page links this repository.
-2. **Require the checks.** In Settings, Rules, add `gate` and `quickstart` to
-   the checks `main` requires, beside `verify`, `container` and
-   `commit-messages`. Do it once each has passed once.
-3. **Turn on private vulnerability reporting.** Settings, Code security,
-   Private vulnerability reporting. `SECURITY.md` links to it.
-4. **Publish the site.** Done: GitHub Pages uses GitHub Actions as its source, and the
-   site is at `https://wizzywit.github.io/odudu/`. To republish it, open
-   Actions, pages, Run workflow, from `main`. Each stable tag redeploys it.
-5. **Tag the first release candidate.** From the commit CI has passed on:
+- **The package is public.** `docker pull ghcr.io/wizzywit/odudu:<version>` works
+  with no login.
+- **`main` requires `verify`, `container`, `commit-messages`, `query-plans` and
+  `gate`.** `gate` waits for the Lighthouse, end-to-end, quick start,
+  conformance, examples, console screenshots and docs jobs, and passes one that
+  was skipped, so one check stands for all of them.
+- **A `release tags` ruleset covers `v*`.** Only a repository administrator can
+  create such a tag, and nobody can move or delete one.
+- **The `github-pages` environment allows `main` and `v*` tags.** The `site`
+  job runs from a stable tag and is refused without the tag rule.
+- **Private vulnerability reporting is on**, and `SECURITY.md` links to it.
+- **GitHub Pages uses GitHub Actions as its source.** The site is at
+  `https://wizzywit.github.io/odudu/`. To republish it, open Actions, pages,
+  Run workflow, from `main`. Each newest stable release redeploys it.
 
-   ```text
-   git tag -s v0.1.0-rc.1 -m "Odudu 0.1.0-rc.1" && git push origin v0.1.0-rc.1
-   ```
+## Before the stable release
 
-6. **Run the quick start by hand** once on a Mac and once on Windows, with
+1. **Run the quick start by hand** once on a Mac and once on Windows, with
    Docker Desktop, and once on an arm64 machine. CI proves the full run on
    linux/amd64 only: its macOS and Windows runners cannot run Linux containers.
-7. **Approve the CLA, then test it once.** `CLA.md` is a draft: approve it
-   yourself or have a lawyer read it, and remove the draft header. Then open a
-   throwaway pull request from a second GitHub account (a fork works) and check
-   that the `cla` job comments, that signing by comment turns it green, that
-   the signature lands on the `cla-signatures` branch, and that your own pull
-   request and Dependabot's pass without signing. Write down the status name
-   the pull request shows. Only then add `cla` to the required checks.
+2. **Test the CLA once.** Open a throwaway pull request from a second GitHub
+   account (a fork works) and check that the `cla` job comments, that signing
+   by comment turns it green, that the signature lands on the `cla-signatures`
+   branch, and that your own pull request and Dependabot's pass without
+   signing. Write down the status name the pull request shows. Only then add
+   `cla` to the required checks.
 
 ## Moving the site to a domain
 
@@ -156,8 +170,8 @@ on custom domains for Pages, read on 2026-10-16.
    `2606:50c0:8003::153`. For `www`, add a `CNAME` to `wizzywit.github.io`.
 4. Commit one change to `apps/docs/site.config.ts`: `SITE_ORIGIN` to
    `https://<domain>` and `PAGES_BASE` to `/`.
-5. The next stable release redeploys the site. It is published on stable tags
-   only, so the site always matches a release.
+5. The next stable release redeploys the site. It is published only for the
+   newest stable release, so the site matches the latest release.
 6. In Google Search Console add the domain as a property with a DNS `TXT`
    record, and submit `https://<domain>/sitemap.xml`. Leave the old property's
    sitemap in place until the old addresses stop being served.

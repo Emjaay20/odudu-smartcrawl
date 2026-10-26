@@ -31,8 +31,8 @@ To remove it from the setup container log afterwards, run:
 
 ```
 
-Run against a local build of the image (`ODUDU_IMAGE=odudu:p4g-qs`,
-`ODUDU_PORT=3250`, a fresh project, nothing run before it); the generated
+Run against a build of the image made from this repository (`ODUDU_PORT=3250`, a new
+Compose project, nothing run before it); the generated
 password is replaced by `<generated>`. `ODUDU_ADMIN_EMAIL` names another
 administrator, and `ODUDU_ADMIN_PASSWORD` a password of your own instead of a
 generated one. In a `.env` file write a password with a `$` or `#` in single
@@ -121,7 +121,7 @@ drop the role. The service role is created from a SCRAM-SHA-256 verifier, so
 the password is not in `log_statement` output.
 
 Commands are shown as `odudu`, which is `node apps/server/src/main.ts` here.
-Run against an empty `postgres:17-alpine` (project `odudu-p4g-init`, the owner
+Run against an empty `postgres:17-alpine` (a new Compose project, the owner
 `odudu`, nothing else run before it), from the repository root with
 `NODE_NO_WARNINGS=1 ODUDU_DATABASE_URL=postgres://odudu:…@127.0.0.1:54733/odudu`;
 the generated password is replaced by `<generated>` and the chosen one by

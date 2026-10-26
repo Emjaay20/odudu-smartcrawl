@@ -47,9 +47,10 @@ The sequence, in order:
    `docs/archive/plans/`, where they record how it was planned.
 
 Work happens on a branch; `main` is protected and requires `verify`,
-`container` and `commit-messages` to pass. The `gate` job waits for every job
-in `verify.yml` and passes one skipped for a prose-only change (ADR 0044); it
-is the check to require once the owner adds it.
+`container`, `commit-messages`, `query-plans` and `gate` to pass. The `gate`
+job waits for every other job in `verify.yml` (`lighthouse`, `e2e`,
+`quickstart` and `conformance` among them) and passes one skipped for a
+prose-only change (ADR 0044), so it is the one check that stands for them all.
 
 ### What a phase owes before it closes
 

@@ -6,8 +6,9 @@ description: 'The full, recorded runs behind the guides: every request and respo
 # Transcripts
 
 The [guides](../../guides/index.md) show the short version of each journey. These pages
-are the long version: every command that was run against a real stack and every byte
-that came back, with nothing reconstructed from what the code looks like it should do.
+are the long version: every command that was run against a real stack and the output that came
+back. Each page says how its run was made, and where a block was edited or not run
+again.
 
 There are three groups, and one page on the first start.
 

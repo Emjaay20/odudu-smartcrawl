@@ -17,7 +17,7 @@ The image is named `ghcr.io/wizzywit/odudu`, and runs on `linux/amd64` and `linu
 docker pull ghcr.io/wizzywit/odudu:<version>
 ```
 
-Versions and their changes are on [the releases page](https://github.com/wizzywit/odudu/releases). Every image is signed by the workflow that built it. Check the signature before you run an image you have not run before.
+Versions and their changes are on [the releases page](https://github.com/wizzywit/odudu/releases). Every image is signed by the workflow that built it. Check the signature before you run an image you have not run before. You need cosign 3.0 or newer.
 
 ```text
 cosign verify ghcr.io/wizzywit/odudu:<version> --certificate-identity-regexp '^https://github.com/wizzywit/odudu/.github/workflows/release.yml@refs/tags/v' --certificate-oidc-issuer https://token.actions.githubusercontent.com
@@ -59,7 +59,7 @@ It prints a line to set as `ODUDU_CONSOLE_CLIENT_KEY`.
 
 ## 4. Start the server
 
-Give the container these variables, from your own secret handling. Odudu reads its secrets from the environment, and does not yet read them from a secret store ([Roadmap](../roadmap.md), P12). The first block is what the server will not start without; [Production settings](./configuration.md) lists them all.
+Give the container these variables, from your own secret handling. Odudu reads its secrets from the environment, and does not yet read them from a secret store ([operational readiness on the roadmap](../roadmap.md#later)). The first block is what the server will not start without; [Production settings](./configuration.md) lists them all.
 
 ```text
 NODE_ENV=production

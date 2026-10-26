@@ -121,7 +121,7 @@ describe('the lighthouse job', () => {
   });
 
   it('keeps the reports for two weeks, and even a red run uploads them', () => {
-    expect(job).toMatch(/uses: actions\/upload-artifact@v7/u);
+    expect(job).toMatch(/uses: actions\/upload-artifact@[0-9a-f]{40} # v7\.\d+\.\d+/u);
     expect(job).toMatch(/if: always\(\)/u);
     expect(job).toMatch(/path: apps\/docs\/\.lighthouseci/u);
     expect(job).toMatch(/include-hidden-files: true/u);

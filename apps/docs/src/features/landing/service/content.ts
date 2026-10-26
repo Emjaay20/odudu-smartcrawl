@@ -25,7 +25,7 @@ export const COMMANDS: ShellCommand[] = [
   {
     shell: 'windows',
     label: 'PowerShell',
-    command: `curl.exe -fsSLO ${RELEASE_URL}; docker compose up -d`,
+    command: `curl.exe -fsSLO ${RELEASE_URL}; if ($?) { docker compose up -d }`,
   },
 ];
 

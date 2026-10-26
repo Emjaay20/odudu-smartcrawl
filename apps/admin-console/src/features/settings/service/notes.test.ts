@@ -32,6 +32,14 @@ describe('rangeRule', () => {
   });
 });
 
+describe('the client cap', () => {
+  it('says it holds however a client is created, not only for registration', () => {
+    const text = fieldDescription(field('max_clients'));
+    expect(text).toContain('however they are created');
+    expect(text).not.toMatch(/registration/u);
+  });
+});
+
 describe('fieldDescription', () => {
   it('puts what a setting does before the range the server holds it to', () => {
     const text = fieldDescription(field('password_history_depth'));

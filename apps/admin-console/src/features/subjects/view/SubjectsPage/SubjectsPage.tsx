@@ -61,7 +61,7 @@ function List({ tenant }: { tenant: string }) {
       list={list}
       kicker={tenant}
       title="Subjects"
-      description="The people, services and agents that sign in to this tenant. Open one to change its profile or its credentials."
+      description="The people and services that sign in to this tenant. Open one to change its profile or its credentials."
       {...(createHref === null
         ? {}
         : {

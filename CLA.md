@@ -1,9 +1,8 @@
 # Odudu contributor licence agreement
 
 This agreement is between you and the owner of Odudu: Wisdom Praise (the
-"Owner"). The Owner's name here is the one on the project's
-[ownership notice](TRADEMARK.md); the exact legal name or entity is still to be
-confirmed.
+"Owner"), an individual. The [trademark policy](TRADEMARK.md) names the same
+owner.
 
 ## Why it exists
 

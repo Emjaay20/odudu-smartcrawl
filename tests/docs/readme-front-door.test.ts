@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { stable, candidateTag } from './support/release.js';
+import { stable, candidateTag, RELEASE_ASSET } from './support/release.js';
 import { REPO_ROOT } from './markdown.js';
 import { siteConstants } from './site-constants.js';
 
@@ -271,6 +271,14 @@ describe('the quick start in the README is the quick start page', () => {
 
   it('copies each line from a block of the page, byte for byte', () => {
     for (const command of commands) expect(onPage.has(command), command).toBe(true);
+  });
+
+  it('gives the PowerShell form of the first command, as the page does', () => {
+    const [, windows = ''] = codeBlocks(section('Quick start'));
+    expect(windows.trim()).toBe(
+      `curl.exe -fsSLO ${REPOSITORY_URL}/${RELEASE_ASSET}\ndocker compose up -d`,
+    );
+    for (const line of windows.trim().split('\n')) expect(onPage.has(line), line).toBe(true);
   });
 
   it('carries no operating detail', () => {

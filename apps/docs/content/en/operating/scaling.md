@@ -12,7 +12,7 @@ You will decide how big to make the one server Odudu runs as, and what to do whe
 - **Migrations run at start, in every process, with no lock.** Two servers starting at once would race to change the same database.
 - **The throttles count in one process's memory.** The per-origin, sign-in and client-secret limits are windows held by the process that served the request, so each of two instances would allow the full budget and a caller could spend both.
 
-Replicas, a migration lock and limits shared between instances are planned in [the roadmap](../roadmap.md) under P11, with a metrics endpoint and a deadline on the two outbound lookups that `/token` and `/userinfo` make. Nothing in the product today depends on them being there.
+Replicas, a migration lock and limits shared between instances are planned in [the roadmap](../roadmap.md#later) under many instances and performance, with a metrics endpoint and a deadline on the two outbound lookups that `/token` and `/userinfo` make. Nothing in the product today depends on them being there.
 
 ## What to do meanwhile
 
@@ -23,4 +23,4 @@ Replicas, a migration lock and limits shared between instances are planned in [t
 
 ## How big it is meant to get
 
-Odudu is designed for one tenant of a million people and ten thousand clients, ten thousand tenants, and a hundred million audit events. Every list endpoint is bounded and served by an index. The load and latency numbers that prove it for a deployment, and read replicas, are P11's work, so measure your own before you rely on the design figure.
+Odudu is designed for one tenant of a million people and ten thousand clients, ten thousand tenants, and a hundred million audit events. Every list endpoint is bounded and served by an index. The load and latency numbers that prove it for a deployment, and read replicas, are planned work on [the roadmap](../roadmap.md#later), so measure your own before you rely on the design figure.

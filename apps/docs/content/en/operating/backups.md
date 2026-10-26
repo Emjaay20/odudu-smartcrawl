@@ -7,7 +7,7 @@ description: What to copy so a lost server can be rebuilt, and what the project 
 
 You will take a copy of Odudu's database, keep its encryption key beside it but separately, and check that the copy can be read. Everything Odudu knows is in one PostgreSQL database plus a few secrets in the server's environment, so that is all there is to back up.
 
-The mechanism is `pg_dump`. Written backup and restore guidance, proven by an actual restore, is not done: it is planned work ([roadmap](../roadmap.md), P12). Until then this page is what the project knows, not a promise that a restore works for your deployment. Restore into a scratch database once, so you find out before you need it.
+The mechanism is `pg_dump`. Written backup and restore guidance, proven by an actual restore, is not done: it is planned work, under [operational readiness](../roadmap.md#later) on the roadmap. Until then this page is what the project knows, not a promise that a restore works for your deployment. Restore into a scratch database once, so you find out before you need it.
 
 ## What to keep
 
@@ -44,7 +44,7 @@ You should see a line of `TABLE DATA` for each table.
 
 ## 3. Restore it into a new cluster
 
-Do this once on a scratch PostgreSQL 17, so you know it works before you need it. The steps below were run end to end against a dump of the quick start's stack: the restored database served the `system` tenant's discovery document and signing keys to a server started with the same `ODUDU_KEK`. The project has not yet run a restore against a full sign-in, which is what [the roadmap](../roadmap.md) (P12) promises.
+Do this once on a scratch PostgreSQL 17, so you know it works before you need it. The steps below were run end to end against a dump of the quick start's stack: the restored database served the `system` tenant's discovery document and signing keys to a server started with the same `ODUDU_KEK`. The project has not yet run a restore against a full sign-in, which is what [the roadmap](../roadmap.md#later) promises under operational readiness.
 
 1. As an administrator, create the owner under the name it had when you dumped (`odudu` on the quick start's stack, `odudu_owner` if you followed [Deploying](./deploying.md)), the serving role and an empty database. Also create `odudu_app` and give it to the serving role. The migrations normally do this, but a restore brings the record that they already ran, so they never run again, and without the grant the serving role has no privileges while `/health/ready` still answers `200`.
 

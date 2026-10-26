@@ -11,7 +11,7 @@ export function usernameProblem(username: string): string | null {
   return username === '' ? 'Enter a username.' : null;
 }
 
-// A service or agent subject has no `users` row: no username, email,
+// A service subject has no `users` row: no username, email,
 // profile, password or lockout, since it signs in as itself.
 export function signsInAsItself(subject: Pick<Subject, 'type'>): boolean {
   return subject.type !== 'user';

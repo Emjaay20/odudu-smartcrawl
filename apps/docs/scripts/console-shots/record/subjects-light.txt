@@ -47,7 +47,7 @@ demo
 Back to system
 demo
 Subjects
-The people, services and agents that sign in to this tenant. Open one to change its profile or its credentials.
+The people and services that sign in to this tenant. Open one to change its profile or its credentials.
 Create a subject
 Username
 ▾

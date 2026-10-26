@@ -41,7 +41,7 @@ describe('the prerequisites the pages state', () => {
     const text = page('contributing');
     const node = /(\d+)/u.exec(manifest.engines.node)?.[1] ?? '';
     expect(text).toContain(`Node ${node} or later`);
-    expect(text).toContain(`pnpm ${manifest.packageManager.replace('pnpm@', '')}`);
+    expect(text).toContain(`pnpm ${manifest.packageManager.replace(/^pnpm@|\+.*$/gu, '')}`);
   });
 
   it('names only root scripts that exist', () => {

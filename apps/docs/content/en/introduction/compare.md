@@ -1,7 +1,7 @@
 ---
 title: Odudu next to other identity providers
 sidebar_position: 2
-description: What Odudu does today and where each capability is shown, what it does not do, and where to read about Keycloak, Ory, Zitadel and Authentik.
+description: What Odudu does today and where each capability is shown, what it does not do, and which other projects to read about.
 ---
 
 # Odudu next to other identity providers
@@ -40,13 +40,6 @@ Each row links to a page that shows the capability working, with the requests th
 
 ## Other projects
 
-These are well-known alternatives you can run yourself. This page makes no claim about them.
-
-| Project   | How it compares                                            |
-| --------- | ---------------------------------------------------------- |
-| Keycloak  | For features, limits and licence, see their documentation. |
-| Ory       | For features, limits and licence, see their documentation. |
-| Zitadel   | For features, limits and licence, see their documentation. |
-| Authentik | For features, limits and licence, see their documentation. |
+Keycloak, Ory, Zitadel and Authentik are well-known alternatives you can run yourself. Their own documentation is the place to read what they do today.
 
 If you are coming from Keycloak, [Move from Keycloak](../guides/keycloak.md) maps its terms to Odudu's.
