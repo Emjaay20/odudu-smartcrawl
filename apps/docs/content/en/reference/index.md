@@ -49,6 +49,9 @@ The operations of the admin API, one page for each area. The same description is
 - [Settings](./generated/admin-api/settings.md)
 - [SMTP](./generated/admin-api/smtp.md)
 - [Subjects](./generated/admin-api/subjects.md)
+- [Subject access](./generated/admin-api/subject-access.md)
+- [Subject sessions](./generated/admin-api/subject-sessions.md)
+- [Subject sign-in](./generated/admin-api/subject-sign-in.md)
 - [Tenants](./generated/admin-api/tenants.md)
 - [Whoami](./generated/admin-api/whoami.md)
 

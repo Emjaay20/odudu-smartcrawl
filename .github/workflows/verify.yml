@@ -632,7 +632,8 @@ jobs:
         run: |
           CHROME_PATH="$(pnpm exec node -p "require('@playwright/test').chromium.executablePath()")"
           export CHROME_PATH
-          pnpm exec lhci autorun
+          pnpm exec lhci collect
+          pnpm exec lhci assert
 
       - uses: actions/upload-artifact@v7
         if: always()

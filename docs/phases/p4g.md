@@ -1527,7 +1527,10 @@ error and config tables from `@odudu/kernel`, the audit vocabulary from
 | `sessions`            | 17        | 18     |
 | `settings`            | 0         | 0      |
 | `smtp`                | 22        | 24     |
-| `subjects`            | 217       | 231    |
+| `subjects`            | 139       | 139    |
+| `subject-access`      | 43        | 44     |
+| `subject-sessions`    | 31        | 31     |
+| `subject-sign-in`     | 12        | 17     |
 | `tenants`             | 175       | 202    |
 | `whoami`              | 4         | 4      |
 
@@ -3698,3 +3701,25 @@ later bundle diet (build-time Prism highlighting, route data): LCP 2,889 to 3,40
 sign-a-user-in 1,643, concepts/tokens 1,626, admin-api/subjects 1,711; performance 0.95 to 0.98, CLS 0 to 0.0006,
 accessibility, best practices and SEO 1.00. TBT is 124 to 129 ms, and 234 ms (259, 234, 233) on
 `admin-api/subjects`, over its 200 ms bound.
+
+**Main-thread work cut from the CI numbers (TBT 213 / 245 / 270 / 479 / 259 ms against 200).** Long-task attribution
+showed the shared script's evaluation (200 to 275 ms), the hydration task (50 to 140 ms) and, on the subjects page, a
+172 KB document to lay out (174 ms). Three changes:
+
+- **Code highlighting moved to the build.** `prism-react-renderer` is a tokenizer with its grammars, loaded on every
+  page and run again on every code block at hydration (the theme also remounts each block after hydration). A remark
+  step (`plugins/code-tokens.ts`) now tokenizes the fenced blocks that have a grammar (json and sql; bash and sh have
+  none in that library, so they were never coloured), and the page carries the lines. The browser loads a 30-line
+  stand-in for the library (`src/features/code-block`), colours are `.tok-*` classes written from the two Prism themes
+  into `src/css/code-tokens.css` (held to the themes by `tests/code-tokens.test.ts`), and the block no longer
+  remounts. Shared script 177 KB to 152 KB gzip; the style-attribute hashes in the CSP fell from 9 to 2.
+  Measured on `concepts/tokens/` with the library stubbed: TBT median 170 to 89 ms.
+- **The subjects reference is four pages.** `subjects` (the subject and its profile), `subject-sign-in`,
+  `subject-access` and `subject-sessions`, by what a reader is doing; every operation keeps its own anchor, and the
+  console pages now link the area they mean. The coverage ratchet rows were split with the numbers each page has.
+- Landing first-load JavaScript is 175.8 KB gzip; the Playwright bound is 180 KB (was 200).
+
+Local lhci medians of TBT, same loaded machine, before and after: landing 144 to 70, quick-start 155 to 81,
+sign-a-user-in 224 to 76, admin-api/subjects 319 to 115, concepts/tokens 157 to 80. On a quieter machine the final
+run is 53 / 52 / 56 / 59 / 55 ms with performance 0.97 to 0.99 and every budget met. Left: react-dom (36 % of the
+shared script) and the route data (20 %); neither is a budget problem at these numbers.

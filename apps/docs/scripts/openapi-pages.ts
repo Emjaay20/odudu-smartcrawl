@@ -452,14 +452,36 @@ export function coverageLine(coverage: Coverage): string {
   return `Documentation coverage: ${String(coverage.described)} of ${String(coverage.total)} fields described (${String(percent)}%).`;
 }
 
+// A subject has enough calls to make one page too heavy to read and to
+// scroll, so what hangs off one is split by what a reader is doing.
+const SUBJECT_AREAS: Readonly<Record<string, string>> = {
+  credentials: 'subject-sign-in',
+  password: 'subject-sign-in',
+  'password-reset': 'subject-sign-in',
+  verification: 'subject-sign-in',
+  'actions-email': 'subject-sign-in',
+  lockout: 'subject-sign-in',
+  'recovery-codes': 'subject-sign-in',
+  'required-actions': 'subject-sign-in',
+  roles: 'subject-access',
+  'effective-roles': 'subject-access',
+  'admin-capabilities': 'subject-access',
+  groups: 'subject-access',
+  consents: 'subject-sessions',
+  sessions: 'subject-sessions',
+  grants: 'subject-sessions',
+};
+
 export function areaOf(path: string): string {
   const parts = path.split('/').filter((part) => part !== '');
   const [, first, second, third] = parts;
   if (first === 'tenant-imports') return 'tenants';
   if (first === 'tenants') {
     if (second === undefined || second === 'count') return 'tenants';
-    if (second.startsWith('{'))
+    if (second.startsWith('{')) {
+      if (third === 'subjects') return SUBJECT_AREAS[parts[5] ?? ''] ?? 'subjects';
       return third === undefined || third === 'export' ? 'tenants' : third;
+    }
   }
   return first ?? 'other';
 }

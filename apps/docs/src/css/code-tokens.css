@@ -1,0 +1,92 @@
+/* Written from the two Prism themes by themeCss in plugins/code-tokens.ts. */
+.theme-code-block pre {
+  color: #393a34;
+}
+.tok-comment,
+.tok-prolog,
+.tok-doctype,
+.tok-cdata {
+  color: #999988;
+  font-style: italic;
+}
+.tok-namespace {
+  opacity: 0.7;
+}
+.tok-string,
+.tok-attr-value {
+  color: #e3116c;
+}
+.tok-punctuation,
+.tok-operator {
+  color: #393a34;
+}
+.tok-entity,
+.tok-url,
+.tok-symbol,
+.tok-number,
+.tok-boolean,
+.tok-variable,
+.tok-constant,
+.tok-property,
+.tok-regex,
+.tok-inserted {
+  color: #36acaa;
+}
+.tok-atrule,
+.tok-keyword,
+.tok-attr-name,
+.tok-selector {
+  color: #00a4db;
+}
+.tok-function,
+.tok-deleted,
+.tok-tag {
+  color: #d73a49;
+}
+.tok-function-variable {
+  color: #6f42c1;
+}
+.tok-tag,
+.tok-selector,
+.tok-keyword {
+  color: #00009f;
+}
+[data-theme='dark'] .theme-code-block pre {
+  color: #f8f8f2;
+}
+[data-theme='dark'] .tok-prolog,
+[data-theme='dark'] .tok-constant,
+[data-theme='dark'] .tok-builtin {
+  color: rgb(189, 147, 249);
+}
+[data-theme='dark'] .tok-inserted,
+[data-theme='dark'] .tok-function {
+  color: rgb(80, 250, 123);
+}
+[data-theme='dark'] .tok-deleted {
+  color: rgb(255, 85, 85);
+}
+[data-theme='dark'] .tok-changed {
+  color: rgb(255, 184, 108);
+}
+[data-theme='dark'] .tok-punctuation,
+[data-theme='dark'] .tok-symbol {
+  color: rgb(248, 248, 242);
+}
+[data-theme='dark'] .tok-string,
+[data-theme='dark'] .tok-char,
+[data-theme='dark'] .tok-tag,
+[data-theme='dark'] .tok-selector {
+  color: rgb(255, 121, 198);
+}
+[data-theme='dark'] .tok-keyword,
+[data-theme='dark'] .tok-variable {
+  color: rgb(189, 147, 249);
+  font-style: italic;
+}
+[data-theme='dark'] .tok-comment {
+  color: rgb(98, 114, 164);
+}
+[data-theme='dark'] .tok-attr-name {
+  color: rgb(241, 250, 140);
+}
