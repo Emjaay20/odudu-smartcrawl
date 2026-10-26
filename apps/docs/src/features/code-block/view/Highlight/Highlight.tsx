@@ -13,7 +13,10 @@ interface Render {
   style: Record<string, never>;
   tokens: CodeLine[];
   getLineProps: (input: { line: CodeLine; className?: string }) => { className: string };
-  getTokenProps: (input: { token: CodeToken }) => { className: string; children: string };
+  getTokenProps: (input: { token: CodeToken }) => {
+    className: string | undefined;
+    children: string;
+  };
 }
 
 interface Props {

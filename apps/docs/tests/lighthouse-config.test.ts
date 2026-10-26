@@ -111,6 +111,7 @@ describe('the lighthouse job', () => {
     expect(job).toMatch(/needs: changes/u);
     expect(job).toMatch(/if: needs\.changes\.outputs\.buildImage == 'true'/u);
     expect(job).toMatch(/timeout-minutes: 20\b/u);
+    expect(job).toMatch(/timeout-minutes: 12\b/u);
   });
 
   it('builds the Pages target and runs lhci from the docs package', () => {
@@ -123,6 +124,7 @@ describe('the lighthouse job', () => {
     expect(job).toMatch(/uses: actions\/upload-artifact@v7/u);
     expect(job).toMatch(/if: always\(\)/u);
     expect(job).toMatch(/path: apps\/docs\/\.lighthouseci/u);
+    expect(job).toMatch(/include-hidden-files: true/u);
     expect(job).toMatch(/retention-days: 14/u);
   });
 

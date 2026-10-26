@@ -2,7 +2,7 @@ import { fromMarkdown } from 'mdast-util-from-markdown';
 import { describe, expect, it } from 'vitest';
 import { ADMIN_ROUTES } from '@odudu/protocol-admin';
 import { buildAdminOpenApiDocument, type OpenApiDocument } from '@odudu/protocol-admin/docs';
-import { renderOpenApiPages } from './openapi-pages.ts';
+import { areaOf, renderOpenApiPages } from './openapi-pages.ts';
 
 const document = buildAdminOpenApiDocument();
 const pages = renderOpenApiPages(document);
@@ -128,6 +128,22 @@ describe('the admin API reference pages', () => {
     for (const area of areas) {
       expect(index, area).toContain(`](./${area.replace('admin-api/', '')})`);
     }
+  });
+
+  it('splits what hangs off a subject, and refuses a sub-resource it has no page for', () => {
+    const base = '/admin/tenants/{tenant}/subjects/{id}';
+    expect(areaOf(`${base}/profile`)).toBe('subjects');
+    expect(areaOf(`${base}/lockout`)).toBe('subject-sign-in');
+    expect(areaOf(`${base}/groups`)).toBe('subject-access');
+    expect(areaOf(`${base}/grants/{clientId}`)).toBe('subject-sessions');
+    expect(() => areaOf(`${base}/something-new`)).toThrow(/subject-sign-in/u);
+  });
+
+  it('names the subject pages as a reader would say them', () => {
+    const text = pages.get('admin-api/subject-sign-in.md') ?? '';
+    expect(text).toContain('title: "Admin API: Subject sign-in"');
+    expect(text).toContain("operations of the Odudu admin API on a subject's sign-in");
+    expect(pages.get('admin-api/index.md')).toContain('[Subject sign-in](./subject-sign-in.md)');
   });
 
   it('gives every page a title and a description, and a heading for the title', () => {

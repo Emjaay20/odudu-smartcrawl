@@ -3723,3 +3723,7 @@ Local lhci medians of TBT, same loaded machine, before and after: landing 144 to
 sign-a-user-in 224 to 76, admin-api/subjects 319 to 115, concepts/tokens 157 to 80. On a quieter machine the final
 run is 53 / 52 / 56 / 59 / 55 ms with performance 0.97 to 0.99 and every budget met. Left: react-dom (36 % of the
 shared script) and the route data (20 %); neither is a budget problem at these numbers.
+
+**Old anchors on the subjects reference.** The operations that moved to `subject-sign-in`, `subject-access` and
+`subject-sessions` no longer have their anchors on `subjects/`. GitHub Pages cannot redirect and nothing links them
+yet; a reader of an old link lands on the top of `subjects/`.

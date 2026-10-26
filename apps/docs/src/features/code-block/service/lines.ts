@@ -27,7 +27,12 @@ function tokenOf(piece: string | [string, string]): CodeToken {
 // none or they are not lines.
 export function parseLines(attribute: unknown): CodeLine[] | undefined {
   if (typeof attribute !== 'string') return undefined;
-  const parsed: unknown = JSON.parse(attribute);
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(attribute);
+  } catch {
+    return undefined;
+  }
   if (!Array.isArray(parsed)) return undefined;
   const lines: CodeLine[] = [];
   for (const line of parsed as unknown[]) {
@@ -48,9 +53,7 @@ export function linesFor(code: string, written: CodeLine[] | undefined): CodeLin
   return written !== undefined && text === code ? written : plainLines(code);
 }
 
-export function tokenClass(types: string[]): string {
-  return types
-    .filter((type) => type !== 'plain')
-    .map((type) => `tok-${type}`)
-    .join(' ');
+export function tokenClass(types: string[]): string | undefined {
+  const names = types.filter((type) => type !== 'plain').map((type) => `tok-${type}`);
+  return names.length === 0 ? undefined : names.join(' ');
 }

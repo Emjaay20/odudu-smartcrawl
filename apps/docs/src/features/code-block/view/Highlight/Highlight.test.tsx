@@ -43,6 +43,6 @@ describe('Highlight', () => {
   });
 
   it('draws plain text where nothing was written', () => {
-    expect(show('a\nb')).toContain('<div class="token-line"><span class="">b</span></div>');
+    expect(show('a\nb')).toContain('<div class="token-line"><span>b</span></div>');
   });
 });

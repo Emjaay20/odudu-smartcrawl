@@ -22,6 +22,7 @@ describe('the lines a build wrote into a code block', () => {
     expect(parseLines(undefined)).toBeUndefined();
     expect(parseLines('{}')).toBeUndefined();
     expect(parseLines('[[1]]')).toBeUndefined();
+    expect(parseLines('{not json')).toBeUndefined();
   });
 
   it('colour the code they were written from', () => {
@@ -35,6 +36,6 @@ describe('the lines a build wrote into a code block', () => {
 
   it('name a token by its classes and leave plain text unclassed', () => {
     expect(tokenClass(['string', 'attr-value'])).toBe('tok-string tok-attr-value');
-    expect(tokenClass(['plain'])).toBe('');
+    expect(tokenClass(['plain'])).toBeUndefined();
   });
 });
