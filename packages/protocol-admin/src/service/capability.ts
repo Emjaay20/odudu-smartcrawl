@@ -287,7 +287,10 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     capability: 'manage-users',
     responseSchema: subjectSchema,
     bodySchema: amendSubjectRequestSchema,
-    description: TARGET_CEILING.trimStart() + LAST_ADMINISTRATOR,
+    description:
+      TARGET_CEILING.trimStart() +
+      LAST_ADMINISTRATOR +
+      ' `If-Match` is mandatory when the body renames the subject: an absent header, or `*`, is refused with `428`, and a stale one with `412`. Otherwise it is optional.',
   },
   {
     method: 'DELETE',
@@ -796,7 +799,9 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     capability: 'manage-clients',
     responseSchema: clientSchema,
     bodySchema: amendClientRequestSchema,
-    description: `${SERVICE_ACCOUNT_CEILING} ${CLIENT_LIST_BOUND}`,
+    description:
+      `${SERVICE_ACCOUNT_CEILING} ${CLIENT_LIST_BOUND}` +
+      ' `If-Match` is mandatory when the body replaces a list field: an absent header, or `*`, is refused with `428`, and a stale one with `412`. Otherwise it is optional.',
   },
   {
     method: 'DELETE',

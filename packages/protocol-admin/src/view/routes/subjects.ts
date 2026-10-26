@@ -283,7 +283,11 @@ function amendmentProblem(
     case 'last_administrator':
       return sendProblem(reply, request, lastAdministratorProblem(outcome.reason));
     case 'precondition_required':
-      return sendProblem(reply, request, ifMatchRequired(`a subject's ${outcome.field}`));
+      return sendProblem(
+        reply,
+        request,
+        ifMatchRequired(`a subject's ${outcome.field}`, request.headers['if-match']),
+      );
     case 'not_found':
       return sendProblem(reply, request, problem(404, 'about:blank', 'Not Found'));
     case 'refused_field':
@@ -798,7 +802,11 @@ export function setRequiredActionsHandler(deps: SubjectsRouteDeps): AdminRouteHa
       case 'target_ceiling':
         return targetCeilingProblem(reply, request, outcome.requested);
       case 'precondition_required':
-        return sendProblem(reply, request, ifMatchRequired('a subject\u2019s required actions'));
+        return sendProblem(
+          reply,
+          request,
+          ifMatchRequired('a subject\u2019s required actions', request.headers['if-match']),
+        );
       case 'precondition_failed':
         return sendProblem(reply, request, ifMatchStale());
       case 'ok': {
@@ -867,7 +875,11 @@ export function setRolesHandler(deps: SubjectsRouteDeps): AdminRouteHandler {
           ),
         );
       case 'precondition_required':
-        return sendProblem(reply, request, ifMatchRequired('a subject\u2019s roles'));
+        return sendProblem(
+          reply,
+          request,
+          ifMatchRequired('a subject\u2019s roles', request.headers['if-match']),
+        );
       case 'precondition_failed':
         return sendProblem(reply, request, ifMatchStale());
       case 'ok': {
@@ -964,7 +976,11 @@ export function setSubjectGroupsHandler(deps: SubjectsRouteDeps): AdminRouteHand
           ),
         );
       case 'precondition_required':
-        return sendProblem(reply, request, ifMatchRequired('a subject\u2019s groups'));
+        return sendProblem(
+          reply,
+          request,
+          ifMatchRequired('a subject\u2019s groups', request.headers['if-match']),
+        );
       case 'precondition_failed':
         return sendProblem(reply, request, ifMatchStale());
       case 'ok': {

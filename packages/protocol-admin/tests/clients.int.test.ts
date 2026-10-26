@@ -927,6 +927,7 @@ describe('PATCH /admin/tenants/{t}/clients/{id}', () => {
       payload: { web_origins: ['https://app.example'] },
     });
     expect(res.statusCode).toBe(428);
+    expect(res.json<{ detail: string }>().detail).toContain('is not accepted');
   });
 
   it('still takes If-Match: * on an amendment that replaces no list', async () => {

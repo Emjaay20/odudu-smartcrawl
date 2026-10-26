@@ -406,7 +406,11 @@ export function setScopeRolesHandler(deps: ScopesRouteDeps): AdminRouteHandler {
       case 'capability_ceiling':
         return sendProblem(reply, request, ceilingProblem(outcome.requested, outcome.removed));
       case 'precondition_required':
-        return sendProblem(reply, request, ifMatchRequired('a scope\u2019s roles'));
+        return sendProblem(
+          reply,
+          request,
+          ifMatchRequired('a scope\u2019s roles', request.headers['if-match']),
+        );
       case 'precondition_failed':
         return sendProblem(reply, request, ifMatchStale());
       case 'ok': {

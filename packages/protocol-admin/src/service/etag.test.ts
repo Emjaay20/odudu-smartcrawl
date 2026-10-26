@@ -43,7 +43,7 @@ describe('a list of validators', () => {
   it('never matches a weak validator, since If-Match compares strongly', () => {
     expect(matches('W/"abc"', '"abc"')).toBe('mismatch');
   });
-  it('is absent when the header holds nothing', () => {
+  it('is a mismatch, so a required write answers 412, when the header holds nothing', () => {
     expect(matches('', '"abc"')).toBe('mismatch');
   });
 });

@@ -223,6 +223,7 @@ describe.each(ROUTES)('$name is replaced only under a fresh If-Match', (route) =
     for (const header of ['*', ` ${etag}, *`]) {
       const refused = await put(token, url, first, header);
       expect(refused.statusCode, header).toBe(428);
+      expect(refused.json<{ detail: string }>().detail, header).toContain('is not accepted');
     }
     expect((await get(token, url)).headers.etag).toEqual(etag);
   });
