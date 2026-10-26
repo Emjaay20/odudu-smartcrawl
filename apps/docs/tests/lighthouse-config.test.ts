@@ -83,6 +83,7 @@ describe('the Lighthouse budgets', () => {
   it('runs three times on the throttled mobile profile', () => {
     expect(collect.numberOfRuns).toBe(3);
     expect(collect.settings).toEqual({
+      chromeFlags: '--no-sandbox --headless=new',
       formFactor: 'mobile',
       throttlingMethod: 'simulate',
       throttling: { rttMs: 150, throughputKbps: 1638.4, cpuSlowdownMultiplier: 4 },
