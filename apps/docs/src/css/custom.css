@@ -220,6 +220,15 @@ a.button:hover {
   text-decoration: underline;
 }
 
+.sidebar-heading {
+  padding: 0.25rem 0.75rem;
+  color: var(--ink-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
 .menu__link--active:not(.menu__link--sublist) {
   font-weight: 600;
 }

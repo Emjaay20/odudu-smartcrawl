@@ -31,6 +31,8 @@ const SECTION_ORDER = [
 
 const SIDEBAR_ORDER = [
   'Start here',
+  'Introduction',
+  'Quick start',
   'Guides',
   'Concepts',
   'Admin console',
@@ -59,8 +61,17 @@ describe('the information architecture', () => {
       SECTIONS.map((section) => `${PAGES_DOCS_BASE}${section.route}`),
     );
     expect(
-      SIDEBAR_ITEMS.map((item) => (typeof item === 'object' && 'label' in item ? item.label : '')),
+      SIDEBAR_ITEMS.map((item) => {
+        if (typeof item !== 'object') return '';
+        if (item.type === 'html') return item.value;
+        return 'label' in item ? item.label : '';
+      }),
     ).toEqual(SIDEBAR_ORDER);
+  });
+
+  it('has no anchor without an href in the sidebar, which a crawler cannot follow', () => {
+    const $ = load(path.join(docsDir('pages'), 'quick-start/index.html'));
+    expect($('.theme-doc-sidebar-menu a:not([href])').length).toBe(0);
   });
 
   it('opens the guides to the journeys, in order, and no further', () => {

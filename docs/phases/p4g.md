@@ -3659,3 +3659,32 @@ shipped capabilities and links the roadmap, with no planned-feature list of its 
 attempts" and "Update your account" page kinds, never reached on a live stack; and the harness
 estimate of 25 to 40 hours for a full re-run. None of them is a wrong claim today: each is a
 capture older than the code it describes.
+
+### Increment 31b, Core Web Vitals and Lighthouse budgets in CI
+
+`apps/docs/lighthouserc.json` holds the budgets (`@lhci/cli` 0.15.1, the version the plan names; the registry's
+release-age rule allowed it) and the `lighthouse` job in `verify.yml` runs it on the Pages build, served by
+`scripts/serve.mjs` on 4291. Three runs per page, median, Lighthouse 12.6.1, mobile profile, simulated throttling. Two
+differences from the plan text: `serve.mjs` takes `--base` and `--port` flags, not positionals; and the job builds
+`build:pages` itself, because the `docs` job uploads only a test report, no `dist/pages`. The job needs `changes` and
+runs when `buildImage` is true, like `console-shots`. A `pnpm.overrides` entry (`chromium-bidi>zod`) keeps the
+lockfile at one zod, which `tests/lint/console-zod-instance.test.ts` requires; `@lhci/cli` pulled a second.
+
+**Medians per URL**, on a loaded laptop (load average 15 to 40), second full run:
+
+| URL (after `/odudu/`)                          | perf | a11y | BP  | SEO | LCP ms | CLS    | TBT ms |
+| ---------------------------------------------- | ---- | ---- | --- | --- | ------ | ------ | ------ |
+| `` (landing)                                   | 0.93 | 1.00 | 1.0 | 1.0 | 3,219  | 0      | 80     |
+| `docs/quick-start/`                            | 0.95 | 1.00 | 1.0 | 1.0 | 2,889  | 0      | 67     |
+| `docs/guides/sign-a-user-in/`                  | 0.89 | 1.00 | 1.0 | 1.0 | 3,409  | 0.0006 | 161    |
+| `docs/reference/generated/admin-api/subjects/` | 0.93 | 1.00 | 1.0 | 1.0 | 2,949  | 0      | 121    |
+| `docs/concepts/tokens/`                        | 0.91 | 1.00 | 1.0 | 1.0 | 3,350  | 0      | 71     |
+
+- **Found and fixed in the page:** SEO was 0.92 on every docs page. The sidebar's non-collapsible "Start here"
+  category rendered an `<a>` with no `href` (`crawlable-anchors`). It is now a heading item
+  (`type: 'html'`), and `ia.test.ts` fails on any sidebar anchor without an `href`.
+- **Not met: LCP at most 2,500 ms.** All five pages are 2.9 to 3.4 s under the simulated profile, as the Increment 31
+  note predicted (3.3 s on the landing). `guides/sign-a-user-in` also misses performance 0.90 (0.89). The budget is
+  unchanged. verified: with the two `<script defer>` tags removed from a copy of `docs/concepts/tokens/`, simulated LCP
+  is 1.58 s (2.81 s with them; `async` instead of `defer` changes nothing). The shared Docusaurus bundle (177 KB gzip,
+  322 ms of scripting) is the cost, not the page. Until that bundle shrinks, the `lighthouse` job fails.

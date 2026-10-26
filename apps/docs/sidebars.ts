@@ -34,19 +34,21 @@ const TRANSCRIPTS = directory('Transcripts', 'reference/transcripts', [
   { type: 'doc' as const, id: 'reference/transcripts/first-start', label: 'First start' },
 ]);
 
+const START_HEADING = 'Start here';
+
 // The sidebar follows what a reader is trying to do: start, follow a
 // journey, understand, run it, look something up.
 export const SIDEBAR_ITEMS: SidebarItemConfig[] = [
+  // A heading with no link is markup rather than a category, which the theme
+  // would render as an anchor without an href and crawlers cannot follow.
   {
-    type: 'category' as const,
-    label: 'Start here',
-    collapsible: false,
-    collapsed: false,
-    items: [
-      directory(section('introduction/index').label, 'introduction'),
-      page('quick-start/index'),
-    ],
+    type: 'html' as const,
+    value: START_HEADING,
+    className: 'sidebar-heading',
+    defaultStyle: false,
   },
+  directory(section('introduction/index').label, 'introduction'),
+  page('quick-start/index'),
   directory(section('guides/index').label, 'guides'),
   directory(section('concepts/index').label, 'concepts'),
   directory(section('admin-console/index').label, 'admin-console'),

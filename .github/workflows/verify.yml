@@ -602,6 +602,46 @@ jobs:
           SHOTS_PREBUILT: '1'
           ODUDU_REVISION: ${{ github.sha }}
 
+  # Core Web Vitals and Lighthouse categories on the built site, served as
+  # GitHub Pages serves it, on a throttled mobile profile. The budgets are in
+  # apps/docs/lighthouserc.json; a failure is fixed in the page, and a flaky
+  # run is re-run, never loosened.
+  lighthouse:
+    needs: changes
+    if: needs.changes.outputs.buildImage == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup
+
+      - uses: ./.github/actions/playwright
+        with:
+          package: '@odudu/docs'
+
+      - name: Build the Pages target
+        timeout-minutes: 5
+        run: pnpm --filter @odudu/docs build:pages
+
+      - name: Measure the budgeted pages
+        timeout-minutes: 5
+        working-directory: apps/docs
+        run: |
+          CHROME_PATH="$(pnpm exec node -p "require('@playwright/test').chromium.executablePath()")"
+          export CHROME_PATH
+          pnpm exec lhci autorun
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: lighthouse-reports
+          path: apps/docs/.lighthouseci
+          if-no-files-found: ignore
+          retention-days: 14
+
   conformance:
     needs: changes
     if: needs.changes.outputs.server == 'true'
@@ -694,6 +734,7 @@ jobs:
       - e2e-shards
       - e2e
       - console-shots
+      - lighthouse
       - examples
       - quickstart
       - conformance
