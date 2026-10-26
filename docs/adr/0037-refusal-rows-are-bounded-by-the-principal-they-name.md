@@ -272,6 +272,8 @@ now do the same work, in the transaction that sets it.
   is a complete first factor, and an authenticator app locks the real owner out behind a code
   they do not hold. The password and its history stay. Nothing else is touched: an account an
   administrator or the seed command made, a verified address, and every other factor keep theirs.
+  The mark clears when the address is verified or changed by any route. Accounts that registered
+  before migration 0105 are unmarked, so they never lose factors this way: the safe side.
   The owner-notice mail has no template for this, so there is no mail.
 - **What this costs.** For such an account the mailbox outranks the factors: whoever reads it can
   reset the password and the link removes the second factor, so a mailbox compromise is a

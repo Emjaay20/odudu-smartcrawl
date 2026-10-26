@@ -401,6 +401,7 @@ export interface ComposeUserSubjectInput {
   readonly tenantId: string;
   readonly username: string;
   readonly email: string | null;
+  readonly selfRegistered?: boolean;
 }
 
 // Shared by self-registration (`createAccount`, apps/server/src/app.ts) and
@@ -420,6 +421,7 @@ export async function composeUserSubject(
     tenantId: input.tenantId,
     username: input.username,
     email: input.email,
+    ...(input.selfRegistered === true ? { selfRegistered: true } : {}),
   });
   await grantNewSubjectDefaults(tx, subject.id);
   return { subjectId: subject.id };

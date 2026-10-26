@@ -974,6 +974,17 @@ describe('userRepository.claimSelfRegistered', () => {
     expect(result.user?.emailVerified).toBe(true);
   });
 
+  it('stops being claimable once the address is verified through the mailed link', async () => {
+    const tenantId = newId();
+    const claimed = await withTenant(app.db, tenantId, async (tx) => {
+      const subjectId = await seedUser(tx, tenantId, true);
+      await userRepository(tx).markEmailVerified(subjectId);
+      await tx.update(users).set({ emailVerified: false }).where(eq(users.subjectId, subjectId));
+      return userRepository(tx).claimSelfRegistered(subjectId, 'ada@example.test');
+    });
+    expect(claimed).toBe(false);
+  });
+
   it('does nothing for an account that did not register itself', async () => {
     const tenantId = newId();
     const claimed = await withTenant(app.db, tenantId, async (tx) => {

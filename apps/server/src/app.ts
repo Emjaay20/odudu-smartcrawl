@@ -294,6 +294,7 @@ async function createAccount(
     tenantId,
     username: input.username,
     email: input.email,
+    selfRegistered: true,
   });
   await credentialRepository(tx).insert({
     tenantId,
@@ -301,7 +302,6 @@ async function createAccount(
     type: 'password',
     secret: { kind: 'password', hash: await hashUserPassword(input.password) },
   });
-  await userRepository(tx).markSelfRegistered(subjectId);
   return { subjectId };
 }
 
@@ -329,7 +329,6 @@ async function createVerifiedAccount(
     email: input.email,
   });
   await userRepository(tx).markEmailVerified(subjectId);
-  await userRepository(tx).markSelfRegistered(subjectId);
   await credentialRepository(tx).insert({
     tenantId,
     subjectId,

@@ -231,6 +231,7 @@ describe('a password reset', () => {
 });
 
 interface Account {
+  readonly email: string;
   readonly tenant: string;
   readonly tenantId: string;
   readonly subjectId: string;
@@ -254,11 +255,13 @@ async function account(emailVerified: boolean, selfRegistered = false): Promise<
     const user = await userRepository(tx).byUsername('ada');
     if (user === null) throw new Error('no ada');
     if (emailVerified) await userRepository(tx).markEmailVerified(user.subject.id);
-    if (selfRegistered) await userRepository(tx).markSelfRegistered(user.subject.id);
     return user.subject.id;
   });
   await owner.db.delete(emailOutbox);
-  return { tenant, tenantId: seeded.tenantId, subjectId };
+  if (selfRegistered) {
+    await owner.db.update(users).set({ selfRegistered }).where(eq(users.subjectId, subjectId));
+  }
+  return { tenant, tenantId: seeded.tenantId, subjectId, email: 'ada@example.test' };
 }
 
 async function mailedKey(who: Account, actions?: readonly string[]): Promise<string> {
@@ -274,7 +277,7 @@ async function mailedKey(who: Account, actions?: readonly string[]): Promise<str
           issuerBase: PUBLIC_BASE_URL,
           now: () => new Date(),
         },
-        { subjectId: who.subjectId, email: 'ada@example.test' },
+        { subjectId: who.subjectId, email: who.email },
         { actions },
       ),
     );
@@ -397,7 +400,7 @@ describe('a reset', () => {
         await app.inject({
           method: 'POST',
           url: `/tenants/${who.tenant}/login-actions/reset-password`,
-          payload: new URLSearchParams({ email: 'ada@example.test' }).toString(),
+          payload: new URLSearchParams({ email: who.email }).toString(),
           headers: FORM,
         });
       }
@@ -447,6 +450,31 @@ describe('a reset', () => {
       expect(await addressVerified(who)).toBe(false);
     },
   );
+
+  it('leaves the factors when an administrator changes the address of a verified account', async () => {
+    const original = await account(true, true);
+    await enrolFactors(original);
+    const who = { ...original, email: 'ada.new@example.test' };
+    await withTenant(appDb.db, who.tenantId, (tx) =>
+      userRepository(tx).updateEmail(who.subjectId, who.email),
+    );
+    expect(await addressVerified(who)).toBe(false);
+
+    expect((await redeemFor(who, undefined)).statusCode).toBe(200);
+    expect(await credentialTypes(who)).toEqual(ALL);
+  });
+
+  it('leaves the factors once the address has been verified, even if it is later unverified', async () => {
+    const who = await account(false, true);
+    await enrolFactors(who);
+    await withTenant(appDb.db, who.tenantId, async (tx) => {
+      await userRepository(tx).setVerification(who.subjectId, { emailVerified: true });
+      await userRepository(tx).setVerification(who.subjectId, { emailVerified: false });
+    });
+
+    expect((await redeemFor(who, undefined)).statusCode).toBe(200);
+    expect(await credentialTypes(who)).toEqual(ALL);
+  });
 
   it('leaves the factors of a self-registered account whose address was verified', async () => {
     const who = await account(true, true);

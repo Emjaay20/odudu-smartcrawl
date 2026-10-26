@@ -111,6 +111,8 @@ export interface NewUser {
   tenantId: string;
   username: string;
   email?: string | null;
+  // Made by the account's own registration form (migration 0105).
+  selfRegistered?: boolean;
 }
 
 export function userRepository(tx: TenantScopedDatabase) {
@@ -208,6 +210,7 @@ export function userRepository(tx: TenantScopedDatabase) {
           tenantId: input.tenantId,
           username: input.username,
           email,
+          selfRegistered: input.selfRegistered ?? false,
         })
         .returning();
       const row = rows[0];
@@ -273,7 +276,12 @@ export function userRepository(tx: TenantScopedDatabase) {
 
       const rows = await tx
         .update(users)
-        .set({ ...patch, profileUpdatedAt: new Date() })
+        // A verified address is no longer one a stranger registered.
+        .set({
+          ...patch,
+          ...(patch.emailVerified === true ? { selfRegistered: false } : {}),
+          profileUpdatedAt: new Date(),
+        })
         .where(eq(users.subjectId, subjectId))
         .returning();
       const row = rows[0];
@@ -314,7 +322,7 @@ export function userRepository(tx: TenantScopedDatabase) {
       }
       const rows = await tx
         .update(users)
-        .set({ email, emailVerified: false })
+        .set({ email, emailVerified: false, selfRegistered: false })
         .where(eq(users.subjectId, subjectId))
         .returning();
       const row = rows[0];
@@ -345,11 +353,6 @@ export function userRepository(tx: TenantScopedDatabase) {
       return toUser(row);
     },
 
-    // The account's own registration form made it.
-    async markSelfRegistered(subjectId: string): Promise<void> {
-      await tx.update(users).set({ selfRegistered: true }).where(eq(users.subjectId, subjectId));
-    },
-
     // A mailed link has proved the mailbox of an account that registered
     // itself and never verified the address: the address becomes verified and
     // the account stops being one this can happen to again. True only for
@@ -377,7 +380,7 @@ export function userRepository(tx: TenantScopedDatabase) {
     async markEmailVerified(subjectId: string): Promise<UserRecord> {
       const rows = await tx
         .update(users)
-        .set({ emailVerified: true })
+        .set({ emailVerified: true, selfRegistered: false })
         .where(eq(users.subjectId, subjectId))
         .returning();
       const row = rows[0];
