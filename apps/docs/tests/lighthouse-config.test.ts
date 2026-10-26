@@ -49,7 +49,7 @@ const PAGES = [
 const BOUNDS: Record<string, Assertion[1]> = {
   'largest-contentful-paint': { maxNumericValue: 2500 },
   'cumulative-layout-shift': { maxNumericValue: 0.1 },
-  'total-blocking-time': { maxNumericValue: 200 },
+  'total-blocking-time': { maxNumericValue: 350 },
   'categories:performance': { minScore: 0.9 },
   'categories:accessibility': { minScore: 0.95 },
   'categories:best-practices': { minScore: 0.95 },

@@ -3727,3 +3727,10 @@ shared script) and the route data (20 %); neither is a budget problem at these n
 **Old anchors on the subjects reference.** The operations that moved to `subject-sign-in`, `subject-access` and
 `subject-sessions` no longer have their anchors on `subjects/`. GitHub Pages cannot redirect and nothing links them
 yet; a reader of an old link lands on the top of `subjects/`.
+
+**The TBT bound is 350 ms, because the CI runner's speed varies by about 1.8 times.** The same build, measured on the
+runner on two runs, had a CPU benchmark index of about 3,700 (TBT 65 to 157 ms, green) and about 2,060 (TBT 143 to 300 ms,
+red against 200). A 4x slowdown applied to a slower host is a harsher profile, so a bound inside that spread fails on
+runner luck and not on a regression. LCP (at most 2,500 ms, measured 1.6 to 2.1 s on both) and the other bounds do not move.
+350 ms sits above the slowest measured page (300 ms, the subjects reference) and well under 600 ms, where Lighthouse scores
+TBT as poor; a real regression in script cost still crosses it.
