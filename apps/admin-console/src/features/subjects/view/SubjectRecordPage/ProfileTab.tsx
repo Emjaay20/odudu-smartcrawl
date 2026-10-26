@@ -1,5 +1,10 @@
 import { Link } from 'react-aria-components';
-import { signsInAsItself, type Profile, type Subject } from '#/features/subjects/service';
+import {
+  deletionRefusal,
+  signsInAsItself,
+  type Profile,
+  type Subject,
+} from '#/features/subjects/service';
 import {
   useSubjectAccount,
   type SubjectAccount,
@@ -145,8 +150,23 @@ function Status({ account, self }: { account: SubjectAccount; self: boolean }) {
   );
 }
 
-function Deletion({ account, self }: { account: SubjectAccount; self: boolean }) {
+function Deletion({
+  account,
+  self,
+  refusal,
+}: {
+  account: SubjectAccount;
+  self: boolean;
+  refusal: string | null;
+}) {
   const { name } = account;
+  if (refusal !== null) {
+    return (
+      <Panel title="Delete">
+        <p className={recordTab.text}>{refusal}</p>
+      </Panel>
+    );
+  }
   return (
     <Panel title="Delete">
       <p className={recordTab.text}>
@@ -324,7 +344,7 @@ export function ProfileTab({ tenant, subject, etag, gone, canManage, self }: Tab
         {canManage ? (
           <>
             <Status account={account} self={self} />
-            <Deletion account={account} self={self} />
+            <Deletion account={account} self={self} refusal={deletionRefusal(subject)} />
           </>
         ) : null}
       </div>

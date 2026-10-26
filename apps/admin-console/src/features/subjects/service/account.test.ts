@@ -2,6 +2,7 @@ import { USERNAME_RULE } from '@odudu/contracts/admin';
 import { describe, expect, it } from 'vitest';
 import {
   confirmationOf,
+  deletionRefusal,
   enabledVerb,
   subjectWriteFailure,
   usernameMode,
@@ -19,6 +20,18 @@ describe('the username', () => {
   it('asks for one before sending anything', () => {
     expect(usernameProblem('')).toBe('Enter a username.');
     expect(usernameProblem('ada')).toBeNull();
+  });
+});
+
+describe('when a subject cannot be deleted on its own', () => {
+  it('says to delete the client for a service subject, which the server always refuses', () => {
+    expect(deletionRefusal({ type: 'service' })).toBe(
+      "This is a client's service account. It is removed when you delete the client; it cannot be deleted on its own.",
+    );
+  });
+
+  it('has nothing to say for a user', () => {
+    expect(deletionRefusal({ type: 'user' })).toBeNull();
   });
 });
 

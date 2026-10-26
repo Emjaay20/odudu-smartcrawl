@@ -18,6 +18,9 @@ export function restoreOffer(read: Read<ListBuiltinScopesResponse>): RestoreOffe
   return names.length === 0 ? { kind: 'nothing' } : { kind: 'missing', names };
 }
 
+export const RESTORE_DIALOG_TITLE = 'Restore built-in scopes?';
+export const RESTORE_CONFIRM_LABEL = 'Restore';
+
 export function restoreText(offer: RestoreOffer): string {
   switch (offer.kind) {
     case 'reading':

@@ -130,6 +130,7 @@ function LaneBody({ spec, lane, page }: { spec: LaneSpec; lane: Lane; page: Page
                 <LoadMore
                   noun={label.toLowerCase()}
                   loading={lane.loadingMore}
+                  limited={lane.loadLimited}
                   onPress={lane.loadMore}
                 />
               </div>

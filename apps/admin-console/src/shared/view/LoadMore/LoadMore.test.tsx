@@ -14,6 +14,12 @@ it('names what it loads, presses once, and says when it is busy', async () => {
   expect(screen.getByRole('button', { name: 'Loading more deliveries…' })).toBeDisabled();
 });
 
+it('says the list is full instead of offering a button when limited', () => {
+  render(<LoadMore noun="groups" loading={false} onPress={vi.fn()} limited />);
+  expect(screen.queryByRole('button')).toBeNull();
+  expect(screen.getByText(/Narrow it to see further/u)).toBeVisible();
+});
+
 it('is the small quiet button when compact, the regular one otherwise', () => {
   const { rerender } = render(<LoadMore noun="groups" loading={false} onPress={vi.fn()} />);
   const button = screen.getByRole('button');

@@ -336,6 +336,30 @@ test('a subject is deleted only once its username is typed, and is gone from the
   await expect(page.getByRole('grid', { name: 'Subjects' })).not.toContainText(username);
 });
 
+test('a client’s service subject offers no delete, and says to delete the client', async ({
+  page,
+}) => {
+  await signIn(page, admin);
+  await page.goto(`/console/${TENANT}/clients/new`);
+  await page.getByRole('button', { name: /Web application/u }).click();
+  await page.getByRole('option', { name: 'Service' }).click();
+  await page.getByRole('textbox', { name: 'Client ID' }).fill('panel-service');
+  await page.getByRole('button', { name: 'Create client' }).click();
+  const secret = page.getByRole('dialog', { name: /^Client secret for / });
+  await takeSecret(secret);
+  await expect(page.getByRole('heading', { level: 1, name: 'panel-service' })).toBeVisible();
+
+  const serviceId = psql(
+    `select service_subject_id from clients where tenant_id = ${inTenant(TENANT)} and client_id = 'panel-service'`,
+  );
+  expect(serviceId).not.toBe('');
+  await page.goto(`/console/${TENANT}/subjects/${serviceId}`);
+  await expect(page.getByRole('heading', { level: 2, name: 'Delete' })).toBeVisible();
+  await expect(page.getByText(/it cannot be deleted on its own/u)).toBeVisible();
+  await expect(page.getByRole('button', { name: /^Delete/u })).toHaveCount(0);
+  await expectAccessible(page);
+});
+
 test('a username is renamed on its record while the tenant allows it', async ({ page }) => {
   const { renamer } = subjects;
   const tenant = renamer.tenant;

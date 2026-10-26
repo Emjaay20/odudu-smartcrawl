@@ -12,6 +12,8 @@ import {
   firstPageFailureOf,
   listToSearch,
   moreFailed,
+  ROW_BUDGET,
+  rowBudgetReached,
   withDefaults,
   withFilter,
 } from '#/shared/service/resourceList';
@@ -137,9 +139,15 @@ describe('listPagesState', () => {
 
 describe('what a list does while paging', () => {
   it('loads more only when a page follows and nothing is being read', () => {
-    expect(canLoadMore(true, false)).toBe(true);
-    expect(canLoadMore(false, false)).toBe(false);
-    expect(canLoadMore(true, true)).toBe(false);
+    expect(canLoadMore(true, false, 50)).toBe(true);
+    expect(canLoadMore(false, false, 50)).toBe(false);
+    expect(canLoadMore(true, true, 50)).toBe(false);
+  });
+  it('stops appending once the row budget is read, and says the budget is reached', () => {
+    expect(rowBudgetReached(ROW_BUDGET - 1)).toBe(false);
+    expect(rowBudgetReached(ROW_BUDGET)).toBe(true);
+    expect(canLoadMore(true, false, ROW_BUDGET - 1)).toBe(true);
+    expect(canLoadMore(true, false, ROW_BUDGET)).toBe(false);
   });
   it('says a later page failed only while the rows already read are shown', () => {
     expect(moreFailed(true, true)).toBe(true);

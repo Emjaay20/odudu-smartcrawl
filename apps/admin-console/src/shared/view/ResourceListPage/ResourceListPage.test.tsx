@@ -30,6 +30,7 @@ function state(overrides: Partial<ResourceListState<Row>> = {}): ResourceListSta
     trail: [],
     next: 'b2Zmc2V0LTE.dGFnMQ',
     loadingMore: false,
+    loadLimited: false,
     loadMoreFailed: false,
     setSearch: vi.fn(),
     setFilter: vi.fn(),

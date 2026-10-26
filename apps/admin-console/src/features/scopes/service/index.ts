@@ -32,6 +32,8 @@ export {
 } from '#/features/scopes/service/deleteWarning';
 export {
   type RestoreOffer,
+  RESTORE_CONFIRM_LABEL,
+  RESTORE_DIALOG_TITLE,
   restoredText,
   restoreFailureText,
   restoreHeld,

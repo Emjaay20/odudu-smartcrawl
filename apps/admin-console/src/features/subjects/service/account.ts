@@ -17,6 +17,14 @@ export function signsInAsItself(subject: Pick<Subject, 'type'>): boolean {
   return subject.type !== 'user';
 }
 
+// The server refuses to delete a service subject on its own, since its
+// client would be left without one, so the console offers no button.
+export function deletionRefusal(subject: Pick<Subject, 'type'>): string | null {
+  return subject.type === 'service'
+    ? "This is a client's service account. It is removed when you delete the client; it cannot be deleted on its own."
+    : null;
+}
+
 export function enabledVerb(enabled: boolean): 'enabled' | 'disabled' {
   return enabled ? 'enabled' : 'disabled';
 }

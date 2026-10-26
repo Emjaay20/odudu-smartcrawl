@@ -71,7 +71,12 @@ function Rows({ client, page }: { client: Client; page: ClientDeliveries }) {
             />
             {list.more ? (
               <div className={recordTab.actions}>
-                <LoadMore noun="deliveries" loading={list.loadingMore} onPress={list.loadMore} />
+                <LoadMore
+                  noun="deliveries"
+                  loading={list.loadingMore}
+                  limited={list.loadLimited}
+                  onPress={list.loadMore}
+                />
               </div>
             ) : null}
           </>

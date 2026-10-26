@@ -2,3 +2,8 @@
   font-size: var(--type-13);
   color: var(--signal-danger-ink);
 }
+
+.limit {
+  font-size: var(--type-12);
+  color: var(--ink-muted);
+}

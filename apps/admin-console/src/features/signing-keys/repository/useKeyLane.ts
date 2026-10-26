@@ -9,6 +9,7 @@ export interface KeyLane {
   rows: readonly SigningKey[];
   next: string | null;
   loadingMore: boolean;
+  loadLimited: boolean;
   loadMoreFailed: boolean;
   loadMore: () => void;
   retry: () => void;

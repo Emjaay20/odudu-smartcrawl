@@ -14,6 +14,7 @@ import {
   listPagesState,
   listToSearch,
   moreFailed,
+  rowBudgetReached,
   staleCursorOf,
   firstPageFailureOf,
   type ListNarrowing,
@@ -66,9 +67,11 @@ export function useListPages<T>({
   // Read while rendering: the query result re-renders only for what a render
   // read, so a flag first read inside the handler would be as stale as the
   // render before the refetch it was meant to wait out.
-  const loadable = canLoadMore(pages.hasNextPage, pages.isFetching);
+  const state = listPagesState(pages.data, pages.error);
+  const loadable = canLoadMore(pages.hasNextPage, pages.isFetching, state.rows.length);
   return {
-    ...listPagesState(pages.data, pages.error),
+    ...state,
+    loadLimited: pages.hasNextPage && rowBudgetReached(state.rows.length),
     staleCursor: staleCursorOf(pages.data, pages.error),
     failure: firstPageFailureOf(pages.data, pages.error),
     loadingMore: pages.isFetchingNextPage,
@@ -137,6 +140,7 @@ export function useResourceList<T>({
     trail,
     next: pages.next,
     loadingMore: pages.loadingMore,
+    loadLimited: pages.loadLimited,
     loadMoreFailed: pages.loadMoreFailed,
     setSearch: (next) => {
       narrow({ search: next, filters: narrowing.filters });

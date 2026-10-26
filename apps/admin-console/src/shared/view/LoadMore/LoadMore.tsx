@@ -1,19 +1,24 @@
+import { LOAD_LIMIT_NOTICE } from '#/shared/service/resourceList';
 import { Button } from '#/shared/view/Button';
 import styles from '#/shared/view/LoadMore/LoadMore.module.css';
 
 // The button that appends the next page to a list already on screen. `compact`
-// is the small quiet one a tree or a picker draws inside its own box.
+// is the small quiet one a tree or a picker draws inside its own box, and
+// `limited` swaps the button for the sentence that says the list is full.
 export function LoadMore({
   noun,
   loading,
   onPress,
   compact = false,
+  limited = false,
 }: {
   noun: string;
   loading: boolean;
   onPress: () => void;
   compact?: boolean;
+  limited?: boolean;
 }) {
+  if (limited) return <p className={styles.limit}>{LOAD_LIMIT_NOTICE}</p>;
   return (
     <Button
       {...(compact ? { size: 'small', variant: 'quiet' } : {})}

@@ -77,6 +77,20 @@ it('loads more in place while there is a next page, and says when it is busy', a
   expect(screen.getByRole('button', { name: 'Loading more subjects…' })).toBeDisabled();
 });
 
+it('swaps Load more for the reason once the list cannot load further, and keeps Next', () => {
+  render(
+    <Pager
+      label="Subjects"
+      list={{ trail: [], next: 'c-2', setTrail: vi.fn(), loadMore: vi.fn(), loadLimited: true }}
+    />,
+  );
+  expect(screen.queryByRole('button', { name: /load more/iu })).toBeNull();
+  expect(
+    screen.getByText('This is as far as the list can load. Narrow it to see further.'),
+  ).toBeVisible();
+  expect(screen.getByRole('button', { name: 'Next page' })).toBeEnabled();
+});
+
 it('offers no Load more on the last page, whatever can be loaded', () => {
   render(
     <Pager

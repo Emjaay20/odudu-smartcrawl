@@ -37,6 +37,8 @@ export interface ResourceListState<T> extends ListNarrowing {
   trail: CursorTrail;
   next: string | null;
   loadingMore: boolean;
+  // More rows exist, but "Load more" has reached the row budget.
+  loadLimited: boolean;
   // A page after the first failed; the rows already shown stay.
   loadMoreFailed: boolean;
   setSearch: (search: ListSearch) => void;
@@ -165,8 +167,18 @@ export function staleCursorOf(
   return isStaleCursor(firstPageFailureOf(data, error));
 }
 
-export function canLoadMore(hasNextPage: boolean, isFetching: boolean): boolean {
-  return hasNextPage && !isFetching;
+// Rows "Load more" may append to one list. A page is at most 200 rows, so
+// this is a handful of pages; past it the list says to narrow it instead.
+export const ROW_BUDGET = 1_000;
+
+export const LOAD_LIMIT_NOTICE = 'This is as far as the list can load. Narrow it to see further.';
+
+export function rowBudgetReached(rowCount: number): boolean {
+  return rowCount >= ROW_BUDGET;
+}
+
+export function canLoadMore(hasNextPage: boolean, isFetching: boolean, rowCount: number): boolean {
+  return hasNextPage && !isFetching && !rowBudgetReached(rowCount);
 }
 
 export function moreFailed(hasRows: boolean, nextPageFailed: boolean): boolean {

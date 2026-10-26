@@ -7,6 +7,7 @@ import {
 } from '@odudu/contracts/admin';
 import { expect, it } from 'vitest';
 import { createQueryClient } from '#/shared/repository/queryClient';
+import { ROW_BUDGET } from '#/shared/service/resourceList';
 import { useResourceList } from '#/shared/repository/useResourceList';
 import type { Gateway } from '#/shared/transport/gateway';
 import { fakeTransport, json, pending, problem, type Answer } from '#/testing/fakeTransport';
@@ -52,6 +53,7 @@ function Subjects() {
     <>
       <p>{`status ${list.status}`}</p>
       <p>{list.loadMoreFailed ? 'more failed' : 'more ok'}</p>
+      <p>{`load limit ${String(list.loadLimited)}`}</p>
       <p>{`count ${list.count === null ? 'none' : String(list.count.count)}`}</p>
       <ul aria-label="Subjects">
         {list.rows.map((row) => (
@@ -164,6 +166,29 @@ it('loads more in place, and pages by the cursor trail in the address', async ()
   expect(router.state.location.searchStr).toBe(`?after=${LATER}`);
   expect(asked(LIST)).toEqual(['', `cursor=${CURSOR}`, `cursor=${LATER}`]);
   expect(screen.getByRole('button', { name: 'Load more' })).toBeDisabled();
+});
+
+it('stops appending at the row budget and says so, while Next still pages on', async () => {
+  const user = userEvent.setup();
+  const half = ROW_BUDGET / 2;
+  const rows = (from: number) =>
+    Array.from({ length: half }, (_, index) => subject(`u${String(from + index)}`));
+  const pages: Record<string, unknown> = {
+    '': { items: rows(0), next: CURSOR },
+    [CURSOR]: { items: rows(half), next: LATER },
+    [LATER]: { items: [subject('last')] },
+  };
+  const { asked } = mount('/console/acme/subjects', {
+    [LIST]: (request) => json(pages[request.search.get('cursor') ?? ''])(request),
+    [COUNT]: json({ count: 3000, capped: false }),
+  });
+  await screen.findByText('u0');
+  expect(screen.getByText('load limit false')).toBeVisible();
+  await user.click(screen.getByRole('button', { name: 'Load more' }));
+  expect(await screen.findByText('load limit true')).toBeVisible();
+  await user.click(screen.getByRole('button', { name: 'Load more' }));
+  expect(asked(LIST)).toEqual(['', `cursor=${CURSOR}`]);
+  expect(screen.getByRole('button', { name: 'Next' })).toBeEnabled();
 });
 
 it('says a read the server refused is refused, not a failure to load', async () => {

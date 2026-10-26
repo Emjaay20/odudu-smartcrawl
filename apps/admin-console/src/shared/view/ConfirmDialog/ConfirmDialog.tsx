@@ -18,7 +18,7 @@ interface ConfirmProps {
   // The server's refusal of the action, said where the action is.
   problem?: ReactNode;
   // Held when trying again could only be refused again.
-  settled?: boolean;
+  held?: boolean;
   // One thing the confirmation offers to do as well, ticked or not.
   choice?: { label: string; note: string; checked: boolean; onChange: (checked: boolean) => void };
   onConfirm: () => void;
@@ -77,7 +77,7 @@ function OpenConfirm({
   typed,
   busy = false,
   problem,
-  settled = false,
+  held = false,
   choice,
   onConfirm,
   onCancel,
@@ -85,7 +85,7 @@ function OpenConfirm({
   const shortcut = useId();
   const [entered, setEntered] = useState('');
   // Case counts; a space picked up by pasting the name does not.
-  const ready = !busy && !settled && (typed === undefined || entered.trim() === typed);
+  const ready = !busy && !held && (typed === undefined || entered.trim() === typed);
   const confirm = (): void => {
     if (ready) onConfirm();
   };
