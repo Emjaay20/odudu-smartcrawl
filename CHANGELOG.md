@@ -6,6 +6,29 @@ All notable changes to Odudu are written here, newest first. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Pages measured on every change against Core Web Vitals and Lighthouse budgets, so the documentation and the landing page stay fast.
+- The landing page shows the pages people see when they sign in, and says what is planned for agents and branding.
+
+### Changed
+
+- Logout shows every front-channel logout frame before it redirects to a matched post-logout address.
+- Code blocks in the documentation are coloured when the site is built, and read well in both themes.
+- Dependencies are updated again.
+
+### Fixed
+
+- A password reset finds the account whatever the case of its address.
+- Two sign-ups with the same address at the same moment can no longer both succeed.
+- Failures are logged with their message and stack, and a verification form that failed now shows its page.
+
+### Security
+
+- A mailed link that sets a password now ends every session and token the person had, and proves the address.
+- When an address is verified or changed, the account is no longer treated as self-registered. A reset removes authenticators and recovery codes only on an account that registered itself and was never verified.
+- Logout tokens carry the issuer of the request, and a server in production refuses to start when `ODUDU_TLS` and the `https` or `http` of the public base address disagree.
+
 ## [0.1.0-rc.3] - 2026-10-24
 
 The third release candidate. Odudu is not production ready: it has had no security review.
@@ -19,7 +42,7 @@ The third release candidate. Odudu is not production ready: it has had no securi
 
 - A flaky registration test and two lint findings that newer tooling raised.
 
-## [0.1.0-rc.2] - 2026-10-23
+## [0.1.0-rc.2] - 2026-10-24
 
 The second release candidate. Odudu is not production ready: it has had no security review.
 

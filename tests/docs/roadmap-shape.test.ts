@@ -52,13 +52,16 @@ describe('the roadmap page', () => {
     expect(named).toEqual([RELEASE, ...ahead.slice(0, ahead.indexOf('P5b') + 1)]);
   });
 
-  it('claims nothing in Shipped that a release has yet to publish', () => {
+  it('says in Shipped that the image and quick start are published', () => {
     const { lines } = loadDocument(PAGE);
     const start = lines.findIndex((line) => line.startsWith('## Shipped'));
     const end = lines.findIndex((line, index) => index > start && line.startsWith('## '));
     const shipped = lines.slice(start, end).join('\n');
-    expect(shipped).not.toMatch(/published (and signed )?(container )?image|one-file/iu);
-    expect(shipped).toMatch(/built from source/u);
+    expect(shipped).not.toMatch(/built from source|has yet to publish|until it ships/iu);
+    expect(shipped).toMatch(
+      /The container image and the Docker Compose quick start are published/u,
+    );
+    expect(shipped).toMatch(/pulls without signing in/u);
   });
 
   it('says front-channel logout as the logout code does', () => {
@@ -89,7 +92,7 @@ describe('the roadmap page', () => {
     }
   });
 
-  it('never cites a closed phase, and cites this release only as this release', () => {
+  it('never cites a closed phase, and cites the release only as the stable release', () => {
     const { closed } = phases();
     expect(closed.length).toBeGreaterThanOrEqual(8);
     const text = prose();
@@ -97,7 +100,7 @@ describe('the roadmap page', () => {
     expect(cited).toEqual([]);
     for (const sentence of text.split(/(?<=[.!?:])\s+|\n/u)) {
       if (new RegExp(`\\b${RELEASE}\\b`, 'u').test(sentence)) {
-        expect(sentence, sentence).toMatch(/this release/iu);
+        expect(sentence, sentence).toMatch(/stable release/iu);
       }
     }
   });

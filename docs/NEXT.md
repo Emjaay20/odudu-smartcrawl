@@ -8,17 +8,18 @@ ways.** Phases are section 11 of
 [the umbrella spec](superpowers/specs/2026-09-10-odudu-design.md), whose
 "P4 became four phases, then five" subsection has the reasoning.
 
-**P4g, the public release, is shipping as release candidate 0.1.0-rc.1 from
-`p4g-public-release`** (draft pull request #64). Built and reviewed: the
-release workflow and process, `odudu init` and the one-file quickstart, every
-server page under Instrument with a catalogue, the documentation site and
-landing page, the guides, concepts, console tour and operating pages, the four
-examples and a WordPress guide, the README and community files, the CLA, the
-Pages deployment, and `prompt=create`, neutral registration, password rules,
-cookies under TLS and an issuer taken from configuration. **Three increments
-stay in P4g and are not built:** see "What P4g, P4b and P4f inherit". Its notes
-are in [`docs/phases/p4g.md`](phases/p4g.md), the licences in `LICENSING.md`,
-and the work it placed on later phases is on
+**P4g, the public release, has shipped as release candidates**
+(`0.1.0-rc.1` to `rc.3`, from pull request #64 and the fixes after it); the
+stable `0.1.0` waits on the owner steps in `RELEASING.md`. Built and reviewed:
+the release workflow and process, `odudu init` and the one-file quickstart,
+every server page under Instrument with a catalogue, the documentation site and
+landing page, the Core Web Vitals and Lighthouse budgets in CI, the guides,
+concepts, console tour and operating pages, the four examples and a WordPress
+guide, the README and community files, the CLA, the Pages deployment, and
+`prompt=create`, neutral registration, password rules, cookies under TLS and an
+issuer taken from configuration. Its notes are in
+[`docs/phases/p4g.md`](phases/p4g.md), the licences in `LICENSING.md`, and the
+work it placed on later phases is on
 [the roadmap page](../apps/docs/content/en/roadmap.md).
 
 The order is **P4a → P4c → P4e → P4d → P4g → P4b → P5a → P4f → P4h → P4i**, so P4b
@@ -88,7 +89,7 @@ issuer included, as a hard cutover nothing deployed had to survive
 The running records, split out of this file on 2026-09-17: P2b reached
 1,873 lines here, of which the part describing where the project stood was 58.
 
-- [P4g — the public release](phases/p4g.md), still being written
+- [P4g — the public release](phases/p4g.md)
 - [P4d — the admin console and the admin API it needs](phases/p4d.md)
 - [P4e — authentication and token audit events](phases/p4e.md)
 - [P4c — the admin API](phases/p4c.md)
@@ -160,19 +161,6 @@ variables, and there is no backup or restore guidance (**P12**).
 Multi-replica deployment is blocked on migration locking and on the
 in-process bounds (throttles, the client-secret limiter, the registration and
 reset limiters), all **P11**, which also owes the Helm chart or manifests.
-
-**Two increments and one wording fix are P4g's and are not built.** The
-release candidate ships without them, and P4g is the phase that owes them.
-
-- **31b, Core Web Vitals and Lighthouse budgets** enforced in CI on a
-  throttled mobile profile, for the landing page and a sample of docs pages.
-- **The landing additions:** a "pages your users see" strip, "Planned"
-  sections for agents and for theming (labelled "Planned" only, linking the
-  roadmap), and a line under "Four small apps that work" for the WordPress
-  guide.
-- **A console wording fix:** the `max_clients` description says it limits
-  registration, but the cap holds however a client is created. Change it
-  with the next `pnpm docs:screenshots` run; the screenshot record carries it.
 
 ## What P5 inherits
 
