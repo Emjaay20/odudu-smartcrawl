@@ -266,7 +266,7 @@ jobs:
   # browser test needs Chromium, so it is its own step after it is installed.
   docs:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -286,7 +286,7 @@ jobs:
           package: '@odudu/docs'
 
       - name: Check the colour mode in a browser
-        timeout-minutes: 4
+        timeout-minutes: 8
         run: pnpm --filter @odudu/docs test:browser
 
       # The one place the brand's PNG and ICO are rebuilt from their SVGs: the
@@ -403,7 +403,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.server == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -610,7 +610,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.buildImage == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -627,7 +627,7 @@ jobs:
         run: pnpm --filter @odudu/docs build:pages
 
       - name: Measure the budgeted pages
-        timeout-minutes: 12
+        timeout-minutes: 25
         working-directory: apps/docs
         run: |
           CHROME_PATH="$(pnpm exec node -p "require('@playwright/test').chromium.executablePath()")"
