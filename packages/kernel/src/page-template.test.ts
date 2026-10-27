@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { DEFAULT_PAGE_LOCALE, type PageLocale, type ResolvedBranding } from '#/page';
-import { fillPageTemplate } from '#/page-template';
+import { createPageFiller, fillPageTemplate } from '#/page-template';
 
 const text = (key: string): string => {
   if (key !== 'a.b') throw new Error(`unknown message ${key}`);
@@ -58,5 +58,26 @@ describe('fillPageTemplate', () => {
   it('falls back silently when nobody is listening', () => {
     const locale = withTemplate('{{nope}}');
     expect(fillPageTemplate('logout-confirm', DEFAULT, PARTS, locale, text)).toContain('Go');
+  });
+});
+
+describe('createPageFiller', () => {
+  const fill = createPageFiller({
+    defaults: { 'logout-confirm': DEFAULT },
+    hasMessage: (key) => key === 'a.b',
+    text: () => 'Hello',
+  });
+
+  it('fills the default with the package catalogue', () => {
+    expect(fill('logout-confirm', PARTS, DEFAULT_PAGE_LOCALE)).toBe(
+      '<p>Hello</p><button>Go</button>',
+    );
+  });
+
+  it('gives way to the default and says why for a key the catalogue lacks', () => {
+    const told = vi.fn();
+    const locale = withTemplate('{{t "gone"}}{{submit}}', told);
+    expect(fill('logout-confirm', PARTS, locale)).toBe('<p>Hello</p><button>Go</button>');
+    expect(told).toHaveBeenCalledWith('logout-confirm', 'unknown message gone');
   });
 });
