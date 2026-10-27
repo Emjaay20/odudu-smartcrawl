@@ -1,23 +1,11 @@
+import { type ThemeBody } from '#/service/body';
+
 export interface ThemeScope {
   tenantId: string;
   clientId: string | null;
 }
 
 export type ThemeState = 'draft' | 'published' | 'archived';
-
-// A slot's image is named by the id `assetRepository.put` returned; the
-// repository finds the versions that use an asset by this key.
-export interface ThemeAssetSlot {
-  assetId: string;
-  [key: string]: unknown;
-}
-
-export interface ThemeBody {
-  tokens: unknown;
-  stylesheet: string | null;
-  templates: Record<string, string>;
-  assets: Record<string, ThemeAssetSlot>;
-}
 
 export interface ThemeRecord {
   id: string;

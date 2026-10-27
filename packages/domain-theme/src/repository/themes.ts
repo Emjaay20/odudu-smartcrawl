@@ -4,9 +4,9 @@ import { and, desc, eq, inArray, isNull, sql, type SQL } from 'drizzle-orm';
 import { createHash } from 'node:crypto';
 import { themeVersionAssets } from '#/schema/theme-version-assets';
 import { themeVersions } from '#/schema/theme-versions';
+import { assetIdsOf, type ThemeBody } from '#/service/body';
 import {
   THEME_VERSION_LIMIT,
-  type ThemeBody,
   type ThemeRecord,
   type ThemeScope,
   type ThemeState,
@@ -117,7 +117,7 @@ export function themeRepository(tx: TenantScopedDatabase) {
 
   async function recordAssets(row: Row): Promise<ThemeRecord> {
     await tx.delete(themeVersionAssets).where(eq(themeVersionAssets.versionId, row.id));
-    const assetIds = [...new Set(Object.values(row.body.assets).map((slot) => slot.assetId))];
+    const assetIds = assetIdsOf(row.body.assets);
     if (assetIds.length > 0) {
       await tx
         .insert(themeVersionAssets)

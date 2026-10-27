@@ -7,8 +7,6 @@ export {
   THEME_VERSION_LIMIT,
   type AssetRecord,
   type AssetRef,
-  type ThemeAssetSlot,
-  type ThemeBody,
   type ThemeRecord,
   type ThemeScope,
   type ThemeState,
@@ -20,3 +18,27 @@ export {
   type TemplateIssueCode,
   type TemplateOptions,
 } from '#/service/template';
+export {
+  FONT_CHOICES,
+  assetIdsOf,
+  MAX_ALT_LENGTH,
+  MAX_STYLESHEET_BYTES,
+  MAX_TEMPLATE_BYTES,
+  parseThemeBody,
+  type BodyIssue,
+  type BodyIssueCode,
+  type FontChoice,
+  type ParsedBody,
+  type Palette,
+  type ThemeAssets,
+  type ThemeBody,
+  type TokenGroups,
+} from '#/service/body';
+export { PIECE_NAMES, pieceSources, resolvePieces, type PieceName } from '#/service/resolve';
+export {
+  TEXT_CONTRAST,
+  UI_CONTRAST,
+  contrastFailures,
+  contrastRatio,
+  type ContrastFailure,
+} from '#/service/contrast';

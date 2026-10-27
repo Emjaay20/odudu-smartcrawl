@@ -18,7 +18,8 @@ import { themeRepository } from '#/repository/themes';
 import { themeAssets } from '#/schema/theme-assets';
 import { themeVersionAssets } from '#/schema/theme-version-assets';
 import { themeVersions } from '#/schema/theme-versions';
-import { type ThemeBody, type ThemeScope } from '#/service/theme-body';
+import { type ThemeBody } from '#/service/body';
+import { type ThemeScope } from '#/service/theme-body';
 
 let containerHandle: TestDatabase | undefined;
 let ownerHandle: DatabaseHandle | undefined;
@@ -51,10 +52,10 @@ function refusedByPolicy(error: unknown): boolean {
 
 function body(label: string, assetId?: string): ThemeBody {
   return {
-    tokens: { label },
-    stylesheet: null,
+    tokens: {},
+    stylesheet: label,
     templates: {},
-    assets: assetId === undefined ? {} : { logo: { assetId } },
+    assets: assetId === undefined ? {} : { logo: { assetId, alt: 'logo' } },
   };
 }
 
@@ -296,7 +297,7 @@ describe('themeRepository', () => {
     const assetId = newId();
     const twice: ThemeBody = {
       ...body('twice'),
-      assets: { logo: { assetId }, favicon: { assetId } },
+      assets: { logo: { assetId, alt: 'logo' }, favicon: { assetId } },
     };
     await withTenant(app.db, tenantId, (tx) => themeRepository(tx).saveDraft(scope, twice, null));
 
