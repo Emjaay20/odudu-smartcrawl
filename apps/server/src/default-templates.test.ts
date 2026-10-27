@@ -1,4 +1,5 @@
 import { DEFAULT_TEMPLATES as ACCOUNT } from '@odudu/account';
+import { DEFAULT_TEMPLATES as AUTHN_FLOWS } from '@odudu/authn-flows';
 import { checkTemplate } from '@odudu/domain-theme';
 import { PAGE_KINDS, type PageKind } from '@odudu/kernel';
 import { DEFAULT_TEMPLATES as PROTOCOL_OIDC } from '@odudu/protocol-oidc';
@@ -13,17 +14,12 @@ interface Owner {
 const OWNERS: Owner[] = [
   { name: 'protocol-oidc', templates: PROTOCOL_OIDC },
   { name: 'account', templates: ACCOUNT },
+  { name: 'authn-flows', templates: AUTHN_FLOWS },
 ];
 
 // Kinds whose renderers have not been converted yet; a kind leaves this list
 // when its package's table joins OWNERS.
-const NOT_CONVERTED: PageKind[] = [
-  'totp-enrolment',
-  'passkey-enrolment',
-  'recovery-codes',
-  'update-password',
-  'required-action',
-];
+const NOT_CONVERTED: PageKind[] = [];
 
 const kindsOf = (templates: Partial<Record<PageKind, string>>): PageKind[] =>
   Object.keys(templates) as PageKind[];
@@ -106,5 +102,43 @@ describe('a notice template', () => {
     expect(checkTemplate('notice', own).map((issue) => issue.detail)).toEqual(
       expect.arrayContaining(['form.open', 'form.close', 'script']),
     );
+  });
+});
+
+describe('an authn-flows template that loses what the server must show', () => {
+  const details = (kind: PageKind, own: string): string[] =>
+    checkTemplate(kind, own).map((issue) => issue.detail);
+
+  it('is refused for a TOTP enrolment without the offer, the fields or the error', () => {
+    const own = '{{form.open}}{{submit}}{{form.close}}';
+    expect(details('totp-enrolment', own)).toEqual(
+      expect.arrayContaining(['offer', 'fields', 'error']),
+    );
+  });
+
+  it('is refused for a passkey enrolment without its script or its error', () => {
+    const own = '{{form.open}}{{fields}}{{submit}}{{form.close}}';
+    expect(details('passkey-enrolment', own)).toEqual(expect.arrayContaining(['script', 'error']));
+  });
+
+  it('is refused for recovery codes without the codes or what is said about them', () => {
+    const own = '{{form.open}}{{submit}}{{error}}{{form.close}}';
+    expect(details('recovery-codes', own)).toEqual(
+      expect.arrayContaining(['codes', 'instructions', 'notice']),
+    );
+  });
+
+  it('is refused for an update-password form without its error', () => {
+    const own = '{{form.open}}{{fields}}{{submit}}{{form.close}}';
+    expect(details('update-password', own)).toContain('error');
+  });
+
+  it('is refused for a required-action page without its message', () => {
+    expect(details('required-action', '{{links}}')).toContain('message');
+  });
+
+  it('is refused when a script-less kind places a script', () => {
+    const own = '{{message}}{{script}}';
+    expect(details('required-action', own)).toContain('script');
   });
 });
