@@ -78,7 +78,6 @@ import {
 } from '@odudu/protocol-oidc';
 import { eq, getTableColumns } from 'drizzle-orm';
 import { consoleProvisioning, type ConsoleProvisioning } from '#/console-key';
-import { createLogger } from '#/logger';
 
 // A confidential client's method of proving its secret at /token: either
 // RFC 6749 §2.3.1 form. Public clients are always seeded as 'none'. Omitted
@@ -112,8 +111,8 @@ export interface SeedOptions {
   // an admin API exists.
   sendVerificationEmail?: boolean;
   // Where the mailed link points. Only meaningful with sendVerificationEmail;
-  // defaults to what a developer running the compose stack sees the server
-  // answer on.
+  // defaults to ODUDU_PUBLIC_BASE_URL, which the server builds its own links
+  // from.
   issuerBase?: string;
 }
 
@@ -169,6 +168,20 @@ function assertSendVerificationEmailHasEmail(opts: SeedOptions): void {
       'sendVerificationEmail requires an email address to send it to',
     );
   }
+}
+
+function requireVerificationBase(
+  issuerBase: string | undefined,
+  publicBaseUrl: string | undefined,
+): string {
+  const base = issuerBase ?? publicBaseUrl;
+  if (base === undefined) {
+    throw new OduduError(
+      'seed_invalid_options',
+      'sendVerificationEmail needs a base URL for the link: pass --issuer-base or set ODUDU_PUBLIC_BASE_URL',
+    );
+  }
+  return base;
 }
 
 // A token endpoint auth method describes how a confidential client proves
@@ -547,6 +560,10 @@ async function seedClientBootstrap(opts: SeedOptions): Promise<SeedResult> {
   assertAuthMethodPairedWithSecret(opts);
 
   const config = loadConfig();
+  const verificationBase =
+    opts.sendVerificationEmail === true
+      ? requireVerificationBase(opts.issuerBase, config.ODUDU_PUBLIC_BASE_URL)
+      : undefined;
   const owner = createDatabase(config.ODUDU_DATABASE_URL);
   const runtime = config.ODUDU_APP_DATABASE_URL
     ? createDatabase(config.ODUDU_APP_DATABASE_URL)
@@ -566,20 +583,11 @@ async function seedClientBootstrap(opts: SeedOptions): Promise<SeedResult> {
     // assertUserOptionsPaired, assertEmailHasAUser and
     // assertSendVerificationEmailHasEmail together guarantee it is set.
     if (
-      opts.sendVerificationEmail === true &&
+      verificationBase !== undefined &&
       opts.email !== undefined &&
       result.userSubjectId !== undefined
     ) {
       const userSubjectId = result.userSubjectId;
-      const logger = createLogger(config);
-      if (opts.issuerBase === undefined) {
-        logger.warn(
-          {},
-          'sendVerificationEmail: --issuer-base was not given; the mailed link points at ' +
-            `http://localhost:${String(config.ODUDU_HTTP_PORT)}, which is wrong for anything but ` +
-            'the local compose stack',
-        );
-      }
       const tenant = await tenantSettingsRepository(owner.db).byName(opts.tenant);
       await sendVerificationEmail(
         {
@@ -587,7 +595,7 @@ async function seedClientBootstrap(opts: SeedOptions): Promise<SeedResult> {
           tenantId: result.tenantId,
           tenantName: result.tenant,
           tenantDisplayName: tenant?.displayName ?? result.tenant,
-          issuerBase: opts.issuerBase ?? `http://localhost:${String(config.ODUDU_HTTP_PORT)}`,
+          issuerBase: verificationBase,
           now: () => systemClock.now(),
         },
         { subjectId: userSubjectId, email: opts.email },
@@ -1005,6 +1013,19 @@ async function requireRoleByQualifiedName(
     throw new OduduError('seed_not_found', `no role named ${JSON.stringify(qualifiedName)}`);
   }
   return role;
+}
+
+// A second run of a command that adds one row is a refusal that names the
+// row, as `seed client`, `seed user` and `seed scope` do, never the raw
+// database error. The unique violation is caught rather than pre-checked so
+// two concurrent runs cannot both pass a check.
+async function refuseRepeat<T>(message: string, run: () => Promise<T>): Promise<T> {
+  try {
+    return await run();
+  } catch (error) {
+    if (isUniqueViolation(error)) throw new OduduError('seed_conflict', message);
+    throw error;
+  }
 }
 
 async function runTenantCommand(
@@ -1429,11 +1450,10 @@ async function runRoleCommand(
   return withTenant(runtimeDb, tenantId, async (tx) => {
     const clientDbId =
       ownerClientId === undefined ? null : await requireClientDbId(tx, ownerClientId);
-    const role = await roleRepository(tx).create({
-      tenantId,
-      name: roleName,
-      clientId: clientDbId,
-    });
+    const role = await refuseRepeat(
+      `role ${JSON.stringify(roleName)} already exists in tenant ${JSON.stringify(tenantName)}`,
+      () => roleRepository(tx).create({ tenantId, name: roleName, clientId: clientDbId }),
+    );
     return {
       command: 'role',
       tenant: tenantName,
@@ -1467,7 +1487,10 @@ async function runGroupCommand(
 
   return withTenant(runtimeDb, tenantId, async (tx) => {
     const parentId = parentPath === undefined ? null : await requireGroupIdByPath(tx, parentPath);
-    const group = await groupRepository(tx).create({ tenantId, name, parentId });
+    const group = await refuseRepeat(
+      `group ${JSON.stringify(`${parentPath ?? ''}/${name}`)} already exists in tenant ${JSON.stringify(tenantName)}`,
+      () => groupRepository(tx).create({ tenantId, name, parentId }),
+    );
     return { command: 'group', tenant: tenantName, tenantId, groupId: group.id, path: group.path };
   });
 }
@@ -1629,7 +1652,10 @@ async function runMapRoleCommand(
   return withTenant(runtimeDb, tenantId, async (tx) => {
     const role = await requireRoleByQualifiedName(tx, roleName);
     const scopeId = await requireScopeId(tx, scopeName);
-    await roleRepository(tx).mapToClientScope(scopeId, role.id);
+    await refuseRepeat(
+      `scope ${JSON.stringify(scopeName)} already carries the role ${JSON.stringify(roleName)}`,
+      () => roleRepository(tx).mapToClientScope(scopeId, role.id),
+    );
     return { command: 'map-role', tenant: tenantName, tenantId, scope: scopeName, role: roleName };
   });
 }
@@ -1663,7 +1689,10 @@ async function runGrantRoleCommand(
     // existing client must never silently create a second user.
     const role = await requireRoleByQualifiedName(tx, roleName);
     const subjectId = await requireUserSubjectId(tx, username);
-    await roleRepository(tx).assignToSubject(subjectId, role.id);
+    await refuseRepeat(
+      `user ${JSON.stringify(username)} already has the role ${JSON.stringify(roleName)}`,
+      () => roleRepository(tx).assignToSubject(subjectId, role.id),
+    );
     return { command: 'grant-role', tenant: tenantName, tenantId, username, role: roleName };
   });
 }
@@ -1699,7 +1728,10 @@ async function runMapGroupRoleCommand(
   return withTenant(runtimeDb, tenantId, async (tx) => {
     const role = await requireRoleByQualifiedName(tx, roleName);
     const groupId = await requireGroupIdByPath(tx, groupPath);
-    await groupRepository(tx).mapRole(groupId, role.id);
+    await refuseRepeat(
+      `group ${JSON.stringify(groupPath)} already has the role ${JSON.stringify(roleName)}`,
+      () => groupRepository(tx).mapRole(groupId, role.id),
+    );
     return {
       command: 'map-group-role',
       tenant: tenantName,
@@ -1736,7 +1768,10 @@ async function runJoinGroupCommand(
   return withTenant(runtimeDb, tenantId, async (tx) => {
     const subjectId = await requireUserSubjectId(tx, username);
     const groupId = await requireGroupIdByPath(tx, groupPath);
-    await groupRepository(tx).addToSubject(subjectId, groupId);
+    await refuseRepeat(
+      `user ${JSON.stringify(username)} is already in the group ${JSON.stringify(groupPath)}`,
+      () => groupRepository(tx).addToSubject(subjectId, groupId),
+    );
     return { command: 'join-group', tenant: tenantName, tenantId, username, group: groupPath };
   });
 }

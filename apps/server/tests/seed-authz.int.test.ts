@@ -381,6 +381,118 @@ describe('the seed CLI, provisioning the identity model it now has', () => {
     ).rejects.toThrow(/no role named/);
   });
 
+  async function seedUserAndRole(tenantName: string): Promise<void> {
+    await seed(['tenant', '--name', tenantName]);
+    await seed([
+      'user',
+      '--tenant',
+      tenantName,
+      '--username',
+      'ada',
+      '--password',
+      'correct horse battery',
+    ]);
+    await seed(['role', '--tenant', tenantName, '--name', 'reviewer']);
+  }
+
+  it('names a repeated grant-role instead of printing the database error', async () => {
+    const tenantName = `demo-${newId()}`;
+    await seedUserAndRole(tenantName);
+    const grant = ['grant-role', '--tenant', tenantName, '--username', 'ada', '--role', 'reviewer'];
+    await seed(grant);
+
+    const failure: unknown = await seed(grant).catch((error: unknown) => error);
+
+    expect(failure).toMatchObject({
+      name: 'OduduError',
+      code: 'seed_conflict',
+      message: 'user "ada" already has the role "reviewer"',
+    });
+  });
+
+  it('names a repeated map-role instead of printing the database error', async () => {
+    const tenantName = `demo-${newId()}`;
+    await seedUserAndRole(tenantName);
+    await seed(['scope', '--tenant', tenantName, '--name', 'app-roles']);
+    const map = ['map-role', '--tenant', tenantName, '--scope', 'app-roles', '--role', 'reviewer'];
+    await seed(map);
+
+    const failure: unknown = await seed(map).catch((error: unknown) => error);
+
+    expect(failure).toMatchObject({
+      name: 'OduduError',
+      code: 'seed_conflict',
+      message: 'scope "app-roles" already carries the role "reviewer"',
+    });
+  });
+
+  it('names a repeated map-group-role and join-group', async () => {
+    const tenantName = `demo-${newId()}`;
+    await seedUserAndRole(tenantName);
+    await seed(['group', '--tenant', tenantName, '--name', 'engineering']);
+    const mapRole = [
+      'map-group-role',
+      '--tenant',
+      tenantName,
+      '--group',
+      '/engineering',
+      '--role',
+      'reviewer',
+    ];
+    const join = [
+      'join-group',
+      '--tenant',
+      tenantName,
+      '--username',
+      'ada',
+      '--group',
+      '/engineering',
+    ];
+    await seed(mapRole);
+    await seed(join);
+
+    await expect(seed(mapRole)).rejects.toMatchObject({
+      code: 'seed_conflict',
+      message: 'group "/engineering" already has the role "reviewer"',
+    });
+    await expect(seed(join)).rejects.toMatchObject({
+      code: 'seed_conflict',
+      message: 'user "ada" is already in the group "/engineering"',
+    });
+  });
+
+  it('names a repeated role and group', async () => {
+    const tenantName = `demo-${newId()}`;
+    await seedUserAndRole(tenantName);
+    await seed(['group', '--tenant', tenantName, '--name', 'engineering']);
+    await seed(['group', '--tenant', tenantName, '--name', 'backend', '--parent', '/engineering']);
+
+    await expect(
+      seed(['role', '--tenant', tenantName, '--name', 'reviewer']),
+    ).rejects.toMatchObject({
+      code: 'seed_conflict',
+      message: `role "reviewer" already exists in tenant "${tenantName}"`,
+    });
+    await expect(
+      seed(['group', '--tenant', tenantName, '--name', 'backend', '--parent', '/engineering']),
+    ).rejects.toMatchObject({
+      code: 'seed_conflict',
+      message: `group "/engineering/backend" already exists in tenant "${tenantName}"`,
+    });
+  });
+
+  it('does not grant another tenant’s role', async () => {
+    const tenantName = `demo-${newId()}`;
+    const foreignTenant = `demo-${newId()}`;
+    await seedUserAndRole(tenantName);
+    await seed(['tenant', '--name', foreignTenant]);
+    await seed(['role', '--tenant', foreignTenant, '--name', 'foreign-only']);
+
+    await expect(
+      seed(['grant-role', '--tenant', tenantName, '--username', 'ada', '--role', 'foreign-only']),
+    ).rejects.toMatchObject({ code: 'seed_not_found', message: 'no role named "foreign-only"' });
+  });
+
   it('refuses an ambiguous qualified role name rather than guessing a split', async () => {
     const tenantName = `demo-${newId()}`;
     await seed(['tenant', '--name', tenantName]);

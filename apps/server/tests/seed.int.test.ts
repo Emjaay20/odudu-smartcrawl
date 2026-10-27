@@ -10,6 +10,7 @@ import {
   withTenant,
   type DatabaseHandle,
 } from '@odudu/db';
+import { emailOutbox } from '@odudu/email';
 import { effectiveRoles, groupRepository, roleRepository } from '@odudu/domain-authz';
 import { subjects, users } from '@odudu/domain-identity';
 import {
@@ -446,21 +447,73 @@ describe('seed: --send-verification-email', () => {
   // capturing adapter — the point here is that a real action_tokens row was
   // issued for the seeded user, not what happened to the rendered message.
   it('issues a real action token for the seeded user', async () => {
-    const options = uniqueOptions();
-    const withEmail: SeedOptions = { ...options, email: 'ada@example.com' };
+    process.env.ODUDU_PUBLIC_BASE_URL = 'https://id.example.test';
+    try {
+      const options = uniqueOptions();
+      const withEmail: SeedOptions = { ...options, email: 'ada@example.com' };
 
-    const result = await seed(withEmail);
-    expect(await actionTokenCount(result.tenantId)).toBe(0);
+      const result = await seed(withEmail);
+      expect(await actionTokenCount(result.tenantId)).toBe(0);
 
-    await seed({ ...withEmail, sendVerificationEmail: true });
+      await seed({ ...withEmail, sendVerificationEmail: true });
 
-    expect(await actionTokenCount(result.tenantId)).toBe(1);
+      expect(await actionTokenCount(result.tenantId)).toBe(1);
+    } finally {
+      delete process.env.ODUDU_PUBLIC_BASE_URL;
+    }
   });
 
-  it('accepts an explicit --issuer-base and still issues the token', async () => {
+  async function queuedBodies(tenantId: string): Promise<string[]> {
+    const rows = await owner.db
+      .select({ bodyText: emailOutbox.bodyText })
+      .from(emailOutbox)
+      .where(eq(emailOutbox.tenantId, tenantId));
+    return rows.map((row) => row.bodyText);
+  }
+
+  it('mails a link under ODUDU_PUBLIC_BASE_URL when no --issuer-base is given', async () => {
+    process.env.ODUDU_PUBLIC_BASE_URL = 'https://id.example.test';
+    try {
+      const options = uniqueOptions();
+      const withEmail: SeedOptions = { ...options, email: 'ada@example.com' };
+      const result = await seed(withEmail);
+
+      await seed({ ...withEmail, sendVerificationEmail: true });
+
+      const bodies = await queuedBodies(result.tenantId);
+      expect(bodies).toHaveLength(1);
+      expect(bodies[0]).toContain('https://id.example.test/tenants/');
+      expect(bodies[0]).not.toContain('localhost');
+    } finally {
+      delete process.env.ODUDU_PUBLIC_BASE_URL;
+    }
+  });
+
+  it('lets --issuer-base win over ODUDU_PUBLIC_BASE_URL', async () => {
+    process.env.ODUDU_PUBLIC_BASE_URL = 'https://id.example.test';
+    try {
+      const options = uniqueOptions();
+      const withEmail: SeedOptions = { ...options, email: 'ada@example.com' };
+      const result = await seed(withEmail);
+
+      await seed({
+        ...withEmail,
+        sendVerificationEmail: true,
+        issuerBase: 'https://idp.example.test',
+      });
+
+      const bodies = await queuedBodies(result.tenantId);
+      expect(bodies).toHaveLength(1);
+      expect(bodies[0]).toContain('https://idp.example.test/tenants/');
+      expect(bodies[0]).not.toContain('id.example.test');
+    } finally {
+      delete process.env.ODUDU_PUBLIC_BASE_URL;
+    }
+  });
+
+  it('accepts an explicit --issuer-base with no ODUDU_PUBLIC_BASE_URL', async () => {
     const options = uniqueOptions();
     const withEmail: SeedOptions = { ...options, email: 'ada@example.com' };
-
     const result = await seed(withEmail);
 
     await seed({
@@ -470,6 +523,20 @@ describe('seed: --send-verification-email', () => {
     });
 
     expect(await actionTokenCount(result.tenantId)).toBe(1);
+    expect((await queuedBodies(result.tenantId))[0]).toContain('https://idp.example.test/tenants/');
+  });
+
+  it('refuses, and queues nothing, when neither a base URL nor --issuer-base is given', async () => {
+    const options = uniqueOptions();
+    const withEmail: SeedOptions = { ...options, email: 'ada@example.com' };
+    const result = await seed(withEmail);
+
+    await expect(seed({ ...withEmail, sendVerificationEmail: true })).rejects.toThrow(
+      /--issuer-base.*ODUDU_PUBLIC_BASE_URL/,
+    );
+
+    expect(await actionTokenCount(result.tenantId)).toBe(0);
+    expect(await queuedBodies(result.tenantId)).toEqual([]);
   });
 
   it('refuses sendVerificationEmail for a username never seeded with this client', async () => {
@@ -489,6 +556,7 @@ describe('seed: --send-verification-email', () => {
         password: 'correct-horse-battery',
         email: 'ghost@example.com',
         sendVerificationEmail: true,
+        issuerBase: 'https://idp.example.test',
       }),
     ).rejects.toThrow(/was not seeded with it/);
   });
