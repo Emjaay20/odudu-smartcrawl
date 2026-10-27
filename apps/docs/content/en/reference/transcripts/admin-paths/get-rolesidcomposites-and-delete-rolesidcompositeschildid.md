@@ -130,19 +130,24 @@ composites:
 
 ```bash
 curl -sS -D - -H "Authorization: Bearer $ADMIN_TOKEN" \
-  http://localhost:3082/admin/tenants/etags-demo/roles/01a10bd4-90e5-79e8-92bd-8f9024ae8829/composites
+  http://localhost:3082/admin/tenants/etags-demo/roles/01a10bd4-90e5-79e8-92bd-8f9024ae8829/composites \
+  | grep -E '^(HTTP/|etag:|\{)'
 curl -sS -D - -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
   -H 'If-Match: "0000"' -d '{"child_role_id":"01a10bd4-90c5-717d-b188-344280ce610d"}' \
-  http://localhost:3082/admin/tenants/etags-demo/roles/01a10bd4-90e5-79e8-92bd-8f9024ae8829/composites
+  http://localhost:3082/admin/tenants/etags-demo/roles/01a10bd4-90e5-79e8-92bd-8f9024ae8829/composites \
+  | grep -E '^(HTTP/|etag:|\{)'
 curl -sS -D - -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
   -H 'If-Match: "eef46741adfc3a9f76294d3b78f37a45f113092ac9d44ee77c7a038a88ff09a1"' \
   -d '{"child_role_id":"01a10bd4-90c5-717d-b188-344280ce610d"}' \
-  http://localhost:3082/admin/tenants/etags-demo/roles/01a10bd4-90e5-79e8-92bd-8f9024ae8829/composites
+  http://localhost:3082/admin/tenants/etags-demo/roles/01a10bd4-90e5-79e8-92bd-8f9024ae8829/composites \
+  | grep -E '^(HTTP/|etag:|\{)'
 curl -sS -D - -o /dev/null -H "Authorization: Bearer $ADMIN_TOKEN" \
-  http://localhost:3082/admin/tenants/etags-demo/roles/01a10bd4-90e5-79e8-92bd-8f9024ae8829/composites
+  http://localhost:3082/admin/tenants/etags-demo/roles/01a10bd4-90e5-79e8-92bd-8f9024ae8829/composites \
+  | grep -E '^(HTTP/|etag:)'
 curl -sS -D - -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H 'If-Match: "eef46741adfc3a9f76294d3b78f37a45f113092ac9d44ee77c7a038a88ff09a1"' \
-  http://localhost:3082/admin/tenants/etags-demo/roles/01a10bd4-90e5-79e8-92bd-8f9024ae8829/composites/01a10bd4-90c5-717d-b188-344280ce610d
+  http://localhost:3082/admin/tenants/etags-demo/roles/01a10bd4-90e5-79e8-92bd-8f9024ae8829/composites/01a10bd4-90c5-717d-b188-344280ce610d \
+  | grep -E '^(HTTP/|etag:|\{)'
 ```
 
 Each one's status line, `etag` header and body, in that order. The last is
