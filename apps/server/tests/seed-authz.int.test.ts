@@ -578,6 +578,32 @@ describe('the seed CLI, provisioning the identity model it now has', () => {
     });
   });
 
+  it('says which of username and email a repeated user collides on', async () => {
+    const tenantName = `demo-${newId()}`;
+    await seed(['tenant', '--name', tenantName]);
+    const user = (username: string, email: string) => [
+      'user',
+      '--tenant',
+      tenantName,
+      '--username',
+      username,
+      '--password',
+      'correct horse battery',
+      '--email',
+      email,
+    ];
+    await seed(user('ada', 'ada@example.com'));
+
+    await expect(seed(user('ada', 'other@example.com'))).rejects.toMatchObject({
+      code: 'seed_conflict',
+      message: `user "ada" already exists in tenant "${tenantName}"`,
+    });
+    await expect(seed(user('grace', 'ada@example.com'))).rejects.toMatchObject({
+      code: 'seed_conflict',
+      message: `email "ada@example.com" is already used by another user in tenant "${tenantName}"`,
+    });
+  });
+
   it('does not grant another tenant’s role', async () => {
     const tenantName = `demo-${newId()}`;
     const foreignTenant = `demo-${newId()}`;

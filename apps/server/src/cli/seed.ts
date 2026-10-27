@@ -553,6 +553,7 @@ async function performSeed(
             username,
             ...(opts.email !== undefined ? { email: opts.email } : {}),
           }),
+        { constraints: emailTaken(opts.email, opts.tenant) },
       );
       await grantNewSubjectDefaults(tx, userSubject.id);
       await credentialRepository(tx).insert({
@@ -772,7 +773,7 @@ export async function seedAdmin(options: SeedAdminOptions): Promise<SeededAdmin>
             username: options.username,
             ...(options.email !== undefined ? { email: options.email } : {}),
           }),
-        'seed_admin_exists',
+        { code: 'seed_admin_exists', constraints: emailTaken(options.email, SYSTEM_TENANT_NAME) },
       );
       await grantNewSubjectDefaults(tx, subject.id);
       await credentialRepository(tx).insert({
@@ -1061,16 +1062,36 @@ async function requireRoleByQualifiedName(
 async function refuseRepeat<T>(
   message: string,
   run: () => Promise<T>,
-  code: 'seed_conflict' | 'seed_admin_exists' = 'seed_conflict',
+  options: {
+    code?: 'seed_conflict' | 'seed_admin_exists';
+    // The message for a violated constraint other than the usual one,
+    // read off the driver error's `constraint_name`.
+    constraints?: Record<string, string>;
+  } = {},
 ): Promise<T> {
   try {
     return await run();
   } catch (error) {
     if (isUniqueViolation(error) || error instanceof ClientIdConflictError) {
-      throw new OduduError(code, message);
+      const named = options.constraints?.[violatedConstraint(error) ?? ''];
+      throw new OduduError(options.code ?? 'seed_conflict', named ?? message);
     }
     throw error;
   }
+}
+
+function violatedConstraint(error: unknown): string | undefined {
+  if (typeof error !== 'object' || error === null) return undefined;
+  if ('constraint_name' in error && typeof error.constraint_name === 'string') {
+    return error.constraint_name;
+  }
+  return 'cause' in error ? violatedConstraint(error.cause) : undefined;
+}
+
+function emailTaken(email: string | undefined, tenantName: string): Record<string, string> {
+  return {
+    users_email_unique: `email ${JSON.stringify(email)} is already used by another user in tenant ${JSON.stringify(tenantName)}`,
+  };
 }
 
 async function runTenantCommand(
@@ -1460,6 +1481,7 @@ async function runUserCommand(
           username,
           ...(email !== undefined ? { email } : {}),
         }),
+      { constraints: emailTaken(email, tenantName) },
     );
     if (values['email-verified'] === true) {
       await userRepository(tx).setVerification(subject.id, { emailVerified: true });
