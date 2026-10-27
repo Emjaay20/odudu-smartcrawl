@@ -39,6 +39,7 @@ export function createBranding(deps: {
           publishedThemeRepository(tx).forRender(tenantId, clientId),
         ),
       origin,
+      now: () => systemClock.now().getTime(),
       cache,
       log: ({ scope, reason }) => {
         deps.logger.warn({ scope, reason }, 'a theme was not applied, the default page is shown');

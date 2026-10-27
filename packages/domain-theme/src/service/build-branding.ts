@@ -137,6 +137,10 @@ export function buildBranding(input: BuildInput): BuildOutcome {
     logo,
     assetUrls,
   };
+  // A theme that sets nothing is the default look, and keeps the stock policy.
+  const empty =
+    css === '' && assetUrls.length === 0 && Object.keys(branding.templates).length === 0;
+  if (empty) return outcome(null);
   const wrong = brandingProblems(branding);
   if (wrong.length > 0) {
     problems.push(...wrong);

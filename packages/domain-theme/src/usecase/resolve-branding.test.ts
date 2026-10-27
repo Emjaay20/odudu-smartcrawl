@@ -8,6 +8,7 @@ import {
 import { type Palette, type ThemeBody } from '#/service/body';
 import { brandingCache, createBrandingCache } from '#/service/branding-cache';
 import {
+  MAX_BRANDING_BACKOFFS,
   MAX_BRANDING_READS_IN_FLIGHT,
   MAX_LOGGED_BRANDING_PROBLEMS,
   resolveBranding,
@@ -58,6 +59,7 @@ function world(layers: PublishedLayers = { tenant: null, client: null }) {
       return Promise.resolve(state.layers);
     },
     origin: state.origin,
+    now: () => clock.now,
     cache,
     log: (problem) => problems.push(problem),
     reportFallback: (entry) => fallbacks.push(entry),
@@ -106,6 +108,12 @@ describe('resolveBranding', () => {
     expect(found?.branding.assetUrls).toEqual([`/tenants/acme/brand/${SHA}.png`]);
     expect(found?.branding.stylesheetUrl).toMatch(/^\/tenants\/acme\/brand\/[0-9a-f]{64}\.css$/u);
     expect(found?.branding.tokensCss).toContain('--surface-page:#ffffff;');
+    expect(w.problems).toEqual([]);
+  });
+
+  it('treats a published theme that sets nothing as the default look', async () => {
+    const w = world({ tenant: layer(body(), 3), client: layer(body(), 2) });
+    expect(await w.resolver()({ ...TENANT, clientId: 'web' })).toBeNull();
     expect(w.problems).toEqual([]);
   });
 
@@ -249,6 +257,7 @@ describe('resolveBranding', () => {
         return { tenant: null, client: null };
       },
       origin: ORIGIN,
+      now: () => 0,
       cache,
       log: () => undefined,
       reportFallback: () => undefined,
@@ -264,22 +273,89 @@ describe('resolveBranding', () => {
     expect(cache.size()).toBe(keys);
   });
 
-  it('never throws into a render when the database fails, and logs once per read', async () => {
+  it('never throws into a render when the database fails, and logs once', async () => {
     const w = world();
     w.state.fail = true;
     const resolve = w.resolver();
-    const results = await Promise.all([
-      resolve({ ...TENANT, clientId: null }),
-      resolve({ ...TENANT, clientId: null }),
-      resolve({ ...TENANT, clientId: null }),
-    ]);
-    expect(results).toEqual([null, null, null]);
+    const results = await Promise.all(
+      Array.from({ length: 100 }, () => resolve({ ...TENANT, clientId: null })),
+    );
+    expect(results.every((result) => result === null)).toBe(true);
+    for (let i = 0; i < 100; i += 1) await resolve({ ...TENANT, clientId: null });
     expect(w.reads).toHaveLength(1);
     expect(w.problems).toHaveLength(1);
     expect(w.problems[0]?.reason).toContain('connection refused');
-    w.state.fail = false;
-    expect(await resolve({ ...TENANT, clientId: null })).toBeNull();
+  });
+
+  it('retries a failed read after the backoff, and logs a repeat of it once', async () => {
+    const w = world();
+    w.state.fail = true;
+    const resolve = w.resolver();
+    await resolve({ ...TENANT, clientId: null });
+    w.clock.now = 999;
+    await resolve({ ...TENANT, clientId: null });
+    expect(w.reads).toHaveLength(1);
+    w.clock.now = 1000;
+    await resolve({ ...TENANT, clientId: null });
     expect(w.reads).toHaveLength(2);
+    expect(w.problems).toHaveLength(1);
+    w.state.fail = false;
+    w.clock.now = 2000;
+    expect(await resolve({ ...TENANT, clientId: null })).toBeNull();
+    expect(w.reads).toHaveLength(3);
+    expect(w.problems).toHaveLength(1);
+  });
+
+  it('bounds the keys it holds in backoff', async () => {
+    const w = world();
+    w.state.fail = true;
+    const resolve = w.resolver();
+    for (let i = 0; i < MAX_BRANDING_BACKOFFS + 5; i += 1) {
+      await resolve({ ...TENANT, clientId: `c${String(i)}` });
+    }
+    expect(w.reads).toHaveLength(MAX_BRANDING_BACKOFFS + 5);
+  });
+
+  it('a request after an invalidation does not join the read begun before it', async () => {
+    const releases: (() => void)[] = [];
+    const cache = createBrandingCache<PageBranding | null>({ now: () => 0 });
+    let published = false;
+    const resolve = resolveBranding({
+      readPublished: async () => {
+        const answer = {
+          tenant: published ? layer(body({ templates: { 'sign-in': SIGN_IN } }), 2) : null,
+          client: null,
+        };
+        await new Promise<void>((release) => releases.push(release));
+        return answer;
+      },
+      origin: ORIGIN,
+      now: () => 0,
+      cache,
+      log: () => undefined,
+      reportFallback: () => undefined,
+    });
+    const before = resolve({ ...TENANT, clientId: null });
+    published = true;
+    cache.invalidateTenant('t1');
+    const after = resolve({ ...TENANT, clientId: null });
+    expect(releases).toHaveLength(2);
+    for (const release of releases) release();
+    expect(await before).toBeNull();
+    expect((await after)?.branding.templates['sign-in']).toBe(SIGN_IN);
+    expect((await resolve({ ...TENANT, clientId: null }))?.branding.templates['sign-in']).toBe(
+      SIGN_IN,
+    );
+  });
+
+  it("one tenant's invalidation leaves another tenant's read cacheable", async () => {
+    const w = world();
+    const resolve = w.resolver();
+    const pending = resolve({ tenantId: 't2', tenantName: 'rival', clientId: null });
+    w.cache.invalidateTenant('t1');
+    await pending;
+    await resolve({ tenantId: 't2', tenantName: 'rival', clientId: null });
+    expect(w.reads).toHaveLength(1);
   });
 
   it('does not throw when the stored body is not even an object', async () => {

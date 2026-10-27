@@ -111,6 +111,7 @@ function resolver() {
       );
     },
     origin: ORIGIN,
+    now: () => Date.now(),
     cache,
     log: (problem) => problems.push(problem),
     reportFallback: (entry) => fallbacks.push(entry),

@@ -16,6 +16,10 @@ export const MAX_BRANDING_READS_IN_FLIGHT = 256;
 // What the log has already heard, emptied when full, so a flood of distinct
 // scopes costs a repeated line, never memory.
 export const MAX_LOGGED_BRANDING_PROBLEMS = 1024;
+// A key whose read failed is not read again for this long, and at most this
+// many keys are held so; the set is emptied when full.
+export const BRANDING_BACKOFF_MS = 1000;
+export const MAX_BRANDING_BACKOFFS = 1024;
 const MAX_ERROR_LENGTH = 200;
 
 export interface BrandingProblem {
@@ -28,6 +32,7 @@ export interface ResolveBrandingDeps {
   // The origin pages are served from (ODUDU_PUBLIC_BASE_URL); none means no
   // page can be themed, since a theme's URLs are checked against it.
   origin: string | undefined;
+  now(): number;
   // Keyed by tenant and client, not by version: a render learns the current
   // version only by reading, so an entry stands until a publish in this
   // process drops it (`invalidateTenant`) or its ttl ends, which is the
@@ -61,6 +66,7 @@ export function resolveBranding(deps: ResolveBrandingDeps): BrandingResolver {
     deps.reportFallback(entry);
   });
   const heard = new Set<string>();
+  const failedUntil = new Map<string, number>();
   const inflight = new Map<string, Promise<PageBranding | null>>();
 
   function note(scope: string, reason: string): void {
@@ -76,12 +82,14 @@ export function resolveBranding(deps: ResolveBrandingDeps): BrandingResolver {
     origin: string,
     key: string,
   ): Promise<PageBranding | null> {
-    const generation = deps.cache.generation();
+    const generation = deps.cache.generation(scope.tenantId);
     let layers: PublishedLayers;
     try {
       layers = await deps.readPublished(scope.tenantId, scope.clientId);
     } catch (error) {
-      deps.log({ scope: key, reason: `the theme could not be read: ${describe(error)}` });
+      note(key, `the theme could not be read: ${describe(error)}`);
+      if (failedUntil.size >= MAX_BRANDING_BACKOFFS) failedUntil.clear();
+      failedUntil.set(key, deps.now() + BRANDING_BACKOFF_MS);
       return null;
     }
     const built = buildBranding({
@@ -130,16 +138,21 @@ export function resolveBranding(deps: ResolveBrandingDeps): BrandingResolver {
     const key = `${input.tenantId}:${clientId ?? ''}`;
     const held = deps.cache.get(key);
     if (held !== undefined) return Promise.resolve(held.value);
-    const running = inflight.get(key);
+    const retryAt = failedUntil.get(key);
+    if (retryAt !== undefined && deps.now() < retryAt) return Promise.resolve(null);
+    // Per tenant generation: a request after an invalidation starts its own
+    // read rather than joining one that began before it.
+    const flight = `${key}#${String(deps.cache.generation(input.tenantId))}`;
+    const running = inflight.get(flight);
     if (running !== undefined) return running;
     const started: Promise<PageBranding | null> = guarded(
       { ...input, clientId },
       deps.origin,
       key,
     ).finally(() => {
-      if (inflight.get(key) === started) inflight.delete(key);
+      if (inflight.get(flight) === started) inflight.delete(flight);
     });
-    if (inflight.size < MAX_BRANDING_READS_IN_FLIGHT) inflight.set(key, started);
+    if (inflight.size < MAX_BRANDING_READS_IN_FLIGHT) inflight.set(flight, started);
     return started;
   };
 }

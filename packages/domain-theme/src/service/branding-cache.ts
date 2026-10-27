@@ -16,6 +16,8 @@ export interface BrandingCacheOptions {
   maxEntries?: number;
   ttlMs?: number;
   maxBytes?: number;
+  // How many tenants' invalidation counts are kept.
+  maxTenants?: number;
 }
 
 interface Entry<V> {
@@ -28,13 +30,13 @@ interface Entry<V> {
 export interface BrandingCache<V> {
   // `{ value }` for a live entry, whatever the value (null included).
   get(key: string): { value: V } | undefined;
-  // Ignored when `generation` is not the current one: an entry filled from a
-  // read that began before an invalidation is the stale one.
+  // Ignored when `generation` is not the tenant's current one: an entry
+  // filled from a read that began before an invalidation is the stale one.
   set(key: string, tenantId: string, value: V, bytes: number, generation: number): void;
   // Drops every entry of the tenant: the hook a publish, restore or reset
   // calls so this process shows the change at once.
   invalidateTenant(tenantId: string): void;
-  generation(): number;
+  generation(tenantId: string): number;
   size(): number;
 }
 
@@ -44,9 +46,16 @@ export function createBrandingCache<V>(options: BrandingCacheOptions): BrandingC
   const maxEntries = options.maxEntries ?? brandingCache.maxEntries;
   const ttlMs = options.ttlMs ?? brandingCache.ttlMs;
   const maxBytes = options.maxBytes ?? brandingCache.maxBytes;
+  const maxTenants = options.maxTenants ?? 20_000;
   const entries = new Map<string, Entry<V>>();
+  // Per tenant, so one tenant's publish does not discard another's fill.
+  // Bounded: the oldest count is forgotten and the floor rises past it, so a
+  // forgotten tenant reads a generation above any a running read holds.
+  const generations = new Map<string, number>();
+  let floor = 0;
   let weight = 0;
-  let generation = 0;
+
+  const generationOf = (tenantId: string): number => generations.get(tenantId) ?? floor;
 
   function drop(key: string, entry: Entry<V>): void {
     entries.delete(key);
@@ -66,7 +75,7 @@ export function createBrandingCache<V>(options: BrandingCacheOptions): BrandingC
       return { value: entry.value };
     },
     set(key, tenantId, value, bytes, at) {
-      if (at !== generation || bytes > maxBytes) return;
+      if (at !== generationOf(tenantId) || bytes > maxBytes) return;
       const held = entries.get(key);
       if (held !== undefined) drop(key, held);
       entries.set(key, { tenantId, value, bytes, expiresAt: options.now() + ttlMs });
@@ -77,12 +86,21 @@ export function createBrandingCache<V>(options: BrandingCacheOptions): BrandingC
       }
     },
     invalidateTenant(tenantId) {
-      generation += 1;
+      const next = generationOf(tenantId) + 1;
+      generations.delete(tenantId);
+      generations.set(tenantId, next);
+      if (generations.size > maxTenants) {
+        for (const [oldest, count] of generations) {
+          floor = Math.max(floor, count + 1);
+          generations.delete(oldest);
+          break;
+        }
+      }
       for (const [key, entry] of entries) {
         if (entry.tenantId === tenantId) drop(key, entry);
       }
     },
-    generation: () => generation,
+    generation: generationOf,
     size: () => entries.size,
   };
 }

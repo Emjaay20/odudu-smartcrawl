@@ -16,7 +16,7 @@ describe('createBrandingCache', () => {
   it('the cache never holds more than maxEntries', () => {
     const cache = cacheAt({ now: 0 });
     for (let i = 0; i < 100_000; i += 1) {
-      cache.set(`t:${String(i)}`, 't', 'v', 10, cache.generation());
+      cache.set(`t:${String(i)}`, 't', 'v', 10, cache.generation('t'));
       expect(cache.size()).toBeLessThanOrEqual(brandingCache.maxEntries);
     }
     expect(cache.size()).toBe(brandingCache.maxEntries);
@@ -26,9 +26,9 @@ describe('createBrandingCache', () => {
 
   it('never holds more than maxBytes of weight', () => {
     const cache = cacheAt({ now: 0 }, { maxBytes: 100 });
-    for (let i = 0; i < 20; i += 1) cache.set(`k${String(i)}`, 't', 'v', 30, cache.generation());
+    for (let i = 0; i < 20; i += 1) cache.set(`k${String(i)}`, 't', 'v', 30, cache.generation('t'));
     expect(cache.size()).toBe(3);
-    cache.set('big', 't', 'v', 101, cache.generation());
+    cache.set('big', 't', 'v', 101, cache.generation('t'));
     expect(cache.get('big')).toBeUndefined();
   });
 
@@ -73,9 +73,28 @@ describe('createBrandingCache', () => {
 
   it('ignores a fill that began before an invalidation', () => {
     const cache = cacheAt({ now: 0 });
-    const began = cache.generation();
+    const began = cache.generation('t1');
     cache.invalidateTenant('t1');
     cache.set('t1:', 't1', 'stale', 1, began);
+    expect(cache.get('t1:')).toBeUndefined();
+  });
+
+  it('counts invalidations per tenant', () => {
+    const cache = cacheAt({ now: 0 });
+    const other = cache.generation('t2');
+    cache.invalidateTenant('t1');
+    expect(cache.generation('t2')).toBe(other);
+    cache.set('t2:', 't2', 'v', 1, other);
+    expect(cache.get('t2:')).toEqual({ value: 'v' });
+  });
+
+  it('never lets a forgotten tenant take a stale generation back', () => {
+    const cache = createBrandingCache<string>({ now: () => 0, maxTenants: 2 });
+    const held = cache.generation('t1');
+    cache.invalidateTenant('t1');
+    cache.invalidateTenant('t2');
+    cache.invalidateTenant('t3');
+    cache.set('t1:', 't1', 'stale', 1, held);
     expect(cache.get('t1:')).toBeUndefined();
   });
 });

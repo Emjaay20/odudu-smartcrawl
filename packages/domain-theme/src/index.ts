@@ -62,6 +62,8 @@ export {
 export { assetPath, stylesheetPath } from '#/service/branding-urls';
 export { brandingCss, tokensCss } from '#/service/branding-css';
 export {
+  BRANDING_BACKOFF_MS,
+  MAX_BRANDING_BACKOFFS,
   MAX_BRANDING_READS_IN_FLIGHT,
   MAX_LOGGED_BRANDING_PROBLEMS,
   resolveBranding,
