@@ -94,19 +94,19 @@ revisit when a user asks for it, and place it then.
 Choice of how a theme is expressed, grounded in how Auth0, Keycloak and Okta
 work (research, 2026-10-27):
 
-| | Trade | |
-| --- | --- | --- |
-| **A. Slot templates** | HTML per page kind with named slots and catalogue references, no logic; sanitised at save, checked for required parts, filled at render | **Chosen** |
-| B. Structured theme | tokens, ordered blocks and wording, no tenant HTML; safest, least flexible | Rejected: the owner wants as much control as possible |
-| C. Liquid-style | slots plus conditionals and loops, as Auth0; most power | Rejected for now: needs a sandboxed engine, execution limits and a far larger attack surface; A grows into C without redoing the sanitiser or the required-parts check |
+|                       | Trade                                                                                                                                   |                                                                                                                                                                        |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **A. Slot templates** | HTML per page kind with named slots and catalogue references, no logic; sanitised at save, checked for required parts, filled at render | **Chosen**                                                                                                                                                             |
+| B. Structured theme   | tokens, ordered blocks and wording, no tenant HTML; safest, least flexible                                                              | Rejected: the owner wants as much control as possible                                                                                                                  |
+| C. Liquid-style       | slots plus conditionals and loops, as Auth0; most power                                                                                 | Rejected for now: needs a sandboxed engine, execution limits and a far larger attack surface; A grows into C without redoing the sanitiser or the required-parts check |
 
 Scope of a client's override, three options:
 
-| | Trade | |
-| --- | --- | --- |
-| Tokens, images and stylesheet only | one set of templates to validate | Rejected: Keycloak sets a login theme per client and Auth0 users fake it with conditionals; the owner wants each client able to look different |
-| **Any piece, templates included** | the client's theme has the tenant theme's shape, layered one piece at a time; one sanitiser, one renderer | **Chosen** |
-| A separate theme per client with no fallback | N complete themes | Rejected: a new client would start unstyled |
+|                                              | Trade                                                                                                     |                                                                                                                                                |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tokens, images and stylesheet only           | one set of templates to validate                                                                          | Rejected: Keycloak sets a login theme per client and Auth0 users fake it with conditionals; the owner wants each client able to look different |
+| **Any piece, templates included**            | the client's theme has the tenant theme's shape, layered one piece at a time; one sanitiser, one renderer | **Chosen**                                                                                                                                     |
+| A separate theme per client with no fallback | N complete themes                                                                                         | Rejected: a new client would start unstyled                                                                                                    |
 
 Storage of uploads: **PostgreSQL `bytea` in its own table**, over a volume or
 object storage, because Odudu ships as a container and a database, `bytea`
@@ -301,17 +301,17 @@ responsibility, because no server-side check can prove them.
 
 ## 14. Where it beats, matches or lags the standard
 
-| Point | Standard or common practice | This design |
-| --- | --- | --- |
-| Template with server-owned parts | Auth0: required `head` and `widget` tags | Matches, finer-grained: every form part is a slot |
-| Per-client look | Keycloak native; Auth0 by conditionals; Okta by clientId | Matches Keycloak, piecewise fallback |
-| Logout confirmation | Spec SHOULD; Keycloak skips with a hint | Meets the spec, closes the leaked-token case |
-| Sanitiser | A recent CVE: unmatched CSS passed through | Fail-closed |
-| CSP | Often widened per tenant | Per-theme URL list, `'self'` not widened |
-| Preview | Auth0 preview lags and can differ from saved | Same render path, layer provenance, versions, restore |
-| Upload validation | OWASP: bytes not header, generated names | Matches, adds re-encoding and `nosniff` |
-| Template logic | Auth0 Liquid | Lags by decision, section 3 |
-| Fonts, SVG | Common in competitors | Lags by decision, section 2 |
+| Point                            | Standard or common practice                              | This design                                           |
+| -------------------------------- | -------------------------------------------------------- | ----------------------------------------------------- |
+| Template with server-owned parts | Auth0: required `head` and `widget` tags                 | Matches, finer-grained: every form part is a slot     |
+| Per-client look                  | Keycloak native; Auth0 by conditionals; Okta by clientId | Matches Keycloak, piecewise fallback                  |
+| Logout confirmation              | Spec SHOULD; Keycloak skips with a hint                  | Meets the spec, closes the leaked-token case          |
+| Sanitiser                        | A recent CVE: unmatched CSS passed through               | Fail-closed                                           |
+| CSP                              | Often widened per tenant                                 | Per-theme URL list, `'self'` not widened              |
+| Preview                          | Auth0 preview lags and can differ from saved             | Same render path, layer provenance, versions, restore |
+| Upload validation                | OWASP: bytes not header, generated names                 | Matches, adds re-encoding and `nosniff`               |
+| Template logic                   | Auth0 Liquid                                             | Lags by decision, section 3                           |
+| Fonts, SVG                       | Common in competitors                                    | Lags by decision, section 2                           |
 
 ## 15. Exit criteria (draft of the section 11 row)
 
