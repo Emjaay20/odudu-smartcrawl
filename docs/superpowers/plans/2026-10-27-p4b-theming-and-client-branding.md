@@ -99,7 +99,7 @@ No image, HTML or CSS library is installed (`git grep -l '"sharp"\|"parse5"\|"po
 
 ### Task 3: Bind the form's fields into the token; ADR 0047
 
-**Files:** Modify `packages/authn-flows/src/service/session-entry.ts` (`proof`, lines 51-58), `packages/protocol-oidc/src/usecase/logout.ts` (`LOGOUT_CONFIRMATION` use, `handleLogoutConfirmation` line 350), `packages/protocol-oidc/src/view/logout-html.ts`; Create the ADR numbered 0047 (`logout-always-confirms`); Test `packages/authn-flows/src/service/session-entry.test.ts`, `packages/protocol-oidc/src/usecase/logout.test.ts`, `tests/logout.int.test.ts`.
+**Files:** Modify `packages/authn-flows/src/service/session-entry.ts` (`proof`, lines 51-58), `packages/protocol-oidc/src/usecase/logout.ts` (`LOGOUT_CONFIRMATION` use, `handleLogoutConfirmation` line 350), `packages/protocol-oidc/src/view/logout-html.ts`; Create the ADR numbered 0047 (`logout-confirms-by-default`); Test `packages/authn-flows/src/service/session-entry.test.ts`, `packages/protocol-oidc/src/usecase/logout.test.ts`, `tests/logout.int.test.ts`.
 
 **Interfaces:** Produces: `proof(purpose: string, bound?: readonly string[]): string` where `bound` values are length-prefixed into the HMAC input; the logout confirmation passes `[clientId ?? '', postLogoutRedirectUri ?? '', state ?? '']`.
 
