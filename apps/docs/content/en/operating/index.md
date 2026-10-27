@@ -7,7 +7,7 @@ description: Deploy, configure, upgrade, back up and scale a running installatio
 
 You have tried Odudu with the [quick start](../quick-start/index.mdx) and now want it running where other people can reach it. This section takes you there in the order you will need it: put a server up, set it up, keep it up to date, back it up and harden it.
 
-Be clear about what you are taking on before you start. Odudu has had no outside security review ([Security](../security/index.md) says what has and has not been checked), it runs as one instance, and the written backup and restore guidance has not yet been proven by a restore. Each page says where it stands, and the [roadmap](../roadmap.md) says when the gaps close.
+Be clear about what you are taking on before you start. Odudu has had no outside security review ([Security](../security/index.md) says what has and has not been checked). It runs as one instance, and its backup and restore guidance is not yet proven by a full restore. Each page says where it stands, and the [roadmap](../roadmap.md) says when the gaps close.
 
 ## Before you start
 

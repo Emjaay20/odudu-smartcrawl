@@ -16,7 +16,7 @@ Keep two things, and keep them apart.
 - **The database.** Every tenant's people, clients, keys, settings and audit trail are rows in the one database `ODUDU_DATABASE_URL` points at.
 - **The secrets.** `ODUDU_KEK` wraps every signing key and every console token stored in that database, and `ODUDU_CONSOLE_CLIENT_KEY` is registered on every tenant. A dump restored without the same `ODUDU_KEK` holds keys nobody can unwrap, so the signing keys and the stored console sessions cannot be read. Keep both values in your secret store, in a different place from the dumps. A dump with its key beside it hands both to anyone who finds it.
 
-The database roles are not in a dump, because roles belong to the PostgreSQL cluster. A restore into a new cluster needs them first, and needs the owner role to have the same name it had when the dump was taken: the dump records default privileges for that role by name, and the restore stops with `role does not exist` without it. Step 3 gives the commands.
+The database roles are not in a dump, because roles belong to the PostgreSQL cluster. A restore into a new cluster needs them first. The owner role must have the name it had when the dump was taken, because the dump records default privileges by role name, and the restore stops with `role does not exist` without it. Step 3 gives the commands.
 
 ## 1. Dump the database
 
@@ -44,9 +44,9 @@ You should see a line of `TABLE DATA` for each table.
 
 ## 3. Restore it into a new cluster
 
-Do this once on a scratch PostgreSQL 17, so you know it works before you need it. The steps below were run end to end against a dump of the quick start's stack: the restored database served the `system` tenant's discovery document and signing keys to a server started with the same `ODUDU_KEK`. The project has not yet run a restore against a full sign-in, which is what [the roadmap](../roadmap.md#later) promises under operational readiness.
+Do this once on a scratch PostgreSQL 17, so you know it works before you need it. The steps below were run end to end against a dump of the quick start's stack. The restored database served the `system` tenant's discovery document and signing keys to a server started with the same `ODUDU_KEK`. A restore has not yet been proven with a full sign-in, which [the roadmap](../roadmap.md#later) promises under operational readiness.
 
-1. As an administrator, create the owner under the name it had when you dumped (`odudu` on the quick start's stack, `odudu_owner` if you followed [Deploying](./deploying.md)), the serving role and an empty database. Also create `odudu_app` and give it to the serving role. The migrations normally do this, but a restore brings the record that they already ran, so they never run again, and without the grant the serving role has no privileges while `/health/ready` still answers `200`.
+1. As an administrator, create the owner under the name it had when you dumped (`odudu` on the quick start's stack, `odudu_owner` if you followed [Deploying](./deploying.md)), the serving role and an empty database. Also create `odudu_app` and give it to the serving role. The migrations normally do this. A restore brings the record that they already ran, so they never run again, and without the grant the serving role has no privileges while `/health/ready` still answers `200`.
 
 ```text
 CREATE ROLE odudu_owner LOGIN CREATEROLE BYPASSRLS PASSWORD '<owner password>';

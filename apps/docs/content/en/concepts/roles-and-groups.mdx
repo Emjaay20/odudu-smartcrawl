@@ -64,7 +64,7 @@ A role also reaches a token only when a scope carries it. You map the role to a 
 5. Map the roles to a scope and give the client that scope, so they reach the token. Or turn on **Include all roles in tokens** and give the client the `roles` scope.
 6. In your app, read `roles` from the access token. The access token carries it by default, and the ID token does not.
 
-An administrator cannot put a person in a group whose roles reach further than the administrator's own, so the admin API cannot be used to grant more than its caller holds.
+An administrator cannot put a person in a group whose roles reach further than their own, so nobody can use the admin API to grant more than they hold.
 
 ## Where to go next
 

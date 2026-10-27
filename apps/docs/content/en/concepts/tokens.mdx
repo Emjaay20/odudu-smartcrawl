@@ -42,7 +42,7 @@ It lives 14 days by default, and **it works once**. Each refresh gives back a ne
 
 ## A refresh token used twice
 
-Suppose a thief copies a refresh token. Both of you now hold the same string, and only one of you can use it first. Whoever comes second sends a token that has already been used. Odudu cannot tell which of you is the thief, so it refuses the call and revokes the whole family: every token descended from that sign-in, including the one the honest app was about to use. The honest app finds out on its next refresh, signs the person in again, and the thief is left with nothing.
+Suppose a thief copies a refresh token. Both of you now hold the same string, and only one of you can use it first. Whoever comes second sends a token that has already been used. Odudu cannot tell which of you is the thief. It refuses the call and revokes the whole family: every token from that sign-in, including the one the honest app was about to use. The honest app finds out on its next refresh, signs the person in again, and the thief is left with nothing.
 
 ## Client lifetimes
 
