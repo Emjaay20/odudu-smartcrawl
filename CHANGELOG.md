@@ -6,6 +6,10 @@ All notable changes to Odudu are written here, newest first. The format follows
 
 ## [Unreleased]
 
+## [0.1.0-rc.4] - 2026-10-27
+
+The fourth release candidate. Odudu has had no independent security review.
+
 ### Added
 
 - Pages measured on every change against Core Web Vitals and Lighthouse budgets, so the documentation and the landing page stay fast.
@@ -98,7 +102,8 @@ The first release candidate. Odudu is not production ready: it has had no securi
 - Cookies are `Secure` and `__Host-` prefixed under `ODUDU_TLS`, from one setting; before, the session cookie ignored it.
 - Characters that change the direction of text are refused in names and usernames.
 
-[Unreleased]: https://github.com/wizzywit/odudu/compare/v0.1.0-rc.3...HEAD
+[Unreleased]: https://github.com/wizzywit/odudu/compare/v0.1.0-rc.4...HEAD
+[0.1.0-rc.4]: https://github.com/wizzywit/odudu/compare/v0.1.0-rc.3...v0.1.0-rc.4
 [0.1.0-rc.3]: https://github.com/wizzywit/odudu/compare/v0.1.0-rc.2...v0.1.0-rc.3
 [0.1.0-rc.2]: https://github.com/wizzywit/odudu/compare/v0.1.0-rc.1...v0.1.0-rc.2
 [0.1.0-rc.1]: https://github.com/wizzywit/odudu/releases/tag/v0.1.0-rc.1
