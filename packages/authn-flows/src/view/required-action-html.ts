@@ -30,7 +30,6 @@ export function renderRequiredActionPage(
             ? ''
             : links([{ href: signInPath, text: tHtml(locale, 'link.backToSignIn') }])
         }`,
-        links: '',
       },
       locale,
     ),

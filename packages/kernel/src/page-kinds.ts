@@ -79,7 +79,7 @@ export const PAGE_KINDS: Record<PageKind, PageManifest> = {
     optional: ['intro'],
     inForm: ['fields', 'submit'],
   },
-  'required-action': { required: ['message'], optional: ['links'], inForm: [] },
+  'required-action': { required: ['message'], optional: [], inForm: [] },
   registration: {
     required: [FORM_OPEN, 'fields', 'submit', 'error', FORM_CLOSE],
     optional: ['intro', 'links'],

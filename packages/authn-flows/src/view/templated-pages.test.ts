@@ -144,8 +144,8 @@ const CASES: Case[] = [
     name: 'required action',
     kind: 'required-action',
     render: (locale) => renderRequiredActionPage('configure-passkey', SIGN_IN, locale),
-    template: '<div>{{links}}</div>{{message}}',
-    inOrder: ['</div>', '<h1>'],
+    template: '<div>{{message}}</div><p>end</p>',
+    inOrder: ['<div><h1>', '</div>'],
     hidden: [],
   },
 ];
@@ -237,6 +237,11 @@ describe('the recovery codes page', () => {
     expect(body).toContain('only time');
   });
 
+  it('says the set replaces an earlier one, once, when it does', () => {
+    const body = render(required, true).body;
+    expect(body.split('These replace the codes issued to this account')).toHaveLength(2);
+  });
+
   it('places the replaced notice empty when the set replaces nothing', () => {
     expect(render(required, false).body).not.toContain('replace the codes');
   });
@@ -257,7 +262,7 @@ describe('the passkey page script', () => {
     for (const template of [
       slots(required),
       slots(['script', ...required.filter((name) => name !== 'script')]),
-      `<div>{{intro}}</div>${slots(required)}`,
+      '{{form.open}}{{script}}{{fields}}{{submit}}{{error}}{{form.close}}',
     ]) {
       const page = render(template);
       const nonce = page.script?.nonce ?? '';

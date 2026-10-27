@@ -134,7 +134,12 @@ describe('an authn-flows template that loses what the server must show', () => {
   });
 
   it('is refused for a required-action page without its message', () => {
-    expect(details('required-action', '{{links}}')).toContain('message');
+    expect(details('required-action', '')).toContain('message');
+  });
+
+  it('is refused for a required-action page that places links, which it has none of', () => {
+    const issues = checkTemplate('required-action', '{{message}}{{links}}');
+    expect(issues.map((issue) => [issue.code, issue.detail])).toEqual([['unknown-slot', 'links']]);
   });
 
   it('is refused when a script-less kind places a script', () => {
