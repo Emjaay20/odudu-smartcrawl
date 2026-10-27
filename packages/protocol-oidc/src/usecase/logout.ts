@@ -108,6 +108,9 @@ export interface LogoutRequestParams {
   state: string | null;
 }
 
+// `brandClientId` is the client whose theme the page wears: the one an
+// `id_token_hint` verified for, never one a `client_id` parameter merely
+// names, and null when there is none.
 export type LogoutOutcome =
   | { kind: 'not_found' }
   // The confirmation POST named no session the cookie resolves to, or
@@ -127,6 +130,7 @@ export type LogoutOutcome =
       // form-action has to license.
       registeredRedirect: string | null;
       state: string | null;
+      brandClientId: string | null;
     }
   // The confirmation POST ended a session, or a first contact found none
   // to end and the registered redirect alone was honoured (see
@@ -140,6 +144,7 @@ export type LogoutOutcome =
       state: string | null;
       sessionEnded: boolean;
       frontChannelLogoutUrls: readonly string[];
+      brandClientId: string | null;
     }
   // Only the confirmation POST returns this: the redirect was refused, but
   // the session still ended and the page still renders — the same reason
@@ -149,6 +154,7 @@ export type LogoutOutcome =
       error: string;
       state: string | null;
       frontChannelLogoutUrls: readonly string[];
+      brandClientId: string | null;
     };
 
 export interface LogoutClientRecord extends LogoutClient {
@@ -276,6 +282,20 @@ function toLogoutSession(session: PresentedSession | null): LogoutSession | null
 // — so the token is an HMAC keyed by the secret half of the cookie's entry,
 // which a cross-site forger cannot read (SessionEntry.proof).
 const LOGOUT_CONFIRMATION = 'logout-confirm';
+// The same token for a form whose first contact verified its client by the
+// hint. Which purpose proves is how the POST learns that, so a client_id the
+// form merely carries can never choose a theme.
+const LOGOUT_CONFIRMATION_BRANDED = 'logout-confirm-branded';
+
+// The client whose theme a page may wear: the one a verified, agreeing hint
+// was issued to, once it is a client this tenant has.
+function brandedClient(
+  hint: object | null,
+  clientId: string | null,
+  client: LogoutClientRecord | null,
+): string | null {
+  return hint !== null && client !== null ? clientId : null;
+}
 
 // A `GET` (or unconfirmed `POST`) against the logout endpoint: the first
 // contact. A session is ended here only when decideLogout says the client
@@ -329,6 +349,7 @@ export async function handleLogoutRequest(
   const usableHint = disagreeing ? null : hint;
   const selected = selectLogoutSession(sessions, usableHint?.sid ?? null);
   const session = toLogoutSession(selected);
+  const brandClientId = brandedClient(usableHint, clientId, client);
 
   const decision = decideLogout({
     session,
@@ -347,6 +368,7 @@ export async function handleLogoutRequest(
       registered,
       params.state,
       request,
+      brandClientId,
     );
   }
   if (decision.kind === 'end' && !decision.sessionEnds) {
@@ -357,21 +379,22 @@ export async function handleLogoutRequest(
       state: params.state,
       sessionEnded: false,
       frontChannelLogoutUrls: [],
+      brandClientId,
     };
   }
   return {
     kind: 'confirm',
     sessionId: session?.id ?? null,
     csrf:
-      selected?.entry.proof(LOGOUT_CONFIRMATION, [
-        clientId ?? '',
-        requested ?? '',
-        params.state ?? '',
-      ]) ?? null,
+      selected?.entry.proof(
+        brandClientId === null ? LOGOUT_CONFIRMATION : LOGOUT_CONFIRMATION_BRANDED,
+        [clientId ?? '', requested ?? '', params.state ?? ''],
+      ) ?? null,
     clientId,
     postLogoutRedirectUri: requested,
     registeredRedirect: registeredRedirectOf(requested, registered)?.uri ?? null,
     state: params.state,
+    brandClientId,
   };
 }
 
@@ -412,15 +435,13 @@ export async function handleLogoutConfirmation(
     },
     header,
   );
-  const confirmed = sessions.find(
-    (candidate) =>
-      candidate.id === params.confirmedSessionId &&
-      candidate.entry.proves(LOGOUT_CONFIRMATION, params.csrf, [
-        params.clientId ?? '',
-        params.postLogoutRedirectUri ?? '',
-        params.state ?? '',
-      ]),
-  );
+  const signed = [params.clientId ?? '', params.postLogoutRedirectUri ?? '', params.state ?? ''];
+  const named = sessions.find((candidate) => candidate.id === params.confirmedSessionId);
+  const branded = named?.entry.proves(LOGOUT_CONFIRMATION_BRANDED, params.csrf, signed) === true;
+  const confirmed =
+    branded || named?.entry.proves(LOGOUT_CONFIRMATION, params.csrf, signed) === true
+      ? named
+      : undefined;
   if (confirmed === undefined) {
     return { kind: 'unauthenticated' };
   }
@@ -436,6 +457,7 @@ export async function handleLogoutConfirmation(
     client?.postLogoutRedirectUris ?? [],
     params.state,
     request,
+    branded && client !== null ? params.clientId : null,
   );
 }
 
@@ -452,6 +474,7 @@ async function endAndAnswer(
   registered: readonly string[],
   state: string | null,
   request: RequestContext,
+  brandClientId: string | null,
 ): Promise<LogoutOutcome> {
   const decision = decideRedirect(requested, registered);
 
@@ -465,6 +488,7 @@ async function endAndAnswer(
       state,
       sessionEnded: true,
       frontChannelLogoutUrls: frontChannel,
+      brandClientId,
     };
   }
   return {
@@ -472,5 +496,6 @@ async function endAndAnswer(
     error: decision.error,
     state,
     frontChannelLogoutUrls: frontChannel,
+    brandClientId,
   };
 }

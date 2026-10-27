@@ -76,12 +76,13 @@ export function lookingUpTenantOnce<D extends { findTenant(name: string): Promis
 }
 
 // A page that has a tenant by name and no parked request: the browser's
-// language and the tenant's theme, never a client's, since nothing the
-// request carries names one reliably.
+// language and the tenant's theme. A client's is worn only when the caller
+// passes one it has verified; nothing a request carries names one reliably.
 export async function brandedRequestLocale(
   deps: Pick<ContinuationDeps, 'findTenant' | 'pageLocales' | 'resolveBranding'>,
   reply: FastifyReply,
   tenantName: string,
+  verifiedClientId: string | null = null,
 ): Promise<PageLocale> {
   const locale = requestLocale(reply, deps);
   if (deps.resolveBranding === undefined) return locale;
@@ -89,7 +90,7 @@ export async function brandedRequestLocale(
   return brandLocale(
     locale,
     deps.resolveBranding,
-    tenant === null ? null : { tenantId: tenant.id, tenantName, clientId: null },
+    tenant === null ? null : { tenantId: tenant.id, tenantName, clientId: verifiedClientId },
   );
 }
 

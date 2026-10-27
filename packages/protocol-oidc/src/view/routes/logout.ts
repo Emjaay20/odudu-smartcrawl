@@ -50,8 +50,10 @@ async function respondToOutcome(
   reply: FastifyReply,
   deps: Pick<ContinuationDeps, 'findTenant' | 'pageLocales' | 'resolveBranding'>,
 ): Promise<FastifyReply> {
-  // Asked for only by a branch that renders a page: a redirect has none.
-  const locale = (): Promise<PageLocale> => brandedRequestLocale(deps, reply, tenant);
+  // Asked for only by a branch that renders a page: a redirect has none. A
+  // client's theme is worn only where the outcome says a hint verified it.
+  const locale = (clientId: string | null = null): Promise<PageLocale> =>
+    brandedRequestLocale(deps, reply, tenant, clientId);
   if (outcome.kind === 'not_found') {
     return reply.code(404).send();
   }
@@ -62,7 +64,7 @@ async function respondToOutcome(
 
   if (outcome.kind === 'confirm') {
     if (outcome.sessionId === null || outcome.csrf === null) {
-      return sendHtml(reply, 200, renderNoActiveSessionPage(await locale()));
+      return sendHtml(reply, 200, renderNoActiveSessionPage(await locale(outcome.brandClientId)));
     }
     const page = renderLogoutConfirmationPage(
       tenant,
@@ -73,7 +75,7 @@ async function respondToOutcome(
         postLogoutRedirectUri: outcome.postLogoutRedirectUri,
         state: outcome.state,
       },
-      await locale(),
+      await locale(outcome.brandClientId),
     );
     return sendHtml(
       reply,
@@ -100,7 +102,10 @@ async function respondToOutcome(
     return sendHtml(
       reply,
       400,
-      renderLogoutRedirectRefusedPage(outcome.frontChannelLogoutUrls, await locale()),
+      renderLogoutRedirectRefusedPage(
+        outcome.frontChannelLogoutUrls,
+        await locale(outcome.brandClientId),
+      ),
     );
   }
 
@@ -111,7 +116,7 @@ async function respondToOutcome(
     return sendHtml(
       reply,
       200,
-      renderLoggedOutPage(outcome.frontChannelLogoutUrls, await locale()),
+      renderLoggedOutPage(outcome.frontChannelLogoutUrls, await locale(outcome.brandClientId)),
     );
   }
   const target = new URL(outcome.redirectTo);
@@ -123,7 +128,7 @@ async function respondToOutcome(
       renderLoggedOutRedirectPage(
         outcome.frontChannelLogoutUrls,
         target.toString(),
-        await locale(),
+        await locale(outcome.brandClientId),
       ),
     );
   }

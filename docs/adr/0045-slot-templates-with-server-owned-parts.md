@@ -54,6 +54,14 @@ any check at render time falls back to the layer below.
   fill, so a template saved before a manifest tightened falls back to the layer
   below, or the default, and is logged once per tenant, client and version.
 
+- A logout page wears a client's theme only for a client an `id_token_hint`
+  verified for (and that is a registered, enabled client of the tenant).
+  `client_id` on a logout request is a parameter anyone can write, so it never
+  chooses a theme, and the confirmation POST wears the client only when the
+  form's token was minted under a purpose that records the first contact
+  verified it: a `client_id` the form merely carries gives the tenant theme.
+  It costs no query beyond the theme read the page already makes.
+
 - `form.open` carries every hidden field the form posts, the proof included,
   so no page needs a part for them and a template cannot drop one. Parts are
   guaranteed present, in order and inside the form's pair, not that the
