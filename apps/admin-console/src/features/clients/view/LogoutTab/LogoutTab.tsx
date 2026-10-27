@@ -10,6 +10,7 @@ import {
   SKIP_LOGOUT_HINT,
   SKIP_LOGOUT_LABEL,
   SKIP_LOGOUT_WARNING,
+  SKIP_LOGOUT_WARNING_ID,
 } from '#/features/clients/service';
 import { useClientLogout } from '#/features/clients/usecase/useClientLogout';
 import { Deliveries } from '#/features/clients/view/Deliveries';
@@ -46,14 +47,22 @@ export function LogoutTab({ tenant, client, etag, gone, writable }: ClientTabPro
           )}
           <ToggleField
             label={SKIP_LOGOUT_LABEL}
-            description={SKIP_LOGOUT_HINT}
+            description={page.confirmationFixed === null ? SKIP_LOGOUT_HINT : undefined}
+            describedBy={SKIP_LOGOUT_WARNING_ID}
             value={confirmation.values.skip_logout_confirmation}
             changed={confirmation.changed.includes('skip_logout_confirmation')}
             onChange={(value) => {
               confirmation.edit('skip_logout_confirmation', value);
             }}
           />
-          <Note tone={confirmation.values.skip_logout_confirmation ? 'warning' : undefined}>
+          <Note
+            id={SKIP_LOGOUT_WARNING_ID}
+            tone={
+              confirmation.values.skip_logout_confirmation && page.confirmationFixed === null
+                ? 'warning'
+                : undefined
+            }
+          >
             {SKIP_LOGOUT_WARNING}
           </Note>
         </SaveSection>

@@ -30,6 +30,7 @@ export const LOGOUT_FIELD = {
 
 export const POST_LOGOUT_NOUN = 'post-logout redirect URIs';
 
+export const SKIP_LOGOUT_WARNING_ID = 'skip-logout-warning';
 export const SKIP_LOGOUT_LABEL = 'Skip the sign-out confirmation';
 export const SKIP_LOGOUT_HINT = 'Off: the person is always asked to confirm sign-out.';
 export const SKIP_LOGOUT_WARNING =

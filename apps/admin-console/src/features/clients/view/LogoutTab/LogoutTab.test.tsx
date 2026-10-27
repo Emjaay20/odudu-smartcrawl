@@ -136,6 +136,18 @@ it('shows the warning beside the toggle, off by default, in plain words', async 
   ).toBeVisible();
 });
 
+it("reads the hint and the warning as the switch's description, off and on", async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(AT, clientRoutes());
+  const toggle = await screen.findByRole('switch', { name: SKIP });
+  expect(toggle).toHaveAccessibleDescription(
+    expect.stringContaining('Off: the person is always asked to confirm sign-out.'),
+  );
+  expect(toggle).toHaveAccessibleDescription(expect.stringContaining(WARNING));
+  await user.click(toggle);
+  expect(toggle).toHaveAccessibleDescription(expect.stringContaining(WARNING));
+});
+
 it('sets the warning apart once the toggle is on, and saves it with the ETag it read', async () => {
   const user = userEvent.setup();
   const { sent } = renderConsoleAt(
@@ -188,6 +200,8 @@ it("the built-in client's toggle is on and not editable", async () => {
     within(section).getByText(/odudu-admin always signs out at once and this cannot be changed/u),
   ).toBeVisible();
   expect(ADMIN.skip_logout_confirmation).toBe(true);
+  expect(within(section).queryByText(/Off: the person is always asked/u)).toBeNull();
+  expect(within(section).getByText(WARNING)).not.toHaveAttribute('data-tone');
 });
 
 it('a limited user sees it disabled', async () => {

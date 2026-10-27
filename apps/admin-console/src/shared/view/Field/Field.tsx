@@ -416,9 +416,15 @@ export function ToggleField({
   error,
   changed,
   isDisabled,
+  describedBy,
   value,
   onChange,
-}: Chrome & { value: boolean; onChange: (value: boolean) => void }) {
+}: Chrome & {
+  value: boolean;
+  // The id of further text the switch is read with, beyond its description.
+  describedBy?: string;
+  onChange: (value: boolean) => void;
+}) {
   if (use(FieldsReadOnly)) {
     return (
       <ReadOnlyValue
@@ -438,6 +444,7 @@ export function ToggleField({
       onChange={onChange}
       className={styles.field ?? ''}
       data-changed={changed === true || undefined}
+      {...(describedBy === undefined ? {} : { 'aria-describedby': describedBy })}
     >
       <div className={styles.toggleRow}>
         <SwitchButton className={styles.switch ?? ''}>

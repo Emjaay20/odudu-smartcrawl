@@ -1022,7 +1022,8 @@ test("a client's sign-out confirmation is skipped once the toggle is on, and ask
     await expect(section.getByText(/even an expired one, can sign its users out/u)).toBeVisible();
     await expectAccessible(page);
 
-    await section.getByText('Skip the sign-out confirmation', { exact: true }).click();
+    await toggle.focus();
+    await page.keyboard.press('Space');
     await expect(toggle).toBeChecked();
     await section.getByRole('button', { name: 'Save Sign-out confirmation' }).click();
     await expect.poll(() => clientColumn('skipper', 'skip_logout_confirmation')).toBe('true');
@@ -1043,7 +1044,8 @@ test("a client's sign-out confirmation is skipped once the toggle is on, and ask
       await skipping.context.close();
     }
 
-    await section.getByText('Skip the sign-out confirmation', { exact: true }).click();
+    await toggle.focus();
+    await page.keyboard.press('Space');
     await expect(toggle).not.toBeChecked();
     await section.getByRole('button', { name: 'Save Sign-out confirmation' }).click();
     await expect.poll(() => clientColumn('skipper', 'skip_logout_confirmation')).toBe('false');

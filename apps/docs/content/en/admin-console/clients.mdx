@@ -46,7 +46,7 @@ Open the client and choose its **Redirects & origins** tab. A sign-in request mu
 
 Where a sign-out may send the browser is set on the **Logout** tab, as **Post-logout redirect URIs**.
 
-The same tab holds **Skip the sign-out confirmation**, which is off for every new client. Off, a person who is sent to sign out is always asked to confirm. On, a link carrying an ID token this client received signs that person out at once, with no question. The tab says so beside the switch: when this is on, anyone who holds an ID token the application received, even an expired one, can sign its users out by opening a link while their session lasts. Turn it on only for an application you run yourself whose ID tokens never reach a browser or a log. The console's own client has it on and shows it as fixed, because the console signs you out without asking.
+The same tab holds **Skip the sign-out confirmation**, which is off for every new client. Off, a person who is sent to sign out is always asked to confirm. On, a link carrying an ID token this client received signs that person out at once, with no question. The tab says so beside the switch, in these words: "When this is on, anyone who holds an ID token this application received, even an expired one, can sign its users out by opening a link while their session lasts, with no confirmation. Turn it on only for an application you run yourself whose ID tokens never reach a browser or a log." The console's own client has it on and shows it as fixed, because the console signs you out without asking.
 
 ## 3. Choose what the client may do
 
