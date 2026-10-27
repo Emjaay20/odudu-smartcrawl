@@ -83,10 +83,36 @@ describe('contrastFailures', () => {
       },
     });
     expect(failing.map((f) => [f.pair, f.required])).toEqual([
+      ['signalActiveInk/surfacePage', 4.5],
+      ['signalActiveInk/surfacePanel', 4.5],
       ['signalActiveInk/signalActive', 4.5],
       ['signalActiveInk/surfaceSunken', 4.5],
-      ['borderStrong/surfacePage', 3],
+      ['borderStrong/surfacePanel', 3],
       ['borderStrong/surfaceSunken', 3],
+    ]);
+  });
+
+  it('flags a link colour that fails on the panel and passes one that does not', () => {
+    const link = (ink: string): Palette => ({
+      ...PASSING,
+      signalActiveInk: ink,
+      signalActive: '#000000',
+    });
+    expect(contrastFailures({ light: link('#787878') }).map((f) => f.pair)).toEqual([
+      'signalActiveInk/surfacePage',
+      'signalActiveInk/surfacePanel',
+      'signalActiveInk/surfaceSunken',
+    ]);
+    expect(contrastFailures({ light: link('#767676') })).toEqual([]);
+  });
+
+  it('holds the danger ink to 3:1 as a border on the panel and the input', () => {
+    const failing = contrastFailures({
+      light: { ...PASSING, signalDanger: '#000000', signalDangerInk: '#cccccc' },
+    });
+    expect(failing.map((f) => [f.pair, f.required])).toEqual([
+      ['signalDangerInk/surfacePanel', 3],
+      ['signalDangerInk/surfaceSunken', 3],
     ]);
   });
 
