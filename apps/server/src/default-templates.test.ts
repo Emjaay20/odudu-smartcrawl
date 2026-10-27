@@ -95,3 +95,17 @@ describe('an account form template that loses what the server must show', () => 
     expect(details('registration', own)).toEqual(expect.arrayContaining(['fields', 'submit']));
   });
 });
+
+describe('a notice template', () => {
+  it('is refused without its message', () => {
+    const without = ACCOUNT.notice?.replace('{{message}}', '') ?? '';
+    expect(checkTemplate('notice', without).map((issue) => issue.detail)).toContain('message');
+  });
+
+  it('is refused when it opens a form or places a script, which a notice has none of', () => {
+    const own = '{{message}}{{form.open}}{{form.close}}{{script}}';
+    expect(checkTemplate('notice', own).map((issue) => issue.detail)).toEqual(
+      expect.arrayContaining(['form.open', 'form.close', 'script']),
+    );
+  });
+});

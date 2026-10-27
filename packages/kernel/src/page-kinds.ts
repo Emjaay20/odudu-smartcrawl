@@ -17,7 +17,8 @@ export type PageKind =
   | 'required-actions'
   | 'authorize-error'
   | 'email-unverified'
-  | 'logged-out';
+  | 'logged-out'
+  | 'notice';
 
 export interface PageManifest {
   readonly required: readonly string[];
@@ -105,4 +106,8 @@ export const PAGE_KINDS: Record<PageKind, PageManifest> = {
     optional: ['links'],
     inForm: [],
   },
+  // An outcome with nothing to submit: `message` holds the heading, the text
+  // and the way on when there is one, so a theme cannot drop it; `links` are
+  // the secondary ways back.
+  notice: { required: ['message'], optional: ['intro', 'links'], inForm: [] },
 };
