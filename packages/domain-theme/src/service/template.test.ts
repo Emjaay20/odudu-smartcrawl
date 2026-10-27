@@ -278,6 +278,28 @@ describe('dropped tags and implied elements', () => {
   });
 });
 
+describe('elements left open', () => {
+  const required = (template: string): string[] =>
+    checkTemplate('required-action', template).map((issue) => issue.code);
+
+  it('refuses an element that would wrap what the server emits next', () => {
+    for (const open of [
+      '<div>x',
+      '<span>x',
+      '<a href="https://x.example" rel="noopener noreferrer">x',
+      '<table><tr><td>x',
+    ]) {
+      expect(required(`{{message}}${open}`), open).toContain('unclosed-element');
+    }
+  });
+
+  it('accepts what HTML lets a template leave open', () => {
+    for (const open of ['<p>x', '<ul><li>a<li>b</ul>', '<p>a<br>b', '<table><tr><td>x</table>']) {
+      expect(required(`{{message}}${open}`), open).toEqual([]);
+    }
+  });
+});
+
 describe('bounds before the parser', () => {
   const required = (template: string): { codes: string[]; ms: number } => {
     const started = performance.now();
@@ -293,6 +315,23 @@ describe('bounds before the parser', () => {
   ])('refuses nesting hidden by %s', (_name, markup) => {
     const { codes, ms } = required(`{{message}}${markup}`);
     expect(codes).toContain('too-deep');
+    expect(ms).toBeLessThan(100);
+  });
+
+  it('refuses <table><td> x16, which only the tree depth sees', () => {
+    const { codes, ms } = required(`{{message}}${'<table><td>'.repeat(16)}`);
+    expect(codes).toContain('too-deep');
+    expect(ms).toBeLessThan(100);
+  });
+
+  it('is estimated shallower than the tree for some inputs, which are still accepted', () => {
+    expect(required('{{message}}<b></p></b>').codes).toEqual([]);
+    expect(required('{{message}}<ul><li><br></ul>').codes).toEqual([]);
+  });
+
+  it('counts elements the parser makes from stray end tags', () => {
+    const { codes, ms } = required(`{{message}}${'</p>'.repeat(5_000)}`);
+    expect(codes).toContain('too-many-elements');
     expect(ms).toBeLessThan(100);
   });
 

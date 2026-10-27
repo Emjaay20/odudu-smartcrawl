@@ -34,6 +34,7 @@ export type TemplateIssueCode =
   | 'img-alt'
   | 'unterminated'
   | 'unparsed-tag'
+  | 'unclosed-element'
   | 'too-deep'
   | 'too-many-elements'
   | 'form-pair'
@@ -134,6 +135,25 @@ const ELEMENT_ATTRIBUTES: Readonly<Record<string, readonly string[]>> = {
 const GLOBAL_ATTRIBUTES: ReadonlySet<string> = new Set(['class', 'lang', 'dir', 'role']);
 
 const TAG_NAME = /<(\/?)([a-zA-Z][^\s/>]*)/g;
+// Elements HTML lets a template leave open: the next block the server emits
+// ends them, so they cannot wrap it. Any other element left open would.
+const OMISSIBLE_END: ReadonlySet<string> = new Set([
+  'p',
+  'li',
+  'dd',
+  'dt',
+  'td',
+  'th',
+  'tr',
+  'tbody',
+  'thead',
+  'tfoot',
+  'caption',
+  'br',
+  'img',
+  'hr',
+  'wbr',
+]);
 const VOID_ELEMENTS: ReadonlySet<string> = new Set(['br', 'hr', 'img', 'wbr']);
 const HAS_BRACES = /\{\{|\}\}/;
 
@@ -264,13 +284,13 @@ export function checkTemplate(
   }
   checkManifest(kind, slots, add);
 
-  // The source is what gets filled, so a tag the parser would drop in this
-  // context (frame, a second body whose attributes would be merged onto the
-  // page's) is refused by name rather than trusted to stay dropped. The same
-  // linear scan bounds nesting and element count before the parser, whose
-  // cost grows faster than the input, is given the template. An end tag that
-  // does not close the innermost open one is not counted, so this never
-  // reads shallower than the tree; the tree's own depth is checked below.
+  // The source is what gets filled, so a tag the parser would drop here
+  // (frame, a second body whose attributes would merge onto the page's) is
+  // refused by name. The same linear scan bounds nesting and count before
+  // the parser, whose cost outgrows its input, sees the template. It can
+  // read a few levels shallower than the tree (implied tbody and tr), so
+  // the tree walk's depth check is the authority. A tag name inside an
+  // attribute value matches too: a benign false positive.
   const sourceTags: number[] = [];
   const open: string[] = [];
   let elements = 0;
@@ -309,6 +329,7 @@ export function checkTemplate(
   // Slots the parser saw in text. A slot written with entities, or one a
   // tag splits, never matches the source's count.
   let slotsInText = 0;
+  let treeElements = 0;
   const stack: { node: Node; depth: number }[] = fragment.childNodes.map((node) => ({
     node,
     depth: 1,
@@ -329,8 +350,18 @@ export function checkTemplate(
         slotsInText += scanSlots(node.value).filter((slot) => slot.kind !== 'malformed').length;
       }
     } else if (defaultTreeAdapter.isElementNode(node)) {
-      const startTag = node.sourceCodeLocation?.startTag;
-      if (startTag !== undefined) explicit.add(startTag.startOffset);
+      treeElements += 1;
+      if (treeElements > MAX_TEMPLATE_ELEMENTS) {
+        add('too-many-elements', String(MAX_TEMPLATE_ELEMENTS));
+        break;
+      }
+      const location = node.sourceCodeLocation;
+      if (location?.startTag !== undefined) {
+        explicit.add(location.startTag.startOffset);
+        if (location.endTag === undefined && !OMISSIBLE_END.has(node.tagName)) {
+          add('unclosed-element', node.tagName);
+        }
+      }
       if (depth > MAX_TEMPLATE_DEPTH) {
         add('too-deep', String(MAX_TEMPLATE_DEPTH));
         continue;
