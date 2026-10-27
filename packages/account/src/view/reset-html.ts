@@ -12,7 +12,7 @@ import {
 import { returnToField } from '#/view/return-to';
 import { t, tHtml } from '#/view/messages';
 import { passwordField } from '#/view/password-field';
-import { fillPage } from '#/view/template';
+import { fillNotice, fillPage } from '#/view/template';
 import { passwordProblems, type PasswordFailure } from '#/view/password-rules';
 
 export { sendVerificationHtml as sendResetHtml };
@@ -76,8 +76,12 @@ export function renderResetRequestedPage(
 ): RenderedPage {
   return page(
     t(locale, 'reset.requested.title'),
-    `<h1>${tHtml(locale, 'reset.requested.title')}</h1>
-<p>${tHtml(locale, 'reset.requested.next')}</p>${links([backToSignIn(signInPath, locale)])}`,
+    fillNotice(
+      `<h1>${tHtml(locale, 'reset.requested.title')}</h1>
+<p>${tHtml(locale, 'reset.requested.next')}</p>`,
+      links([backToSignIn(signInPath, locale)]),
+      locale,
+    ),
     null,
     [],
     locale,
@@ -98,11 +102,15 @@ export function renderResetRequestFailedPage(
       : `${retry}?${new URLSearchParams({ return_to: signInPath }).toString()}`;
   return page(
     t(locale, 'reset.requestFailed.title'),
-    `<h1>${tHtml(locale, 'reset.requestFailed.title')}</h1>
+    fillNotice(
+      `<h1>${tHtml(locale, 'reset.requestFailed.title')}</h1>
 <p>${tHtml(locale, 'reset.requestFailed.unavailable')}</p>${links([
-      { href, text: tHtml(locale, 'link.tryAgain') },
-      backToSignIn(signInPath, locale),
-    ])}`,
+        { href, text: tHtml(locale, 'link.tryAgain') },
+        backToSignIn(signInPath, locale),
+      ])}`,
+      '',
+      locale,
+    ),
     null,
     [],
     locale,
@@ -172,14 +180,18 @@ function resetSucceeded(
 ): RenderedPage {
   return page(
     t(locale, 'reset.succeeded.title'),
-    `<h1>${tHtml(locale, 'reset.succeeded.heading')}</h1>
+    fillNotice(
+      `<h1>${tHtml(locale, 'reset.succeeded.heading')}</h1>
 <p>${tHtml(locale, signInPath === null ? 'reset.succeeded.next' : 'reset.succeeded.nextWithLink')}</p>${
-      factorsRemoved ? `\n<p>${tHtml(locale, 'reset.succeeded.factorsRemoved')}</p>` : ''
-    }${
-      signInPath === null
-        ? ''
-        : links([{ href: signInPath, text: tHtml(locale, 'link.continueToSignIn') }])
-    }`,
+        factorsRemoved ? `\n<p>${tHtml(locale, 'reset.succeeded.factorsRemoved')}</p>` : ''
+      }${
+        signInPath === null
+          ? ''
+          : links([{ href: signInPath, text: tHtml(locale, 'link.continueToSignIn') }])
+      }`,
+      '',
+      locale,
+    ),
     null,
     [],
     locale,
@@ -199,8 +211,12 @@ export function renderResetLinkFailedPage(
       : { href: requestNewPath, text: tHtml(locale, 'link.requestNewResetLink') };
   return page(
     t(locale, 'reset.linkFailed.title'),
-    `<h1>${tHtml(locale, 'reset.linkFailed.heading')}</h1>
+    fillNotice(
+      `<h1>${tHtml(locale, 'reset.linkFailed.heading')}</h1>
 <p>${tHtml(locale, 'reset.linkFailed.reason')}</p>${links([next, backToSignIn(signInPath, locale)])}`,
+      '',
+      locale,
+    ),
     null,
     [],
     locale,
