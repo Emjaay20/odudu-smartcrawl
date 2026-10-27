@@ -107,7 +107,9 @@ const CLAIMS: readonly (readonly [phase: string, sentence: string, ...criterion:
     'mail templates',
   ],
   ['P4b', 'Translated pages and mail', 'translated pages and mail'],
+  ['P4b', 'Logos, favicons and background images', 'logo, favicon and background image'],
   ['P4b', 'It also fixes two weak spots in sign-out', 'anti-forgery token', 'leaked id token'],
+  ['P5a', 'It passes the MCP authorization profile', 'claude and cursor configuration examples'],
   ['P5a', 'The admin API as tools', 'read-only by default', 'protect an mcp server with odudu'],
   [
     'P5a',
@@ -125,6 +127,18 @@ const CLAIMS: readonly (readonly [phase: string, sentence: string, ...criterion:
     'owner notice by mail',
     "end the subject's other sessions",
   ],
+  [
+    'P4f',
+    'A person can ask for a new verification email',
+    'a new verification email',
+    'per-tenant totp policy',
+    'a session shown against the device',
+  ],
+  [
+    'P4f',
+    'A link an administrator mailed',
+    'a place to return to for a mailed link an administrator issued',
+  ],
   ['P4f', 'It also reconciles accounts', 'differ only by case', 'more than one click'],
   [
     'P4h',
@@ -133,6 +147,7 @@ const CLAIMS: readonly (readonly [phase: string, sentence: string, ...criterion:
     'a locale switch',
     'right-to-left locale',
   ],
+  ['P4h', 'Lists sort by', '`intl.collator`', 'machine-readable `code`'],
   ['P4h', 'It also sends the failure screen', "failure screen's error id sent to the server"],
   [
     'P4i',
@@ -151,8 +166,21 @@ const CLAIMS: readonly (readonly [phase: string, sentence: string, ...criterion:
   ['P4i', 'Each ships with a guide', 'a runnable example in ci', 'a version of its own'],
   ['P4i', 'They wrap what exists', 'the "me" api wrapped'],
   ['P5', 'Budgets, attenuation and approval', 'ciba approvals'],
+  ['P5', 'Delegation depth becomes a setting', '`max_depth`'],
+  [
+    'P5',
+    'A restriction on a grant holds',
+    'persisted on the grant',
+    'revoking every grant exchanged from it',
+  ],
   ['P5b', 'The irreversible tools', 'out-of-band approval'],
   ['P6', 'Sign in with Google', 'upstream oidc idp'],
+  [
+    'P6',
+    'A person is created on first sign-in',
+    'provisioned just in time',
+    'account-linking decision',
+  ],
   [
     'P7',
     'LDAP-backed sign-in',
@@ -161,6 +189,7 @@ const CLAIMS: readonly (readonly [phase: string, sentence: string, ...criterion:
     'beyond the 10,000',
   ],
   ['P8', 'Odudu as a SAML identity provider', 'saml 2.0 idp'],
+  ['P7', 'Usernames that look alike', 'confusable-character policy'],
   ['P9', 'Policy evaluation and UMA 2.0', 'uma 2.0', 'resource server as a first-class thing'],
   ['P10', 'Third-party providers loaded', 'third-party provider loads without a rebuild'],
   [
@@ -170,7 +199,14 @@ const CLAIMS: readonly (readonly [phase: string, sentence: string, ...criterion:
     'eventlistener',
   ],
   ['P11', 'One instance only today', 'advisory lock', 'per-origin throttle'],
-  ['P11', 'Also a deadline', 'deadline to the outbound dns lookups', 'a metrics endpoint'],
+  [
+    'P11',
+    'Also a deadline',
+    'deadline to the outbound dns lookups',
+    'a metrics endpoint',
+    'documented p99',
+  ],
+  ['P11', 'Upgrades run in place', 'migration runner', 'concurrently', 'backfilled in batches'],
   ['P11', 'Audit events are partitioned', 'partitioned by month', 'chunked and resumable'],
   ['P11', 'A Helm chart', 'helm chart', 'kubernetes manifests'],
   [
@@ -191,6 +227,7 @@ const CLAIMS: readonly (readonly [phase: string, sentence: string, ...criterion:
     'self_signed_tls_client_auth',
     'acr_values',
   ],
+  ['P13', 'A client can read, change and delete', "rfc 7592's client configuration endpoint"],
   ['P14', 'More platforms', 'vue, svelte and angular', 'rfc 8252', 'go, java, .net, php and ruby'],
   ['P14', 'Headless sign-in components', 'flow api', 'headless sign-in components'],
   ['P14', 'An agent library', 'agent library for delegation'],

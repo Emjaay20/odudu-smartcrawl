@@ -40,11 +40,8 @@ still to be run by a person ([p4d.md](phases/p4d.md)). The tenant rename
 changed the wire: `realm` is `tenant` everywhere, the issuer included
 ([tenant-rename.md](phases/tenant-rename.md)).
 
-**A bare `P4` below means P4d, which is complete,** unless it concerns token
-exchange, the grant allowlist, the admin API, audit events, the grant's
-UserInfo claims, theming or client branding. A citation renumbered wrongly is
-invisible for good, so the rule stays. Nothing below is a plan for any phase,
-only what it inherits and what is still open.
+Nothing below is a plan for any phase, only what it inherits and what is still
+open.
 
 ### What each phase found while building it
 
@@ -107,7 +104,9 @@ a catalogue, so a theme overrides what is there.
 **The image is published by a tag, and the rest of deployment is later.**
 `release.yml` publishes a signed image with its contents listed from a `v*`
 tag, and the base images are pinned by digest. Secrets are still environment
-variables, and there is no backup or restore guidance (**P12**).
+variables. Backup and restore guidance exists (`operating/backups.md`, run on
+the quick start's stack) but is not yet proven by a restore and a login
+against it, and the secret store is also owed (**P12**).
 Multi-replica deployment is blocked on migration locking and on the
 in-process bounds (throttles, the client-secret limiter, the registration and
 reset limiters), all **P11**, which also owes the Helm chart or manifests.
@@ -184,7 +183,7 @@ that should hold it, which is usually false.
 | An address can be spent by anyone: three mails an hour per kind per address, and a repeat registration request replaces the address's pending row, so a link already mailed dies                                                                                                                                                                                                                                                                                                                                                                                                                                                  | [ADR 0037](adr/0037-refusal-rows-are-bounded-by-the-principal-they-name.md), amendment 2026-10-26 | **P11**, when the limiter is shared across instances and can use more signals                                  |
 | A person who confirms a "finish registration" mail they did not ask for gets the account its sender chose                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | [ADR 0037](adr/0037-refusal-rows-are-bounded-by-the-principal-they-name.md), amendment 2026-10-26 | **P4f**, registration flow: the confirm page can ask for more than a click                                     |
 | Accounts that differ only by the case of their address may already exist, so `users.email_search` has no unique index; reconcile them, then add a partial unique index on `(tenant_id, email_search)`                                                                                                                                                                                                                                                                                                                                                                                                                             | [ADR 0037](adr/0037-refusal-rows-are-bounded-by-the-principal-they-name.md), amendment 2026-10-26 | **P4f**, credentials and account lifecycle, which owns account merge and cleanup                               |
-| The Node major moves by hand: Node 24 to 26 once 26 is LTS and tested, by running the full CI, replacing `corepack` if Node drops it, amending ADR 0001 and tightening Dependabot's ignore for Node majors                                                                                                                                                                                                                                                                                                                                                                                                                        | [ADR 0001](adr/0001-typescript-on-node.md), amendment 2026-10-27                                  | **P12**, operations: a runtime move is deployment work, and no earlier phase changes what a deployment runs on |
+| The Node major moves by hand: Node 24 to 26 once 26 is LTS and tested, by running the full CI, replacing `corepack` if Node drops it, amending ADR 0001 and moving `engines`, the Dockerfile and CI                                                                                                                                                                                                                                                                                                                                                                                                                               | [ADR 0001](adr/0001-typescript-on-node.md), amendment 2026-10-27                                  | **P12**, operations: a runtime move is deployment work, and no earlier phase changes what a deployment runs on |
 | Committed development credentials                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [ADR 0014](adr/0014-committed-development-credentials.md)                                         | the conditions that ADR names                                                                                  |
 
 ### Argued here, because there is nowhere else
