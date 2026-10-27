@@ -66,7 +66,9 @@ export function resolveBranding(deps: ResolveBrandingDeps): BrandingResolver {
     deps.reportFallback(entry);
   });
   const heard = new Set<string>();
-  const failedUntil = new Map<string, number>();
+  // The generation is the tenant's when the read began: an invalidation
+  // since then ends the backoff, so a publish is never held back by it.
+  const failedUntil = new Map<string, { until: number; generation: number }>();
   const inflight = new Map<string, Promise<PageBranding | null>>();
 
   function note(scope: string, reason: string): void {
@@ -89,7 +91,7 @@ export function resolveBranding(deps: ResolveBrandingDeps): BrandingResolver {
     } catch (error) {
       note(key, `the theme could not be read: ${describe(error)}`);
       if (failedUntil.size >= MAX_BRANDING_BACKOFFS) failedUntil.clear();
-      failedUntil.set(key, deps.now() + BRANDING_BACKOFF_MS);
+      failedUntil.set(key, { until: deps.now() + BRANDING_BACKOFF_MS, generation });
       return null;
     }
     const built = buildBranding({
@@ -138,8 +140,14 @@ export function resolveBranding(deps: ResolveBrandingDeps): BrandingResolver {
     const key = `${input.tenantId}:${clientId ?? ''}`;
     const held = deps.cache.get(key);
     if (held !== undefined) return Promise.resolve(held.value);
-    const retryAt = failedUntil.get(key);
-    if (retryAt !== undefined && deps.now() < retryAt) return Promise.resolve(null);
+    const backoff = failedUntil.get(key);
+    if (
+      backoff !== undefined &&
+      deps.now() < backoff.until &&
+      backoff.generation === deps.cache.generation(input.tenantId)
+    ) {
+      return Promise.resolve(null);
+    }
     // Per tenant generation: a request after an invalidation starts its own
     // read rather than joining one that began before it.
     const flight = `${key}#${String(deps.cache.generation(input.tenantId))}`;

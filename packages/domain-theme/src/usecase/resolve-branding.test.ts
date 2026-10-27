@@ -306,14 +306,65 @@ describe('resolveBranding', () => {
     expect(w.problems).toHaveLength(1);
   });
 
-  it('bounds the keys it holds in backoff', async () => {
+  it('bounds the keys it holds in backoff by emptying the set when full', async () => {
     const w = world();
     w.state.fail = true;
     const resolve = w.resolver();
-    for (let i = 0; i < MAX_BRANDING_BACKOFFS + 5; i += 1) {
+    const total = MAX_BRANDING_BACKOFFS + 5;
+    for (let i = 0; i < total; i += 1) {
       await resolve({ ...TENANT, clientId: `c${String(i)}` });
     }
-    expect(w.reads).toHaveLength(MAX_BRANDING_BACKOFFS + 5);
+    expect(w.reads).toHaveLength(total);
+    // The oldest key was forgotten when the set filled, so it retries at once;
+    // the newest is still backing off.
+    await resolve({ ...TENANT, clientId: 'c0' });
+    expect(w.reads).toHaveLength(total + 1);
+    await resolve({ ...TENANT, clientId: `c${String(total - 1)}` });
+    expect(w.reads).toHaveLength(total + 1);
+  });
+
+  it('a publish within the backoff does not leave the tenant on the default', async () => {
+    const w = world();
+    w.state.fail = true;
+    const resolve = w.resolver();
+    await resolve({ ...TENANT, clientId: null });
+    w.state.fail = false;
+    w.state.layers = {
+      tenant: layer(body({ templates: { 'sign-in': SIGN_IN } }), 2),
+      client: null,
+    };
+    w.clock.now = 100;
+    expect(await resolve({ ...TENANT, clientId: null })).toBeNull();
+    w.cache.invalidateTenant('t1');
+    const found = await resolve({ ...TENANT, clientId: null });
+    expect(found?.branding.templates['sign-in']).toBe(SIGN_IN);
+  });
+
+  it('a read that began before an invalidation sets no backoff for the new generation', async () => {
+    const releases: (() => void)[] = [];
+    const cache = createBrandingCache<PageBranding | null>({ now: () => 0 });
+    let reads = 0;
+    const resolve = resolveBranding({
+      readPublished: async () => {
+        reads += 1;
+        if (reads === 1) {
+          await new Promise<void>((release) => releases.push(release));
+          throw new Error('connection refused');
+        }
+        return { tenant: layer(body({ templates: { 'sign-in': SIGN_IN } }), 2), client: null };
+      },
+      origin: ORIGIN,
+      now: () => 0,
+      cache,
+      log: () => undefined,
+      reportFallback: () => undefined,
+    });
+    const failing = resolve({ ...TENANT, clientId: null });
+    cache.invalidateTenant('t1');
+    for (const release of releases) release();
+    expect(await failing).toBeNull();
+    const found = await resolve({ ...TENANT, clientId: null });
+    expect(found?.branding.templates['sign-in']).toBe(SIGN_IN);
   });
 
   it('a request after an invalidation does not join the read begun before it', async () => {
