@@ -41,7 +41,8 @@ starts with — and its `ETag`:
 ```bash
 curl -sS -D - \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
-  http://localhost:3080/admin/tenants/demo/flow/executions
+  http://localhost:3080/admin/tenants/demo/flow/executions \
+  | grep -E '^(etag:|\{)'
 ```
 
 ```
@@ -81,6 +82,15 @@ Keep-Alive: timeout=72
 
 A second `PUT` carrying that same, now stale, header changes nothing:
 
+```bash
+curl -sS -X PUT \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H 'If-Match: "2e028692eeb04a65ef6a06be482c11d71247d243b5929007716ee0f4eb2324db"' \
+  -d '[{"authenticator": "password", "requirement": "required"}]' \
+  http://localhost:3080/admin/tenants/demo/flow/executions
+```
+
 ```
 {"type":"about:blank","title":"Precondition Failed","status":412,"detail":"If-Match no longer matches","instance":"01a0ea5e-e681-711e-bad1-50fc52dc2974"}
 ```
@@ -89,6 +99,14 @@ A second `PUT` carrying that same, now stale, header changes nothing:
 carried none. The empty list is refused ahead of the precondition, so it
 answers `400` rather than `428` even with no `If-Match` sent — the shape of
 the request is wrong whatever generation it is against:
+
+```bash
+curl -sS -X PUT \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '[]' \
+  http://localhost:3080/admin/tenants/demo/flow/executions
+```
 
 ```
 {"type":"about:blank#flow-empty","title":"Bad Request","status":400,"detail":"a flow needs at least one step; a tenant with no flow cannot be logged into","instance":"01a13029-154d-7c38-902a-842ee08e96a4"}
@@ -104,9 +122,16 @@ others name no step. `detail` is unchanged. In `flow-demo`, under the `ETag` of
 the flow the tenant starts with, one request each:
 
 ```bash
-curl -sS -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
-  -H 'If-Match: "2e028692eeb04a65ef6a06be482c11d71247d243b5929007716ee0f4eb2324db"' \
-  -d '[]' http://localhost:3082/admin/tenants/flow-demo/flow/executions
+for body in '[]' \
+  '[{"authenticator":"password","requirement":"disabled"},{"authenticator":"otp","requirement":"disabled"}]' \
+  '[{"authenticator":"passkey","requirement":"required"},{"authenticator":"password","requirement":"alternative"}]' \
+  '[{"authenticator":"sms","requirement":"required"}]' \
+  '[{"authenticator":"password","requirement":"required"},{"authenticator":"password","requirement":"alternative"}]'; do
+  curl -sS -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
+    -H 'If-Match: "2e028692eeb04a65ef6a06be482c11d71247d243b5929007716ee0f4eb2324db"' \
+    -d "$body" http://localhost:3082/admin/tenants/flow-demo/flow/executions
+  echo
+done
 ```
 
 The same request with, in turn, these bodies in place of `[]`:
@@ -140,7 +165,8 @@ below is the one "A refusal names its field" sent as `If-Match` before
 
 ```bash
 curl -sS -D - -H "Authorization: Bearer $ADMIN_TOKEN" \
-  http://localhost:3080/admin/tenants/fields-demo/flow/executions
+  http://localhost:3080/admin/tenants/fields-demo/flow/executions \
+  | grep -E '^(HTTP/|etag:|\{)'
 ```
 
 ```
