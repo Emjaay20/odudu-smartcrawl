@@ -532,15 +532,18 @@ Connection: keep-alive
 Keep-Alive: timeout=72
 
 {"type":"about:blank#audit-query-too-broad","title":"Bad Request","status":400,"detail":"these filters could not be searched within 5 seconds; narrow the time range with from and to, or drop a filter","instance":"01a13cfd-82b0-7ec2-8445-39b5e544e774"}
-5.125595 s
+5.022991 s
 ```
 
-The same filters with a ten minute window, which the time index serves, and the count, which
-answered inside the bound this time, and the export, which did not:
+The same filters with a ten minute window, which the time index serves, then the
+count and the export, which have no window and sit close to the bound. Both
+finished inside it this time; on an earlier pass over the same rows, before
+the table had been read once, each was refused with the same `400` as the
+first request:
 
 ```bash
 curl -sS -D - -w "\n%{time_total} s\n" -H "Authorization: Bearer $ADMIN_TOKEN" \
-  "$P/audit?action=bulk.a&actor_subject_id=$A&from=2026-10-15T00:26:49Z&limit=1"
+  "$P/audit?action=bulk.a&actor_subject_id=$A&from=2026-10-27T02:09:50Z&limit=1"
 curl -sS -D - -w "\n%{time_total} s\n" -H "Authorization: Bearer $ADMIN_TOKEN" \
   "$P/audit/count?action=bulk.a&actor_subject_id=$A"
 curl -sS -D - -w "\n%{time_total} s\n" -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -558,7 +561,7 @@ Connection: keep-alive
 Keep-Alive: timeout=72
 
 {"items":[]}
-0.029296 s
+0.014213 s
 ```
 
 ```
@@ -572,21 +575,21 @@ Connection: keep-alive
 Keep-Alive: timeout=72
 
 {"count":0,"capped":false}
-4.107103 s
+4.528085 s
 ```
 
 ```
-HTTP/1.1 400 Bad Request
+HTTP/1.1 200 OK
 x-request-id: 01a13cfd-a709-7603-815f-a3c9f0ad99a0
 cache-control: no-store
-content-type: application/problem+json; charset=utf-8
-content-length: 251
+content-type: application/x-ndjson; charset=utf-8
+content-length: 0
 Date: Thu, 15 Oct 2026 00:37:03 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"type":"about:blank#audit-query-too-broad","title":"Bad Request","status":400,"detail":"these filters could not be searched within 5 seconds; narrow the time range with from and to, or drop a filter","instance":"01a13cfd-a709-7603-815f-a3c9f0ad99a0"}
-5.067626 s
+
+3.268358 s
 ```
 
 And an instant before 1970, refused by the contract with a sentence naming the
@@ -609,7 +612,7 @@ Connection: keep-alive
 Keep-Alive: timeout=72
 
 {"type":"about:blank","title":"Bad Request","status":400,"detail":"from must be a date between 1970 and 9999","errors":[{"path":"from","message":"from must be a date between 1970 and 9999"}],"instance":"01a13d62-c82f-7859-866d-bb29899ca1a1"}
-0.022757 s
+0.011033 s
 ```
 
 A year after 9999 is refused earlier, by the route's own date pattern rather
