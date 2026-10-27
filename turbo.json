@@ -43,6 +43,7 @@
         "package.json",
         "tsconfig.json",
         "$TURBO_ROOT$/packages/*/src/view/*.ts",
+        "$TURBO_ROOT$/packages/kernel/src/password-hints.ts",
         "$TURBO_ROOT$/packages/instrument/src/pages.css"
       ],
       "outputs": ["trace-report.json"],

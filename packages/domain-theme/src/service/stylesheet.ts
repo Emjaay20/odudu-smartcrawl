@@ -29,6 +29,17 @@ export const MAX_VALUE_LENGTH = 4096;
 const MAX_ISSUES = 100;
 const MAX_PARAMS_LENGTH = 200;
 
+const MAX_DETAIL = 60;
+
+// Issue details echo tenant input; cut at a code point, not inside a pair.
+function bound(detail: string): string {
+  if (detail.length <= MAX_DETAIL) return detail;
+  const high = detail.charCodeAt(MAX_DETAIL - 1);
+  const low = detail.charCodeAt(MAX_DETAIL);
+  const split = high >= 0xd800 && high <= 0xdbff && low >= 0xdc00 && low <= 0xdfff;
+  return detail.slice(0, split ? MAX_DETAIL - 1 : MAX_DETAIL);
+}
+
 type Add = (code: StylesheetIssueCode, detail: string, node?: Node) => void;
 
 function mediaAllowed(params: string): boolean {
@@ -57,7 +68,12 @@ export function checkStylesheet(css: string, options: StylesheetOptions = {}): S
       return;
     }
     const start = node?.source?.start;
-    issues.push({ code, detail, line: start?.line ?? null, column: start?.column ?? null });
+    issues.push({
+      code,
+      detail: bound(detail),
+      line: start?.line ?? null,
+      column: start?.column ?? null,
+    });
   };
 
   if (css.length > MAX_STYLESHEET_BYTES) {
@@ -87,7 +103,7 @@ export function checkStylesheet(css: string, options: StylesheetOptions = {}): S
     const at = error as { reason?: unknown; line?: unknown; column?: unknown };
     issues.push({
       code: 'unparsable',
-      detail: typeof at.reason === 'string' ? at.reason : 'unreadable',
+      detail: bound(typeof at.reason === 'string' ? at.reason : 'unreadable'),
       line: typeof at.line === 'number' ? at.line : null,
       column: typeof at.column === 'number' ? at.column : null,
     });

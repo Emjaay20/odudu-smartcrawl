@@ -35,15 +35,15 @@ const FONT_FAMILY_NAMES: ReadonlySet<string> = new Set([
   'serif',
 ]);
 
+// Units are a fixed list with no viewport units; a negative length is
+// refused everywhere but letter-spacing, so a tenant cannot pull a control
+// off the page with a negative margin.
 const NUMBER = /^([+-]?)(\d+\.?\d*|\.\d+)(px|em|rem|%|ch|fr|deg)?$/;
 const HEX = /^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/;
 const COLOUR_FUNCTIONS = set('rgb rgba hsl hsla');
 const URL_LIKE = set('url image-set -webkit-image-set src image cross-fade element paint');
 const URL_PROPERTIES = set('background background-image');
 
-// Units are a fixed list with no viewport units; a negative length is
-// refused everywhere but letter-spacing, so a tenant cannot pull a control
-// off the page with a negative margin.
 function decodeEscapes(text: string): string {
   return text.replace(
     /\\(?:([0-9a-fA-F]{1,6})[ \t\r\n\f]?|([^\n]))/g,

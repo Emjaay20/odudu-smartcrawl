@@ -14,7 +14,11 @@ const READS: readonly { file: string; targets: readonly string[] }[] = [
   { file: 'packages/db/tests/schema-drift.int.test.ts', targets: ['packages/*/src/schema/**'] },
   {
     file: 'packages/domain-theme/src/service/hooks.test.ts',
-    targets: ['packages/*/src/view/*.ts', 'packages/instrument/src/pages.css'],
+    targets: [
+      'packages/*/src/view/*.ts',
+      'packages/kernel/src/password-hints.ts',
+      'packages/instrument/src/pages.css',
+    ],
   },
   {
     file: 'packages/protocol-oidc/src/view/html-response.test.ts',

@@ -83,6 +83,19 @@ describe('checkStylesheet: at-rules', () => {
     expect(issue.code).toBe('unparsable');
   });
 
+  it('refuses @media nested in @media', () => {
+    expect(
+      codes('@media (min-width: 1px) { @media (min-width: 2px) { a { color: red; } } }'),
+    ).toEqual(['at-rule-not-allowed']);
+  });
+
+  it('refuses a comment inside a media query; one at either end is harmless', () => {
+    expect(codes('@media (min-width: /**/ 1px) { a { color: red; } }')).toEqual([
+      'media-query-not-allowed',
+    ]);
+    expect(codes('@media /**/ (min-width: 1px) { a { color: red; } }')).toEqual([]);
+  });
+
   it('refuses an at-rule nested in @media', () => {
     expect(codes('@media (min-width: 1px) { @import "x"; }')).toContain('at-rule-not-allowed');
   });
@@ -223,10 +236,38 @@ describe('checkStylesheet: properties', () => {
   });
 
   it('refuses display none where it could hide the way to submit', () => {
-    for (const selector of ['button', 'input', 'form', 'label', 'form button', 'main', '.page']) {
+    const refused = [
+      'button',
+      'input',
+      'form',
+      'label',
+      'form button',
+      'main',
+      'div',
+      'section',
+      'p',
+      '.page p',
+      '.intro p',
+      'button img',
+      'form span',
+      'label small',
+      '.page',
+      '.page-sign-in',
+      '.secondary',
+      '.quiet',
+      '.choice',
+      '.rules',
+      '.alert',
+      'small, p',
+      'small, .page',
+    ];
+    for (const selector of refused) {
       expect(codes(`${selector} { display: none; }`), selector).toContain('value-not-allowed');
     }
-    expect(checkStylesheet('small { display: none; }')).toEqual([]);
+    const allowed = ['small', '.brand', '.intro h1', '.links', 'p.context', '.wordmark', 'img'];
+    for (const selector of allowed) {
+      expect(checkStylesheet(`${selector} { display: none; }`), selector).toEqual([]);
+    }
   });
 
   it('refuses a custom property and a var() outside the Instrument tokens', () => {
@@ -277,6 +318,50 @@ describe('checkStylesheet: values', () => {
 
   it('judges a function name after decoding escapes and ignoring case', () => {
     expect(codes('a { background: U\\52L(//x); }')).toContain('url-not-allowed');
+  });
+
+  it('accepts a url only on background and background-image', () => {
+    expect(codes(`a { list-style: url(${ASSET}); }`, options)).toEqual(['url-not-allowed']);
+    expect(codes(`a { list-style-type: url(${ASSET}); }`, options)).toEqual(['url-not-allowed']);
+    expect(codes(`a { background: url(${ASSET}) no-repeat; }`, options)).toEqual([]);
+  });
+
+  it('refuses a url with an escape even where isAssetUrl would take it', () => {
+    const any = { isAssetUrl: (): boolean => true };
+    expect(codes('a { background: url(java\\73cript:x); }', any)).toEqual(['url-not-allowed']);
+    expect(codes('a { background: url(/t/a.png); }', any)).toEqual([]);
+  });
+
+  it('refuses functions nested deeper than four levels', () => {
+    const nest = (n: number): string => `${'rgb('.repeat(n)}1${')'.repeat(n)}`;
+    expect(codes(`a { color: ${nest(4)}; }`)).toEqual([]);
+    expect(codes(`a { color: ${nest(5)}; }`)).toEqual(['value-not-allowed']);
+  });
+
+  it('accepts deg only inside a colour function', () => {
+    expect(codes('a { color: hsl(10deg, 10%, 20%); }')).toEqual([]);
+    expect(codes('a { width: 10deg; }')).toEqual(['value-not-allowed']);
+  });
+
+  it('keeps every issue detail to 60 characters, on a code point boundary', () => {
+    const long = 'a'.repeat(300);
+    const inputs = [
+      `.page{${long}}`,
+      `.${long}{color:red}`,
+      `a{color:${long}}`,
+      `a{${long}:red}`,
+      `@${long} x;`,
+      `@media ${'(min-width: 1px) and '.repeat(5)}x {}`,
+      `a{color:${'😀'.repeat(40)}}`,
+      `a{${'😀'.repeat(40)}:red}`,
+    ];
+    for (const css of inputs) {
+      for (const issue of checkStylesheet(css)) {
+        expect(issue.detail.length, css.slice(0, 30)).toBeLessThanOrEqual(60);
+        expect(issue.detail).not.toMatch(/[\ud800-\udbff]$/);
+      }
+    }
+    expect(checkStylesheet(`.page{${long}}`)[0]?.code).toBe('unparsable');
   });
 
   it('refuses an over-long value', () => {

@@ -3,21 +3,30 @@ import { PAGE_KINDS } from '@odudu/kernel';
 // Bumped whenever a hook is renamed or removed; adding one is not a break.
 export const CSS_HOOKS_VERSION = 1;
 
-// The classes the server pages render, which a tenant stylesheet may target.
-// Each page also carries `page-<kind>`, one per page kind.
-const RENDERED_HOOKS = [
+// The classes the server pages render, which a tenant stylesheet may target;
+// each page also carries `page-<kind>`. Not promised: a tenant can still draw
+// over the page with allowed means (a huge box-shadow or outline, large
+// margins) or shrink a control (width or height 0, font-size 0, a transparent
+// colour). None of it can run script, load an external resource or read a
+// value. The stylesheet is only ever served as a standalone .css file and
+// must never be inlined into a page.
+export const RENDERED_HOOKS: readonly string[] = [
   'alert',
   'brand',
   'choice',
   'context',
+  'hint',
   'intro',
+  'links',
   'mark',
   'page',
   'quiet',
+  'rules',
+  'rules-head',
   'secondary',
   'tenant',
   'wordmark',
-] as const;
+];
 
 export const CSS_HOOKS: readonly string[] = [
   ...RENDERED_HOOKS,

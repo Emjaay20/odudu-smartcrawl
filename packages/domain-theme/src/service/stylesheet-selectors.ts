@@ -10,15 +10,20 @@ const PSEUDO_CLASSES = set(
 );
 const PSEUDO_ELEMENTS = set('before after placeholder');
 
-// A tenant must not be able to take the way to submit away. A selector
-// that names one of these, or an element that wraps them, never gets
-// display: none; neither does one that names no element at all, since a
-// class such as .page is the form's own wrapper.
+// A tenant must not be able to take the way to submit away, so display:
+// none is refused unless the selector's subject cannot hold a control. In
+// the server pages a control sits inside a form, a label, main (.page), a
+// p (the passkey button) or is itself a button (.secondary, .quiet,
+// .choice), and .rules wraps a button. So a selector with one of those
+// elements anywhere, or whose subject is a class outside the decorative
+// ones below, or that is a bare p, div, section or main, keeps its display.
 const CONTROL_ELEMENTS = set('button input form label main div section');
-const HIDEABLE_ELEMENTS = set('img small span code p h1 h2 h3 ul ol li a header footer');
+const HIDEABLE_ELEMENTS = set('img small span code h1 h2 h3 ul ol li a header footer');
+const HIDEABLE_HOOKS = set('brand context intro links mark tenant wordmark');
 
 export interface Compound {
   element: string | null;
+  classes: string[];
 }
 
 const CSS_SPACE = '[ \\t\\r\\n\\f]';
@@ -42,6 +47,7 @@ function readCompound(
   let element: string | null = null;
   let any = false;
   let last = false;
+  const classes: string[] = [];
   const head = match(ELEMENT, text, at);
   if (head !== null) {
     element = head[0].toLowerCase();
@@ -57,6 +63,7 @@ function readCompound(
     if (found !== null) {
       const name = found[1] ?? '';
       if (!HOOKS.has(name)) return { code: 'unknown-class', detail: name };
+      classes.push(name);
       at += found[0].length;
       any = true;
       continue;
@@ -76,7 +83,7 @@ function readCompound(
   if (!any) {
     return { code: 'selector-not-allowed', detail: `unexpected ${JSON.stringify(text[at] ?? '')}` };
   }
-  return { end: at, compound: { element }, last };
+  return { end: at, compound: { element, classes }, last };
 }
 
 // A complex selector made only of hooks and listed element types. Written as
@@ -107,11 +114,14 @@ export function readSelector(raw: string): Compound[] | Problem {
 
 export function mayBeHidden(selectors: Compound[][]): boolean {
   return selectors.every((compounds) => {
-    const subject = compounds[compounds.length - 1]?.element ?? null;
+    const subject = compounds[compounds.length - 1];
+    if (subject === undefined) return false;
+    const named = subject.classes.length > 0;
+    const subjectOk = named
+      ? subject.classes.every((name) => HIDEABLE_HOOKS.has(name))
+      : subject.element !== null && HIDEABLE_ELEMENTS.has(subject.element);
     return (
-      subject !== null &&
-      HIDEABLE_ELEMENTS.has(subject) &&
-      compounds.every((c) => c.element === null || !CONTROL_ELEMENTS.has(c.element))
+      subjectOk && compounds.every((c) => c.element === null || !CONTROL_ELEMENTS.has(c.element))
     );
   });
 }

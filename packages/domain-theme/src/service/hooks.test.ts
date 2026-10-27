@@ -2,33 +2,95 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { PAGE_KINDS } from '@odudu/kernel';
 import { describe, expect, it } from 'vitest';
-import { CSS_ELEMENTS, CSS_HOOKS, CSS_HOOKS_VERSION, CSS_TOKENS } from '#/service/hooks';
+import {
+  CSS_ELEMENTS,
+  CSS_HOOKS,
+  CSS_HOOKS_VERSION,
+  CSS_TOKENS,
+  RENDERED_HOOKS,
+} from '#/service/hooks';
 
 const PACKAGES = join(import.meta.dirname, '..', '..', '..');
 
-const renderedClasses = (): Set<string> => {
-  const found = new Set<string>();
+// The art of the not-found page builds its class attribute at run time and
+// is never themed, so its classes are not hooks.
+const UNTHEMED = new Set(['lost-art.ts']);
+
+// Every class a server view renders, found in the sources: the view
+// layers, and the password-rules markup the kernel shares with them.
+const sources = (): string[] => {
+  const files: string[] = [join(PACKAGES, 'kernel', 'src', 'password-hints.ts')];
   for (const pkg of readdirSync(PACKAGES)) {
     const dir = join(PACKAGES, pkg, 'src', 'view');
-    let files: string[];
+    let names: string[];
     try {
-      files = readdirSync(dir).filter((f) => f.endsWith('-html.ts') || f === 'document.ts');
+      names = readdirSync(dir);
     } catch {
       continue;
     }
-    for (const file of files) {
-      const source = readFileSync(join(dir, file), 'utf8');
-      for (const match of source.matchAll(/class="([^"]*)"/g)) {
-        for (const name of (match[1] ?? '').split(/\s+/).filter(Boolean)) found.add(name);
-      }
+    for (const name of names) {
+      const themed = name.endsWith('.ts') && !name.endsWith('.test.ts') && !UNTHEMED.has(name);
+      if (themed) files.push(join(dir, name));
+    }
+  }
+  return files.map((file) => readFileSync(file, 'utf8'));
+};
+
+const renderedClasses = (): Set<string> => {
+  const found = new Set<string>();
+  for (const source of sources()) {
+    for (const match of source.matchAll(/class="([^"$]*)"/g)) {
+      for (const name of (match[1] ?? '').split(/\s+/).filter(Boolean)) found.add(name);
     }
   }
   return found;
 };
 
 describe('CSS hooks', () => {
-  it('is versioned', () => {
+  // Renaming or removing a hook, or a page kind, breaks tenant stylesheets:
+  // change this list and CSS_HOOKS_VERSION together, on purpose.
+  it('is the published list for its version', () => {
     expect(CSS_HOOKS_VERSION).toBe(1);
+    expect(CSS_HOOKS).toEqual([
+      'alert',
+      'brand',
+      'choice',
+      'context',
+      'hint',
+      'intro',
+      'links',
+      'mark',
+      'page',
+      'quiet',
+      'rules',
+      'rules-head',
+      'secondary',
+      'tenant',
+      'wordmark',
+      'page-sign-in',
+      'page-consent',
+      'page-select-account',
+      'page-logout-confirm',
+      'page-totp-enrolment',
+      'page-passkey-enrolment',
+      'page-recovery-codes',
+      'page-update-password',
+      'page-required-action',
+      'page-registration',
+      'page-reset',
+      'page-verification',
+      'page-required-actions',
+      'page-authorize-error',
+      'page-email-unverified',
+      'page-logged-out',
+    ]);
+  });
+
+  it('lists only classes some server view renders', () => {
+    const text = sources().join('\n');
+    for (const name of RENDERED_HOOKS) {
+      expect(new RegExp(`class="[^"]*\\b${name}\\b[^"]*"`).test(text), name).toBe(true);
+    }
   });
 
   it('names every class the server pages render today', () => {
