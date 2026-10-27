@@ -26,6 +26,8 @@
 
 **Execution notes.** The phase branch is `p4b-theming-and-client-branding`. Each increment is its own branch `p4b/<letter>-<name>` off it, one PR into the phase branch, deleted after merge. Open the draft PR to `main` with the first push; push at the end of each increment; an increment is finished when CI is green **and** its review threads are answered (CLAUDE.md "A push attracts review"). Quote the Comments, Layering and Performance rules in every dispatch.
 
+**The try-list, at push time, for every increment.** Sequence: implementer reports → push and open the PR → rebuild `odudu-try` from that branch (the working tree on the branch with the implementer idle, otherwise from a worktree of `origin/<branch>`) → send the list below → then watch CI and answer review. Rebuild with `cd <repo> && ODUDU_HOST_PORT=3090 POSTGRES_HOST_PORT=5472 docker compose -p odudu-try --env-file ~/.odudu-try.env -f infra/docker/compose.yaml -f infra/docker/compose.try.yaml up -d --build odudu`, then check `docker port odudu-try-odudu-1` shows 3090, never 3000. Mailpit is at http://localhost:8090. Seed test accounts with known passwords; leave `seed admin` to the owner so its one-time password prints in their terminal. After the push run `docker builder prune -f` and `docker image prune -f` (never while `pnpm verify` or an e2e run is in progress, never delete tagged images). If review or CI changes behaviour afterwards, send a short re-try list. Anything an increment needs from outside (a relying-party app, a webhook) goes into `infra/docker/compose.try.yaml` with a line in the list saying how to use it.
+
 ## Review Focus
 
 Inputs the spec implies and no task's happy path exercises, most likely first. Each has its test in the task named.
@@ -35,6 +37,20 @@ Inputs the spec implies and no task's happy path exercises, most likely first. E
 3. Two editors publish from the same draft. The second gets `412` and nothing is lost. → Task 16.
 4. A hostile upload: polyglot PNG/HTML, EXIF with script, animated WebP, a decompression bomb, a `Content-Type` that lies. → Task 14.
 5. `return_to` naming another tenant's client, or a garbage `client_id`. The page uses the tenant's theme. → Task 12.
+
+## Try lists
+
+What to do by hand after each increment's push; the list sent is the one below, adjusted for what the increment really built. Accounts: the seeded demo tenant and its test user; the owner's own system administrator for the console.
+
+- **A (placement):** open the docs site's Roadmap page; P4b reads as the new scope, P4j appears after it, Liquid-style templates are under "Decided against". No behaviour changed, and the list says so.
+- **B (sign-out):** sign in to a demo client; open its end-session URL with the `id_token_hint` it was given, and the confirmation page appears (it used to sign out at once); press Confirm and the session ends and the redirect follows. Repeat with an expired hint (still asks). In devtools change the hidden `client_id` or `post_logout_redirect_uri` and submit: refused. Visit the URL with no hint: asks.
+- **C (foundation):** no user-visible change; the list says so and gives `docker exec odudu-try-postgres-1 psql -U odudu -c '\d theme_versions'` to see the tables.
+- **D (render path):** click through every page (sign-in, select account, consent, registration, verification, reset, change password, TOTP, passkey and recovery-code enrolment, logout) in light and dark; each must look exactly as before. This increment's risk is a regression, and there is no way to set a theme yet.
+- **E (assets):** no public route serves an unpublished image; `curl -i http://localhost:3090/tenants/demo/brand/<anything>.png` is a 404. No upload route yet, so nothing else by hand.
+- **F (admin API):** with an admin token, `PUT` a draft theme with a logo (upload it first), `POST publish`, and reload the demo sign-in page: the logo and colours appear. Try a template missing `{{form.open}}`, a `<script>` in a template, a polyglot image, an oversize image and a failing contrast pair: each is refused with its field named. `PUT` twice from a stale `ETag`: 412. Restore a previous version, then reset to default. Open the preview URL in a browser tab. Do the same on a client and see it override one piece only.
+- **G (locales and mail):** `PATCH` the tenant's locales and default to `ar`; load pages with `Accept-Language: ar` and see right-to-left Arabic; add an override and see it; set a French client name and see it on the consent page; register and reset a password and open the mail in Mailpit (http://localhost:8090): the logo, colours and wording follow the tenant, in light and dark.
+- **H (console):** in the console, Tenant → Branding: edit tokens (a failing contrast pair blocks publishing and names the pair), upload a logo with alt text, write a sign-in template, preview it, publish, restore, reset. Open the same draft in two tabs and save from both (conflict panel). Clients → a client → Branding: override one piece and see which layer supplies each. Languages tab: add an override, a refused key. Check phone width, dark mode and keyboard-only use.
+- **I (docs):** open the landing page's branding band (no "Planned" chip, two real looks), the new console page and tour, the concept page, and run the guide's commands in a clean checkout.
 
 ## Increments
 
