@@ -69,6 +69,13 @@ function only(rows: Row[]): ThemeRecord {
 }
 
 export function themeRepository(tx: TenantScopedDatabase) {
+  // Held until the transaction ends, so a second writer of the scope waits
+  // and then reads what the first left.
+  async function lockScope(scope: ThemeScope): Promise<void> {
+    const key = `theme:${scope.tenantId}:${scope.clientId ?? ''}`;
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${key}, 0))`);
+  }
+
   async function lockedDraft(scope: ThemeScope): Promise<Row | undefined> {
     const [row] = await tx
       .select()
@@ -167,6 +174,7 @@ export function themeRepository(tx: TenantScopedDatabase) {
     },
 
     async publish(scope: ThemeScope): Promise<ThemeRecord> {
+      await lockScope(scope);
       const draft = await lockedDraft(scope);
       if (draft === undefined) throw new NoDraftError();
       const version = await nextVersion(scope);
@@ -195,6 +203,7 @@ export function themeRepository(tx: TenantScopedDatabase) {
     // Publishes a copy of an earlier version as the next one, leaving the
     // draft and the version it was copied from where they are.
     async restore(scope: ThemeScope, versionId: string): Promise<ThemeRecord> {
+      await lockScope(scope);
       const [source] = await tx
         .select()
         .from(themeVersions)
@@ -227,6 +236,7 @@ export function themeRepository(tx: TenantScopedDatabase) {
     },
 
     async reset(scope: ThemeScope): Promise<void> {
+      await lockScope(scope);
       await archivePublished(scope);
       await tx.delete(themeVersions).where(inState(scope, 'draft'));
     },

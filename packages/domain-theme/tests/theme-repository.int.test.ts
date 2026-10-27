@@ -15,6 +15,8 @@ import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { assetRepository, type NewAsset } from '#/repository/assets';
 import { themeRepository } from '#/repository/themes';
+import { themeAssets } from '#/schema/theme-assets';
+import { themeVersionAssets } from '#/schema/theme-version-assets';
 import { themeVersions } from '#/schema/theme-versions';
 import { type ThemeBody, type ThemeScope } from '#/service/theme-body';
 
@@ -269,6 +271,165 @@ describe('themeRepository', () => {
     expect(rows).toEqual([{ clientId: null }]);
   });
 
+  it('refuses a draft naming an asset id that is not a uuid and keeps the draft', async () => {
+    const tenantId = await freshTenant();
+    const scope = { tenantId, clientId: null };
+    await withTenant(app.db, tenantId, (tx) =>
+      themeRepository(tx).saveDraft(scope, body('kept'), null),
+    );
+
+    await expect(
+      withTenant(app.db, tenantId, async (tx) => {
+        const themes = themeRepository(tx);
+        const draft = await themes.draft(scope);
+        return themes.saveDraft(scope, body('bad', 'not-a-uuid'), draft?.etag ?? null);
+      }),
+    ).rejects.toThrow();
+
+    const draft = await withTenant(app.db, tenantId, (tx) => themeRepository(tx).draft(scope));
+    expect(draft?.body).toEqual(body('kept'));
+  });
+
+  it('stores an asset named by two slots once', async () => {
+    const tenantId = await freshTenant();
+    const scope = { tenantId, clientId: null };
+    const assetId = newId();
+    const twice: ThemeBody = {
+      ...body('twice'),
+      assets: { logo: { assetId }, favicon: { assetId } },
+    };
+    await withTenant(app.db, tenantId, (tx) => themeRepository(tx).saveDraft(scope, twice, null));
+
+    const rows = await owner.db
+      .select()
+      .from(themeVersionAssets)
+      .where(eq(themeVersionAssets.tenantId, tenantId));
+    expect(rows.map((row) => row.assetId)).toEqual([assetId]);
+  });
+
+  it('lists at most the limit, newest first, without the draft', async () => {
+    const tenantId = await freshTenant();
+    const scope = { tenantId, clientId: null };
+    for (let i = 1; i <= 5; i += 1) await publishedOnce(scope, `v${String(i)}`);
+    await withTenant(app.db, tenantId, async (tx) => {
+      const themes = themeRepository(tx);
+      await themes.saveDraft(scope, body('draft'), null);
+      const versions = await themes.versions(scope, 3);
+      expect(versions.map((v) => v.version)).toEqual([5, 4, 3]);
+      expect(versions.every((v) => v.state !== 'draft')).toBe(true);
+    });
+  });
+
+  it('restore leaves the draft untouched', async () => {
+    const tenantId = await freshTenant();
+    const scope = { tenantId, clientId: null };
+    await publishedOnce(scope, 'v1');
+    await publishedOnce(scope, 'v2');
+    await withTenant(app.db, tenantId, async (tx) => {
+      const themes = themeRepository(tx);
+      const saved = await themes.saveDraft(scope, body('draft'), null);
+      if (saved === 'precondition_failed') throw new Error('refused');
+      const [, older] = await themes.versions(scope, 10);
+      if (older === undefined) throw new Error('no older version');
+      await themes.restore(scope, older.id);
+      const draft = await themes.draft(scope);
+      expect(draft?.id).toBe(saved.id);
+      expect(draft?.etag).toBe(saved.etag);
+    });
+  });
+
+  it('removes a pruned version’s asset rows', async () => {
+    const tenantId = await freshTenant();
+    const scope = { tenantId, clientId: null };
+    const assetId = newId();
+    await withTenant(app.db, tenantId, async (tx) => {
+      const themes = themeRepository(tx);
+      await themes.saveDraft(scope, body('v1', assetId), null);
+      await themes.publish(scope);
+    });
+    const held = () =>
+      owner.db.select().from(themeVersionAssets).where(eq(themeVersionAssets.tenantId, tenantId));
+    expect(await held()).toHaveLength(1);
+    for (let i = 2; i <= 21; i += 1) await publishedOnce(scope, `v${String(i)}`);
+    expect(await held()).toEqual([]);
+  });
+
+  it('deleting a tenant deletes its themes, their asset rows and its assets', async () => {
+    const tenantId = await freshTenant();
+    const scope = { tenantId, clientId: null };
+    await withTenant(app.db, tenantId, async (tx) => {
+      const stored = await assetRepository(tx).put(asset(tenantId, 'logo'));
+      if (stored === 'over_cap') throw new Error('refused');
+      const themes = themeRepository(tx);
+      await themes.saveDraft(scope, body('v1', stored.id), null);
+      await themes.publish(scope);
+    });
+
+    await owner.db.delete(tenants).where(eq(tenants.id, tenantId));
+
+    for (const table of [themeVersions, themeVersionAssets, themeAssets]) {
+      expect(await owner.db.select().from(table).where(eq(table.tenantId, tenantId))).toEqual([]);
+    }
+  });
+
+  it('lets one of two parallel first saves win and refuses the other', async () => {
+    const tenantId = await freshTenant();
+    const scope = { tenantId, clientId: null };
+    const save = (label: string) =>
+      withTenant(app.db, tenantId, (tx) => themeRepository(tx).saveDraft(scope, body(label), null));
+
+    const results = await Promise.all([save('a'), save('b')]);
+
+    expect(results.filter((r) => r === 'precondition_failed')).toHaveLength(1);
+    expect(results.filter((r) => r !== 'precondition_failed')).toHaveLength(1);
+  });
+
+  it('gives two parallel restores distinct, sequential versions', async () => {
+    const tenantId = await freshTenant();
+    const scope = { tenantId, clientId: null };
+    await publishedOnce(scope, 'v1');
+    await publishedOnce(scope, 'v2');
+    const first = await withTenant(app.db, tenantId, async (tx) =>
+      (await themeRepository(tx).versions(scope, 10)).find((v) => v.version === 1),
+    );
+    if (first === undefined) throw new Error('version 1 missing');
+    const restore = () =>
+      withTenant(app.db, tenantId, (tx) => themeRepository(tx).restore(scope, first.id));
+
+    await Promise.all([restore(), restore()]);
+
+    const versions = await withTenant(app.db, tenantId, (tx) =>
+      themeRepository(tx).versions(scope, 10),
+    );
+    expect(versions.map((v) => v.version)).toEqual([4, 3, 2, 1]);
+    expect(versions.filter((v) => v.state === 'published')).toHaveLength(1);
+  });
+
+  it('keeps one published row and no repeated version when a restore races a publish', async () => {
+    const tenantId = await freshTenant();
+    const scope = { tenantId, clientId: null };
+    await publishedOnce(scope, 'v1');
+    await publishedOnce(scope, 'v2');
+    await withTenant(app.db, tenantId, (tx) =>
+      themeRepository(tx).saveDraft(scope, body('d'), null),
+    );
+    const first = await withTenant(app.db, tenantId, async (tx) =>
+      (await themeRepository(tx).versions(scope, 10)).find((v) => v.version === 1),
+    );
+    if (first === undefined) throw new Error('version 1 missing');
+
+    await Promise.all([
+      withTenant(app.db, tenantId, (tx) => themeRepository(tx).restore(scope, first.id)),
+      withTenant(app.db, tenantId, (tx) => themeRepository(tx).publish(scope)),
+    ]);
+
+    const versions = await withTenant(app.db, tenantId, (tx) =>
+      themeRepository(tx).versions(scope, 10),
+    );
+    expect(versions.map((v) => v.version)).toEqual([4, 3, 2, 1]);
+    expect(versions.filter((v) => v.state === 'published')).toHaveLength(1);
+  });
+
   describe('against another tenant', () => {
     const scopeOf = (tenantId: string): ThemeScope => ({ tenantId, clientId: null });
 
@@ -467,6 +628,19 @@ describe('assetRepository', () => {
       expect(await assetRepository(tx).referencedBy(tenantId, stored.id)).toBe(1);
     });
   });
+
+  it('reads a tenant total above 2^31 bytes', async () => {
+    const tenantId = await freshTenant();
+    await owner.sql.unsafe(`
+      insert into theme_assets (id, tenant_id, sha256, mime, width, height, bytes)
+      select gen_random_uuid(), '${tenantId}', md5(g::text) || md5('a' || g), 'image/png', 1, 1,
+             decode(repeat('00', 1048576), 'hex')
+        from generate_series(1, 2100) g`);
+    const used = await withTenant(app.db, tenantId, (tx) =>
+      assetRepository(tx).bytesUsed(tenantId),
+    );
+    expect(used).toBe(2100 * 1048576);
+  }, 120_000);
 
   it('delete removes the asset', async () => {
     const tenantId = await freshTenant();

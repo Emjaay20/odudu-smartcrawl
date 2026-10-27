@@ -28,7 +28,7 @@ const REF = {
 export function assetRepository(tx: TenantScopedDatabase) {
   async function bytesUsed(tenantId: string): Promise<number> {
     const [row] = await tx
-      .select({ used: sql<number>`coalesce(sum(octet_length(${themeAssets.bytes})), 0)::int` })
+      .select({ used: sql<number>`coalesce(sum(octet_length(${themeAssets.bytes})), 0)::float8` })
       .from(themeAssets)
       .where(eq(themeAssets.tenantId, tenantId));
     return row?.used ?? 0;
