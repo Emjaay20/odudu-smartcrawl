@@ -87,7 +87,7 @@ curl -sS -b cookies.txt -D - --get \
 HTTP/1.1 200 OK
 content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'
 <title>Sign out?</title>
-  <input type="hidden" name="session_id" value="01a17cd9-27cb-78b0-9ea1-0e63df9357c7">
+  <input type="hidden" name="session_id" value="01a17ced-34cf-7caa-8eb4-1546abc5d157">
   <input type="hidden" name="client_id" value="demo-spa">
   <input type="hidden" name="post_logout_redirect_uri" value="http://localhost:8080/logged-out">
   <input type="hidden" name="state" value="xyz-bye">
@@ -114,15 +114,18 @@ curl -sS -b cookies.txt -D - -o /dev/null -X POST \
 
 ```
 HTTP/1.1 302 Found
+x-request-id: 01a17ced-3557-71f7-bd45-47d940774759
 set-cookie: demo-session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
 set-cookie: demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
 cache-control: no-store
 location: http://localhost:8080/logged-out?state=xyz-bye
 content-length: 0
+Date: Tue, 27 Oct 2026 10:34:42 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 ```
 
-(`x-request-id`, `Date` and the keep-alive headers are omitted, as elsewhere
-in this document.) Both cookies are cleared, not just the one this login set: logout ends the
+Both cookies are cleared, not just the one this login set: logout ends the
 whole SSO session, and a browser could hold a live persistent cookie from a
 different, remembered login even though this walkthrough's own login did
 not set one.
@@ -256,8 +259,8 @@ psql -c "select c.client_id, o.post_logout_redirect_uris, o.id_token_ttl_seconds
 ```
 
 First the cases that still ask. Browser B presents the hint of session A:
-that `sid` names a session B's cookie does not hold, so the page asks about
-B's own session instead. A hint with the
+that `sid` names a session B's cookie does not hold, so the hint names
+nothing usable and the page asks about whichever session B's cookie does hold. A hint with the
 last character of its signature changed (`$FORGED`) is no hint at all,
 however its `exp` reads, and asks the same way. And a request with no session
 cookie has no session to ask about, so it gets the no-session page. The pipe prints each
@@ -509,6 +512,7 @@ Posting the form back ends the session. Introspecting the identical,
 still-unexpired access token again:
 
 ```bash
+field() { sed -n "s/.*name=.$1. value=.\([^>]*\).>.*/\1/p" page-rd.txt; }
 curl -sS -b cookies-rd.txt -D - -o /dev/null -X POST \
   --data-urlencode "session_id=$(field session_id)" --data-urlencode "csrf=$(field csrf)" \
   --data-urlencode "client_id=$(field client_id)" --data-urlencode "state=$(field state)" \
@@ -526,7 +530,7 @@ set-cookie: revokedoc-session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
 {"active":false}
 ```
 
-(`field` is the function from the first section, reading `page-rd.txt` here. The
+(`field` is the first section's function, redefined to read `page-rd.txt`. The
 logout answers the signed-out page, `200`, which `head -3` cuts short.) `exp`
 above is `1793095665`; this second call landed seconds after `iat` — nearly all
 300 seconds still on the clock, and none of them made any difference, because
@@ -825,10 +829,11 @@ HTTP/1.1 200 OK
   <input type="hidden" name="state" value="xyz-bye">
 ```
 
-Posting that form back, with `field` as above reading `page-post.txt`, ends
+Posting that form back, with `field` redefined to read `page-post.txt`, ends
 the session:
 
 ```bash
+field() { sed -n "s/.*name=.$1. value=.\([^>]*\).>.*/\1/p" page-post.txt; }
 curl -sS -b cookies-post.txt -D - -o /dev/null -X POST \
   --data-urlencode "session_id=$(field session_id)" --data-urlencode "csrf=$(field csrf)" \
   --data-urlencode "client_id=$(field client_id)" \
@@ -872,6 +877,100 @@ without it is a logout request. A confirmation is honoured only with the
 `csrf` token the cookie's secret derives; a body without `session_id` is
 read as a request — which, whatever hint it carries, is answered by the
 confirmation page and ends nothing.
+
+## A form edited after it was issued
+
+The form's `csrf` is an HMAC the cookie's secret keys, over the session id and
+over the form's `client_id`, `post_logout_redirect_uri` and `state` as well,
+each length-prefixed. A request that changes any one of them after the page
+was issued no longer proves itself, so a forger who can steer a victim's
+browser to the form cannot retarget where it redirects or what `state` it
+returns. This ran on the stack at **port 3191** that the sections around it ran
+on, with `demo`, `demo-spa`, `demo-post` and `ada` seeded as
+[Bootstrap](./bootstrap.md) does and the redirect list from the first section in
+place; the one query below is scoped to a single session, so what ran before
+does not show in it. `psql` is a function for the compose
+stack's database, as in the section on an ID token past its `exp`:
+
+```bash
+psql() { docker compose -f infra/docker/compose.yaml exec -T postgres psql -U odudu -d odudu "$@"; }
+BASE=http://localhost:3191/tenants/demo/protocol/openid-connect
+curl -sS -b cookies-edit.txt --get \
+  --data-urlencode 'client_id=demo-spa' \
+  --data-urlencode 'post_logout_redirect_uri=http://localhost:8080/logged-out' \
+  --data-urlencode 'state=xyz-bye' \
+  "$BASE/logout" > page-edit.txt
+grep -E '<title>|name="(session_id|client_id|post_logout_redirect_uri|state)"' page-edit.txt
+```
+
+```
+<title>Sign out?</title>
+  <input type="hidden" name="session_id" value="01a17cee-cfca-777e-b30c-6be218764488">
+  <input type="hidden" name="client_id" value="demo-spa">
+  <input type="hidden" name="post_logout_redirect_uri" value="http://localhost:8080/logged-out">
+  <input type="hidden" name="state" value="xyz-bye">
+```
+
+`cookies-edit.txt` is the jar of a login as `ada`, the same sign-in the other
+sections use. `submit` posts the form back with every field as the page gave it
+except the one named, which it sends with another value. Each edit is made
+alone, to a form whose token is otherwise genuine, and the session is read back
+from the database after the three of them. The redirect edit goes to an address
+`demo-spa` has not registered, and the `client_id` edit to another registered
+client, so the redirect rule or the client lookup would each have had something
+to say about them. The session being live afterwards is what shows the token was
+refused first: the redirect check runs only after the session has ended:
+
+```bash
+field() { sed -n "s/.*name=.$1. value=.\([^>]*\).>.*/\1/p" page-edit.txt; }
+submit() { # $1 = the field to change, $2 = what is sent in its place
+  ARGS=()
+  for f in session_id csrf client_id post_logout_redirect_uri state; do
+    v=$(field $f); [ "$f" = "$1" ] && v=$2
+    ARGS+=(--data-urlencode "$f=$v")
+  done
+  curl -sS -b cookies-edit.txt -D - -X POST "${ARGS[@]}" "$BASE/logout" \
+    | grep -iE '^HTTP|^location|^set-cookie|<title>'
+}
+LIVE="select id, expires_at > now() as live from sessions where id = '$(field session_id)';"
+echo '# state replaced'; submit state xyz-other
+echo '# post_logout_redirect_uri replaced'; submit post_logout_redirect_uri http://localhost:8080/elsewhere
+echo '# client_id replaced'; submit client_id demo-post
+psql -c "$LIVE"
+echo '# nothing replaced'; submit none none
+psql -c "$LIVE"
+```
+
+```
+# state replaced
+HTTP/1.1 400 Bad Request
+<title>Can&#39;t sign out</title>
+# post_logout_redirect_uri replaced
+HTTP/1.1 400 Bad Request
+<title>Can&#39;t sign out</title>
+# client_id replaced
+HTTP/1.1 400 Bad Request
+<title>Can&#39;t sign out</title>
+                  id                  | live
+--------------------------------------+------
+ 01a17cee-cfca-777e-b30c-6be218764488 | t
+(1 row)
+
+# nothing replaced
+HTTP/1.1 302 Found
+set-cookie: demo-session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
+set-cookie: demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
+location: http://localhost:8080/logged-out?state=xyz-bye
+                  id                  | live
+--------------------------------------+------
+ 01a17cee-cfca-777e-b30c-6be218764488 | f
+(1 row)
+```
+
+Each edited form is refused with the same page a non-member's `session_id` gets
+and ends nothing; the unedited one ends the session and redirects as before.
+(`x-request-id`, `Date` and the keep-alive headers are omitted from the filtered
+output by the `grep`.)
 
 ## A `client_id` that disagrees with the hint
 
@@ -978,6 +1077,7 @@ curl -sS -b cookies-aud.txt -D - -X POST \
   "http://localhost:3191/tenants/demo/protocol/openid-connect/logout" | tee page-aud2.txt \
   | grep -iE '^HTTP|^location|^set-cookie|<title>|name="(session_id|client_id|post_logout_redirect_uri|state)"'
 
+field() { sed -n "s/.*name=.$1. value=.\([^>]*\).>.*/\1/p" page-aud2.txt; }
 curl -sS -b cookies-aud.txt -D - -o /dev/null -X POST \
   --data-urlencode "session_id=$(field session_id)" --data-urlencode "csrf=$(field csrf)" \
   --data-urlencode "client_id=$(field client_id)" \
@@ -1003,7 +1103,7 @@ Connection: keep-alive
 Keep-Alive: timeout=72
 ```
 
-(`field` is defined as above, reading `page-aud2.txt` here. The `session_id` is the one the `demo-post` request's form
+(`field` is redefined to read `page-aud2.txt` before the second request. The `session_id` is the one the `demo-post` request's form
 carried too: the disagreeing hint was dropped, and the page asked about the
 browser's own session.)
 
@@ -1089,15 +1189,17 @@ curl -sS -b cookies.txt -D - --get \
 ```
 HTTP/1.1 200 OK
 <title>Sign out?</title>
-  <input type="hidden" name="session_id" value="01a17cd0-9f73-7788-a6b9-a95e2d893146">
+  <input type="hidden" name="session_id" value="01a17cee-581f-7efc-a8ca-e10d67b741b9">
   <input type="hidden" name="client_id" value="demo-spa">
 ```
 
-The form posted back ends the session and now frames `reports-widget`:
+The form posted back, with every hidden field it carries, ends the session and now
+frames `reports-widget`:
 
 ```bash
 curl -sS -b cookies.txt -i -X POST \
   --data-urlencode "session_id=$(field session_id)" --data-urlencode "csrf=$(field csrf)" \
+  --data-urlencode "client_id=$(field client_id)" \
   "http://localhost:3191/tenants/demo/protocol/openid-connect/logout"
 ```
 
@@ -1132,7 +1234,7 @@ content-length: 974
 <p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
 <h1>Signed out</h1>
 <p>You have been signed out.</p>
-<iframe src="http://localhost:9100/logout?iss=http%3A%2F%2Flocalhost%3A3191%2Ftenants%2Fdemo&amp;sid=01a17cd0-9f73-…"></iframe>
+<iframe src="http://localhost:9100/logout?iss=http%3A%2F%2Flocalhost%3A3191%2Ftenants%2Fdemo&amp;sid=01a17cee-581f-…"></iframe>
 </main>
 </body>
 </html>

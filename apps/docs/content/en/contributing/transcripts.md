@@ -320,6 +320,16 @@ commands read against `3000` as the guide that excerpts them does; every other r
 elsewhere on those pages, such as the deliveries queue after the front-channel logout and the offline-access
 section, keep the output they had: the deliveries queue was queried again on this stack and answered as recorded.
 
+The logout form's token then began to cover its `client_id`, `post_logout_redirect_uri` and `state` (ADR 0047). The
+section on [a form edited after it was issued](../reference/transcripts/request-paths/rp-initiated-logout.md#a-form-edited-after-it-was-issued)
+was captured for it, the opening section's two requests and the front-channel section's confirming `POST` were run
+again, and the guide [Refresh and end a session](../guides/refresh-and-end-a-session.md) now carries the opening
+section's output. They ran on a second `odudu-tx` compose project on port `3191` (the first was removed), a fresh
+stack with `demo`, `demo-spa`, `demo-post` and `ada` seeded and `reports-widget` added for the front-channel
+request, built from the branch `p4b/b-logout` at `0d739434` plus the working tree that the commit after it
+records. The opening section ran through a local TCP forward from port `3000` to `3191`, as before, which is why
+its output shows the full headers of a live response. Other blocks on those pages keep the output they had.
+
 ## Admin path transcripts
 
 The admin API: the endpoints under `/admin/tenants/{tenant}/` that let an

@@ -275,7 +275,12 @@ export async function handleLogoutRequest(
     return {
       kind: 'confirm',
       sessionId: session?.id ?? null,
-      csrf: selected?.entry.proof(LOGOUT_CONFIRMATION) ?? null,
+      csrf:
+        selected?.entry.proof(LOGOUT_CONFIRMATION, [
+          clientId ?? '',
+          requested ?? '',
+          params.state ?? '',
+        ]) ?? null,
       clientId,
       postLogoutRedirectUri: requested,
       registeredRedirect: requested !== null && registered.includes(requested) ? requested : null,
@@ -298,7 +303,8 @@ export interface LogoutConfirmationParams {
   // resolves to. It is public, so on its own it proves nothing.
   confirmedSessionId: string;
   // The form's anti-forgery token, which must be the one that session's
-  // own presented entry proves (LOGOUT_CONFIRMATION); empty when absent.
+  // own presented entry proves (LOGOUT_CONFIRMATION) over the form's
+  // client_id, post_logout_redirect_uri and state; empty when absent.
   csrf: string;
   clientId: string | null;
   postLogoutRedirectUri: string | null;
@@ -332,7 +338,11 @@ export async function handleLogoutConfirmation(
   const confirmed = sessions.find(
     (candidate) =>
       candidate.id === params.confirmedSessionId &&
-      candidate.entry.proves(LOGOUT_CONFIRMATION, params.csrf),
+      candidate.entry.proves(LOGOUT_CONFIRMATION, params.csrf, [
+        params.clientId ?? '',
+        params.postLogoutRedirectUri ?? '',
+        params.state ?? '',
+      ]),
   );
   if (confirmed === undefined) {
     return { kind: 'unauthenticated' };

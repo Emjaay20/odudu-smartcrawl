@@ -1017,6 +1017,47 @@ describe('the confirmation POST needs a token only the cookie holder can compute
     expect(stillLive).not.toBeNull();
   });
 
+  // The hidden client_id, post_logout_redirect_uri and state sit in the
+  // page a forger can read only through the victim, so the token covers
+  // them: a form edited after it was issued no longer proves itself.
+  it.each([
+    ['client_id', 'another-client'],
+    ['post_logout_redirect_uri', 'https://other.example/after-logout'],
+    ['state', 'swapped'],
+  ])('a csrf proof does not verify when %s changes', async (name, replacement) => {
+    const tenantName = `logout-csrf-bound-${newId()}`;
+    await setupTenant(tenantName);
+    const cookie = await signIn(tenantName);
+    const sessionId = sessionIdFromCookie(cookie);
+    const page = await http.inject({
+      url: logoutUrl(tenantName, {
+        client_id: CLIENT_ID,
+        post_logout_redirect_uri: POST_LOGOUT_REDIRECT_URI,
+        state: 'abc',
+      }),
+      headers: { cookie },
+    });
+    const field = (key: string) =>
+      new RegExp(`name="${key}" value="([^"]*)"`, 'u').exec(page.body)?.[1] ?? '';
+    const form = {
+      session_id: field('session_id'),
+      csrf: field('csrf'),
+      client_id: field('client_id'),
+      post_logout_redirect_uri: field('post_logout_redirect_uri'),
+      state: field('state'),
+    };
+    expect(form.state).toBe('abc');
+
+    const tampered = await postConfirmation(tenantName, cookie, { ...form, [name]: replacement });
+    expect(tampered.statusCode).toBe(400);
+    expect(tampered.headers.location).toBeUndefined();
+    expect((await sessionRowFor(sessionId))?.expiresAt.getTime()).toBeGreaterThan(Date.now());
+
+    const untouched = await postConfirmation(tenantName, cookie, form);
+    expect(untouched.statusCode).toBe(302);
+    expect((await sessionRowFor(sessionId))?.expiresAt.getTime()).toBeLessThanOrEqual(Date.now());
+  });
+
   // A body with no `session_id` is not a broken confirmation — since §2
   // requires `POST` at this endpoint, it is a logout request an RP
   // serialized into a form body, and it is answered like one: the
@@ -1117,13 +1158,14 @@ describe('a disabled client is not a logout target', () => {
     // The confirmation form's own POST, which needs no id_token_hint —
     // decideLogout only asks the redirect rule of a confirmed session, and
     // that rule is exactly what reads the disabled client's own list.
-    const { csrf } = await confirmationForm(tenantName, cookie);
-    const res = await postConfirmation(tenantName, cookie, {
-      session_id: sessionId,
-      csrf,
-      client_id: disabledClientId,
-      post_logout_redirect_uri: disabledRedirect,
+    const page = await http.inject({
+      url: logoutUrl(tenantName, {
+        client_id: disabledClientId,
+        post_logout_redirect_uri: disabledRedirect,
+      }),
+      headers: { cookie },
     });
+    const res = await postConfirmation(tenantName, cookie, confirmationFields(page));
 
     expect(res.statusCode).toBe(400);
     expect(res.body).toContain('the address given to return to afterward');
@@ -1380,7 +1422,7 @@ describe('[ODUDU-LOGOUT-HINT-CLIENT-01] a valid hint with no client_id names the
     await setupTenant(tenantName);
     const cookie = await signIn(tenantName);
     const sessionId = sessionIdFromCookie(cookie);
-    // Names a subject other than the session's, so confirmation is asked for.
+    // A hint for another subject: the page still asks, and names its client.
     const hint = await mintIdToken(tenantName, newId(), newId());
 
     const page = await http.inject({

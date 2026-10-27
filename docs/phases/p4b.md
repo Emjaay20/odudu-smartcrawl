@@ -14,3 +14,14 @@ The custom domain per tenant left P4b for a new phase, P4j, straight after it
 brainstorm. Liquid-style template logic went to the roadmap's "Decided against",
 to be revisited when a user asks for it. P4b's own hours (81–134 h) are
 unchanged and are set at the end of the phase from what the increments cost.
+
+## The logout form's fields were outside its token
+
+The confirmation form carried `client_id`, `post_logout_redirect_uri` and
+`state` as hidden fields that the `csrf` value did not cover, so a form edited
+after it was issued still verified. `SessionEntry.proof` now takes the bound
+values, each length-prefixed, and the confirmation passes all three on issue and
+verify. A caller that posts back only some of the fields now fails: the
+plan-drive for the end-session path did, and was changed to post every hidden
+field, and so did the front-channel transcript's request, which omitted
+`client_id`. The decision is ADR 0047.

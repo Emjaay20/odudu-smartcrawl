@@ -65,7 +65,7 @@ curl -sS -b cookies.txt -D - --get \
 HTTP/1.1 200 OK
 content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'
 <title>Sign out?</title>
-  <input type="hidden" name="session_id" value="01a17cd9-27cb-78b0-9ea1-0e63df9357c7">
+  <input type="hidden" name="session_id" value="01a17ced-34cf-7caa-8eb4-1546abc5d157">
   <input type="hidden" name="client_id" value="demo-spa">
   <input type="hidden" name="post_logout_redirect_uri" value="http://localhost:8080/logged-out">
   <input type="hidden" name="state" value="xyz-bye">
@@ -85,11 +85,15 @@ curl -sS -b cookies.txt -D - -o /dev/null -X POST \
 
 ```
 HTTP/1.1 302 Found
+x-request-id: 01a17ced-3557-71f7-bd45-47d940774759
 set-cookie: demo-session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
 set-cookie: demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
 cache-control: no-store
 location: http://localhost:8080/logged-out?state=xyz-bye
 content-length: 0
+Date: Tue, 27 Oct 2026 10:34:42 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 ```
 
 Odudu clears both session cookies, ends the session and every grant that belongs to it, and sends the browser to your address with your `state`. The `csrf` field is derived from a secret only that browser's cookie holds, so the form cannot be posted from anywhere else.
