@@ -157,7 +157,9 @@ describe('the legibility of the code colours', () => {
 
 describe('the highlighting in a built page', () => {
   it('is in the static markup, and the attribute that carried it is not', () => {
-    const $ = load(path.join(docsDir('pages'), 'reference/generated/admin-api/clients/index.html'));
+    const $ = load(
+      path.join(docsDir('pages'), 'reference/generated/admin-api/clients/part-2/index.html'),
+    );
     expect($('pre.language-json span.tok-property').length).toBeGreaterThan(0);
     expect($('[data-tokens]').length).toBe(0);
     expect($('pre span[class=""]').length).toBe(0);
