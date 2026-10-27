@@ -7,13 +7,14 @@ import { expect, forgive, test } from './fixtures';
 import { BASE, COMMON_PASSWORD, forgiveRefusals, inspect } from './page-inspection';
 import { inTenant, psql, seed, sqlText } from './stack';
 import type { Page } from '@playwright/test';
+import { randomPassword } from './password';
 
 // Every page the server renders, reached the way a person reaches it, held to
 // axe in both themes, to the phone's width, and to one card width. With
 // PAGE_SHOTS_DIR set it also saves each page in both themes at three widths.
 
 const run = randomBytes(3).toString('hex');
-const PASSWORD = `Visual-${randomBytes(9).toString('base64url')}`;
+const PASSWORD = randomPassword('Visual-');
 const CHALLENGE = 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM';
 // A path the stack answers, so a finished sign-in lands somewhere that loads.
 const LANDING = `${BASE}/health/ready`;

@@ -1,12 +1,13 @@
 import { randomBytes } from 'node:crypto';
 import { expectSignedOut, expect, signInAtTenant, test } from './fixtures';
 import { psql, seed } from './stack';
+import { randomPassword } from './password';
 
 const LIFETIME_SECONDS = 3;
 
 test('signing out after the ID token has expired still signs out at once', async ({ page }) => {
   const tenant = `lapsed-${randomBytes(4).toString('hex')}`;
-  const password = randomBytes(18).toString('base64url');
+  const password = randomPassword();
   seed(['tenant', '--name', tenant]);
   seed(['user', '--tenant', tenant, '--username', 'ada', `--password=${password}`]);
   seed([

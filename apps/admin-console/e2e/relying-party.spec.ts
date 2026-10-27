@@ -4,6 +4,7 @@ import { type AddressInfo } from 'node:net';
 import { type Page } from '@playwright/test';
 import { expect, test } from './fixtures';
 import { psql, seed, sqlText } from './stack';
+import { randomPassword } from './password';
 
 // A relying party on an origin of its own, which the console never is.
 // Chromium holds the redirect a form submission follows to the page's
@@ -100,7 +101,7 @@ test.afterAll(async () => {
 });
 
 test('a sign-in lands on a client served from another origin', async ({ page }) => {
-  const password = randomBytes(18).toString('base64url');
+  const password = randomPassword();
   user('ada', password);
   await startAt(page);
   await signInWith(page, 'ada', password);
@@ -110,7 +111,7 @@ test('a sign-in lands on a client served from another origin', async ({ page }) 
 test('enrolling an authenticator takes one password and one code, then lands on the client', async ({
   page,
 }) => {
-  const password = randomBytes(18).toString('base64url');
+  const password = randomPassword();
   user('grace', password);
   psql(
     `insert into user_required_actions (tenant_id, subject_id, action) ` +
