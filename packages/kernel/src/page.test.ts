@@ -727,3 +727,60 @@ describe('a problem message is one clean line', () => {
     expect(problem).not.toMatch(/[\u0000-\u001f\u2028\u2029]/u);
   });
 });
+
+describe('a hostile assetUrls length', () => {
+  const counted = (lengths: unknown[]): unknown => {
+    let reads = 0;
+    return new Proxy(['/t/a/0.png'], {
+      get(target, key, receiver) {
+        if (key !== 'length') return Reflect.get(target, key, receiver) as unknown;
+        const value = lengths[Math.min(reads, lengths.length - 1)];
+        reads += 1;
+        return value;
+      },
+    });
+  };
+  const flip = (first: number, then: number): unknown => {
+    let c = 0;
+    return {
+      valueOf() {
+        c += 1;
+        return c === 1 ? first : then;
+      },
+    };
+  };
+  const CASES: [string, unknown][] = [
+    ['valueOf 1 then 1e9', flip(1, 1e9)],
+    ['valueOf 1 then 100', flip(1, 100)],
+    ['symbol', Symbol('n')],
+    ['bigint', 1n],
+    ['string', '1'],
+    ['NaN', Number.NaN],
+    ['-1', -1],
+    ['1.5', 1.5],
+    ['Infinity', Number.POSITIVE_INFINITY],
+  ];
+  it.each(CASES)('reports %s without looping', (_name, length) => {
+    const started = Date.now();
+    const problems = brandingProblems(branding({ assetUrls: counted([length]) as string[] }));
+    expect(Date.now() - started).toBeLessThan(2000);
+    expect(problems.length).toBeGreaterThan(0);
+  });
+});
+
+describe('a problem message stays short and clean', () => {
+  const NASTY: [string, string][] = [
+    ['lone surrogates', '/' + '\ud800'.repeat(80)],
+    ['line separators', '/' + '\u2028'.repeat(500)],
+    ['backslashes', '/' + '\\'.repeat(100)],
+    ['emoji', '/' + '\u{1f600}'.repeat(200)],
+    ['bidi and C1', '/a\u0085\u007f\u009b\u202e\u2066\u200f\u061cb'],
+  ];
+  it.each(NASTY)('bounds and escapes %s', (_name, url) => {
+    const [problem] = brandingProblems(branding({ stylesheetUrl: url }));
+    expect(problem?.length).toBeLessThanOrEqual(200);
+    expect(problem).not.toMatch(
+      /[\u0000-\u001f\u007f-\u009f\u061c\u200e\u200f\u2028\u2029\u202a-\u202e\u2066-\u2069]/u,
+    );
+  });
+});

@@ -77,13 +77,25 @@ export function isSameOriginPath(value: unknown): value is string {
 }
 
 // A problem message quotes tenant input, so it quotes a bounded part of it,
-// escaped to stay on one line.
+// escaped to stay on one line and free of bidi and C1 controls, and at most
+// QUOTE_LIMIT characters long.
+const UNSAFE_IN_LOG = /[\u007f-\u009f\u061c\u200e\u200f\u2028\u2029\u202a-\u202e\u2066-\u2069]/gu;
+const QUOTE_LIMIT = 120;
+
 function quoted(value: string): string {
   const head = Array.from(value.slice(0, 256)).slice(0, 64).join('');
-  const json = JSON.stringify(head).replace(/[\u2028\u2029]/gu, (c) =>
-    c === '\u2028' ? '\\u2028' : '\\u2029',
+  const escaped = JSON.stringify(head).replace(
+    UNSAFE_IN_LOG,
+    (c) => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`,
   );
-  return value.length <= 64 ? json : `${json}… (${String(value.length)} chars)`;
+  const chars = Array.from(escaped);
+  const cut = chars.length > QUOTE_LIMIT;
+  const shown = cut ? `${chars.slice(0, QUOTE_LIMIT).join('')}…` : escaped;
+  return value.length <= 64 && !cut ? shown : `${shown}… (${String(value.length)} chars)`;
+}
+
+function isLength(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 0;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -144,13 +156,16 @@ function readBranding(input: unknown): Checked {
     }
   }
   const assets: unknown[] = [];
-  let length = 0;
+  // Read once and as a number: a coercible object would be re-read per use.
+  const rawLength: unknown = Array.isArray(assetUrls) ? assetUrls.length : null;
   if (!Array.isArray(assetUrls)) {
     problems.push('assetUrls is not an array');
-  } else if ((length = assetUrls.length) > MAX_BRANDING_URLS) {
+  } else if (!isLength(rawLength)) {
+    problems.push('assetUrls has no valid length');
+  } else if (rawLength > MAX_BRANDING_URLS) {
     problems.push(`more than ${String(MAX_BRANDING_URLS)} urls`);
   } else {
-    for (let i = 0; i < length; i += 1) {
+    for (let i = 0; i < rawLength; i += 1) {
       assets.push(assetUrls[i]);
       const problem = urlProblem(`assetUrls[${String(i)}]`, assets[i], false);
       if (problem !== null) problems.push(problem);
@@ -223,6 +238,9 @@ function attribute(value: string): string {
 // The head markup that follows the Instrument stylesheet link: the tenant
 // stylesheet after it so its rules win, and the favicon links.
 export function brandingHead(locale: PageLocale): string {
+  // Validated on its own read, apart from the header's: a getter could give
+  // the two different brandings, which yields an unstyled page, never an
+  // unvalidated value.
   const branding = locale.branding === undefined ? null : validBranding(locale.branding);
   const lines: string[] = [];
   if (branding?.stylesheetUrl) {
