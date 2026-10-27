@@ -93,9 +93,7 @@ shape of what it is filling.
 for every route in the route table (`registerAdminRoutes`), refusals included —
 `/admin/openapi.json`, which is public and the same for every caller, is not one
 of them: each is specific to the caller that asked, and several carry a secret
-shown once — a registration token, a client secret, a one-time password. A
-handful of header blocks below predate this and were not re-run — each says so,
-and why, where it appears.
+shown once — a registration token, a client secret, a one-time password.
 
 | Method   | Path                                                             | What it is                                 |
 | -------- | ---------------------------------------------------------------- | ------------------------------------------ |

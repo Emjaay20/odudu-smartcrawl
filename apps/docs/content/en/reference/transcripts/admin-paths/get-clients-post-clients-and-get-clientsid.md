@@ -1,13 +1,9 @@
 ---
 title: 'GET /clients, POST /clients and GET /clients/{id}'
-description: 'The client transcripts here and under PATCH, DELETE and POST …/secret predate service_account_admin_reach; each such response now carries it.'
+description: 'Lists, reads and creates clients: the clients row and its OIDC configuration, joined into one resource keyed by the internal id.'
 ---
 
 # `GET /clients`, `POST /clients` and `GET /clients/{id}`
-
-The client transcripts in this section, and those under `PATCH`, `DELETE` and
-`POST …/secret` below, predate `service_account_admin_reach`; each such response
-now carries it, as the transcript under `PATCH /clients/{id}` shows.
 
 Lists, reads and creates clients — the `clients` row and its OIDC
 configuration (`client_oidc_config`), joined into one resource keyed by the
