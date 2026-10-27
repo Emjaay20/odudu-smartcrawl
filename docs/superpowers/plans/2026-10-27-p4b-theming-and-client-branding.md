@@ -43,7 +43,7 @@ Inputs the spec implies and no task's happy path exercises, most likely first. E
 What to do by hand after each increment's push; the list sent is the one below, adjusted for what the increment really built. Accounts: the seeded demo tenant and its test user; the owner's own system administrator for the console.
 
 - **A (placement):** open the docs site's Roadmap page; P4b reads as the new scope, P4j appears after it, Liquid-style templates are under "Decided against". No behaviour changed, and the list says so.
-- **B (sign-out):** sign in to a demo client; open its end-session URL with the `id_token_hint` it was given, and the confirmation page appears (it used to sign out at once); press Confirm and the session ends and the redirect follows. Repeat with an expired hint (still asks). In devtools change the hidden `client_id` or `post_logout_redirect_uri` and submit: refused. Visit the URL with no hint: asks.
+- **B (sign-out):** sign in to a demo client; open its end-session URL with the `id_token_hint` it was given, and the confirmation page appears (it used to sign out at once); press Confirm and the session ends and the redirect follows. Repeat with an expired hint (still asks). In devtools change the hidden `client_id` or `post_logout_redirect_uri` and submit: refused. Visit the URL with no hint: asks. Console → Clients → the demo client → Logout: read the warning beside the new toggle (is it clear?), turn it on, repeat the sign-out URL with its hint: no confirmation page, signed out at once; turn it off and it asks again. Sign out of the console itself: immediate, no confirmation page.
 - **C (foundation):** no user-visible change; the list says so and gives `docker exec odudu-try-postgres-1 psql -U odudu -c '\d theme_versions'` to see the tables.
 - **D (render path):** click through every page (sign-in, select account, consent, registration, verification, reset, change password, TOTP, passkey and recovery-code enrolment, logout) in light and dark; each must look exactly as before. This increment's risk is a regression, and there is no way to set a theme yet.
 - **E (assets):** no public route serves an unpublished image; `curl -i http://localhost:3090/tenants/demo/brand/<anything>.png` is a 404. No upload route yet, so nothing else by hand.
@@ -54,7 +54,7 @@ What to do by hand after each increment's push; the list sent is the one below, 
 
 ## Increments
 
-A docs placement (1) · B logout (2–3) · C theme foundation (4–7) · D render path (8–13) · E assets (14–15) · F admin API (16–18) · G locales and mail (19–22) · H console (23–25) · I documentation close (26–27).
+A docs placement (1) · B logout (2–3b) · C theme foundation (4–7) · D render path (8–13) · E assets (14–15) · F admin API (16–18) · G locales and mail (19–22) · H console (23–25) · I documentation close (26–27).
 
 ---
 
@@ -106,12 +106,23 @@ No image, HTML or CSS library is installed (`git grep -l '"sharp"\|"parse5"\|"po
 - [ ] **Step 1:** Tests: `it('a csrf proof does not verify when client_id changes')`, same for `post_logout_redirect_uri` and `state`; `it('proof without bound values is unchanged')` pinning today's value for every other purpose (grep `proof(` callers first).
 - [ ] **Step 2:** Run, expect FAIL. Implement; length-prefix each bound value so `["a","bc"]` and `["ab","c"]` differ (assert it).
 - [ ] **Step 3:** Run the test files, then `pnpm exec vitest run packages/authn-flows packages/protocol-oidc`, expect PASS.
-- [ ] **Step 4:** Write ADR 0047: always confirm, the spec's section 11 reasoning, Keycloak's skip as the rejected alternative, and the "trusted-client skip setting" as decided against for now with its trigger.
+- [ ] **Step 4:** Write ADR 0047: confirm by default, the spec's section 11 reasoning, and the per-client opt-out (Task 3b) with its residual risk; Keycloak's unconditional skip as the rejected alternative.
 - [ ] **Step 5:** Re-run the transcript that shows logout on a live stack (`apps/docs/content/en/reference/transcripts/request-paths/`, find it with `grep -rln logout`), update `concepts/sessions.mdx`, append the finding to `docs/phases/p4b.md`. Commit: `Logout: bind client_id, redirect and state into the proof`.
 
 ---
 
 ## Increment C — theme foundation
+
+### Task 3b: Per-client opt-out of the logout confirmation
+
+**Files:** Create a migration adding `clients.skip_logout_confirmation boolean NOT NULL DEFAULT false` (next free number; re-check with `ls packages/db/drizzle | tail -1`) that also sets it `true` for the console's own client (find its identifier with `grep -rn "odudu-admin" apps/server/src packages --include=*.ts | head`); Modify `packages/domain-tenant/src/schema/clients.ts`, `packages/contracts/src/admin/clients.ts` (`clientFieldsSchema`), the client create/amend routes and usecases in `packages/protocol-admin`, `packages/protocol-oidc/src/usecase/logout.ts` (`decideLogout`), the client's Logout tab in `apps/admin-console/src/features/clients/` (its wording constant in the feature's `service`), the console client's provisioning (`seed`/`init`, found by the grep above), `docs/NEXT.md` (the "Decisions still open" row for the skip setting becomes decided, pointing at ADR 0047), `apps/docs/content/en/admin-console/clients.mdx`, `concepts/sessions.mdx`; Test beside each.
+
+**Interfaces:** Consumes the confirm-by-default `decideLogout` from Task 2. Produces `decideLogout(input: { session: boolean; hint: ValidHint | null; client: { id: string; skipsConfirmation: boolean } | null; redirect: RegisteredRedirect | null })`, where `ValidHint = { clientId: string; sid: string }` is built only after signature, issuer, key and `exp` handling that Task 2 kept; it returns `end` only for a present session whose `hint.clientId === client.id`, `hint.sid === session id` and `client.skipsConfirmation`, or for the unchanged no-session registered-redirect case, and `confirm` otherwise.
+
+- [ ] **Step 1:** Tests, one per row of the spec's section 11 behaviour: `it('a client with the setting on signs out at once for its own valid hint')`, `it('asks with no hint, even with client_id')`, `it('asks for an invalid hint')`, `it('asks for a hint minted for another client, even when this client skips')`, `it('asks when the hint's sid is not the live session')`, `it('asks for every client with the setting off')`, `it('Dynamic Client Registration refuses the field and a registered client has it off')`, `it('PATCH requires manage-clients and is audited')`, `it('the console client has it on after migration and after a fresh init')`; console: `it('shows the warning beside the toggle, off by default, in plain words')` (assert the spec's exact warning sentence from section 13), `it('the toggle passes axe in both themes')`, e2e: turn it on for a client, sign out through its hint and land on the redirect with no confirmation page; the admin-console sign-out e2e confirms the console signs out at once.
+- [ ] **Step 2:** Run, expect FAIL; implement: the column and migration, the contract field, the admin write path with audit, the `decideLogout` signature above, the Logout tab toggle (console quality bar applies), and the console client's seed.
+- [ ] **Step 3:** Run `pnpm exec vitest run packages/protocol-oidc packages/protocol-admin packages/domain-tenant packages/contracts tests/docs tests/lint`, the docs app suite and the console unit tests, plus the touched e2e specs.
+- [ ] **Step 4:** Re-run the transcripts for `PATCH /clients/{id}` and the logout request-path on a live stack; update the console page, the sessions concept and ADR 0047's text; add the plan-check drive if the clients read statement count changes (`pnpm test:plans`). Commit: `Logout: per-client opt-out of the confirmation`.
 
 ### Task 4: `@odudu/domain-theme` schema and repositories
 
