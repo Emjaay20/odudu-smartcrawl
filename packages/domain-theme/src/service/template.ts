@@ -43,7 +43,13 @@ export type TemplateIssueCode =
 export interface TemplateIssue {
   code: TemplateIssueCode;
   detail: string;
+  // 1-based position of the first thing the issue is about; null when it
+  // has no single place (too large, a part that is missing).
+  line: number | null;
+  column: number | null;
 }
+
+type Add = (code: TemplateIssueCode, detail: string, offset?: number) => void;
 
 export interface TemplateOptions {
   // Whether a URL names one of the theme's own uploaded assets. Without it
@@ -135,8 +141,10 @@ const ELEMENT_ATTRIBUTES: Readonly<Record<string, readonly string[]>> = {
 const GLOBAL_ATTRIBUTES: ReadonlySet<string> = new Set(['class', 'lang', 'dir', 'role']);
 
 const TAG_NAME = /<(\/?)([a-zA-Z][^\s/>]*)/g;
-// Elements HTML lets a template leave open: the next block the server emits
-// ends them, so they cannot wrap it. Any other element left open would.
+// Elements whose end tag may be missing from the source: the next block the
+// server emits ends them, so they cannot wrap it. Any other element with no
+// end tag in the source is refused, including one the parser closes by
+// itself (`<div><span></div>`), which is stricter than "open at the end".
 const OMISSIBLE_END: ReadonlySet<string> = new Set([
   'p',
   'li',
@@ -170,46 +178,39 @@ function relTokens(value: string | undefined): string[] {
   return (value ?? '').toLowerCase().split(/\s+/).filter(Boolean);
 }
 
-function checkAttributes(
-  element: Element,
-  options: TemplateOptions,
-  add: (code: TemplateIssueCode, detail: string) => void,
-): void {
+function checkAttributes(element: Element, options: TemplateOptions, add: Add): void {
+  const at = element.sourceCodeLocation?.startTag?.startOffset;
   const tag = element.tagName;
   const allowedHere = ELEMENT_ATTRIBUTES[tag] ?? [];
   const value = (name: string): string | undefined =>
     element.attrs.find((attr) => attr.name === name)?.value;
   for (const { name, value: attrValue } of element.attrs) {
     if (HAS_BRACES.test(name) || HAS_BRACES.test(attrValue)) {
-      add('slot-in-attribute', `${tag} ${name}`);
+      add('slot-in-attribute', `${tag} ${name}`, at);
     } else if (
       !GLOBAL_ATTRIBUTES.has(name) &&
       !/^aria-[a-z]+(?:-[a-z]+)*$/.test(name) &&
       !allowedHere.includes(name)
     ) {
-      add('attribute-not-allowed', `${tag} ${name}`);
+      add('attribute-not-allowed', `${tag} ${name}`, at);
     }
   }
   if (tag === 'a') {
     const href = value('href');
-    if (href === undefined || !isHttps(href)) add('href-not-https', 'a href');
+    if (href === undefined || !isHttps(href)) add('href-not-https', 'a href', at);
     const rel = relTokens(value('rel'));
-    if (!rel.includes('noopener') || !rel.includes('noreferrer')) add('link-rel', 'a rel');
+    if (!rel.includes('noopener') || !rel.includes('noreferrer')) add('link-rel', 'a rel', at);
   }
   if (tag === 'img') {
     const src = value('src');
-    if (src === undefined || options.isAssetUrl?.(src) !== true) add('img-src', 'img src');
-    if (value('alt') === undefined) add('img-alt', 'img alt');
+    if (src === undefined || options.isAssetUrl?.(src) !== true) add('img-src', 'img src', at);
+    if (value('alt') === undefined) add('img-alt', 'img alt', at);
   }
 }
 
 // A page nobody can submit is refused at save: the pair comes in order,
 // together, and holds the parts that belong inside it.
-function checkForm(
-  manifest: PageManifest,
-  slots: ReturnType<typeof scanSlots>,
-  add: (code: TemplateIssueCode, detail: string) => void,
-): void {
+function checkForm(manifest: PageManifest, slots: ReturnType<typeof scanSlots>, add: Add): void {
   const at = (name: string): number[] =>
     slots.filter((slot) => slot.kind === 'part' && slot.name === name).map((slot) => slot.index);
   const [open, close] = [at('form.open'), at('form.close')];
@@ -217,43 +218,46 @@ function checkForm(
   const last = close[0];
   if (open.length !== close.length) add('form-pair', 'form.open and form.close come together');
   else if (first !== undefined && last !== undefined && first > last) {
-    add('form-pair', 'form.open comes before form.close');
+    add('form-pair', 'form.open comes before form.close', last);
   }
   for (const name of manifest.inForm) {
     for (const index of at(name)) {
       const inside = first !== undefined && last !== undefined && index > first && index < last;
-      if (!inside) add('form-placement', name);
+      if (!inside) add('form-placement', name, index);
     }
   }
 }
 
-function checkManifest(
-  kind: PageKind,
-  slots: ReturnType<typeof scanSlots>,
-  add: (code: TemplateIssueCode, detail: string) => void,
-): void {
+function checkManifest(kind: PageKind, slots: ReturnType<typeof scanSlots>, add: Add): void {
   const manifest = PAGE_KINDS[kind];
   const counts = new Map<string, number>();
   for (const slot of slots) {
     if (slot.kind === 'malformed') {
-      add('malformed-slot', `at ${String(slot.index)}`);
+      add('malformed-slot', `at ${String(slot.index)}`, slot.index);
     } else if (slot.kind === 'part') {
       counts.set(slot.name, (counts.get(slot.name) ?? 0) + 1);
     }
   }
-  for (const name of counts.keys()) {
-    if (!manifest.required.includes(name) && !manifest.optional.includes(name)) {
-      add('unknown-slot', name);
+  for (const slot of slots) {
+    if (
+      slot.kind === 'part' &&
+      !manifest.required.includes(slot.name) &&
+      !manifest.optional.includes(slot.name)
+    ) {
+      add('unknown-slot', slot.name, slot.index);
     }
   }
   for (const name of manifest.required) {
     if (!counts.has(name)) add('missing-part', name);
   }
   checkForm(manifest, slots, add);
-  for (const [name, count] of counts) {
-    if (count > 1 && (manifest.required.includes(name) || manifest.optional.includes(name))) {
-      add('repeated-part', name);
-    }
+  const seen = new Map<string, number>();
+  for (const slot of slots) {
+    if (slot.kind !== 'part') continue;
+    const times = (seen.get(slot.name) ?? 0) + 1;
+    seen.set(slot.name, times);
+    const known = manifest.required.includes(slot.name) || manifest.optional.includes(slot.name);
+    if (times === 2 && known) add('repeated-part', slot.name, slot.index);
   }
 }
 
@@ -269,9 +273,24 @@ export function checkTemplate(
   options: TemplateOptions = {},
 ): TemplateIssue[] {
   const issues: TemplateIssue[] = [];
-  const add = (code: TemplateIssueCode, detail: string): void => {
+  const lineStarts = [0];
+  for (let i = template.indexOf('\n'); i !== -1; i = template.indexOf('\n', i + 1)) {
+    lineStarts.push(i + 1);
+  }
+  const position = (offset: number | undefined): { line: number | null; column: number | null } => {
+    if (offset === undefined) return { line: null, column: null };
+    let low = 0;
+    let high = lineStarts.length - 1;
+    while (low < high) {
+      const mid = Math.ceil((low + high) / 2);
+      if ((lineStarts[mid] ?? 0) <= offset) low = mid;
+      else high = mid - 1;
+    }
+    return { line: low + 1, column: offset - (lineStarts[low] ?? 0) + 1 };
+  };
+  const add: Add = (code, detail, offset) => {
     const seen = issues.some((issue) => issue.code === code && issue.detail === detail);
-    if (!seen && issues.length < MAX_ISSUES) issues.push({ code, detail });
+    if (!seen && issues.length < MAX_ISSUES) issues.push({ code, detail, ...position(offset) });
   };
   if (template.length > MAX_TEMPLATE_LENGTH) {
     add('too-large', `${String(template.length)} characters`);
@@ -296,7 +315,7 @@ export function checkTemplate(
   let elements = 0;
   for (const match of template.matchAll(TAG_NAME)) {
     const name = (match[2] ?? '').toLowerCase();
-    if (!ALLOWED_ELEMENTS.has(name)) add('element-not-allowed', name);
+    if (!ALLOWED_ELEMENTS.has(name)) add('element-not-allowed', name, match.index);
     if (match[1] === '/') {
       if (open[open.length - 1] === name) open.pop();
       continue;
@@ -305,11 +324,11 @@ export function checkTemplate(
     sourceTags.push(match.index);
     if (!VOID_ELEMENTS.has(name)) open.push(name);
     if (open.length > MAX_TEMPLATE_DEPTH) {
-      add('too-deep', String(MAX_TEMPLATE_DEPTH));
+      add('too-deep', String(MAX_TEMPLATE_DEPTH), match.index);
       return issues;
     }
     if (elements > MAX_TEMPLATE_ELEMENTS) {
-      add('too-many-elements', String(MAX_TEMPLATE_ELEMENTS));
+      add('too-many-elements', String(MAX_TEMPLATE_ELEMENTS), match.index);
       return issues;
     }
   }
@@ -320,7 +339,7 @@ export function checkTemplate(
   const fragment = parseFragment(body, template, {
     sourceCodeLocationInfo: true,
     onParseError: (error) => {
-      if (error.code.startsWith('eof-')) add('unterminated', error.code);
+      if (error.code.startsWith('eof-')) add('unterminated', error.code, error.startOffset);
     },
   });
   // Where each element's own start tag begins; an element the parser made up
@@ -330,52 +349,58 @@ export function checkTemplate(
   // tag splits, never matches the source's count.
   let slotsInText = 0;
   let treeElements = 0;
-  const stack: { node: Node; depth: number }[] = fragment.childNodes.map((node) => ({
-    node,
-    depth: 1,
-  }));
+  const stack: { node: Node; depth: number }[] = fragment.childNodes
+    .toReversed()
+    .map((node) => ({ node, depth: 1 }));
   while (stack.length > 0) {
     const entry = stack.pop();
     if (entry === undefined) break;
     const { node, depth } = entry;
     if (defaultTreeAdapter.isCommentNode(node)) {
-      add('comment', 'comments are not allowed');
+      add('comment', 'comments are not allowed', node.sourceCodeLocation?.startOffset);
     } else if (defaultTreeAdapter.isTextNode(node)) {
       const parent = node.parentNode;
       const inRawText =
         parent !== null && defaultTreeAdapter.isElementNode(parent) && RAW_TEXT.has(parent.tagName);
       if (inRawText && HAS_BRACES.test(node.value)) {
-        add('slot-in-raw-text', parent.tagName);
+        add('slot-in-raw-text', parent.tagName, parent.sourceCodeLocation?.startTag?.startOffset);
       } else if (!inRawText) {
         slotsInText += scanSlots(node.value).filter((slot) => slot.kind !== 'malformed').length;
       }
     } else if (defaultTreeAdapter.isElementNode(node)) {
       treeElements += 1;
       if (treeElements > MAX_TEMPLATE_ELEMENTS) {
-        add('too-many-elements', String(MAX_TEMPLATE_ELEMENTS));
+        add(
+          'too-many-elements',
+          String(MAX_TEMPLATE_ELEMENTS),
+          node.sourceCodeLocation?.startOffset,
+        );
         break;
       }
       const location = node.sourceCodeLocation;
+      const here = location?.startTag?.startOffset;
       if (location?.startTag !== undefined) {
         explicit.add(location.startTag.startOffset);
         if (location.endTag === undefined && !OMISSIBLE_END.has(node.tagName)) {
-          add('unclosed-element', node.tagName);
+          add('unclosed-element', `${node.tagName} has no end tag in the source`, here);
         }
       }
       if (depth > MAX_TEMPLATE_DEPTH) {
-        add('too-deep', String(MAX_TEMPLATE_DEPTH));
+        add('too-deep', String(MAX_TEMPLATE_DEPTH), here);
         continue;
       }
       if (node.namespaceURI !== html.NS.HTML || !ALLOWED_ELEMENTS.has(node.tagName)) {
-        add('element-not-allowed', node.tagName);
+        add('element-not-allowed', node.tagName, here);
       } else {
         checkAttributes(node, options, add);
       }
-      for (const child of node.childNodes) stack.push({ node: child, depth: depth + 1 });
+      for (const child of node.childNodes.toReversed()) {
+        stack.push({ node: child, depth: depth + 1 });
+      }
     }
   }
   for (const offset of sourceTags) {
-    if (!explicit.has(offset)) add('unparsed-tag', template.slice(offset, offset + 16));
+    if (!explicit.has(offset)) add('unparsed-tag', template.slice(offset, offset + 16), offset);
   }
   const slotsInSource = slots.filter((slot) => slot.kind !== 'malformed').length;
   // Only when nothing else was found: a slot in an attribute or a comment

