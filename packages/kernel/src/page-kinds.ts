@@ -31,24 +31,25 @@ const FORM_CLOSE = 'form.close';
 
 // `form.open` carries every hidden field the form posts, the proof
 // included, so a template cannot drop or forge one. `fields` is one slot
-// where the inputs depend on the step. `logged-out` stands for the four
+// where the inputs depend on the step. `intro` is the heading with the tenant
+// and client it is for, which only the server knows. `logged-out` stands for the four
 // pages that end a session or refuse a logout, none with a form. Pages
 // outside any tenant's scope (not-found, server-error, throttled, the
 // console's refusal) have no kind.
 export const PAGE_KINDS: Record<PageKind, PageManifest> = {
   'sign-in': {
     required: [FORM_OPEN, 'fields', 'submit', FORM_CLOSE],
-    optional: ['error', 'links', 'passkey'],
+    optional: ['intro', 'error', 'links', 'passkey'],
     inForm: ['fields', 'submit'],
   },
   consent: {
     required: [FORM_OPEN, 'scopes', 'submit.allow', 'submit.deny', FORM_CLOSE],
-    optional: ['error', 'links'],
+    optional: ['intro', 'error', 'links'],
     inForm: ['scopes', 'submit.allow', 'submit.deny'],
   },
   'select-account': {
     required: [FORM_OPEN, 'accounts', 'submit.other', FORM_CLOSE],
-    optional: [],
+    optional: ['intro'],
     inForm: ['accounts', 'submit.other'],
   },
   'logout-confirm': {
@@ -97,7 +98,7 @@ export const PAGE_KINDS: Record<PageKind, PageManifest> = {
     optional: ['error'],
     inForm: ['fields', 'submit'],
   },
-  'authorize-error': { required: ['message'], optional: ['links'], inForm: [] },
+  'authorize-error': { required: ['message'], optional: ['links', 'code'], inForm: [] },
   'email-unverified': { required: ['message'], optional: ['links'], inForm: [] },
   'logged-out': {
     required: ['message'],
