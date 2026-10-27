@@ -148,6 +148,9 @@ x-request-id: 01a10f7e-686f-7945-ac8b-8037916ab1d3
 cache-control: no-store
 content-type: application/problem+json; charset=utf-8
 content-length: 237
+Date: Tue, 27 Oct 2026 01:31:14 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 
 {"type":"about:blank","title":"Error","status":400,"detail":"body/role_ids must NOT have more than 200 items","errors":[{"path":"role_ids","message":"must NOT have more than 200 items"}],"instance":"01a10f7e-686f-7945-ac8b-8037916ab1d3"}
 ```
