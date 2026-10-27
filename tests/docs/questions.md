@@ -458,7 +458,7 @@ Real questions a newcomer asks, each answered strictly from the built documentat
 - Before: answered
 - Status: answered
 - Pages: roadmap
-- Note: Planned (P4b): theming and client branding.
+- Note: Planned (P4b): theming and client branding; a custom domain per tenant follows in P4j.
 
 ## A30. Which languages do the pages and mail support?
 

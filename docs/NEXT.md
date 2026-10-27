@@ -16,10 +16,11 @@ more phase work. What it built, and what the whole-phase review found, is in
 What it placed on later phases is on
 [the roadmap page](../apps/docs/content/en/roadmap.md).
 
-**What is next, in this order: P4b, P5a, P4f, P4h, P4i, P5, P5b**, then the
+**What is next, in this order: P4b, P4j, P5a, P4f, P4h, P4i, P5, P5b**, then the
 phases the roadmap page lists as "Later", P6 to P14. The letters do not read
 in execution order, because `P4b` was spent on theming before P4 split and an
-accepted ADR cites it. P4b is theming and client branding; P5a the MCP server;
+accepted ADR cites it. P4b is theming and client branding; P4j a custom
+domain for each tenant, which left P4b for its own phase; P5a the MCP server;
 P4f self-service through a "me" API and application-initiated actions; P4h
 console localization ([ADR 0043](adr/0043-localization-is-a-catalogue-a-negotiation-and-a-set-of-owners.md));
 P4i the SDKs.
@@ -72,7 +73,7 @@ another paragraph. `tests/docs/next-budget.test.ts` holds the file to 400
 lines and any one section to 130, so an entry that has somewhere better to
 live is pushed there rather than accumulating here.
 
-## What P4b, P4f and P4h inherit
+## What P4b, P4j, P4f and P4h inherit
 
 **A console to build on, and the ways in.** The SPA talks to nothing but
 `/console/api/session`, `/console/api/admin/*`, `/console/auth/login` and
@@ -98,6 +99,11 @@ the CSP nonce, the framing defence and the `auth_session_id` — ADR 0030 has
 the reasoning, and the `frames` member ADR 0034 added is part of the same
 contract. Every server page already renders under Instrument with its text in
 a catalogue, so a theme overrides what is there.
+
+**A custom domain is P4j's.** A tenant is resolved from the path today
+(`/tenants/<name>`) and its issuer is `ODUDU_PUBLIC_BASE_URL` plus its name.
+P4j resolves it from `Host` instead, which moves the issuer, cookie scope and
+the WebAuthn RP ID. The design is in the P4b spec, section 3.
 
 ## What P11 and P12 inherit
 
@@ -177,6 +183,7 @@ that should hold it, which is usually false.
 | `audit_events` at 100,000,000 rows is one table with seven secondary indexes and per-tenant unbatched retention deletes; the query-plan check ran at a fifth of the subjects and a hundredth of the events, on one node                                                                                                                                                                                                                                                                                                                                                                                                           | `docs/phases/p4d.md`, "Server query plans", and §11's P11 row                                     | **P11**, partitioning by month and batched deletes                                                             |
 | Tenant delete is one transaction cascading through every tenant table, `audit_events` included, so it holds locks as long as the tenant's audit trail is deep; no bound or timeout (`apps/docs/content/en/reference/transcripts/admin-paths/`, "Delete a tenant")                                                                                                                                                                                                                                                                                                                                                                 | the umbrella spec's §11, P11 row                                                                  | **P11**, a chunked, resumable delete                                                                           |
 | Localization has its catalogue mechanism and the server pages' and mail's English catalogues; the tenant default locale and per-tenant mail theming (**P4b**) and the console's extraction (**P4h**) remain, and the new-code rule is unenforced in the console until its lint lands                                                                                                                                                                                                                                                                                                                                              | [ADR 0043](adr/0043-localization-is-a-catalogue-a-negotiation-and-a-set-of-owners.md)             | **P4b** and **P4h**                                                                                            |
+| A client setting that skips logout's confirmation for a trusted client is decided against for now: Keycloak skips with a hint, which is the leaked-token sign-out P4b closes                                                                                                                                                                                                                                                                                                                                                                                                                                                      | ADR 0047 (written in P4b, not yet in the tree)                                                    | a client operator asks to skip the confirmation                                                                |
 | No composite index serves the two-filter audit reads (actor and type, type and action); a 5 s timeout bounds them                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [p4d.md](phases/p4d.md), "Server query plans"                                                     | **P11**, whose plan check at scale is the evidence                                                             |
 | The console's failure ID is made in the browser and never sent, so an operator cannot search the server's logs for it; sending it with the route to a gateway endpoint that logs it would make it findable                                                                                                                                                                                                                                                                                                                                                                                                                        | [`docs/phases/p4g.md`](phases/p4g.md)                                                             | **P4h**, which reworks the failure screen's text and reports for the catalogue                                 |
 | Two console dom tests (`gateway.test.ts`, `useWrite.test.tsx`) once failed alone under the root project; not reproduced on 2026-10-19 under `--project dom`, with and without the other file, or with every project                                                                                                                                                                                                                                                                                                                                                                                                               | [p4g.md](phases/p4g.md), "The console's theme choice reaches the server pages"                    | if it recurs: [p4g.md](phases/p4g.md), "CI runs what a change can affect"                                      |
@@ -274,8 +281,8 @@ a phase note.
   registered address is ever honoured). And a verified hint whose `sid` is the
   cookie's own session ends it by `GET` with no confirmation and no bound on
   the hint's age, so a leaked ID token forces that sign-out, limited by the
-  session's lifetime and the victim's cookie. **P4b**, whose criterion names
-  both: it rewrites that page and the branch that serves it.
+  session's lifetime and the victim's cookie. **P4b** closes both: logout
+  always asks for confirmation, with the form's fields bound into the token.
 - `tests/lint/production-guard-order.test.ts` compares source offsets and
   breaks on a rename or a helper extraction. A reasonable stopgap for the
   still-positional server-boot path, but its narrowness should be visible to

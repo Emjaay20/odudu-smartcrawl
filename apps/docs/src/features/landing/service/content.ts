@@ -237,11 +237,11 @@ export const BRANDING: BrandingItem = {
   id: 'branding',
   title: 'Branding and theming',
   claim:
-    "Every page the server shows will render in a tenant's theme and a client's branding. A tenant sets its own logo, colours, wording and default language, and its mail follows the same theme.",
+    "Every page the server shows will render in a tenant's theme and a client's branding. A tenant sets its colours, images, one stylesheet and one page template per page kind, and its mail follows the tenant's tokens, logo and wording.",
   quotes: [
     "render in a tenant's theme and a client's branding",
-    'sets its own logo, colours, wording and default language',
-    'its mail follows the same theme',
+    'A tenant sets its colours, images, one stylesheet and one page template per page kind',
+    "Its mail follows the tenant's tokens, logo and wording",
   ],
   today:
     'Today every tenant shares one design. Pages are ready for translation, but none are translated yet.',

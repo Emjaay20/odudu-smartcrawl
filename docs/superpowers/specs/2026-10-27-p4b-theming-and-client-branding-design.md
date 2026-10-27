@@ -373,7 +373,9 @@ responsibility, because no server-side check can prove them.
    section 10, with axe in right-to-left.
 8. Logout as section 11, with a test that a valid hint alone does not end the
    session.
-9. Axe over every page kind, both colour schemes, three themes.
+9. Axe over every page kind, both colour schemes, under Instrument, a realistic
+   theme and a hostile theme: Odudu's markup and checked-token themes pass; a
+   tenant's own stylesheet and templates get a publish-time warning (section 12).
 10. Cross-tenant RLS probes on every new table and method; each new path states
     how it behaves at the volume in section 4.
 11. The roadmap, section 11, `docs/NEXT.md` and the placement tests carry the
