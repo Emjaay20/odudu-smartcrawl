@@ -19,6 +19,6 @@ describe('the console pages that name a subject operation', () => {
   it.each(NAMES)('%s links the area that holds it', (page, words, area) => {
     const text = readFileSync(path.join(AREAS, page), 'utf8');
     expect(text).toMatch(words);
-    expect(text).toContain(`admin-api/${area}.md`);
+    expect(text).toContain(`admin-api/${area}/index.md`);
   });
 });

@@ -30,30 +30,30 @@ The [roadmap](../roadmap.md) lists every gap, the phase that brings it, and the 
 
 ## Admin API
 
-The operations of the admin API, one page for each area. The same description is published as an
+The operations of the admin API, grouped by area, with one page for each operation. The same description is published as an
 [OpenAPI document](pathname:///openapi/admin.json) that a client generator can read.
 
 - [Admin API overview](./generated/admin-api/index.md): authentication, the tenant in the path and
   the shape of an error.
-- [Audit](./generated/admin-api/audit.md)
-- [Clients](./generated/admin-api/clients.md)
-- [Flow](./generated/admin-api/flow.md)
-- [Groups](./generated/admin-api/groups.md)
-- [Keys](./generated/admin-api/keys.md)
-- [Lockouts](./generated/admin-api/lockouts.md)
-- [Mail](./generated/admin-api/mail.md)
-- [Registration tokens](./generated/admin-api/registration-tokens.md)
-- [Roles](./generated/admin-api/roles.md)
-- [Scopes](./generated/admin-api/scopes.md)
-- [Sessions](./generated/admin-api/sessions.md)
-- [Settings](./generated/admin-api/settings.md)
-- [SMTP](./generated/admin-api/smtp.md)
-- [Subjects](./generated/admin-api/subjects.md)
-- [Subject access](./generated/admin-api/subject-access.md)
-- [Subject sessions](./generated/admin-api/subject-sessions.md)
-- [Subject sign-in](./generated/admin-api/subject-sign-in.md)
-- [Tenants](./generated/admin-api/tenants.md)
-- [Whoami](./generated/admin-api/whoami.md)
+- [Audit](./generated/admin-api/audit/index.md)
+- [Clients](./generated/admin-api/clients/index.md)
+- [Flow](./generated/admin-api/flow/index.md)
+- [Groups](./generated/admin-api/groups/index.md)
+- [Keys](./generated/admin-api/keys/index.md)
+- [Lockouts](./generated/admin-api/lockouts/index.md)
+- [Mail](./generated/admin-api/mail/index.md)
+- [Registration tokens](./generated/admin-api/registration-tokens/index.md)
+- [Roles](./generated/admin-api/roles/index.md)
+- [Scopes](./generated/admin-api/scopes/index.md)
+- [Sessions](./generated/admin-api/sessions/index.md)
+- [Settings](./generated/admin-api/settings/index.md)
+- [SMTP](./generated/admin-api/smtp/index.md)
+- [Subjects](./generated/admin-api/subjects/index.md)
+- [Subject access](./generated/admin-api/subject-access/index.md)
+- [Subject sessions](./generated/admin-api/subject-sessions/index.md)
+- [Subject sign-in](./generated/admin-api/subject-sign-in/index.md)
+- [Tenants](./generated/admin-api/tenants/index.md)
+- [Whoami](./generated/admin-api/whoami/index.md)
 
 ## Transcripts
 

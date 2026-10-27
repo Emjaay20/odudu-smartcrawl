@@ -14,18 +14,18 @@ Most of what you know carries over under another name.
 
 | In Keycloak         | In Odudu                          | Where it is shown                                                                                                |
 | ------------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| Realm               | Tenant                            | [Tenants](../reference/generated/admin-api/tenants.md)                                                           |
+| Realm               | Tenant                            | [Tenants](../reference/generated/admin-api/tenants/index.md)                                                     |
 | Client              | Client, public or confidential    | [Sign people in to a web app](./web-app.md)                                                                      |
-| User                | User                              | [Subjects](../reference/generated/admin-api/subjects.md)                                                         |
-| Realm role          | Tenant role                       | [Roles](../reference/generated/admin-api/roles.md)                                                               |
-| Client role         | Client role, named for its client | [Roles](../reference/generated/admin-api/roles.md)                                                               |
-| Composite role      | Composite role                    | [Roles](../reference/generated/admin-api/roles.md)                                                               |
-| Group               | Group, with roles for its members | [Groups](../reference/generated/admin-api/groups.md)                                                             |
-| Client scope        | Client scope                      | [Scopes](../reference/generated/admin-api/scopes.md)                                                             |
-| Protocol mapper     | Claim mapper on a scope           | [Scopes](../reference/generated/admin-api/scopes.md)                                                             |
+| User                | User                              | [Subjects](../reference/generated/admin-api/subjects/index.md)                                                   |
+| Realm role          | Tenant role                       | [Roles](../reference/generated/admin-api/roles/index.md)                                                         |
+| Client role         | Client role, named for its client | [Roles](../reference/generated/admin-api/roles/index.md)                                                         |
+| Composite role      | Composite role                    | [Roles](../reference/generated/admin-api/roles/index.md)                                                         |
+| Group               | Group, with roles for its members | [Groups](../reference/generated/admin-api/groups/index.md)                                                       |
+| Client scope        | Client scope                      | [Scopes](../reference/generated/admin-api/scopes/index.md)                                                       |
+| Protocol mapper     | Claim mapper on a scope           | [Scopes](../reference/generated/admin-api/scopes/index.md)                                                       |
 | Required action     | Required action                   | [Following a required-actions link](../reference/transcripts/request-paths/following-a-required-actions-link.md) |
 | Events              | Audit trail                       | [Audit events](../reference/generated/events.md)                                                                 |
-| Authentication flow | The tenant's authentication flow  | [Flow](../reference/generated/admin-api/flow.md)                                                                 |
+| Authentication flow | The tenant's authentication flow  | [Flow](../reference/generated/admin-api/flow/index.md)                                                           |
 
 Some things are not there yet: signing in through another identity provider, LDAP, SAML and SCIM. The [roadmap](../roadmap.md) names the phase for each.
 
