@@ -79,4 +79,12 @@ export {
   type Slot,
 } from '#/slots';
 export { createPageFiller, fillPageTemplate, type PageFillerOptions } from '#/page-template';
+export {
+  brandLocale,
+  clientFromReturnTo,
+  MAX_CLIENT_ID_LENGTH,
+  type BrandingResolver,
+  type BrandingScope,
+  type PageBranding,
+} from '#/branding-resolver';
 export { PAGE_KINDS, type PageKind, type PageManifest } from '#/page-kinds';

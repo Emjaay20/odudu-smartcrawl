@@ -238,13 +238,19 @@ function validBranding(input: unknown): ResolvedBranding {
   return branding;
 }
 
-export function withBranding(locale: PageLocale, branding: ResolvedBranding | null): PageLocale {
+export function withBranding(
+  locale: PageLocale,
+  branding: ResolvedBranding | null,
+  templateFallback?: PageLocale['templateFallback'],
+): PageLocale {
   if (branding === null) {
     return locale.theme === undefined
       ? { tag: locale.tag, dir: locale.dir }
       : { tag: locale.tag, dir: locale.dir, theme: locale.theme };
   }
-  return { ...locale, branding };
+  return templateFallback === undefined
+    ? { ...locale, branding }
+    : { ...locale, branding, templateFallback };
 }
 
 const STOCK_FAVICONS = ['/instrument/favicon.svg', '/instrument/favicon.ico'] as const;
