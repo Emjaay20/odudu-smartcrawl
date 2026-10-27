@@ -1,4 +1,4 @@
-import { PAGE_KINDS } from '@odudu/kernel';
+import { PAGE_KINDS, type PageKind } from '@odudu/kernel';
 import { describe, expect, it } from 'vitest';
 import { checkTemplate } from '#/service/template';
 
@@ -129,7 +129,7 @@ describe('checkTemplate', () => {
       'missing-part',
       'missing-part',
     ]);
-    expect(codes(withFragment('{{submit}}'))).toEqual(['repeated-part']);
+    expect(codes(withFragment('{{submit}}'))).toEqual(['form-placement', 'repeated-part']);
     expect(codes(withFragment('{{error}}{{error}}'))).toEqual(['repeated-part']);
   });
 
@@ -180,11 +180,102 @@ describe('checkTemplate', () => {
     expect(checkTemplate('sign-in', consent).map((issue) => issue.code)).toContain('unknown-slot');
   });
 
-  it('accepts a minimal template for every kind', () => {
+  it('accepts a correct template for every kind', () => {
     for (const [kind, manifest] of Object.entries(PAGE_KINDS)) {
-      const template = manifest.required.map((name) => `<p>{{${name}}}</p>`).join('');
-      expect(checkTemplate(kind as keyof typeof PAGE_KINDS, template), kind).toEqual([]);
+      const parts = manifest.required.filter((name) => !name.startsWith('form.'));
+      const outside = parts.filter((name) => !manifest.inForm.includes(name));
+      const inside = parts.filter((name) => manifest.inForm.includes(name));
+      const hasForm = manifest.required.includes('form.open');
+      const template =
+        outside.map((name) => `<p>{{${name}}}</p>`).join('') +
+        (hasForm ? '<div>{{form.open}}' : '') +
+        inside.map((name) => `<p>{{${name}}}</p>`).join('') +
+        (hasForm ? '{{form.close}}</div>' : '');
+      expect(checkTemplate(kind as PageKind, template), kind).toEqual([]);
     }
+  });
+});
+
+describe('form pair', () => {
+  const codesFor = (template: string): string[] =>
+    checkTemplate('sign-in', template).map((issue) => issue.code);
+
+  it('refuses a reversed pair', () => {
+    expect(codesFor('{{form.close}}{{fields}}{{submit}}{{form.open}}')).toContain('form-pair');
+  });
+
+  it('refuses a missing close, a doubled open and a required part outside the pair', () => {
+    expect(codesFor('{{form.open}}{{fields}}{{submit}}')).toContain('missing-part');
+    expect(codesFor('{{form.open}}{{form.open}}{{fields}}{{submit}}{{form.close}}')).toContain(
+      'form-pair',
+    );
+    expect(codesFor('{{fields}}{{form.open}}{{submit}}{{form.close}}')).toEqual(['form-placement']);
+    expect(codesFor('{{form.open}}{{fields}}{{form.close}}{{submit}}')).toEqual(['form-placement']);
+  });
+
+  it('refuses one half of an optional pair and an in-form part without the pair', () => {
+    const codesVerification = (template: string): string[] =>
+      checkTemplate('verification', template).map((issue) => issue.code);
+    expect(codesVerification('{{message}}')).toEqual([]);
+    expect(codesVerification('{{message}}{{form.open}}{{submit}}{{form.close}}')).toEqual([]);
+    expect(codesVerification('{{message}}{{form.open}}{{submit}}')).toContain('form-pair');
+    expect(codesVerification('{{message}}{{form.close}}')).toContain('form-pair');
+    expect(codesVerification('{{message}}{{submit}}')).toContain('form-placement');
+  });
+});
+
+describe('what the parser would drop or never reach', () => {
+  const codesFor = (fragment: string): string[] =>
+    checkTemplate('sign-in', `${SIGN_IN}${fragment}`).map((issue) => issue.code);
+
+  it('refuses an unterminated tag, which would swallow the markup after the template', () => {
+    expect(codesFor('<a href="https://evil.example/?')).toContain('unterminated');
+    expect(codesFor('<img src="https://evil.example/?')).toContain('unterminated');
+    expect(codesFor('<p')).toContain('unterminated');
+    expect(codesFor('<!-- open')).not.toEqual([]);
+  });
+
+  it('refuses table parts outside a table, whatever their attributes', () => {
+    for (const tag of ['td', 'tr', 'th', 'tbody', 'thead', 'tfoot', 'caption']) {
+      expect(codesFor(`<${tag} onclick="alert(1)">x</${tag}>`), tag).toContain('unparsed-tag');
+      expect(codesFor(`<${tag}>x</${tag}>`), tag).toContain('unparsed-tag');
+    }
+  });
+
+  it('inspects table parts inside a table', () => {
+    expect(codesFor('<table><tr><td onclick="x">a</td></tr></table>')).toContain(
+      'attribute-not-allowed',
+    );
+    expect(codesFor('<table><tbody><tr><th style="x">a</th></tr></tbody></table>')).toContain(
+      'attribute-not-allowed',
+    );
+    expect(codesFor('<table><caption>c</caption><tr><td>a</td></tr></table>')).toEqual([]);
+  });
+});
+
+describe('bounds before the parser', () => {
+  const timed = (template: string): { codes: string[]; ms: number } => {
+    const started = performance.now();
+    const codes = checkTemplate('sign-in', template).map((issue) => issue.code);
+    return { codes, ms: performance.now() - started };
+  };
+
+  it('refuses 12,000 nested divs quickly', () => {
+    const { codes, ms } = timed(`${SIGN_IN}${'<div>'.repeat(12_000)}`);
+    expect(codes).toContain('too-deep');
+    expect(ms).toBeLessThan(100);
+  });
+
+  it('refuses 21,000 unclosed <b> quickly', () => {
+    const { codes, ms } = timed(`${SIGN_IN}${'<b>'.repeat(21_000)}`);
+    expect(codes).toContain('too-deep');
+    expect(ms).toBeLessThan(100);
+  });
+
+  it('refuses too many elements and accepts a deep but legal template', () => {
+    expect(timed(`${SIGN_IN}${'<b></b>'.repeat(2_100)}`).codes).toContain('too-many-elements');
+    const deep = `${'<div>'.repeat(30)}x${'</div>'.repeat(30)}`;
+    expect(checkTemplate('sign-in', `${SIGN_IN}${deep}`)).toEqual([]);
   });
 });
 

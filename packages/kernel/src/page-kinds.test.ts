@@ -16,4 +16,13 @@ describe('PAGE_KINDS', () => {
       expect(has('form.open'), kind).toBe(has('form.close'));
     }
   });
+
+  it('keeps every in-form part in the manifest and never lists a form part there', () => {
+    for (const [kind, manifest] of Object.entries(PAGE_KINDS)) {
+      for (const name of manifest.inForm) {
+        expect([...manifest.required, ...manifest.optional], kind).toContain(name);
+        expect(name.startsWith('form.'), kind).toBe(false);
+      }
+    }
+  });
 });

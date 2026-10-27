@@ -1,10 +1,18 @@
-import { MAX_TEMPLATE_LENGTH, PAGE_KINDS, scanSlots, type PageKind } from '@odudu/kernel';
+import {
+  MAX_TEMPLATE_LENGTH,
+  PAGE_KINDS,
+  scanSlots,
+  type PageKind,
+  type PageManifest,
+} from '@odudu/kernel';
 import { defaultTreeAdapter, html, parseFragment, type DefaultTreeAdapterMap } from 'parse5';
 
 type Node = DefaultTreeAdapterMap['node'];
 type Element = DefaultTreeAdapterMap['element'];
 
 export const MAX_TEMPLATE_SLOTS = 200;
+export const MAX_TEMPLATE_DEPTH = 32;
+export const MAX_TEMPLATE_ELEMENTS = 2000;
 const MAX_ISSUES = 100;
 
 export type TemplateIssueCode =
@@ -22,7 +30,13 @@ export type TemplateIssueCode =
   | 'href-not-https'
   | 'link-rel'
   | 'img-src'
-  | 'img-alt';
+  | 'img-alt'
+  | 'unterminated'
+  | 'unparsed-tag'
+  | 'too-deep'
+  | 'too-many-elements'
+  | 'form-pair'
+  | 'form-placement';
 
 export interface TemplateIssue {
   code: TemplateIssueCode;
@@ -118,7 +132,8 @@ const ELEMENT_ATTRIBUTES: Readonly<Record<string, readonly string[]>> = {
 };
 const GLOBAL_ATTRIBUTES: ReadonlySet<string> = new Set(['class', 'lang', 'dir', 'role']);
 
-const TAG_NAME = /<\/?([a-zA-Z][^\s/>]*)/g;
+const TAG_NAME = /<(\/?)([a-zA-Z][^\s/>]*)/g;
+const VOID_ELEMENTS: ReadonlySet<string> = new Set(['br', 'hr', 'img', 'wbr']);
 const HAS_BRACES = /\{\{|\}\}/;
 
 function isHttps(value: string): boolean {
@@ -167,6 +182,30 @@ function checkAttributes(
   }
 }
 
+// A page nobody can submit is refused at save: the pair comes in order,
+// together, and holds the parts that belong inside it.
+function checkForm(
+  manifest: PageManifest,
+  slots: ReturnType<typeof scanSlots>,
+  add: (code: TemplateIssueCode, detail: string) => void,
+): void {
+  const at = (name: string): number[] =>
+    slots.filter((slot) => slot.kind === 'part' && slot.name === name).map((slot) => slot.index);
+  const [open, close] = [at('form.open'), at('form.close')];
+  const first = open[0];
+  const last = close[0];
+  if (open.length !== close.length) add('form-pair', 'form.open and form.close come together');
+  else if (first !== undefined && last !== undefined && first > last) {
+    add('form-pair', 'form.open comes before form.close');
+  }
+  for (const name of manifest.inForm) {
+    for (const index of at(name)) {
+      const inside = first !== undefined && last !== undefined && index > first && index < last;
+      if (!inside) add('form-placement', name);
+    }
+  }
+}
+
 function checkManifest(
   kind: PageKind,
   slots: ReturnType<typeof scanSlots>,
@@ -189,6 +228,7 @@ function checkManifest(
   for (const name of manifest.required) {
     if (!counts.has(name)) add('missing-part', name);
   }
+  checkForm(manifest, slots, add);
   for (const [name, count] of counts) {
     if (count > 1 && (manifest.required.includes(name) || manifest.optional.includes(name))) {
       add('repeated-part', name);
@@ -200,6 +240,8 @@ function checkManifest(
 // slot in it is recognised. The tree is read, never serialised back out, so
 // what is checked is what the parser saw and the template text itself is
 // what gets filled.
+// `{{t "key"}}` keys are not checked against a catalogue here; the `t`
+// callback given to fillTemplate decides what an unknown key does.
 export function checkTemplate(
   kind: PageKind,
   template: string,
@@ -223,14 +265,41 @@ export function checkTemplate(
 
   // The source is what gets filled, so a tag the parser would drop in this
   // context (frame, a second body whose attributes would be merged onto the
-  // page's) is refused by name rather than trusted to stay dropped.
+  // page's) is refused by name rather than trusted to stay dropped. The same
+  // linear scan bounds nesting and element count before the parser, whose
+  // cost grows faster than the input, is given the template.
+  const sourceTags = new Map<string, number>();
+  let depth = 0;
+  let elements = 0;
   for (const match of template.matchAll(TAG_NAME)) {
-    const name = (match[1] ?? '').toLowerCase();
+    const name = (match[2] ?? '').toLowerCase();
     if (!ALLOWED_ELEMENTS.has(name)) add('element-not-allowed', name);
+    if (match[1] === '/') {
+      depth = Math.max(0, depth - 1);
+      continue;
+    }
+    elements += 1;
+    sourceTags.set(name, (sourceTags.get(name) ?? 0) + 1);
+    if (!VOID_ELEMENTS.has(name)) depth += 1;
+    if (depth > MAX_TEMPLATE_DEPTH) {
+      add('too-deep', String(MAX_TEMPLATE_DEPTH));
+      return issues;
+    }
+    if (elements > MAX_TEMPLATE_ELEMENTS) {
+      add('too-many-elements', String(MAX_TEMPLATE_ELEMENTS));
+      return issues;
+    }
   }
 
   const body = defaultTreeAdapter.createElement('body', html.NS.HTML, []);
-  const fragment = parseFragment(body, template, {});
+  // A tag left open at the end would swallow the markup the server puts
+  // after the template, so any end-of-input error refuses the template.
+  const fragment = parseFragment(body, template, {
+    onParseError: (error) => {
+      if (error.code.startsWith('eof-')) add('unterminated', error.code);
+    },
+  });
+  const treeTags = new Map<string, number>();
   // Slots the parser saw in text. A slot written with entities, or one a
   // tag splits, never matches the source's count.
   let slotsInText = 0;
@@ -250,6 +319,7 @@ export function checkTemplate(
         slotsInText += scanSlots(node.value).filter((slot) => slot.kind !== 'malformed').length;
       }
     } else if (defaultTreeAdapter.isElementNode(node)) {
+      treeTags.set(node.tagName, (treeTags.get(node.tagName) ?? 0) + 1);
       if (node.namespaceURI !== html.NS.HTML || !ALLOWED_ELEMENTS.has(node.tagName)) {
         add('element-not-allowed', node.tagName);
       } else {
@@ -258,7 +328,12 @@ export function checkTemplate(
       stack.push(...node.childNodes);
     }
   }
+  for (const [name, count] of sourceTags) {
+    if (count > (treeTags.get(name) ?? 0)) add('unparsed-tag', name);
+  }
   const slotsInSource = slots.filter((slot) => slot.kind !== 'malformed').length;
+  // Only when nothing else was found: a slot in an attribute or a comment
+  // also lowers the text count, and its own issue already says so.
   if (slotsInText !== slotsInSource && issues.length === 0) {
     add('malformed-slot', 'a slot the parser does not read as text');
   }

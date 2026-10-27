@@ -22,80 +22,86 @@ export type PageKind =
 export interface PageManifest {
   readonly required: readonly string[];
   readonly optional: readonly string[];
+  // Parts that must sit between form.open and form.close when they appear.
+  readonly inForm: readonly string[];
 }
 
 const FORM_OPEN = 'form.open';
 const FORM_CLOSE = 'form.close';
 
-// `fields` is one slot where the form's inputs depend on the step (sign-in
-// shows a username and password, then a code, then a recovery code).
-// `error` is the server's problem summary and is optional because a page
-// without a problem renders nothing there. `links` is the way on (back to
-// sign-in, continue). Not-found, server-error, throttled and the console's
-// refusal page are in no tenant's scope and have no kind.
+// `form.open` carries every hidden field the form posts, the proof
+// included, so a template cannot drop or forge one. `fields` is one slot
+// where the inputs depend on the step. `logged-out` stands for the four
+// pages that end a session or refuse a logout, none with a form. Pages
+// outside any tenant's scope (not-found, server-error, throttled, the
+// console's refusal) have no kind.
 export const PAGE_KINDS: Record<PageKind, PageManifest> = {
   'sign-in': {
     required: [FORM_OPEN, 'fields', 'submit', FORM_CLOSE],
     optional: ['error', 'links', 'passkey'],
+    inForm: ['fields', 'submit'],
   },
   consent: {
     required: [FORM_OPEN, 'scopes', 'submit.allow', 'submit.deny', FORM_CLOSE],
-    optional: ['error'],
+    optional: ['error', 'links'],
+    inForm: ['scopes', 'submit.allow', 'submit.deny'],
   },
   'select-account': {
     required: [FORM_OPEN, 'accounts', 'submit.other', FORM_CLOSE],
     optional: [],
+    inForm: ['accounts', 'submit.other'],
   },
   'logout-confirm': {
     required: [FORM_OPEN, 'submit', FORM_CLOSE],
     optional: [],
+    inForm: ['submit'],
   },
   'totp-enrolment': {
     required: [FORM_OPEN, 'offer', 'fields', 'submit', FORM_CLOSE],
     optional: ['error'],
+    inForm: ['fields', 'submit'],
   },
   'passkey-enrolment': {
     required: [FORM_OPEN, 'fields', 'submit', 'script', FORM_CLOSE],
     optional: ['error'],
+    inForm: ['fields', 'submit'],
   },
   'recovery-codes': {
     required: ['codes', FORM_OPEN, 'submit', FORM_CLOSE],
-    optional: [],
+    optional: ['notice'],
+    inForm: ['submit'],
   },
   'update-password': {
     required: [FORM_OPEN, 'fields', 'submit', FORM_CLOSE],
     optional: ['error'],
+    inForm: ['fields', 'submit'],
   },
-  'required-action': {
-    required: ['message'],
-    optional: ['links'],
-  },
+  'required-action': { required: ['message'], optional: ['links'], inForm: [] },
   registration: {
     required: [FORM_OPEN, 'fields', 'submit', FORM_CLOSE],
     optional: ['error', 'links'],
+    inForm: ['fields', 'submit'],
   },
   reset: {
     required: [FORM_OPEN, 'fields', 'submit', FORM_CLOSE],
     optional: ['error', 'links'],
+    inForm: ['fields', 'submit'],
   },
   verification: {
     required: ['message'],
     optional: [FORM_OPEN, 'submit', FORM_CLOSE, 'links'],
+    inForm: ['submit'],
   },
   'required-actions': {
     required: [FORM_OPEN, 'fields', 'submit', FORM_CLOSE],
     optional: ['error'],
+    inForm: ['fields', 'submit'],
   },
-  'authorize-error': {
-    required: ['message'],
-    optional: ['links'],
-  },
-  'email-unverified': {
-    required: ['message'],
-    optional: ['links'],
-  },
+  'authorize-error': { required: ['message'], optional: ['links'], inForm: [] },
+  'email-unverified': { required: ['message'], optional: ['links'], inForm: [] },
   'logged-out': {
     required: ['message'],
     optional: ['links', 'frames', 'script'],
+    inForm: [],
   },
 };

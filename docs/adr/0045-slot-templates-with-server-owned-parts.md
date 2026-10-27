@@ -39,6 +39,12 @@ any check at render time falls back to the layer below.
   conditional or repeated markup; a part that varies by step (`fields`) is one
   slot.
 
+- `form.open` carries every hidden field the form posts, the proof included,
+  so no page needs a part for them and a template cannot drop one. Parts are
+  guaranteed present, in order and inside the form's pair, not that the
+  template's own wrapping markup keeps them usable: a tenant that wraps
+  `form.open` in a link breaks its own page, which is accepted.
+
 ## Alternatives rejected
 
 - **A structured theme** (fixed layouts, a few knobs): the safest and the
