@@ -133,5 +133,5 @@ curl -sS -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 ```
 
 ```
-{"display_name":null,"enabled":true,"registration_allo
+{"display_name":"Demo","enabled":true,"registration_allowed"
 ```
