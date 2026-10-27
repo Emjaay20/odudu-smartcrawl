@@ -13,24 +13,25 @@ first run. The two that set what this section uses answered:
 
 ```
 HTTP/1.1 302 Found
-x-request-id: 01a151e5-bc67-7333-a276-d5551c619ef2
+x-request-id: 01a17b03-1cfa-7091-841d-dd6e40e29110
 cache-control: no-store
-set-cookie: odudu-console-login=01a151e5-47f9-7b63-89ae-c0fb10717b4e.mM_2h-bfxFFbQPBrr-6XKbSIDUdO7z9XyDcttPZRtAc; HttpOnly; SameSite=Lax; Path=/; Max-Age=1800
-location: http://localhost:3513/tenants/console-paths/protocol/openid-connect/auth?response_type=code&client_id=odudu-admin&redirect_uri=http%3A%2F%2Flocalhost%3A3513%2Fconsole%2Fauth%2Fcallback&scope=openid&resource=urn%3Aodudu%3Aparams%3Aadmin-api&state=01a151e5-47f9-7b63-89ae-c0fb10717b4e.mM_2h-bfxFFbQPBrr-6XKbSIDUdO7z9XyDcttPZRtAc&nonce=mE6UWAPtLY9HCx9jhf9UauwWLCkh6jVL-koeoSapuRM&code_challenge=u3cYJ2-YRaWlxAIy7G34CnB4kShE9FdLppvTveodzA0&code_challenge_method=S256
+set-cookie: odudu-console-login=01a17b02-1a9a-78f4-a746-1a223a533ca7.ZzCUF6fLgdyKbKXtC5Rx2_rxQ-hFGyGiEyL5Z-QhdKw; HttpOnly; SameSite=Lax; Path=/; Max-Age=1800
+location: http://localhost:3513/tenants/console-paths/protocol/openid-connect/auth?response_type=code&client_id=odudu-admin&redirect_uri=http%3A%2F%2Flocalhost%3A3513%2Fconsole%2Fauth%2Fcallback&scope=openid&resource=urn%3Aodudu%3Aparams%3Aadmin-api&state=01a17b02-1a9a-78f4-a746-1a223a533ca7.ZzCUF6fLgdyKbKXtC5Rx2_rxQ-hFGyGiEyL5Z-QhdKw&nonce=6JEInnRMH6Fwd2B1m7RjCFY7S3daJwqQPGWfCLRsHSU&code_challenge=XcAHVE2yfJmwtmvSbq-iMkVphoa-voyQLQ4ldj7YPl0&code_challenge_method=S256
 content-length: 0
-Date: Mon, 19 Oct 2026 02:02:52 GMT
+Date: Tue, 27 Oct 2026 01:39:24 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 ```
 
 ```
 HTTP/1.1 302 Found
-x-request-id: 01a151e5-bc95-70dd-8861-57046f1e5495
-set-cookie: console-paths-session=01a151e5-bcc0-743a-8c9d-518292223d12:AwTUAmtC3GtGxjBOuW0ssJPR6cKTiSyP6dg0KmQ8tp0; HttpOnly; SameSite=Lax; Path=/
+x-request-id: 01a17b03-1d2a-7151-bfea-01df1d25c3ba
+set-cookie: console-paths-session=01a17b03-1d66-70de-8579-88ed1a7c721a:XAM0jCuOepyJT3JOedqh-69M2QRz4grx09AeIUT3hMs; HttpOnly; SameSite=Lax; Path=/
 set-cookie: console-paths-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
-location: http://localhost:3513/console/auth/callback?code=qX3zyGZMFWHLc3xs6WbxdQvDGEsYAhaJgG725QbCSi4&state=01a151e5-47f9-7b63-89ae-c0fb10717b4e.mM_2h-bfxFFbQPBrr-6XKbSIDUdO7z9XyDcttPZRtAc&iss=http%3A%2F%2Flocalhost%3A3513%2Ftenants%2Fconsole-paths
+set-cookie: odudu-sign-in=; HttpOnly; SameSite=Lax; Path=/tenants/console-paths/; Max-Age=0
+location: http://localhost:3513/console/auth/callback?code=PJk7OQtyPvArgHkaEn1KvZrGJ34wT3yFNASEr7tkF94&state=01a17b02-1a9a-78f4-a746-1a223a533ca7.ZzCUF6fLgdyKbKXtC5Rx2_rxQ-hFGyGiEyL5Z-QhdKw&iss=http%3A%2F%2Flocalhost%3A3513%2Ftenants%2Fconsole-paths
 content-length: 0
-Date: Mon, 19 Oct 2026 02:02:52 GMT
+Date: Tue, 27 Oct 2026 01:39:24 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 ```
@@ -51,7 +52,7 @@ curl -sS -D - -b jar "$BAD"
 `$BAD`, whose `state` is `<tenant id>.not-the-login-secret`:
 
 ```
-http://localhost:3513/console/auth/callback?code=qX3zyGZMFWHLc3xs6WbxdQvDGEsYAhaJgG725QbCSi4&state=01a151e5-47f9-7b63-89ae-c0fb10717b4e.not-the-login-secret&iss=http%3A%2F%2Flocalhost%3A3513%2Ftenants%2Fconsole-paths
+http://localhost:3513/console/auth/callback?code=PJk7OQtyPvArgHkaEn1KvZrGJ34wT3yFNASEr7tkF94&state=01a17b02-1a9a-78f4-a746-1a223a533ca7.not-the-login-secret&iss=http%3A%2F%2Flocalhost%3A3513%2Ftenants%2Fconsole-paths
 ```
 
 The first refusal restarts the sign-in rather than showing a page, and sets
@@ -59,13 +60,13 @@ The first refusal restarts the sign-in rather than showing a page, and sets
 
 ```
 HTTP/1.1 302 Found
-x-request-id: 01a151e5-bcd9-7828-b0ca-630150968985
+x-request-id: 01a17b03-1d82-77e1-b798-b4f59c168a51
 cache-control: no-store
 set-cookie: odudu-console-login=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
 set-cookie: odudu-console-restart=1; HttpOnly; SameSite=Lax; Path=/; Max-Age=60
 location: /console/
 content-length: 0
-Date: Mon, 19 Oct 2026 02:02:53 GMT
+Date: Tue, 27 Oct 2026 01:39:24 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 ```
@@ -79,7 +80,7 @@ curl -sS -D - -b jar -b odudu-console-restart=1 "$BAD"
 
 ```
 HTTP/1.1 400 Bad Request
-x-request-id: 01a151e5-bce1-74bf-b14a-0f933bd5644e
+x-request-id: 01a17b03-1d8b-704f-9750-b1fba97c267c
 set-cookie: odudu-console-login=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
 content-type: text/html; charset=utf-8
 content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
@@ -89,7 +90,7 @@ cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
 content-length: 888
-Date: Mon, 19 Oct 2026 02:02:53 GMT
+Date: Tue, 27 Oct 2026 01:39:24 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -125,14 +126,14 @@ curl -sS -D - -c jar -b jar "$CB"
 
 ```
 HTTP/1.1 302 Found
-x-request-id: 01a151e5-bcea-7fd3-a40f-08684e053b30
+x-request-id: 01a17b03-384a-7161-be87-d11edcf4fa10
 cache-control: no-store
 set-cookie: odudu-console-login=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
 set-cookie: odudu-console-restart=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
-set-cookie: odudu-console=01a151e5-47f9-7b63-89ae-c0fb10717b4e.EzgE4DcwOvReR-OT-1SHb_LkBXsoih_MdMd7zSAE0Gw; HttpOnly; SameSite=Strict; Path=/
+set-cookie: odudu-console=01a17b02-1a9a-78f4-a746-1a223a533ca7.rgE7db3AT1Kzlh00s4AFvpFP69zzSMWCYgLxxyfYJ2I; HttpOnly; SameSite=Strict; Path=/
 location: /console/x
 content-length: 0
-Date: Mon, 19 Oct 2026 02:02:53 GMT
+Date: Tue, 27 Oct 2026 01:39:31 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 ```
@@ -146,7 +147,7 @@ grep odudu-console-login jar-before-callback | cut -f6,7
 ```
 
 ```
-odudu-console-login	01a151e5-47f9-7b63-89ae-c0fb10717b4e.mM_2h-bfxFFbQPBrr-6XKbSIDUdO7z9XyDcttPZRtAc
+odudu-console-login	01a17b02-1a9a-78f4-a746-1a223a533ca7.ZzCUF6fLgdyKbKXtC5Rx2_rxQ-hFGyGiEyL5Z-QhdKw
 ```
 
 ```bash
@@ -155,13 +156,13 @@ curl -sS -D - -b jar-before-callback "$CB"
 
 ```
 HTTP/1.1 302 Found
-x-request-id: 01a151e5-bd0d-75a1-bec8-19c6aa47eb44
+x-request-id: 01a17b03-3882-792c-ad69-eee675813526
 cache-control: no-store
 set-cookie: odudu-console-login=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
 set-cookie: odudu-console-restart=1; HttpOnly; SameSite=Lax; Path=/; Max-Age=60
 location: /console/auth/login?tenant=console-paths
 content-length: 0
-Date: Mon, 19 Oct 2026 02:02:53 GMT
+Date: Tue, 27 Oct 2026 01:39:31 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 ```
@@ -175,7 +176,7 @@ curl -sS -D - -b jar-before-callback -b odudu-console-restart=1 "$CB"
 
 ```
 HTTP/1.1 400 Bad Request
-x-request-id: 01a151e5-bd17-779e-a4d7-fd8c88b8d0af
+x-request-id: 01a17b03-388e-7f70-b51c-bc4f7f920340
 set-cookie: odudu-console-login=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
 content-type: text/html; charset=utf-8
 content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
@@ -185,7 +186,7 @@ cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
 content-length: 888
-Date: Mon, 19 Oct 2026 02:02:53 GMT
+Date: Tue, 27 Oct 2026 01:39:31 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -226,12 +227,12 @@ curl -sS -D - -c jar -b jar \
 
 ```
 HTTP/1.1 302 Found
-x-request-id: 01a0e741-a7d9-7a8b-9954-884464ed0bc8
+x-request-id: 01a17b03-3899-79d6-ac22-c5338e6961db
 cache-control: no-store
-set-cookie: odudu-console-login=01a0e72d-5927-73c3-b14d-a5b60d1ca9ad.LQ36gGqeZQx-EjuRFtt7o9mUFB4QkwRJRCROC9wESTo; HttpOnly; SameSite=Lax; Path=/; Max-Age=600
-location: http://localhost:3000/tenants/console-paths/protocol/openid-connect/auth?response_type=code&client_id=odudu-admin&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fconsole%2Fauth%2Fcallback&scope=openid&resource=urn%3Aodudu%3Aparams%3Aadmin-api&state=01a0e72d-5927-73c3-b14d-a5b60d1ca9ad.LQ36gGqeZQx-EjuRFtt7o9mUFB4QkwRJRCROC9wESTo&nonce=pcd5eoUxYu76CbdxKeaPz1A5PaJjVBUHidls9nErraI&code_challenge=HWdl9bQiMkQIYgkZeI7AUGsJjlm5vXB20XleoMvHVEk&code_challenge_method=S256
+set-cookie: odudu-console-login=01a17b02-1a9a-78f4-a746-1a223a533ca7.JpWX1mygP-y_eW_pmJCcjIpLpdiuNuapMHJ2yBFEU5Q; HttpOnly; SameSite=Lax; Path=/; Max-Age=1800
+location: http://localhost:3000/tenants/console-paths/protocol/openid-connect/auth?response_type=code&client_id=odudu-admin&redirect_uri=http%3A%2F%2Flocalhost%3A3000%2Fconsole%2Fauth%2Fcallback&scope=openid&resource=urn%3Aodudu%3Aparams%3Aadmin-api&state=01a17b02-1a9a-78f4-a746-1a223a533ca7.JpWX1mygP-y_eW_pmJCcjIpLpdiuNuapMHJ2yBFEU5Q&nonce=mrMk-q_x96XbbYAL6NqIB14HZX6D-yjJVwuYoSTpkps&code_challenge=-mhTpt2efEcray3yZV19a8oKrOQ8k0LIMjUuUcoPnm0&code_challenge_method=S256
 content-length: 0
-Date: Mon, 28 Sep 2026 09:03:54 GMT
+Date: Tue, 27 Oct 2026 01:39:31 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 ```
@@ -241,7 +242,7 @@ that pending `state` and its login cookie:
 
 ```bash
 curl -sS -D - -c jar -b jar \
-  'http://localhost:3000/console/auth/callback?error=access_denied&state=01a0e72d-5927-73c3-b14d-a5b60d1ca9ad.LQ36gGqeZQx-EjuRFtt7o9mUFB4QkwRJRCROC9wESTo'
+  'http://localhost:3000/console/auth/callback?error=access_denied&state=01a17b02-1a9a-78f4-a746-1a223a533ca7.JpWX1mygP-y_eW_pmJCcjIpLpdiuNuapMHJ2yBFEU5Q'
 ```
 
 ```
@@ -262,14 +263,14 @@ What the tenant held afterwards, with the same `psql` as the first run's
 closing queries and the same trimmed header spaces:
 
 ```sql
-select id, created_at from console_sessions where tenant_id = '01a0e72d-5927-73c3-b14d-a5b60d1ca9ad';
-select count(*) as console_logins from console_logins where tenant_id = '01a0e72d-5927-73c3-b14d-a5b60d1ca9ad';
+select id, created_at from console_sessions where tenant_id = '01a17b02-1a9a-78f4-a746-1a223a533ca7';
+select count(*) as console_logins from console_logins where tenant_id = '01a17b02-1a9a-78f4-a746-1a223a533ca7';
 ```
 
 ```
                   id                  |         created_at
 --------------------------------------+----------------------------
- 01a0e741-5a28-749e-908e-9382b6129149 | 2026-09-28 09:03:34.869+00
+ 01a17b03-3871-701b-be14-10a33a8ccbe0 | 2026-10-27 01:39:31.019+00
 (1 row)
 
  console_logins
@@ -278,6 +279,8 @@ select count(*) as console_logins from console_logins where tenant_id = '01a0e72
 (1 row)
 ```
 
-One session, created at 09:03:34 by the callback that signed in. The two
-refusals and the error callback created none, and no pending sign-in is
-left. That session is the one every later second-run section uses.
+One session, created at 01:39:31 by the callback that signed in. The first
+run's session had been ended with a console logout before the query, so it
+is not counted. The two refusals and the error callback created none, and no
+pending sign-in is left. That session is the one every later second-run
+section uses.
