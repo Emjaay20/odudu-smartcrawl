@@ -233,7 +233,7 @@ describe('lookingUpTenantOnce', () => {
   });
 
   it('does not carry an answer from one request to the next', async () => {
-    const findTenant = vi.fn(() => Promise.resolve(null));
+    const findTenant = vi.fn((name: string) => Promise.resolve(name === '' ? { id: '' } : null));
     await lookingUpTenantOnce({ findTenant }).findTenant('acme');
     await lookingUpTenantOnce({ findTenant }).findTenant('acme');
     expect(findTenant).toHaveBeenCalledTimes(2);
