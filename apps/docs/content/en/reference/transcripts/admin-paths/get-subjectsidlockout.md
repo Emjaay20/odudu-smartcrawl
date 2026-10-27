@@ -18,7 +18,8 @@ count and nulls. An unknown subject, one in another tenant, or one with no
 
 Described at the top of this page, in a tenant `lockout-demo` made by `odudu
 seed --tenant lockout-demo --client lockout-demo-app --redirect-uri
-https://app.example/callback --user hana`, on `ines`, a second subject seeded
+https://app.example/callback --user hana --password 'correct horse battery
+staple'`, on `ines`, a second subject seeded
 there with `odudu seed user` and signed in by nothing before this. `signin` is
 the helper the section below defines, pointed at this tenant, this client,
 `ines` and port 3080 — as run:
