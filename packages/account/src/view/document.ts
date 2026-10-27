@@ -1,7 +1,7 @@
 import {
   DEFAULT_PAGE_LOCALE,
   INSTRUMENT_STYLESHEET,
-  PRODUCT_NAME,
+  brandMarkup,
   brandingHead,
   isPageTheme,
   type PageLocale,
@@ -82,7 +82,7 @@ ${brandingHead(locale)}
 </head>
 <body>
 <main class="page">
-<p class="brand">${MARK}<span class="wordmark">${PRODUCT_NAME}</span></p>
+${brandMarkup(locale, MARK)}
 ${body}
 </main>
 </body>

@@ -17,6 +17,7 @@ const READS: readonly { file: string; targets: readonly string[] }[] = [
     targets: [
       'packages/*/src/view/*.ts',
       'packages/kernel/src/password-hints.ts',
+      'packages/kernel/src/page.ts',
       'packages/instrument/src/pages.css',
     ],
   },

@@ -24,6 +24,7 @@ export {
   type RenderedPage,
   type ResolvedBranding,
   MAX_BRANDING_URLS,
+  brandMarkup,
   brandingHead,
   brandingProblems,
   isSameOriginPath,

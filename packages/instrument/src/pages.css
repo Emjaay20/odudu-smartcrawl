@@ -318,6 +318,37 @@ input[aria-invalid='true'] {
   letter-spacing: 0.04em;
 }
 
+.logo {
+  display: block;
+  max-block-size: 2.5rem;
+  max-inline-size: 12rem;
+  block-size: auto;
+  inline-size: auto;
+  object-fit: contain;
+}
+
+.logo-dark {
+  display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .logo-light {
+    display: none;
+  }
+
+  :root:not([data-theme='light']) .logo-dark {
+    display: block;
+  }
+}
+
+:root[data-theme='dark'] .logo-light {
+  display: none;
+}
+
+:root[data-theme='dark'] .logo-dark {
+  display: block;
+}
+
 .intro {
   margin-block-end: var(--space-6);
 }

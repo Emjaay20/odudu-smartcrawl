@@ -150,7 +150,8 @@ function readBranding(input: unknown): Checked {
       const logoProblems = [
         urlProblem('logo.url', logoUrl, false),
         urlProblem('logo.darkUrl', logoDark, true),
-        typeof logoAlt === 'string' ? null : 'logo.alt is not a string',
+        typeof logoAlt !== 'string' ? 'logo.alt is not a string' : null,
+        typeof logoAlt === 'string' && logoAlt.trim() === '' ? 'logo.alt is empty' : null,
       ];
       problems.push(...logoProblems.filter((problem) => problem !== null));
     }
@@ -255,6 +256,23 @@ export function brandingHead(locale: PageLocale): string {
     );
   }
   return lines.join('\n');
+}
+
+// The brand line of the shell: the tenant's logo in place of the product's
+// mark and name, one image per colour scheme when there are two, which
+// the stylesheet chooses between. Validated on its own read, like the head.
+export function brandMarkup(locale: PageLocale, defaultMark: string): string {
+  const logo = locale.branding === undefined ? null : validBranding(locale.branding).logo;
+  if (logo === null) {
+    return `<p class="brand">${defaultMark}<span class="wordmark">${PRODUCT_NAME}</span></p>`;
+  }
+  const source = (url: string): string => `src="${attribute(url)}" alt="${attribute(logo.alt)}"`;
+  const images =
+    logo.darkUrl === null
+      ? `<img class="logo" ${source(logo.url)}>`
+      : `<img class="logo logo-light" ${source(logo.url)}>` +
+        `<img class="logo logo-dark" ${source(logo.darkUrl)}>`;
+  return `<p class="brand">${images}</p>`;
 }
 
 // The longest authorize path an account page is handed as `return_to`. The page

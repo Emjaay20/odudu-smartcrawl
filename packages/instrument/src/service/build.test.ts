@@ -80,14 +80,23 @@ describe('buildInstrument', () => {
     for (const pattern of physical) expect(pagesCss).not.toMatch(pattern);
   });
 
+  it('swaps a logo pair by colour scheme, following an explicit choice over the system', () => {
+    expect(pagesCss).toMatch(/\.logo-dark\s*\{\s*display:\s*none;/u);
+    expect(pagesCss).toMatch(
+      /@media \(prefers-color-scheme: dark\) \{\s*:root:not\(\[data-theme='light'\]\) \.logo-light \{\s*display: none;/u,
+    );
+    expect(pagesCss).toMatch(/:root\[data-theme='dark'\] \.logo-dark \{\s*display: block;/u);
+    expect(pagesCss).toMatch(/\.logo \{[^}]*max-block-size: 2\.5rem;[^}]*object-fit: contain;/u);
+  });
+
   it('stays inside the size budget', () => {
     const { css } = built();
     expect(Buffer.byteLength(css)).toBeLessThan(64 * 1024);
     expect(gzipSync(css).byteLength).toBeLessThan(12 * 1024);
   });
 
-  it('keeps the page rules to 600 lines', () => {
-    expect(pagesCss.split('\n').length).toBeLessThanOrEqual(600);
+  it('keeps the page rules to 640 lines', () => {
+    expect(pagesCss.split('\n').length).toBeLessThanOrEqual(640);
   });
 
   it('contains no remote url()', () => {

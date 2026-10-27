@@ -2,6 +2,7 @@ import { runInNewContext } from 'node:vm';
 import { describe, expect, it } from 'vitest';
 import {
   INSTRUMENT_STYLESHEET,
+  brandMarkup,
   brandingHead,
   brandingProblems,
   pageHeaders,
@@ -782,5 +783,53 @@ describe('a problem message stays short and clean', () => {
     expect(problem).not.toMatch(
       /[\u0000-\u001f\u007f-\u009f\u061c\u200e\u200f\u2028\u2029\u202a-\u202e\u2066-\u2069]/u,
     );
+  });
+});
+
+describe('brandMarkup', () => {
+  const MARK = '<svg class="mark"></svg>';
+  const STOCK = `<p class="brand">${MARK}<span class="wordmark">odudu</span></p>`;
+
+  it('is the default mark and the wordmark without branding or a logo', () => {
+    expect(brandMarkup(MARKUP_ONLY_PAGE.locale, MARK)).toBe(STOCK);
+    expect(brandMarkup(themed(branding({ logo: null })).locale, MARK)).toBe(STOCK);
+  });
+
+  it('is one image for a logo and two when it has a dark variant', () => {
+    expect(brandMarkup(themed(branding()).locale, MARK)).toBe(
+      '<p class="brand"><img class="logo" src="/t/acme/theme/logo789.png" alt="Acme"></p>',
+    );
+    const dark = branding({ logo: { url: '/l.png', darkUrl: '/d.png', alt: 'A' } });
+    expect(brandMarkup(themed(dark).locale, MARK)).toBe(
+      '<p class="brand"><img class="logo logo-light" src="/l.png" alt="A">' +
+        '<img class="logo logo-dark" src="/d.png" alt="A"></p>',
+    );
+  });
+
+  it('escapes the alt text', () => {
+    const hostile = branding({ logo: { url: '/l.png', darkUrl: null, alt: '"><b>&' } });
+    expect(brandMarkup(themed(hostile).locale, MARK)).toContain('alt="&quot;>&lt;b>&amp;"');
+  });
+
+  it('refuses a branding that fails validation, an empty alt among them', () => {
+    const bad = branding({ logo: { url: '/l.png', darkUrl: null, alt: '' } });
+    expect(brandingProblems(bad)).not.toEqual([]);
+    expect(() => brandMarkup(themed(bad).locale, MARK)).toThrow(/branding/u);
+    const url = branding({ logo: { url: 'https://evil.example/l.png', darkUrl: null, alt: 'A' } });
+    expect(() => brandMarkup(themed(url).locale, MARK)).toThrow(/branding/u);
+  });
+
+  it('reads the logo from one validated copy', () => {
+    let reads = 0;
+    const logo = {
+      get url(): string {
+        reads += 1;
+        return reads === 1 ? '/ok.png' : 'https://evil.example/x.png';
+      },
+      darkUrl: null,
+      alt: 'A',
+    };
+    const out = brandMarkup(themed(branding({ logo })).locale, MARK);
+    expect(out).not.toContain('evil');
   });
 });
