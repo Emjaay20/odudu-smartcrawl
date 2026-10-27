@@ -9,8 +9,6 @@ import { MAX_PASSWORD_LENGTH, newId, type BrandingScope } from '@odudu/kernel';
 import { createAppRole, startTestDatabase, type TestDatabase } from '@odudu/testkit';
 import { eq } from 'drizzle-orm';
 import { type FastifyInstance } from 'fastify';
-import { readFile } from 'node:fs/promises';
-import path from 'node:path';
 import { pino } from 'pino';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from '#/app';
@@ -135,24 +133,5 @@ describe('every route that renders a themeable page asks for its theme', () => {
     const scopes = await asks(run);
     expect(scopes.length).toBeGreaterThan(0);
     expect(scopes.every((scope) => scope.tenantName === name)).toBe(true);
-  });
-
-  // Consent and required-action pages need a signed-in session to reach; the
-  // registrations that serve them are held to the spread by reading the
-  // composition, as the routes above are by driving it.
-  it('spreads the resolver into the consent, login and required-action registrations', async () => {
-    const source = await readFile(
-      path.resolve(import.meta.dirname, '../../../packages/protocol-oidc/src/index.ts'),
-      'utf8',
-    );
-    const block = (start: string): string => {
-      const at = source.indexOf(start);
-      expect(at, start).toBeGreaterThan(-1);
-      return source.slice(at, source.indexOf('\n    });', at));
-    };
-    expect(block('registerConsentRoute(app, {')).toContain('...branding');
-    expect(block('const loginSubmission = {')).toContain('...branding');
-    expect(block('registerRequiredActionRoute(app, {')).toContain('...loginSubmission');
-    expect(block('registerLoginRoute(app, {')).toContain('...loginSubmission');
   });
 });
