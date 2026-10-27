@@ -89,6 +89,27 @@ revisit when a user asks for it, and place it then.
 - `pageHeaders` in `@odudu/kernel` stays the one authority for headers
   (ADR 0029).
 
+## 4a. Behaviour at the design volume
+
+ADR 0041's volume: 10,000 tenants, 10,000 clients per tenant, 1,000,000
+subjects. Each path this phase adds:
+
+| Path                    | At volume                                                                                                                                                                                                                                                                         | Held by                                                     |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Rendering a page        | at most one theme query on a cache miss (tenant and client rows together, by index), none on a hit; the cache is an LRU of 5,000 entries with a 30-second TTL, keyed by tenant, client and published version; the fill is linear in a bounded template (size and slot-count caps) | `query-plans` drives a sign-in render and counts statements |
+| Serving an asset        | one primary-key read on `(tenant_id, sha256)`, then `Cache-Control: immutable`, so a proxy or CDN absorbs repeats; `bytea` is read by this route alone                                                                                                                            | plan check on the lookup                                    |
+| Theme and version reads | a scope has at most one draft, one published and 20 archived rows; no list is unbounded                                                                                                                                                                                           | the cap, and the partial unique indexes                     |
+| Message overrides       | at most 500 per tenant; the list is keyset-paged under `MAX_LIMIT`                                                                                                                                                                                                                | the cap, the plan check                                     |
+| Per-locale metadata     | a `jsonb` map beside the row, so a client list or consent page makes no extra query; at most 32 entries per map                                                                                                                                                                   | the existing list-statement-count check                     |
+| Tenant storage          | 8 MiB of uploads per tenant (about 80 GB at 10,000 tenants as the worst case; typically far less); blobs sit in their own table                                                                                                                                                   | the cap; P11 measures                                       |
+| Foreign keys            | every new foreign key has an index, so deleting a client or tenant reads no child table whole                                                                                                                                                                                     | `unindexedForeignKeys` in the plan test                     |
+| Preview                 | one render, assets inlined up to 1 MiB, admin-only, not a public path                                                                                                                                                                                                             | the size bound                                              |
+| Console                 | the Branding feature is a lazy route outside the entry chunk, the editors are not imported by the entry, lists are paged, no hand-written memoisation                                                                                                                             | the chunk budget and the compiler lint                      |
+
+**Not claimed:** the cache is per process, so after a publish another replica
+serves the previous version for at most the 30-second TTL. Shared invalidation
+belongs to P11 with the other in-process bounds.
+
 ## 5. Approaches considered
 
 Choice of how a theme is expressed, grounded in how Auth0, Keycloak and Okta
@@ -255,8 +276,10 @@ ADR 0043 is the design; this phase delivers its tenant part.
   discovery becomes the tenant's list.
 - Message overrides `{ locale, key, message }`, per tenant, bounded in count, a
   key absent from `en` refused, escaped like any catalogue value.
-- `name_i18n`, `description_i18n`, `consent_text_i18n` maps on clients and
-  scopes (`'{}'` default, base column the fallback), keys through
+- `name_i18n` and `description_i18n` maps on `clients`, and `description_i18n`
+  and `consent_text_i18n` on `client_scopes` (a client has no `consent_text`
+  column; checked: `grep -n consent_text packages/domain-tenant/src/schema/`),
+  each `'{}'` by default with the base column the fallback, keys through
   `isValidLocale`, the admin API, a locale-tabbed editor, the consent page
   reading them, and Dynamic Registration's `client_name#fr` form.
 - **Arabic** ships, complete for every page and mail key, laid out under axe in

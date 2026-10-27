@@ -12,6 +12,7 @@
 
 ## Global Constraints
 
+- The spec's section 4a is a contract: each path it lists has its check. `pnpm test:plans` (the required `query-plans` job, `apps/server/tests/query-plans.plan.test.ts`) must drive every path this phase adds, and every new foreign key must be indexed (`unindexedForeignKeys`).
 - Volume: 10,000 tenants, 10,000 clients per tenant, constant queries per page render, every in-process structure states its bound (CLAUDE.md "Performance and scale").
 - Layering: view / usecase / repository / adapter / service (CLAUDE.md "Layering"); a usecase and a repository hold no logic, however small.
 - No `any`; no `void doThing()`; tests precede code; integration tests on real PostgreSQL via Testcontainers; every repository method probed with a foreign `tenant_id` (`expectCrossTenantMethodProbe` from `@odudu/db/testing`); tenant context by `withTenant` (`SET LOCAL`).
@@ -127,6 +128,7 @@ assetRepository(tx): {
 
 - [ ] **Step 1:** Tests (`packages/domain-theme/tests/theme-repository.int.test.ts`): `it('keeps one draft per scope')`, `it('publish archives the previous version')`, `it('saveDraft with a stale etag returns precondition_failed')`, `it('prunes to 20 versions')`, `it('deleting a client deletes its themes')`; and per method an `expectCrossTenantMethodProbe` (pattern: `packages/domain-tenant/tests/client-scopes.int.test.ts`).
 - [ ] **Step 2:** Run, expect FAIL (no package). Create the package, migration, schema (`.enableRLS()` as in `pending-registrations.ts`), repositories; `bytea` is never selected by `themeRepository` and `assetRepository.get` is the only reader.
+- [ ] **Step 2b:** Index every foreign key (`theme_versions.tenant_id`, `.client_id`, `theme_assets.tenant_id`) and the resolution lookup `(tenant_id, client_id, state)`; extend the plan drives (`apps/server/src/testing/plan-oidc-drives.ts`) so the plan check reaches a theme lookup; run `pnpm test:plans` and expect no sequential scan.
 - [ ] **Step 3:** `pnpm exec vitest run packages/domain-theme packages/db/tests/rls-policy.int.test.ts packages/db/tests/schema-drift.int.test.ts` — expect PASS.
 - [ ] **Step 4:** Commit: `domain-theme: themes and assets tables with RLS`.
 
@@ -259,6 +261,7 @@ Client rules (spec 6): authorization-session pages use the pending request's `cl
 
 - [ ] **Step 1:** Tests (Review Focus 2 and 5): `it('falls back to the tenant when the client has no theme')`, `it('falls back to default and logs when a referenced asset is gone')`, `it('falls back when a stored template fails the current check')`, `it('return_to naming another tenant's client yields the tenant theme')`, `it('a garbage client_id yields the tenant theme')`, `it('a render makes at most 1 theme query on a cache miss and 0 on a hit')` (count queries), `it('the cache never holds more than maxEntries')`, `it('publishing invalidates the entry')`.
 - [ ] **Step 2:** Run, expect FAIL; implement; the cache states its bound in code and ADR 0045's consequences.
+- [ ] **Step 2b:** Add a themed sign-in render to the plan drives and assert the statement count equals the unthemed render plus at most one; run `pnpm test:plans`.
 - [ ] **Step 3:** Wire into the page-locale helpers and routes (a route cannot render without calling it). `pnpm exec vitest run packages/domain-theme packages/protocol-oidc packages/account packages/authn-flows` — expect PASS. Commit: `Pages: branding resolved per request, bounded and cached`.
 
 ### Task 13: Every renderer reaches a theme; hostile-theme tests
@@ -291,6 +294,7 @@ Client rules (spec 6): authorization-session pages use the pending request's `cl
 **Interfaces:** Produces `GET /tenants/:tenant/brand/:sha256.:ext` (and the hashed stylesheet `GET /tenants/:tenant/brand/:sha256.css` built from `tokensCss` + the sanitised stylesheet), serving only assets referenced by a **published** theme, `Cache-Control: public, max-age=31536000, immutable`, `X-Content-Type-Options: nosniff`, `Content-Type` from the stored mime, and no cookies.
 
 - [ ] **Step 1:** Tests: `it('serves a published asset with immutable caching and nosniff')`, `it('404s an asset only a draft references')`, `it('404s another tenant's hash')`, `it('a mismatched extension is a 404')`.
+- [ ] **Step 2a:** Add the asset lookup to the plan drives; `pnpm test:plans` must plan it as an index read.
 - [ ] **Step 2:** Run, expect FAIL; implement (this route bypasses `pageHeaders`: it is not a page; state it in the file's one comment and in `html-response.test.ts`'s exempt list only if that test requires it).
 - [ ] **Step 3:** Run, expect PASS. Commit: `Serve published theme assets under hashed URLs`.
 
@@ -305,7 +309,7 @@ Client rules (spec 6): authorization-session pages use the pending request's `cl
 **Interfaces:** Produces under `/admin/tenants/:tenant/` with capability `manage-tenant` (client scope: `manage-clients`): `GET|PUT theme` (draft, `ETag`/`If-Match`), `POST theme/publish`, `GET theme/versions`, `POST theme/versions/:id/restore`, `DELETE theme` (reset), and the same under `clients/:id/theme`; `GET theme` also returns, per piece, `source: 'client'|'tenant'|'default'`. Publish runs `checkTemplate`, `checkStylesheet`, `contrastFailures` and returns field errors (`fieldProblem`), contrast failures as errors, a stylesheet or template warning as `warnings[]`.
 
 - [ ] **Step 1:** Tests: `it('PUT with a stale If-Match is 412 and the draft is unchanged')` (Review Focus 3), `it('publish refuses a failing contrast pair with its path')`, `it('publish refuses a template missing form.open')`, `it('restore brings back the whole snapshot')`, `it('reset on a client returns it to the tenant theme')`, `it('every route needs its capability')`, `it('a foreign tenant id is a 404')`.
-- [ ] **Step 2:** Run, expect FAIL; implement routes, contracts, docs strings.
+- [ ] **Step 2:** Run, expect FAIL; implement routes, contracts, docs strings; add the new routes to `apps/server/src/testing/plan-admin-drives.ts` and `plan-admin-writes.ts` (every `ADMIN_ROUTES` entry is reached by the plan check), and `GET theme/versions` returns at most 20.
 - [ ] **Step 3:** `pnpm exec vitest run packages/protocol-admin packages/contracts tests/docs/admin-paths.test.ts tests/docs/endpoints.test.ts` — expect PASS. Commit: `Admin API: theme draft, publish, versions and reset`.
 
 ### Task 17: Asset routes
@@ -336,8 +340,8 @@ Client rules (spec 6): authorization-session pages use the pending request's `cl
 
 **Interfaces:** `messageOverrideRepository(tx): { list(tenantId, locale): Promise<Override[]>; put(o): Promise<'ok'|'over_bound'|'unknown_key'>; delete(...) }`; `translators.t` takes an optional `overrides` map; an override of a key absent from `en` is refused; the value is escaped like any catalogue value.
 
-- [ ] **Step 1:** Tests (Review Focus is locale tags too): `it('refuses an override for a key not in en')`, `it('refuses a locale tag that fails isValidLocale')`, `it('refuses the 501st override')`, `it('an override text containing markup is escaped, not rendered')`, `it('discovery ui_locales_supported is the tenant's list')`, `it('negotiation uses the tenant default')`, plus foreign-tenant probes.
-- [ ] **Step 2–4:** implement, run `pnpm exec vitest run packages/db packages/domain-tenant packages/i18n packages/protocol-admin packages/protocol-oidc`, commit: `Tenant locale list, default and message overrides`.
+- [ ] **Step 1:** Tests (Review Focus is locale tags too): `it('refuses an override for a key not in en')`, `it('refuses a locale tag that fails isValidLocale')`, `it('refuses the 501st override')`, `it('lists overrides keyset-paged under MAX_LIMIT')`, `it('an override text containing markup is escaped, not rendered')`, `it('discovery ui_locales_supported is the tenant's list')`, `it('negotiation uses the tenant default')`, plus foreign-tenant probes.
+- [ ] **Step 2–4:** implement, extend the plan drives for the override list, run `pnpm test:plans`, then `pnpm exec vitest run packages/db packages/domain-tenant packages/i18n packages/protocol-admin packages/protocol-oidc`, commit: `Tenant locale list, default and message overrides`.
 
 ### Task 20: Localised client and scope metadata
 
@@ -378,7 +382,7 @@ Client rules (spec 6): authorization-session pages use the pending request's `cl
 
 **Interfaces:** Consumes `adminCall` from `shared/adapter/route.ts`, `useRecord`, `useSectionSave` (the 412 and drafts machinery), `RecordPage` tabs as `clients` does. Produces `features/branding/service/tabs.ts` with `BRANDING_TABS = ['theme','pages','mail','languages'] as const` and labels; pure services for contrast display and issue wording (a usecase holds none).
 
-- [ ] **Step 1:** Tests beside each file (`BrandingPage.test.tsx` includes `axeInBothThemes`, required by `tests/lint/console-view-tests-run-axe.test.ts`): `it('shows which layer supplies each piece')`, `it('a failing contrast pair blocks publish and names the pair')`, `it('a 412 offers keep mine or take theirs')`, `it('preview frames the production route with sandbox and no allow-same-origin')`, `it('reset to default asks first')`, e2e `apps/admin-console/e2e/branding.spec.ts` (publish a theme, see the sign-in page change).
+- [ ] **Step 1:** Tests beside each file (`BrandingPage.test.tsx` includes `axeInBothThemes`, required by `tests/lint/console-view-tests-run-axe.test.ts`): `it('shows which layer supplies each piece')`, `it('a failing contrast pair blocks publish and names the pair')`, `it('a 412 offers keep mine or take theirs')`, `it('preview frames the production route with sandbox and no allow-same-origin')`, `it('reset to default asks first')`, `it('the Branding route is lazy and the entry chunk budget holds')` (`tests/lint/console-phone-chunk.test.ts` is the existing chunk check; run it and, if it does not cover this feature's editors, extend it), e2e `apps/admin-console/e2e/branding.spec.ts` (publish a theme, see the sign-in page change).
 - [ ] **Step 2–4:** implement; run `pnpm --filter @odudu/admin-console test`, the lint tests under `tests/lint`, `pnpm exec vitest run apps/docs/tests/console-areas.test.ts`; commit: `Console: Branding area, theme and pages`.
 
 ### Task 24: Mail and Languages tabs
