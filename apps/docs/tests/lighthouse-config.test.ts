@@ -106,12 +106,12 @@ describe('the lighthouse job', () => {
   const workflow = readFileSync(WORKFLOW, 'utf8');
   const job = /\n {2}lighthouse:\n([\s\S]*?)(?=\n {2}[a-z][\w-]*:\n)/u.exec(workflow)?.[1] ?? '';
 
-  it('exists, runs for a change the site can feel, and is bounded to twenty-five minutes', () => {
+  it('exists, runs for a change the site can feel, and is bounded to thirty-five minutes', () => {
     expect(job).not.toBe('');
     expect(job).toMatch(/needs: changes/u);
     expect(job).toMatch(/if: needs\.changes\.outputs\.buildImage == 'true'/u);
+    expect(job).toMatch(/timeout-minutes: 35\b/u);
     expect(job).toMatch(/timeout-minutes: 25\b/u);
-    expect(job).toMatch(/timeout-minutes: 18\b/u);
   });
 
   it('builds the Pages target and runs lhci from the docs package', () => {
