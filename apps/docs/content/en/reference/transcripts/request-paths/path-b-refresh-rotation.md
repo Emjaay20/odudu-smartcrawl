@@ -479,4 +479,4 @@ docker compose logs odudu --since 2m | grep -c 'audit budget for this client is 
 Every answer is the same `400`; the budget decides only whether a refusal
 is a row or a log line. The budget lives in one process's memory, so each
 replica keeps its own ([ADR 0037](https://github.com/wizzywit/odudu/blob/main/docs/adr/0037-refusal-rows-are-bounded-by-the-principal-they-name.md)
-places the shared one on P11).
+plans the shared one for running several instances).

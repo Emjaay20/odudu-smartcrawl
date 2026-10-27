@@ -87,7 +87,7 @@ password for the account. It is bounded — a password gets past the first
 factor, and acknowledging the page ends it — but it is a heavier multiplier
 than verification's, and the per-account lockout does not reach it: that
 counts failures, and this path needs a password that works
-([the roadmap](../../../roadmap.md#next) places the self-service fix with P4f). Re-serving the same
+([the roadmap](../../../roadmap.md#next) plans the self-service fix). Re-serving the same
 set instead would cost less and be worse: a second render of a live secret
 is the one thing this page must not do.
 
@@ -488,7 +488,7 @@ setup at the same moment, for the same reason.
 
 Two ways out that this does not provide, both needing a page this server does
 not have yet: asking for a fresh set _before_ running out, and a warning as
-the list gets short. Both are self-service, which is **P4f**'s: an
+the list gets short. Both are self-service, which [the roadmap](../../../roadmap.md#next) plans: an
 application-initiated action for the fresh set, and the "me" API's count for
 the warning.
 

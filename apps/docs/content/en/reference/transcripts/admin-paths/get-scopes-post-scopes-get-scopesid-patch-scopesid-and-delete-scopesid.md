@@ -31,7 +31,7 @@ and the optional ones after, and shows each by its `consent_text` where it
 has one — at most 500 characters, or `null` for the bare scope name — every
 value through the page's own `escapeHtml`, with the page's policy unchanged:
 it still carries no script. The text is one string for now; a text per
-locale is P4b's, with the rest of the translated pages. Both travel in the
+locale comes with the translated pages ([the roadmap](../../../roadmap.md#next)). Both travel in the
 tenant document and are amended by `PATCH`.
 
 In `demo` (with `$ADMIN_TOKEN` got as above for its own system administrator),

@@ -51,8 +51,8 @@ not tell the two apart.
 claims and verification flags, its direct roles, its groups by path and its
 required actions — and additionally requires `view-users` (which `manage-users`
 also reaches), refused with `403` otherwise. Above 10,000 such subjects it is
-refused with `413` and `"type": "about:blank#export-too-large"`, naming P7,
-whose inbound provisioning is the tool for moving users in bulk; nothing here
+refused with `413` and `"type": "about:blank#export-too-large"`, naming inbound
+provisioning, which the [roadmap](../../../roadmap.md#later) plans as the tool for moving users in bulk; nothing here
 holds that many, so that refusal is not shown — an integration test covers it.
 Any other `include` is refused with `400`. Every export writes a `tenant.export`
 row into the tenant's trail whose `detail` says whether subjects were included.

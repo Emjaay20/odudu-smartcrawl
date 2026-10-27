@@ -25,7 +25,7 @@ grows by accident. `demo-spa` was seeded back in
 [Bootstrap](./bootstrap.md), so this walkthrough sets the column directly;
 `PATCH /admin/tenants/{tenant}/clients/{id}` amends the list with
 `If-Match`, and RFC 7592's own client-configuration endpoint — a client
-amending itself with its registration token — is **P13**'s:
+amending itself with its registration token — is planned ([the roadmap](../../../roadmap.md#later)):
 
 ```bash
 docker compose -f infra/docker/compose.yaml exec -T postgres \
