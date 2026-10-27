@@ -76,8 +76,10 @@ End-User's RP meant when a browser holds several, and `mostRecentlyActive`
 is the fallback for a hint that names nothing usable. A hint with no `sid`
 falls to that fallback and is never compared by subject: the one current token
 without `sid` is an `offline_access` grant's, which has no session to name.
-A valid hint, an expired one, one whose `sid` matches the cookie's session
-and one whose `sid` names another all produce the same page.
+For a client with `skip_logout_confirmation` off, the default, a valid hint,
+an expired one, one whose `sid` matches the cookie's session and one whose
+`sid` names another all produce the same page; a client that has opted out
+(below) is the one case where a valid hint changes the outcome.
 
 §3's "exactly match" is deliberately not URL-normalized. A trailing slash,
 a query string, or a case difference in the host all fail the match —
