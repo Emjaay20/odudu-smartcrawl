@@ -115,7 +115,7 @@ const CLAIMS: readonly (readonly [phase: string, sentence: string, ...criterion:
     'protected-resource and authorization-server metadata',
     '`idempotency-key` header',
   ],
-  ['P5a', 'A retried request', '`idempotency-key` header'],
+  ['P5a', 'The admin API has no `Idempotency-Key` header today', '`idempotency-key` header'],
   ['P4f', 'A "me" API', '"me" api', 'application-initiated actions'],
   [
     'P4f',
