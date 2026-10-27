@@ -120,6 +120,7 @@ for pass in 1 2 3 4 5; do
   docker compose exec -T odudu node dist/main.js send-logouts 2>/dev/null
   [ "$pass" = 5 ] || sleep 61
 done
+A="Authorization: Bearer $ADMIN_TOKEN" # $ADMIN_TOKEN minted again: the loop outlasts its five minutes
 curl -sS -D - -X DELETE -H "$A" "$T/doomed?confirm=doomed"
 curl -sS -H "$A" "$T/doomed"; echo
 for p in .well-known/openid-configuration protocol/openid-connect/certs; do
@@ -139,7 +140,7 @@ curl -sS -H "$A" "$T/system/audit?action=tenant.delete&outcome=refused&limit=1" 
  client_scopes                 |  8
  role_composites               |  8
  roles                         |  8
- audit_events                  |  6
+ audit_events                  |  5
  authentication_executions     |  4
  client_oidc_config            |  2
  clients                       |  2
@@ -166,12 +167,13 @@ curl -sS -H "$A" "$T/system/audit?action=tenant.delete&outcome=refused&limit=1" 
  group_roles                   |  0
  groups                        |  0
  login_failures                |  0
+ pending_registrations         |  0
  refresh_tokens                |  0
  subject_groups                |  0
  subject_roles                 |  0
  tenant_smtp                   |  0
  user_required_actions         |  0
-(36 rows)
+(37 rows)
 
 {"type":"about:blank","title":"Error","status":400,"detail":"querystring must have required property 'confirm'","errors":[{"path":"confirm","message":"must have required property 'confirm'"}],"instance":"01a140bf-be87-77d4-877c-d365c631feba"}
 {"type":"about:blank","title":"Bad Request","status":400,"detail":"confirm: must be the tenant’s own name, doomed","errors":[{"path":"confirm","message":"must be the tenant’s own name, doomed"}],"instance":"01a140bf-be92-7f53-9a9e-c3b3c55d3640"}
@@ -227,6 +229,7 @@ protocol/openid-connect/certs            404
  group_roles                   | 0
  groups                        | 0
  login_failures                | 0
+ pending_registrations         | 0
  refresh_tokens                | 0
  role_composites               | 0
  roles                         | 0
@@ -240,7 +243,7 @@ protocol/openid-connect/certs            404
  user_credentials              | 0
  user_required_actions         | 0
  users                         | 0
-(36 rows)
+(37 rows)
 
 {"action": "tenant.delete", "outcome": "allowed", "actor_name": "ada", "resource_id": "01a140bf-2b2b-7e8f-a63a-c6c8b0f964d9", "detail": {"name": "doomed"}}
 {"action": "tenant.delete", "outcome": "refused", "actor_name": "ada", "resource_id": "0199aa00-0000-7000-8000-000000000001", "detail": {"name": "system", "reason": "system_tenant_guarded"}}
