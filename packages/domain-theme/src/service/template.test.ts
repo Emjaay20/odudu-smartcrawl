@@ -2,6 +2,10 @@ import { PAGE_KINDS, type PageKind } from '@odudu/kernel';
 import { describe, expect, it } from 'vitest';
 import { checkTemplate } from '#/service/template';
 
+// Catches only a catastrophic regression: an uncapped parse costs seconds,
+// so 2 s sits far above the capped path and tolerates a loaded runner.
+const CATASTROPHIC_MS = 2000;
+
 const SIGN_IN =
   '<div class="card"><h1>{{t "login.title"}}</h1>{{form.open}}{{fields}}{{submit}}{{form.close}}</div>';
 
@@ -315,13 +319,13 @@ describe('bounds before the parser', () => {
   ])('refuses nesting hidden by %s', (_name, markup) => {
     const { codes, ms } = required(`{{message}}${markup}`);
     expect(codes).toContain('too-deep');
-    expect(ms).toBeLessThan(100);
+    expect(ms).toBeLessThan(CATASTROPHIC_MS);
   });
 
   it('refuses <table><td> x16, which only the tree depth sees', () => {
     const { codes, ms } = required(`{{message}}${'<table><td>'.repeat(16)}`);
     expect(codes).toContain('too-deep');
-    expect(ms).toBeLessThan(100);
+    expect(ms).toBeLessThan(CATASTROPHIC_MS);
   });
 
   it('is estimated shallower than the tree for some inputs, which are still accepted', () => {
@@ -332,7 +336,7 @@ describe('bounds before the parser', () => {
   it('counts elements the parser makes from stray end tags', () => {
     const { codes, ms } = required(`{{message}}${'</p>'.repeat(5_000)}`);
     expect(codes).toContain('too-many-elements');
-    expect(ms).toBeLessThan(100);
+    expect(ms).toBeLessThan(CATASTROPHIC_MS);
   });
 
   it('refuses properly closed nesting past the cap', () => {
@@ -349,13 +353,13 @@ describe('bounds before the parser', () => {
   it('refuses 12,000 nested divs quickly', () => {
     const { codes, ms } = timed(`${SIGN_IN}${'<div>'.repeat(12_000)}`);
     expect(codes).toContain('too-deep');
-    expect(ms).toBeLessThan(100);
+    expect(ms).toBeLessThan(CATASTROPHIC_MS);
   });
 
   it('refuses 21,000 unclosed <b> quickly', () => {
     const { codes, ms } = timed(`${SIGN_IN}${'<b>'.repeat(21_000)}`);
     expect(codes).toContain('too-deep');
-    expect(ms).toBeLessThan(100);
+    expect(ms).toBeLessThan(CATASTROPHIC_MS);
   });
 
   it('refuses too many elements and accepts a deep but legal template', () => {

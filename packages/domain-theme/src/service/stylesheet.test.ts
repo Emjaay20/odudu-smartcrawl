@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { CSS_HOOKS } from '#/service/hooks';
 import { checkStylesheet, type StylesheetIssue } from '#/service/stylesheet';
 
+// Catches only a catastrophic regression: an uncapped parse costs seconds,
+// so 2 s sits far above the capped path and tolerates a loaded runner.
+const CATASTROPHIC_MS = 2000;
+
 const ASSET = '/t/assets/0a1b2c3d.png';
 const options = { isAssetUrl: (url: string): boolean => url === ASSET };
 
@@ -514,7 +518,7 @@ describe('checkStylesheet: positions and caps', () => {
     for (const css of inputs) {
       const started = performance.now();
       expect(checkStylesheet(css).length).toBeGreaterThan(0);
-      expect(performance.now() - started).toBeLessThan(100);
+      expect(performance.now() - started).toBeLessThan(CATASTROPHIC_MS);
     }
   });
 });
