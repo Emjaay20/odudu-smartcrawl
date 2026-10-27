@@ -250,6 +250,26 @@ describe('a page asks for its theme', () => {
     expect(await at(authorizePath(w.name, 'rival'))).not.toContain('reg-rival');
   });
 
+  it('themes the pages the consent and required-action routes answer with', async () => {
+    const w = await world(['portal']);
+    await publish(
+      w.tenantId,
+      null,
+      body({ 'authorize-error': '<div class="err-themed">{{message}}</div>' }),
+    );
+    const post = (url: string, fields: Record<string, string>) =>
+      app.inject({
+        method: 'POST',
+        url: `/tenants/${w.name}/login-actions/${url}`,
+        payload: new URLSearchParams({ auth_session_id: newId(), ...fields }).toString(),
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      });
+    expect((await post('consent', { decision: 'allow' })).body).toContain('err-themed');
+    expect(
+      (await post('required-action?action=update-password', { password: 'x' })).body,
+    ).toContain('err-themed');
+  });
+
   it('themes the logout pages with the tenant theme', async () => {
     const w = await world(['portal']);
     await publish(

@@ -121,6 +121,26 @@ describe('every route that renders a themeable page asks for its theme', () => {
         }),
     ],
     ['logout', () => app.inject({ url: `/tenants/${name}/protocol/openid-connect/logout` })],
+    [
+      'consent',
+      () =>
+        app.inject({
+          method: 'POST',
+          url: `/tenants/${name}/login-actions/consent`,
+          payload: new URLSearchParams({ auth_session_id: newId(), decision: 'allow' }).toString(),
+          headers: FORM,
+        }),
+    ],
+    [
+      'required action',
+      () =>
+        app.inject({
+          method: 'POST',
+          url: `/tenants/${name}/login-actions/required-action?action=update-password`,
+          payload: new URLSearchParams({ auth_session_id: newId(), password: 'x' }).toString(),
+          headers: FORM,
+        }),
+    ],
     ['registration', () => app.inject({ url: `/tenants/${name}/login-actions/registration` })],
     ['reset password', () => app.inject({ url: `/tenants/${name}/login-actions/reset-password` })],
     [

@@ -7,7 +7,9 @@ import { describe, expect, it } from 'vitest';
 // reading the composition; apps/server drives the routes that can be reached.
 describe('the composition hands the branding resolver to every route that renders a page', () => {
   it('spreads it into authorize, consent, logout and the shared login submission', async () => {
-    const source = await readFile(path.join(import.meta.dirname, 'index.ts'), 'utf8');
+    const text = await readFile(path.join(import.meta.dirname, 'index.ts'), 'utf8');
+    // A comment that names the spread must not stand in for it.
+    const source = text.replace(/\/\*[\s\S]*?\*\//gu, '').replace(/\/\/.*$/gmu, '');
     const block = (start: string): string => {
       const at = source.indexOf(start);
       expect(at, start).toBeGreaterThan(-1);
