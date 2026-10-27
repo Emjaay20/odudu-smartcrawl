@@ -76,12 +76,19 @@ curl -sS -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 
 ```
 {"id":"01a0ea4d-c75e-7ac7-abe7-cdb5a6b2bbad","name":"showcase","display_name":"Showcase Holdings","enabled":true,"created_at":"2026-09-28T23:16:00.990Z"}
-{"type":"about:blank","title":"Bad Request","status":400,"detail":"name: name is already in the issuer URL of every token this tenant has minted, and in the path of every admin and protocol request addressed to it; renaming it needs its own operation, not a general amendment","errors":[{"path":"name","message":"name is already in the issuer URL of every token this tenant has minted, and in the path of every admin and protocol request addressed to it; renaming it needs its own operation, not a general amendment"}],"instance":"01a0ea4e-abe7-7d8b-ab67-3413d1652bfd"}
+{"type":"about:blank","title":"Bad Request","status":400,"detail":"name: name is already in the issuer URL of every token this tenant has minted, and in the path of every admin and protocol request addressed to it; a rename is not offered, by ADR 0039: create a new tenant, export this one and import it under the new name","errors":[{"path":"name","message":"name is already in the issuer URL of every token this tenant has minted, and in the path of every admin and protocol request addressed to it; a rename is not offered, by ADR 0039: create a new tenant, export this one and import it under the new name"}],"instance":"01a17adf-7d35-796f-b3f2-a7ecb2e9907f"}
 {"type":"about:blank","title":"Conflict","status":409,"detail":"system is the tenant every cross-tenant administrator authenticates against and cannot be disabled","instance":"01a0ea4e-abfd-77ec-8f27-a082041215b6"}
 ```
 
 Replaying the `ETag` from the read above — one generation stale after the
 amendment — is refused and changes nothing:
+
+```bash
+curl -sS -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "If-Match: $ETAG" -H "Content-Type: application/json" \
+  -d '{"display_name": "Showcase Again"}' \
+  http://localhost:3080/admin/tenants/showcase
+```
 
 ```
 {"type":"about:blank","title":"Precondition Failed","status":412,"detail":"If-Match no longer matches","instance":"01a0ea4e-ac11-7806-9118-fbea0bdb05e3"}
