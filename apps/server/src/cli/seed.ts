@@ -60,6 +60,7 @@ import {
   SYSTEM_TENANT_NAME,
   TENANT_ADMIN,
   TENANT_NAME_RULE,
+  ClientIdConflictError,
   type ClientRecord,
   type ClientScopeAssignment,
   coerceTenantSetting,
@@ -170,18 +171,40 @@ function assertSendVerificationEmailHasEmail(opts: SeedOptions): void {
   }
 }
 
+function originOf(issuerBase: string): string {
+  const refusal = new OduduError(
+    'seed_invalid_options',
+    `--issuer-base must be an origin such as https://id.example.com, not ${JSON.stringify(issuerBase)}`,
+  );
+  let url: URL;
+  try {
+    url = new URL(issuerBase);
+  } catch {
+    throw refusal;
+  }
+  const isOrigin =
+    (url.protocol === 'http:' || url.protocol === 'https:') &&
+    url.pathname === '/' &&
+    url.search === '' &&
+    url.hash === '' &&
+    url.username === '' &&
+    url.password === '';
+  if (!isOrigin) throw refusal;
+  return url.origin;
+}
+
 function requireVerificationBase(
   issuerBase: string | undefined,
   publicBaseUrl: string | undefined,
 ): string {
-  const base = issuerBase ?? publicBaseUrl;
-  if (base === undefined) {
+  if (issuerBase !== undefined) return originOf(issuerBase);
+  if (publicBaseUrl === undefined) {
     throw new OduduError(
       'seed_invalid_options',
-      'sendVerificationEmail needs a base URL for the link: pass --issuer-base or set ODUDU_PUBLIC_BASE_URL',
+      '--send-verification-email needs a base URL for the link: pass --issuer-base or set ODUDU_PUBLIC_BASE_URL',
     );
   }
-  return base;
+  return publicBaseUrl;
 }
 
 // A token endpoint auth method describes how a confidential client proves
@@ -381,7 +404,9 @@ async function resolveTenantId(ownerDb: Database, tenantName: string): Promise<R
   refuseInvalidOrReservedTenantName(tenantName);
 
   const tenantId = newId();
-  await lookup.create({ id: tenantId, name: tenantName });
+  await refuseRepeat(`tenant ${JSON.stringify(tenantName)} already exists`, () =>
+    lookup.create({ id: tenantId, name: tenantName }),
+  );
   return { tenantId, created: true, passwordPolicy: await passwordPolicyFor(ownerDb, tenantId) };
 }
 
@@ -455,14 +480,18 @@ async function performSeed(
     const secretHash =
       opts.clientSecret === undefined ? null : await hashPassword(opts.clientSecret);
 
-    const client = await clientRepository(tx).create({
-      tenantId,
-      clientId: opts.clientId,
-      name: opts.clientId,
-      type,
-      secretHash,
-      serviceSubjectId,
-    });
+    const client = await refuseRepeat(
+      `client ${JSON.stringify(opts.clientId)} already exists in tenant ${JSON.stringify(opts.tenant)}`,
+      () =>
+        clientRepository(tx).create({
+          tenantId,
+          clientId: opts.clientId,
+          name: opts.clientId,
+          type,
+          secretHash,
+          serviceSubjectId,
+        }),
+    );
 
     // The tenant's standard OIDC vocabulary, without which /authorize would
     // refuse `openid` on this client's very first request.
@@ -510,16 +539,21 @@ async function performSeed(
     }
 
     let userSubjectId: string | undefined;
-    if (opts.username !== undefined && opts.password !== undefined) {
-      assertPasswordSatisfiesPolicy(passwordPolicy, opts.username, opts.email, opts.password);
+    const { username } = opts;
+    if (username !== undefined && opts.password !== undefined) {
+      assertPasswordSatisfiesPolicy(passwordPolicy, username, opts.email, opts.password);
       const userSubject = await subjectRepository(tx).create({ tenantId, type: 'user' });
       userSubjectId = userSubject.id;
-      await userRepository(tx).create({
-        subjectId: userSubject.id,
-        tenantId,
-        username: opts.username,
-        ...(opts.email !== undefined ? { email: opts.email } : {}),
-      });
+      await refuseRepeat(
+        `user ${JSON.stringify(username)} already exists in tenant ${JSON.stringify(opts.tenant)}`,
+        () =>
+          userRepository(tx).create({
+            subjectId: userSubject.id,
+            tenantId,
+            username,
+            ...(opts.email !== undefined ? { email: opts.email } : {}),
+          }),
+      );
       await grantNewSubjectDefaults(tx, userSubject.id);
       await credentialRepository(tx).insert({
         tenantId,
@@ -729,12 +763,17 @@ export async function seedAdmin(options: SeedAdminOptions): Promise<SeededAdmin>
         );
       }
       const subject = await subjectRepository(tx).create({ tenantId, type: 'user' });
-      await userRepository(tx).create({
-        subjectId: subject.id,
-        tenantId,
-        username: options.username,
-        ...(options.email !== undefined ? { email: options.email } : {}),
-      });
+      await refuseRepeat(
+        `a subject named ${JSON.stringify(options.username)} already exists in the system tenant`,
+        () =>
+          userRepository(tx).create({
+            subjectId: subject.id,
+            tenantId,
+            username: options.username,
+            ...(options.email !== undefined ? { email: options.email } : {}),
+          }),
+        'seed_admin_exists',
+      );
       await grantNewSubjectDefaults(tx, subject.id);
       await credentialRepository(tx).insert({
         tenantId,
@@ -1019,11 +1058,17 @@ async function requireRoleByQualifiedName(
 // row, as `seed client`, `seed user` and `seed scope` do, never the raw
 // database error. The unique violation is caught rather than pre-checked so
 // two concurrent runs cannot both pass a check.
-async function refuseRepeat<T>(message: string, run: () => Promise<T>): Promise<T> {
+async function refuseRepeat<T>(
+  message: string,
+  run: () => Promise<T>,
+  code: 'seed_conflict' | 'seed_admin_exists' = 'seed_conflict',
+): Promise<T> {
   try {
     return await run();
   } catch (error) {
-    if (isUniqueViolation(error)) throw new OduduError('seed_conflict', message);
+    if (isUniqueViolation(error) || error instanceof ClientIdConflictError) {
+      throw new OduduError(code, message);
+    }
     throw error;
   }
 }
@@ -1314,14 +1359,18 @@ async function runClientCommand(
 
     const secretHash = clientSecret === undefined ? null : await hashPassword(clientSecret);
 
-    const client = await clientRepository(tx).create({
-      tenantId,
-      clientId,
-      name: clientId,
-      type,
-      secretHash,
-      serviceSubjectId,
-    });
+    const client = await refuseRepeat(
+      `client ${JSON.stringify(clientId)} already exists in tenant ${JSON.stringify(tenantName)}`,
+      () =>
+        clientRepository(tx).create({
+          tenantId,
+          clientId,
+          name: clientId,
+          type,
+          secretHash,
+          serviceSubjectId,
+        }),
+    );
 
     // The tenant's standard OIDC vocabulary, without which /authorize would
     // refuse `openid` on this client's very first request.
@@ -1402,12 +1451,16 @@ async function runUserCommand(
     }
 
     const subject = await subjectRepository(tx).create({ tenantId, type: 'user' });
-    await userRepository(tx).create({
-      subjectId: subject.id,
-      tenantId,
-      username,
-      ...(email !== undefined ? { email } : {}),
-    });
+    await refuseRepeat(
+      `user ${JSON.stringify(username)} already exists in tenant ${JSON.stringify(tenantName)}`,
+      () =>
+        userRepository(tx).create({
+          subjectId: subject.id,
+          tenantId,
+          username,
+          ...(email !== undefined ? { email } : {}),
+        }),
+    );
     if (values['email-verified'] === true) {
       await userRepository(tx).setVerification(subject.id, { emailVerified: true });
     }
@@ -1536,13 +1589,17 @@ async function runScopeCommand(
       );
     }
 
-    const scope = await clientScopeRepository(tx).create({
-      tenantId,
-      name,
-      ...(description !== undefined ? { description } : {}),
-      ...(includeInIdToken !== undefined ? { includeInIdToken } : {}),
-      ...(includeInAccessToken !== undefined ? { includeInAccessToken } : {}),
-    });
+    const scope = await refuseRepeat(
+      `client scope ${JSON.stringify(name)} already exists in tenant ${JSON.stringify(tenantName)}`,
+      () =>
+        clientScopeRepository(tx).create({
+          tenantId,
+          name,
+          ...(description !== undefined ? { description } : {}),
+          ...(includeInIdToken !== undefined ? { includeInIdToken } : {}),
+          ...(includeInAccessToken !== undefined ? { includeInAccessToken } : {}),
+        }),
+    );
 
     return { command: 'scope', tenant: tenantName, tenantId, scopeId: scope.id, name: scope.name };
   });

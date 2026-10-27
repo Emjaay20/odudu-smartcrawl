@@ -253,9 +253,8 @@ odudu seed \
 ```
 
 The command queues the message and returns; nothing is sent on its way out.
-The link starts with `ODUDU_PUBLIC_BASE_URL`, which the compose stack sets to
-`http://localhost:3000`, or with `--issuer-base` when you pass it. With neither
-the command refuses and queues nothing.
+The link starts with `--issuer-base` or, without it, `ODUDU_PUBLIC_BASE_URL`;
+with neither the command refuses and queues nothing.
 The stack's own mail pass picks it up within
 `ODUDU_OUTBOX_INTERVAL_SECONDS` ([Sending queued mail](./sending-queued-mail-odudu-send-mail.md)),
 so the capture below appears in `docker compose logs odudu` a moment later
