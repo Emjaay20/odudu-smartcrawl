@@ -122,7 +122,7 @@ export function checkStylesheet(css: string, options: StylesheetOptions = {}): S
     }
     const property = decl.prop.toLowerCase();
     if (/\S/.test(decl.raws.before ?? '') || !PROPERTIES.has(property)) {
-      add('property-not-allowed', decl.prop.slice(0, 60), decl);
+      add('property-not-allowed', decl.prop, decl);
       return;
     }
     // Refused everywhere rather than on layout properties only: nothing a
@@ -180,7 +180,7 @@ export function checkStylesheet(css: string, options: StylesheetOptions = {}): S
 
   const checkAtRule = (rule: AtRule): void => {
     if (rule.name !== 'media') {
-      add('at-rule-not-allowed', `@${rule.name}`.slice(0, 60), rule);
+      add('at-rule-not-allowed', `@${rule.name}`, rule);
     } else if (rule.nodes === undefined) {
       add('at-rule-not-allowed', '@media without a block', rule);
     } else if (
@@ -188,7 +188,7 @@ export function checkStylesheet(css: string, options: StylesheetOptions = {}): S
       rule.raws.params !== undefined ||
       !mediaAllowed(rule.params)
     ) {
-      add('media-query-not-allowed', rule.params.slice(0, 60), rule);
+      add('media-query-not-allowed', rule.params, rule);
     } else {
       for (const child of rule.nodes) visit(child, true);
     }
@@ -196,7 +196,7 @@ export function checkStylesheet(css: string, options: StylesheetOptions = {}): S
 
   const visit = (node: ChildNode, inMedia: boolean): void => {
     if (stopped) return;
-    if (node.type === 'decl') add('root-declaration', node.prop.slice(0, 60), node);
+    if (node.type === 'decl') add('root-declaration', node.prop, node);
     else if (node.type === 'rule') checkRule(node);
     else if (node.type === 'atrule') {
       if (inMedia) add('at-rule-not-allowed', `@${node.name} inside @media`, node);

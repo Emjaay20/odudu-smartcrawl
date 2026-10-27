@@ -14,7 +14,7 @@ const PACKAGES = join(import.meta.dirname, '..', '..', '..');
 
 // The art of the not-found page builds its class attribute at run time and
 // is never themed, so its classes are not hooks.
-const UNTHEMED = new Set(['lost-art.ts']);
+const UNTHEMED = new Set(['packages/protocol-oidc/src/view/lost-art.ts']);
 
 // Every class a server view renders, found in the sources: the view
 // layers, and the password-rules markup the kernel shares with them.
@@ -29,7 +29,10 @@ const sources = (): string[] => {
       continue;
     }
     for (const name of names) {
-      const themed = name.endsWith('.ts') && !name.endsWith('.test.ts') && !UNTHEMED.has(name);
+      const themed =
+        name.endsWith('.ts') &&
+        !name.endsWith('.test.ts') &&
+        !UNTHEMED.has(`packages/${pkg}/src/view/${name}`);
       if (themed) files.push(join(dir, name));
     }
   }
@@ -90,6 +93,18 @@ describe('CSS hooks', () => {
     const text = sources().join('\n');
     for (const name of RENDERED_HOOKS) {
       expect(new RegExp(`class="[^"]*\\b${name}\\b[^"]*"`).test(text), name).toBe(true);
+    }
+  });
+
+  // The page-<kind> hooks are the only listed hooks no renderer emits yet;
+  // once one does, it moves into RENDERED_HOOKS and this fails until it does.
+  it('lists only the page-<kind> hooks as not yet emitted', () => {
+    const text = sources().join('\n');
+    const rest = CSS_HOOKS.filter((name) => !RENDERED_HOOKS.includes(name));
+    expect(rest).toHaveLength(16);
+    for (const name of rest) {
+      expect(name.startsWith('page-'), name).toBe(true);
+      expect(text.includes(name), name).toBe(false);
     }
   });
 

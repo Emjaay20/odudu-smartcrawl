@@ -10,13 +10,11 @@ const PSEUDO_CLASSES = set(
 );
 const PSEUDO_ELEMENTS = set('before after placeholder');
 
-// A tenant must not be able to take the way to submit away, so display:
-// none is refused unless the selector's subject cannot hold a control. In
-// the server pages a control sits inside a form, a label, main (.page), a
-// p (the passkey button) or is itself a button (.secondary, .quiet,
-// .choice), and .rules wraps a button. So a selector with one of those
-// elements anywhere, or whose subject is a class outside the decorative
-// ones below, or that is a bare p, div, section or main, keeps its display.
+// This reasons about the markup the renderers emit: a control sits in a form,
+// a label, main (.page), a p (the passkey button), or is a button itself, and
+// .rules wraps one. The decorative hooks may be hidden (heading, tenant name,
+// links); a tenant's own template may wrap a part in an allowed element and
+// hide that, which is accepted.
 const CONTROL_ELEMENTS = set('button input form label main div section');
 const HIDEABLE_ELEMENTS = set('img small span code h1 h2 h3 ul ol li a header footer');
 const HIDEABLE_HOOKS = set('brand context intro links mark tenant wordmark');

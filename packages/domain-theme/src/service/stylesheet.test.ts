@@ -5,6 +5,8 @@ import { checkStylesheet, type StylesheetIssue } from '#/service/stylesheet';
 const ASSET = '/t/assets/0a1b2c3d.png';
 const options = { isAssetUrl: (url: string): boolean => url === ASSET };
 
+const LONE_SURROGATE = /[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/;
+
 const codes = (css: string, opts?: Parameters<typeof checkStylesheet>[1]): string[] =>
   checkStylesheet(css, opts).map((issue) => issue.code);
 
@@ -362,6 +364,25 @@ describe('checkStylesheet: values', () => {
       }
     }
     expect(checkStylesheet(`.page{${long}}`)[0]?.code).toBe('unparsable');
+  });
+
+  it('cuts a detail at a code point, wherever the cut falls', () => {
+    const x = 'x'.repeat(59);
+    const inputs = [
+      `a{${x}😀:red}`,
+      `a{${x}😀y:1;}`,
+      `@${'x'.repeat(58)}😀y{}`,
+      `@media ${x}😀y{}`,
+      `${x}😀y:1;`,
+    ];
+    for (const css of inputs) {
+      const issues = checkStylesheet(css);
+      expect(issues.length, css).toBeGreaterThan(0);
+      for (const issue of issues) {
+        expect(issue.detail.length).toBeLessThanOrEqual(60);
+        expect(issue.detail, css).not.toMatch(LONE_SURROGATE);
+      }
+    }
   });
 
   it('refuses an over-long value', () => {
