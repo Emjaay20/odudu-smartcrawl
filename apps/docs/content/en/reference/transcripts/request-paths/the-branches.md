@@ -939,7 +939,7 @@ getting `invalid_request` rather than `invalid_client`.
 | Both methods presented at once (Basic, body secret, a `client_assertion`, **or a proxy-supplied certificate subject alongside any of the other three**)      | 401    | `invalid_client`         |
 | A `Basic` header that is not a form-urlencoding                                                                                                              | 401    | `invalid_client`         |
 | Public client presenting a secret                                                                                                                            | 401    | `invalid_client`         |
-| Public client asking for `client_credentials`                                                                                                                | 401    | `invalid_client`         |
+| Public client asking for `client_credentials`                                                                                                                | 400    | `unauthorized_client`    |
 | `private_key_jwt`: assertion fails structural validation (bad `iss`/`sub`/`aud`/`exp`/`jti`, or doesn't parse as a JWT)                                      | 401    | `invalid_client`         |
 | `private_key_jwt`: unknown or disabled client, or one not registered for the method                                                                          | 401    | `invalid_client`         |
 | `private_key_jwt`: client publishes no keys, or its `jwks_uri` can't be fetched (address guard, DNS, transport, status, content type, size, or invalid JSON) | 401    | `invalid_client`         |
@@ -1220,18 +1220,18 @@ curl -sS -u demo-backend:demo-backend-secret \
   'http://localhost:3000/tenants/demo/protocol/openid-connect/token'
 ```
 
-| How the client presents itself                    | Status | Body                                                                             |
-| ------------------------------------------------- | ------ | -------------------------------------------------------------------------------- |
-| `demo-backend`, secret in the header (registered) | 200    | an access token                                                                  |
-| `demo-backend`, secret in the body                | 401    | `{"error":"invalid_client","error_description":"Client authentication failed."}` |
-| `demo-post`, secret in the body (registered)      | 200    | an access token                                                                  |
-| `demo-post`, secret in the header                 | 401    | `{"error":"invalid_client","error_description":"Client authentication failed."}` |
-| `demo-backend`, both at once                      | 401    | `{"error":"invalid_client","error_description":"Client authentication failed."}` |
-| `demo-backend`, header plus `client_secret=`      | 200    | an access token                                                                  |
-| `demo-backend`, wrong secret                      | 401    | `{"error":"invalid_client","error_description":"Client authentication failed."}` |
-| `demo-spa` (public) asking for this grant         | 401    | `{"error":"invalid_client","error_description":"Client authentication failed."}` |
-| `demo-spa` presenting any secret                  | 401    | `{"error":"invalid_client","error_description":"Client authentication failed."}` |
-| A `client_id` naming nobody                       | 401    | `{"error":"invalid_client","error_description":"Client authentication failed."}` |
+| How the client presents itself                    | Status | Body                                                                                             |
+| ------------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------ |
+| `demo-backend`, secret in the header (registered) | 200    | an access token                                                                                  |
+| `demo-backend`, secret in the body                | 401    | `{"error":"invalid_client","error_description":"Client authentication failed."}`                 |
+| `demo-post`, secret in the body (registered)      | 200    | an access token                                                                                  |
+| `demo-post`, secret in the header                 | 401    | `{"error":"invalid_client","error_description":"Client authentication failed."}`                 |
+| `demo-backend`, both at once                      | 401    | `{"error":"invalid_client","error_description":"Client authentication failed."}`                 |
+| `demo-backend`, header plus `client_secret=`      | 200    | an access token                                                                                  |
+| `demo-backend`, wrong secret                      | 401    | `{"error":"invalid_client","error_description":"Client authentication failed."}`                 |
+| `demo-spa` (public) asking for this grant         | 400    | `{"error":"unauthorized_client","error_description":"This client may not use this grant type."}` |
+| `demo-spa` presenting any secret                  | 401    | `{"error":"invalid_client","error_description":"Client authentication failed."}`                 |
+| A `client_id` naming nobody                       | 401    | `{"error":"invalid_client","error_description":"Client authentication failed."}`                 |
 
 The sixth row is the one worth pausing on. An empty `client_secret` beside
 an `Authorization: Basic` header is **not** a second authentication method:

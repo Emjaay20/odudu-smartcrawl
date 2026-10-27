@@ -258,6 +258,9 @@ tokens masked and `content-length` not. Where a block differed it was written ag
 command could not have printed its block as written the command was corrected; a block that shows part of a
 response says so. `docs/phases/p4g.md` lists, page by page, what was identical, what changed and what was not
 run again.
+Bootstrap's host mode (Postgres in a container, the server from the source on a high port) and no-Docker mode
+(a throwaway PostgreSQL 18.6 cluster) were run for real afterwards, and the `/token`, login POST and
+`/userinfo` tables in The branches were run row by row.
 
 The authorization and token endpoints now send an `error_description`. A block that quotes one shows the
 real body or query from a live capture on a stack of this branch (project `odudu-p4g-31r`, port `3197`),

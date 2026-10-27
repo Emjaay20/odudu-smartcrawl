@@ -3888,9 +3888,15 @@ final image and diffed against the committed blocks. This is the record for the 
   mail captures' `htmlBytes` (5839, 5922, 6039 and the reset's).
 - **No commands, not run:** the index, The shape of it, What to do next, Enrolling a passkey and Signing
   in with a passkey (the second's form excerpt was re-derived from the sign-in page).
-- **Not re-run:** Bootstrap's host and no-Docker runs (the page says so); the-branches' tables for
-  `/token`, the login POST and `/userinfo` (the `/authorize` tables, the `code_challenge` and empty or
-  repeated parameter rows and the `id_token_hint` rows were run and agree).
+- **Run afterwards:** Bootstrap's host mode (Postgres in a container of its own, port 5614, the server
+  from the source with `node --env-file` on 3618) and its no-Docker mode (a throwaway cluster from
+  `initdb`, PostgreSQL 18.6, port 5616, the server from the source on 3616) both seed, register and
+  issue tokens as the page shows, and the key-mismatch 500 was reproduced as a host run. The
+  `/token`, login POST and `/userinfo` tables in the-branches were run row by row (the `/authorize`
+  tables, the `code_challenge` and empty or repeated parameter rows and the `id_token_hint` rows
+  earlier). Two rows were wrong: a public client asking for `client_credentials` is `400`
+  `unauthorized_client` ("This client may not use this grant type."), not `401` `invalid_client`
+  (`audit-token-refusals.int.test.ts` holds it); both rows now say so. The rest agree.
 - **State prepared, said here because a page does not say it:** unsent `email_outbox` rows deleted
   before Sending queued mail (this stack held rows from the required-actions section);
   `login_failures` emptied before the first brute-force run, as that page says.

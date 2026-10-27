@@ -86,7 +86,7 @@ checkout](../../../contributing/run-from-a-checkout.md),
 against a PostgreSQL whose owner role can `CREATE ROLE`. Nothing after that
 bootstrap differs from the second column above. The no-Docker run below used a
 throwaway cluster made for it — `initdb -D /tmp/odudu-pg -U postgres`, started
-with `pg_ctl` on port 5433, PostgreSQL 18.6 — rather than the compose stack, so
+with `pg_ctl` on port 5616, PostgreSQL 18.6 — rather than the compose stack, so
 that "no Docker at all" meant it.
 
 ## The key that has to be the same on both sides
@@ -110,10 +110,10 @@ content-type: application/problem+json; charset=utf-8
 {"type":"about:blank","title":"Internal Server Error","status":500,"instance":"01a17a82-208e-…"}
 ```
 
-(That response is from a second server process of the same image, started on the
-compose stack's network against its database with an `ODUDU_KEK` generated for it
-rather than the stack's, serving the tenant the first process had seeded. The
-`instance` is the request's id, shortened.)
+(That response is from a host run: a second server process started from the source with
+`node --env-file`, an `ODUDU_KEK` generated for it rather than the first process's, and the
+same database, serving the tenant the first process had seeded. The `instance` is the
+request's id, shortened.)
 
 That is the private key failing to unwrap, and it names neither the key nor
 the reason. Before seeding anything, copy the `ODUDU_KEK` line from
