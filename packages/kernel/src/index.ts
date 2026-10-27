@@ -78,4 +78,5 @@ export {
   scanSlots,
   type Slot,
 } from '#/slots';
+export { fillPageTemplate } from '#/page-template';
 export { PAGE_KINDS, type PageKind, type PageManifest } from '#/page-kinds';
