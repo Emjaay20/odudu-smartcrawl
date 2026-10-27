@@ -5,13 +5,12 @@ export const CSS_HOOKS_VERSION = 1;
 
 // The classes the server pages render, which a tenant stylesheet may target,
 // and `page-` plus the page kind for themed pages. `.logo { display: none }`
-// hides the logo whichever colour scheme is active; `.logo-light` and
-// `.logo-dark` hide that one variant. Not promised: a tenant can still draw
-// over the page with allowed means (a huge box-shadow or outline, large
-// margins) or shrink a control (width or height 0, font-size 0, a transparent
-// colour). None of it can run script, load an external resource or read a
-// value. The stylesheet is only ever served as a standalone .css file and
-// must never be inlined into a page.
+// hides the logo in either scheme; `.logo-light` and `.logo-dark` hide one
+// variant. Not promised: a tenant can still draw over the page with allowed
+// means (a huge box-shadow, large margins) or shrink a control (width or
+// height 0, a transparent colour). None of it can run script, load an
+// external resource or read a value. The stylesheet is served only as a
+// standalone .css file and must never be inlined into a page.
 export const RENDERED_HOOKS: readonly string[] = [
   'alert',
   'brand',

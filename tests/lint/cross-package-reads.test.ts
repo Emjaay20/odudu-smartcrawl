@@ -60,6 +60,10 @@ const READS: readonly { file: string; targets: readonly string[] }[] = [
     targets: ['packages/protocol-oidc/src/**'],
   },
   {
+    file: 'apps/docs/tests/logo-swap.browser.test.ts',
+    targets: ['apps/admin-console/src/shared/view/tokens.css', 'packages/instrument/src/pages.css'],
+  },
+  {
     file: 'apps/docs/scripts/workspace-sources.test.ts',
     targets: ['packages/*/package.json', 'apps/server/package.json'],
   },
