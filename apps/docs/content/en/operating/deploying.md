@@ -90,7 +90,7 @@ The server speaks plain http and never ends TLS itself. Put a reverse proxy in f
 
 **Serve Odudu at the root of its origin.** The documentation built into the server is served under a `docs` route, and its links name that route from the root. The documentation must sit at the root of the address `ODUDU_PUBLIC_BASE_URL` names: a reverse proxy that mounts the server under a path prefix is not supported. Give Odudu a host of its own.
 
-**Overwrite `X-Forwarded-*`, never append.** Set `ODUDU_TRUST_PROXY=true` only behind a proxy that overwrites `X-Forwarded-*`. Otherwise `request.ip` is controlled by the client, and so is the key the per-origin throttle counts on: a spoofed `X-Forwarded-For` gets round it one header at a time. Appending is not enough: the value must be replaced.
+**Overwrite `X-Forwarded-*`, never append.** Set `ODUDU_TRUST_PROXY=true` only behind a proxy that overwrites `X-Forwarded-*`. Otherwise a client controls `request.ip`, and with it the key the throttle counts on. A spoofed `X-Forwarded-For` then gets round the limit. Appending is not enough: the value must be replaced.
 
 **Raise the request body limit for tenant import.** `POST /admin/tenant-imports` accepts a body of up to 16 MiB, since an export with its subjects runs to several megabytes. Every other route keeps a 1 MiB limit. nginx refuses anything over 1 MiB by default and answers `413` before Odudu sees the request. Set `client_max_body_size 16m;` on the location that forwards `/admin/` and `/console/api/`.
 

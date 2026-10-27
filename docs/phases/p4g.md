@@ -4115,8 +4115,9 @@ against the repository before it changed anything.
 - **Placed:** a visitor can spend an address's mail budget, and a confirm click can create an account
   its sender chose (ADR 0037's amendment; P11 and P4f); case-variant accounts and their unique index
   (P4f); the failure screen's error ID and the console's literals (P4h).
-- **Left, by decision:** the README tagline and planned-feature sentences (an owner ruling, the one
-  important finding not acted on), and the Lighthouse flake (the budget was set above the runner's
+- **Left, by decision:** the README's vision wording, tagline included (the owner's ruling: the README
+  reads as the full Odudu, has no planned-feature block, and says in its status that some of it is
+  still being built; this is the one important finding not acted on), and the Lighthouse flake (the budget was set above the runner's
   spread, and a re-run is the remedy).
 
 ### What the phase added to CI

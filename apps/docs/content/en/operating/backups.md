@@ -16,7 +16,7 @@ Keep two things, and keep them apart.
 - **The database.** Every tenant's people, clients, keys, settings and audit trail are rows in the one database `ODUDU_DATABASE_URL` points at.
 - **The secrets.** `ODUDU_KEK` wraps every signing key and every console token stored in that database, and `ODUDU_CONSOLE_CLIENT_KEY` is registered on every tenant. A dump restored without the same `ODUDU_KEK` holds keys nobody can unwrap, so the signing keys and the stored console sessions cannot be read. Keep both values in your secret store, in a different place from the dumps. A dump with its key beside it hands both to anyone who finds it.
 
-The database roles are not in a dump, because roles belong to the PostgreSQL cluster. A restore into a new cluster needs them first. The owner role must have the name it had when the dump was taken, because the dump records default privileges by role name, and the restore stops with `role does not exist` without it. Step 3 gives the commands.
+The database roles are not in a dump, because roles belong to the PostgreSQL cluster. A restore into a new cluster needs them first. The owner role must keep the name it had when you dumped. The dump records default privileges by role name, and without it the restore stops with `role does not exist`. Step 3 gives the commands.
 
 ## 1. Dump the database
 
