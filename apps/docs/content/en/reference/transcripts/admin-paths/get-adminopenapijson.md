@@ -37,8 +37,16 @@ another origin can read the description but cannot call the API with it. Its
 first bytes, and the `bearerAuth` scheme it declares — `head -c 180
 openapi.json` and the substring at `securitySchemes`:
 
+```bash
+head -c 180 openapi.json; echo
+```
+
 ```
 {"openapi":"3.1.0","info":{"title":"Odudu admin API","version":"0.0.0"},"security":[{"bearerAuth":[]}],"paths":{"/admin/tenants/{tenant}/whoami":{"get":{"summary":"Requires an auth
+```
+
+```bash
+grep -o '"securitySchemes":{"bearerAuth":{[^}]*}}' openapi.json
 ```
 
 ```
