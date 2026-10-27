@@ -1,4 +1,5 @@
 import { readdirSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('node:crypto', () => {
@@ -26,7 +27,7 @@ describe('randomPassword', () => {
   });
 
   it('covers every username of three to six letters that the specs seed', () => {
-    const dir = 'apps/admin-console/e2e';
+    const dir = fileURLToPath(new URL('../../apps/admin-console/e2e', import.meta.url));
     const files = readdirSync(dir).filter((f) => f === 'global-setup.ts' || f.endsWith('.spec.ts'));
     const seeded = files.flatMap((file) => {
       const text = readFileSync(`${dir}/${file}`, 'utf8');
