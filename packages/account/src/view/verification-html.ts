@@ -3,7 +3,7 @@ import { type FastifyReply } from 'fastify';
 import { escapeHtml, page } from '#/view/document';
 import { links } from '#/view/links';
 import { t, tHtml } from '#/view/messages';
-import { fillPage } from '#/view/template';
+import { fillNotice, fillPage } from '#/view/template';
 
 export function sendVerificationHtml(
   reply: FastifyReply,
@@ -24,12 +24,6 @@ function backToSignIn(signInPath: string | null, locale: PageLocale): string {
     : links([{ href: signInPath, text: tHtml(locale, 'link.backToSignIn') }]);
 }
 
-// What a verification page is filled with when it has no form: the form's
-// parts are placed empty.
-function noForm(message: string, links: string): Record<string, string> {
-  return { message, 'form.open': '', submit: '', 'form.close': '', links };
-}
-
 // Verifying needs no session: the token is single-use and works in any browser.
 // With the sign-in the link was mailed for, the page leads straight back to it;
 // without one it says what to do, and implies no sign-in is waiting.
@@ -40,14 +34,11 @@ export function renderVerificationSucceededPage(
   const heading = `<h1>${tHtml(locale, 'verification.succeeded.heading')}</h1>`;
   return page(
     t(locale, 'verification.succeeded.title'),
-    fillPage(
-      'verification',
-      noForm(
-        signInPath === null
-          ? `${heading}\n<p>${tHtml(locale, 'verification.succeeded.next')}</p>`
-          : `${heading}${links([{ href: signInPath, text: tHtml(locale, 'link.continueToSignIn') }])}`,
-        '',
-      ),
+    fillNotice(
+      signInPath === null
+        ? `${heading}\n<p>${tHtml(locale, 'verification.succeeded.next')}</p>`
+        : `${heading}${links([{ href: signInPath, text: tHtml(locale, 'link.continueToSignIn') }])}`,
+      '',
       locale,
     ),
     null,
@@ -62,13 +53,10 @@ export function renderVerificationFailedPage(
 ): RenderedPage {
   return page(
     t(locale, 'verification.failed.title'),
-    fillPage(
-      'verification',
-      noForm(
-        `<h1>${tHtml(locale, 'verification.failed.heading')}</h1>
+    fillNotice(
+      `<h1>${tHtml(locale, 'verification.failed.heading')}</h1>
 <p>${tHtml(locale, 'verification.failed.reason')}</p>`,
-        backToSignIn(signInPath, locale),
-      ),
+      backToSignIn(signInPath, locale),
       locale,
     ),
     null,
@@ -102,7 +90,6 @@ export function renderEmailConfirmPage(
   <input type="hidden" name="key" value="${escapeHtml(key)}">`,
         submit: `\n  <button type="submit">${tHtml(locale, 'confirm.button')}</button>\n`,
         'form.close': '</form>',
-        links: '',
       },
       locale,
     ),

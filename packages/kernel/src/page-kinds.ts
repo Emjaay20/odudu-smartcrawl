@@ -35,8 +35,8 @@ const FORM_CLOSE = 'form.close';
 // inputs depend on the step. `intro` is the heading with the tenant; on
 // `consent` it names the client, so it is the required `client`. A form's
 // `error` is required so a refusal cannot be hidden, and a part a page may
-// have nothing for (`error`, `frames`, `script`, a form's parts on a page
-// with none) is placed empty. Pages outside any tenant have no kind.
+// have nothing for (`error`, `frames`, `script`) is placed empty. Pages
+// outside any tenant have no kind.
 export const PAGE_KINDS: Record<PageKind, PageManifest> = {
   'sign-in': {
     required: [FORM_OPEN, 'fields', 'submit', 'error', FORM_CLOSE],
@@ -91,7 +91,7 @@ export const PAGE_KINDS: Record<PageKind, PageManifest> = {
   },
   verification: {
     required: ['message', FORM_OPEN, 'submit', FORM_CLOSE],
-    optional: ['links'],
+    optional: [],
     inForm: ['submit'],
   },
   'required-actions': {

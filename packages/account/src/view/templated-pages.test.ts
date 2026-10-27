@@ -122,14 +122,6 @@ const CASES: Case[] = [
     hidden: ['key'],
   },
   {
-    name: 'verification, failed',
-    kind: 'verification',
-    render: (locale) => renderVerificationFailedPage(SIGN_IN, locale),
-    template: '{{links}}{{form.open}}{{submit}}{{form.close}}{{message}}',
-    inOrder: ['class="links"', '<h1>'],
-    hidden: [],
-  },
-  {
     name: 'required actions',
     kind: 'required-actions',
     render: (locale) =>
@@ -221,13 +213,6 @@ describe('a page that fills an optional part with nothing', () => {
     expect(page.body).toContain('name="username"');
     expect(page.body).not.toContain('class="intro"');
   });
-
-  it('fills the form parts of a verification page that has no form with nothing', () => {
-    const locale = themed('verification', '[{{form.open}}][{{submit}}][{{form.close}}]{{message}}');
-    const page = renderVerificationSucceededPage(null, locale);
-    expect(page.body).toContain('[][][]<h1>');
-    expect(page.body).not.toContain('<form');
-  });
 });
 
 describe('the password script', () => {
@@ -273,9 +258,9 @@ describe('a theme template that cannot be filled', () => {
 
   it('is reported for an unknown message key, which saving does not check', () => {
     told.length = 0;
-    const own = '{{message}}{{t "no.such.key"}}';
+    const own = '{{message}}{{form.open}}{{submit}}{{form.close}}{{t "no.such.key"}}';
     const locale = { ...themed('verification', own), templateFallback: spy };
-    renderVerificationSucceededPage(null, locale);
+    renderEmailConfirmPage('t1', 'key-1', null, locale);
     expect(told).toEqual([['verification', 'unknown message no.such.key']]);
   });
 
@@ -285,7 +270,7 @@ describe('a theme template that cannot be filled', () => {
       ...themed('verification', '{{message}}{{form.open}}{{submit}}{{form.close}}'),
       templateFallback: spy,
     };
-    renderVerificationSucceededPage(null, locale);
+    renderEmailConfirmPage('t1', 'key-1', null, locale);
     expect(told).toEqual([]);
   });
 });
@@ -301,6 +286,16 @@ interface NoticeCase {
 const RESET = '/tenants/t1/login-actions/reset-password';
 
 const NOTICES: NoticeCase[] = [
+  {
+    name: 'verification succeeded',
+    render: (l) => renderVerificationSucceededPage(SIGN_IN, l),
+    wayOn: true,
+  },
+  {
+    name: 'verification failed',
+    render: (l) => renderVerificationFailedPage(SIGN_IN, l),
+    wayOn: false,
+  },
   {
     name: 'registration failed',
     render: (l) => renderRegistrationFailedPage('t1', SIGN_IN, l),
@@ -381,15 +376,5 @@ describe.each(NOTICES)('the $name notice', ({ render, wayOn }) => {
     const page = render(DEFAULT_PAGE_LOCALE);
     expect(page.body).not.toMatch(/<(?:form|input|script)/u);
     expect(page.script).toBeNull();
-  });
-});
-
-describe('the verification confirmation notice', () => {
-  it('keeps the continue link when a theme places the message alone', () => {
-    const body = renderVerificationSucceededPage(
-      SIGN_IN,
-      themed('verification', '{{message}}{{form.open}}{{submit}}{{form.close}}'),
-    ).body;
-    expect(body).toContain(`href="${SIGN_IN.replace(/&/gu, '&amp;')}"`);
   });
 });

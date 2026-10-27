@@ -1,1 +1,1 @@
-export const VERIFICATION_TEMPLATE = `{{message}}{{form.open}}{{submit}}{{form.close}}{{links}}`;
+export const VERIFICATION_TEMPLATE = `{{message}}{{form.open}}{{submit}}{{form.close}}`;
