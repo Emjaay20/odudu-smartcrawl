@@ -83,7 +83,11 @@ describe('every route that renders a page passes the negotiated locale', () => {
         calls += 1;
         const open = match.index + match[0].length - 1;
         const args = text.slice(open + 1, closing(text, open));
-        if (!/\blocale\b|requestLocale\(|negotiatePageLocale\(/u.test(lastArgument(args))) {
+        if (
+          !/\blocale\b|brandedRequestLocale\(|requestLocale\(|negotiatePageLocale\(/u.test(
+            lastArgument(args),
+          )
+        ) {
           const line = text.slice(0, match.index).split('\n').length.toString();
           offences.push(`${file}:${line} ${name}`);
         }
@@ -131,5 +135,69 @@ describe('every negotiation of a page locale carries the theme', () => {
     }
     expect(negotiating).toBeGreaterThanOrEqual(4);
     expect(offences).toEqual([]);
+  });
+});
+
+// A themeable page asks for its theme through the one branding step; the
+// unbranded helpers remain for the pages that have no tenant in scope and
+// for the two places that wrap them.
+const NO_TENANT_ROUTES = new Set([
+  'packages/protocol-oidc/src/view/routes/throttled.ts',
+  'packages/protocol-oidc/src/view/routes/unrouted.ts',
+]);
+const BRANDING_STEPS =
+  /(?<![\w.])(?:brandLocale|brandedLocale|brandedRequestLocale|continuation)\(/u;
+const UNBRANDED_LOCALE = /(?<![\w.])(?:requestLocale|negotiatePageLocale)\(/u;
+
+// Why a route file's way of getting a locale cannot reach a theme, or null.
+export function unbrandedRoute(file: string, text: string): string | null {
+  const code = text.replace(/\/\/.*$/gmu, '');
+  if (NO_TENANT_ROUTES.has(file) || !UNBRANDED_LOCALE.test(code)) return null;
+  const defines = /export (?:async )?function (?:requestLocale|brandedRequestLocale)\(/u.test(code);
+  return BRANDING_STEPS.test(code) || defines
+    ? null
+    : `${file} builds a page locale but never calls the branding step`;
+}
+
+describe('every page locale a route builds can carry a theme', () => {
+  it('names a route whose locale never reaches the branding step', () => {
+    const route = 'packages/account/src/view/routes/x.ts';
+    expect(unbrandedRoute(route, 'const locale = requestLocale(request, deps);')).not.toBeNull();
+    expect(
+      unbrandedRoute(route, 'const l = negotiatePageLocale({}); render(page, l);'),
+    ).not.toBeNull();
+    expect(
+      unbrandedRoute(route, 'const l = await brandedLocale(request, deps, tenant);'),
+    ).toBeNull();
+    expect(
+      unbrandedRoute(
+        'packages/protocol-oidc/src/view/routes/throttled.ts',
+        'render(requestLocale(reply))',
+      ),
+    ).toBeNull();
+  });
+
+  it('holds for every route of the packages that render tenant pages', async () => {
+    const routes = [
+      ...(await files('packages/protocol-oidc/src/view/routes/*.ts')),
+      ...(await files('packages/account/src/view/routes/*.ts')),
+      ...(await files('packages/account/src/view/*.ts')),
+    ];
+    expect(routes.length).toBeGreaterThan(15);
+    const offences: string[] = [];
+    for (const file of routes) {
+      const reason = unbrandedRoute(file, await readFile(path.join(REPO_ROOT, file), 'utf8'));
+      if (reason !== null) offences.push(reason);
+    }
+    expect(offences).toEqual([]);
+  });
+
+  it('keeps no unbranded locale helper in the account package', async () => {
+    const text = await readFile(
+      path.join(REPO_ROOT, 'packages/account/src/view/request-locale.ts'),
+      'utf8',
+    );
+    expect(text).not.toMatch(/export function requestLocale\(/u);
+    expect(text).toMatch(/export async function brandedLocale\(/u);
   });
 });

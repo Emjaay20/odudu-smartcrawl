@@ -16,6 +16,7 @@ import {
   type MailGate,
 } from '@odudu/account';
 import { type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
+import { createBranding } from '#/branding';
 import { requiredActionRepository } from '@odudu/authn-flows';
 import { consoleGateway } from '@odudu/console-gateway';
 import { instrumentRoutes } from '@odudu/instrument';
@@ -505,8 +506,14 @@ export function buildApp(deps: AppDeps): FastifyInstance {
       },
     }),
   );
+  const branding = createBranding({
+    database: deps.database,
+    logger: deps.logger,
+    publicBaseUrl: deps.publicBaseUrl,
+  });
   app.register(
     oidcRoutes({
+      resolveBranding: branding.resolveBranding,
       database: deps.database,
       ownerDatabase: deps.ownerDatabase,
       kek: deps.kek,
@@ -531,7 +538,13 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   const findHeldSignIn = findHeldSignInIn(deps.database, tls);
   const mailGate = deps.mailGate ?? createMailGate(() => systemClock.now());
 
+  const themed = {
+    resolveBranding: branding.resolveBranding,
+    isClientOfTenant: branding.isClientOfTenant,
+  };
+
   registerActionTokenRoute(app, {
+    ...themed,
     database: deps.database,
     findHeldSignIn,
     now: () => systemClock.now(),
@@ -601,6 +614,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   });
 
   registerRegistrationRoute(app, {
+    ...themed,
     database: deps.database,
     findHeldSignIn,
     findTenant: (name) => tenantSettingsRepository(deps.ownerDatabase.db).byName(name),
@@ -616,6 +630,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   });
 
   registerResetPasswordRoute(app, {
+    ...themed,
     database: deps.database,
     findHeldSignIn,
     findTenant: (name) => tenantSettingsRepository(deps.ownerDatabase.db).byName(name),

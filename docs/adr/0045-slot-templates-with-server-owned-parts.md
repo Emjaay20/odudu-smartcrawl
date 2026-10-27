@@ -39,6 +39,21 @@ any check at render time falls back to the layer below.
   conditional or repeated markup; a part that varies by step (`fields`) is one
   slot.
 
+- **A theme is resolved once per scope and kept, bounded.** A render reads the
+  published tenant and client rows and their images in one statement on a miss
+  and in none on a hit. The cache is an LRU of at most 5,000 entries and 32 MiB
+  of template text, each entry gone after 30 seconds (ADR 0041's 10,000 tenants
+  with 10,000 clients each cannot grow it), and a scope with no theme is an
+  entry too, so a tenant on the default look costs no query per render. The key
+  is the tenant and client, not the version: a render learns the version only by
+  reading, so an entry stands until a publish, restore or reset in this process
+  drops it or its 30 seconds end. A replica that did not take the publish shows
+  the previous version for at most those 30 seconds, and shared invalidation
+  belongs to P11. Concurrent misses for one scope share one read, with at most
+  256 reads in flight. `checkTemplate` and the stylesheet check run once at
+  fill, so a template saved before a manifest tightened falls back to the layer
+  below, or the default, and is logged once per tenant, client and version.
+
 - `form.open` carries every hidden field the form posts, the proof included,
   so no page needs a part for them and a template cannot drop one. Parts are
   guaranteed present, in order and inside the form's pair, not that the

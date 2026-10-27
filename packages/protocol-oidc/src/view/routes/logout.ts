@@ -1,5 +1,6 @@
 import { clearedSessionCookies } from '@odudu/authn-flows';
 import { requestContextFrom } from '@odudu/domain-audit';
+import { type BrandingResolver, type PageLocale } from '@odudu/kernel';
 import { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import {
   handleLogoutConfirmation,
@@ -17,7 +18,7 @@ import {
   renderNoActiveSessionPage,
 } from '#/view/logout-html';
 import { sendHtml } from '#/view/html-response';
-import { requestLocale } from '#/view/routes/continuation';
+import { brandedRequestLocale, type ContinuationDeps } from '#/view/routes/continuation';
 import { tenantIssuerFor } from '#/view/issuer';
 
 const PATH = '/tenants/:tenant/protocol/openid-connect/logout';
@@ -25,6 +26,7 @@ const PATH = '/tenants/:tenant/protocol/openid-connect/logout';
 export interface LogoutRouteDeps extends LogoutUsecaseDeps {
   tls: boolean;
   pageLocales?: readonly string[];
+  resolveBranding?: BrandingResolver;
 }
 
 // A parameter sent twice arrives as an array, and is dropped rather than
@@ -42,20 +44,21 @@ async function respondToOutcome(
   tenant: string,
   tls: boolean,
   reply: FastifyReply,
-  pageLocales?: readonly string[],
+  deps: Pick<ContinuationDeps, 'findTenant' | 'pageLocales' | 'resolveBranding'>,
 ): Promise<FastifyReply> {
-  const locale = requestLocale(reply, { pageLocales });
+  // Asked for only by a branch that renders a page: a redirect has none.
+  const locale = (): Promise<PageLocale> => brandedRequestLocale(deps, reply, tenant);
   if (outcome.kind === 'not_found') {
     return reply.code(404).send();
   }
 
   if (outcome.kind === 'unauthenticated') {
-    return sendHtml(reply, 400, renderLogoutUnauthenticatedPage(locale));
+    return sendHtml(reply, 400, renderLogoutUnauthenticatedPage(await locale()));
   }
 
   if (outcome.kind === 'confirm') {
     if (outcome.sessionId === null || outcome.csrf === null) {
-      return sendHtml(reply, 200, renderNoActiveSessionPage(locale));
+      return sendHtml(reply, 200, renderNoActiveSessionPage(await locale()));
     }
     const page = renderLogoutConfirmationPage(
       tenant,
@@ -66,7 +69,7 @@ async function respondToOutcome(
         postLogoutRedirectUri: outcome.postLogoutRedirectUri,
         state: outcome.state,
       },
-      locale,
+      await locale(),
     );
     return sendHtml(
       reply,
@@ -93,7 +96,7 @@ async function respondToOutcome(
     return sendHtml(
       reply,
       400,
-      renderLogoutRedirectRefusedPage(outcome.frontChannelLogoutUrls, locale),
+      renderLogoutRedirectRefusedPage(outcome.frontChannelLogoutUrls, await locale()),
     );
   }
 
@@ -101,7 +104,11 @@ async function respondToOutcome(
   // 9207 has /authorize carry iss on every response — this is not an
   // authorization response, so no `iss` parameter of its own applies here.
   if (outcome.redirectTo === null) {
-    return sendHtml(reply, 200, renderLoggedOutPage(outcome.frontChannelLogoutUrls, locale));
+    return sendHtml(
+      reply,
+      200,
+      renderLoggedOutPage(outcome.frontChannelLogoutUrls, await locale()),
+    );
   }
   const target = new URL(outcome.redirectTo);
   if (outcome.state !== null) target.searchParams.set('state', outcome.state);
@@ -109,7 +116,11 @@ async function respondToOutcome(
     return sendHtml(
       reply,
       200,
-      renderLoggedOutRedirectPage(outcome.frontChannelLogoutUrls, target.toString(), locale),
+      renderLoggedOutRedirectPage(
+        outcome.frontChannelLogoutUrls,
+        target.toString(),
+        await locale(),
+      ),
     );
   }
   reply.header('cache-control', 'no-store');
@@ -146,7 +157,7 @@ async function respondToLogoutRequest(
     params,
     requestContextFrom(request),
   );
-  return respondToOutcome(outcome, tenant, deps.tls, reply, deps.pageLocales);
+  return respondToOutcome(outcome, tenant, deps.tls, reply, deps);
 }
 
 export function registerLogoutRoute(app: FastifyInstance, deps: LogoutRouteDeps): void {
@@ -185,6 +196,6 @@ export function registerLogoutRoute(app: FastifyInstance, deps: LogoutRouteDeps)
       },
       requestContextFrom(request),
     );
-    return respondToOutcome(outcome, request.params.tenant, deps.tls, reply, deps.pageLocales);
+    return respondToOutcome(outcome, request.params.tenant, deps.tls, reply, deps);
   });
 }

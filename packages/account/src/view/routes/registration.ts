@@ -22,7 +22,7 @@ import {
   type RegistrationFailure,
 } from '#/view/registration-html';
 import { sendVerificationHtml } from '#/view/verification-html';
-import { requestLocale } from '#/view/request-locale';
+import { brandedLocale, type BrandedLocaleDeps } from '#/view/request-locale';
 
 export interface RegistrationTenantLookup {
   readonly id: string;
@@ -36,7 +36,7 @@ export interface RegistrationTenantLookup {
   readonly passwordPolicy: PasswordPolicy;
 }
 
-export interface RegistrationRouteDeps {
+export interface RegistrationRouteDeps extends BrandedLocaleDeps {
   // The tags a page can be shown in; defaults to what the server ships.
   pageLocales?: readonly string[];
   readonly database: DatabaseHandle;
@@ -103,20 +103,18 @@ export function registerRegistrationRoute(app: FastifyInstance, deps: Registrati
     Params: { tenant: string };
     Querystring: Record<string, string | string[] | undefined>;
   }>('/tenants/:tenant/login-actions/registration', async (request, reply) => {
-    const locale = requestLocale(request, deps);
     const tenant = await deps.findTenant(request.params.tenant);
     if (!tenantIsOpenForRegistration(tenant)) {
       return reply.code(404).send();
     }
+    const returnTo = signInPath(request.params.tenant, request.query.return_to);
+    const locale = await brandedLocale(request, deps, tenant, returnTo);
     return sendVerificationHtml(
       reply,
       200,
       renderRegistrationForm(
         request.params.tenant,
-        {
-          rules: tenant.passwordPolicy,
-          signInPath: signInPath(request.params.tenant, request.query.return_to),
-        },
+        { rules: tenant.passwordPolicy, signInPath: returnTo },
         locale,
       ),
     );
@@ -126,7 +124,6 @@ export function registerRegistrationRoute(app: FastifyInstance, deps: Registrati
     Params: { tenant: string };
     Body: Record<string, string | string[] | undefined>;
   }>('/tenants/:tenant/login-actions/registration', async (request, reply) => {
-    const locale = requestLocale(request, deps);
     const tenant = await deps.findTenant(request.params.tenant);
     if (!tenantIsOpenForRegistration(tenant)) {
       return reply.code(404).send();
@@ -138,6 +135,7 @@ export function registerRegistrationRoute(app: FastifyInstance, deps: Registrati
     const candidate = readPasswordField(body.password);
     const again = readPasswordField(body.password_confirm);
     const returnTo = signInPath(request.params.tenant, body.return_to);
+    const locale = await brandedLocale(request, deps, tenant, returnTo);
     // The form comes back in place, keeping the two values that are safe to
     // keep; a password is never put into a field again.
     const refuse = (status: number, failure: RegistrationFailure): FastifyReply =>

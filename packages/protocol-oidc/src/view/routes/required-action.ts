@@ -60,7 +60,8 @@ export function registerRequiredActionRoute(
       authSessionId !== undefined
     ) {
       const found = await deps.findTenant(tenantName);
-      if (found === null) return sendRequestError(reply, deps, 400, 'error.unknownTenant');
+      if (found === null)
+        return sendRequestError(reply, deps, tenantName, 400, 'error.unknownTenant');
       const { locale, continuing } = await continuation(
         deps,
         tenantName,
@@ -104,16 +105,16 @@ export function registerRequiredActionRoute(
     }
 
     if (outcome.kind === 'not_owed') {
-      return sendRequestError(reply, deps, 400, 'error.noPendingAction');
+      return sendRequestError(reply, deps, tenantName, 400, 'error.noPendingAction');
     }
 
     if (outcome.kind === 'unsupported') {
-      return sendRequestError(reply, deps, 400, 'error.pendingActionNotReady');
+      return sendRequestError(reply, deps, tenantName, 400, 'error.pendingActionNotReady');
     }
 
     const tenant = await deps.findTenant(tenantName);
     if (tenant === null) {
-      return sendRequestError(reply, deps, 400, 'error.unknownTenant');
+      return sendRequestError(reply, deps, tenantName, 400, 'error.unknownTenant');
     }
 
     // Back to the same form with every rule it broke, and 400 for the same

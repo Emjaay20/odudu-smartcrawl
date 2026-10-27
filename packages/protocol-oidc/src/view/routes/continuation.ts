@@ -1,6 +1,12 @@
 import { type PendingRequest } from '@odudu/authn-flows';
 import { negotiatePageLocale } from '@odudu/i18n';
-import { type PageLocale, type RenderedPage, withPageTheme } from '@odudu/kernel';
+import {
+  brandLocale,
+  type BrandingResolver,
+  type PageLocale,
+  type RenderedPage,
+  withPageTheme,
+} from '@odudu/kernel';
 import { type FastifyReply } from 'fastify';
 import { restartAuthorizeLocation } from '#/service/restart-request';
 
@@ -30,10 +36,14 @@ export interface ContinuationDeps {
   // Whom a finished authentication bound to this session, for pages shown
   // once it is finished.
   authenticatedSubject?(tenantId: string, authSessionId: string): Promise<string | null>;
+  // The tenant's or client's own look; none means every page is the default.
+  resolveBranding?: BrandingResolver;
 }
 
 // The language a page without a parked request is shown in: the browser's
-// preference alone, since nothing else about the request is known.
+// preference alone, since nothing else about the request is known. Only a
+// page with no tenant in scope uses this on its own; any other goes through
+// `brandedRequestLocale` or `continuation`.
 export function requestLocale(
   reply: FastifyReply,
   deps: { pageLocales?: readonly string[] | undefined } = {},
@@ -44,6 +54,24 @@ export function requestLocale(
       ...(deps.pageLocales === undefined ? {} : { supported: deps.pageLocales }),
     }),
     reply.request.headers.cookie,
+  );
+}
+
+// A page that has a tenant by name and no parked request: the browser's
+// language and the tenant's theme, never a client's, since nothing the
+// request carries names one reliably.
+export async function brandedRequestLocale(
+  deps: Pick<ContinuationDeps, 'findTenant' | 'pageLocales' | 'resolveBranding'>,
+  reply: FastifyReply,
+  tenantName: string,
+): Promise<PageLocale> {
+  const locale = requestLocale(reply, deps);
+  if (deps.resolveBranding === undefined) return locale;
+  const tenant = await deps.findTenant(tenantName);
+  return brandLocale(
+    locale,
+    deps.resolveBranding,
+    tenant === null ? null : { tenantId: tenant.id, tenantName, clientId: null },
   );
 }
 
@@ -94,15 +122,21 @@ export async function continuation(
     tenant !== null && subjectId !== null
       ? ((await deps.subjectLocale?.(tenant.id, subjectId)) ?? null)
       : null;
-  const locale = withPageTheme(
-    negotiatePageLocale({
-      uiLocales: pending?.uiLocales ?? [],
-      subjectLocale,
-      authenticated: subjectId !== null,
-      acceptLanguage: reply.request.headers['accept-language'],
-      ...(deps.pageLocales === undefined ? {} : { supported: deps.pageLocales }),
-    }),
-    reply.request.headers.cookie,
+  const locale = await brandLocale(
+    withPageTheme(
+      negotiatePageLocale({
+        uiLocales: pending?.uiLocales ?? [],
+        subjectLocale,
+        authenticated: subjectId !== null,
+        acceptLanguage: reply.request.headers['accept-language'],
+        ...(deps.pageLocales === undefined ? {} : { supported: deps.pageLocales }),
+      }),
+      reply.request.headers.cookie,
+    ),
+    deps.resolveBranding,
+    tenant === null
+      ? null
+      : { tenantId: tenant.id, tenantName, clientId: pending?.clientId ?? null },
   );
   return {
     locale,

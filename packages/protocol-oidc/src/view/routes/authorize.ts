@@ -15,7 +15,7 @@ import { renderConsentPage } from '#/view/consent-html';
 import { sendHtml } from '#/view/html-response';
 import { tenantIssuerFor } from '#/view/issuer';
 import { namesUnsupportedRepresentation } from '#/view/media-type';
-import { continuation, requestLocale } from '#/view/routes/continuation';
+import { brandedRequestLocale, continuation } from '#/view/routes/continuation';
 import { sendSignInExpired } from '#/view/routes/expired-sign-in';
 import { sendRequestError } from '#/view/routes/request-error';
 import {
@@ -78,7 +78,7 @@ async function renderAuthorizationOutcome(
         outcome.error,
         outcome.description,
         undefined,
-        requestLocale(reply, deps),
+        await brandedRequestLocale(deps, reply, tenant),
       ),
     );
   }
@@ -268,7 +268,7 @@ async function respondToSelectAccountSubmission(
   // because it names some live session in the tenant — see
   // handleSelectAccountSubmission's own comment on why.
   if (outcome.kind === 'invalid_selection') {
-    return sendRequestError(reply, deps, 400, 'error.accountNotSignedIn');
+    return sendRequestError(reply, deps, tenant, 400, 'error.accountNotSignedIn');
   }
 
   return renderAuthorizationOutcome(deps, tenant, issuer, outcome, reply, false);
@@ -306,7 +306,7 @@ export function registerAuthorizeRoute(app: FastifyInstance, deps: AuthorizeRout
               'invalid_request',
               `Authorization request parameters must be sent as ${FORM_MEDIA_TYPE}.`,
               undefined,
-              requestLocale(reply, deps),
+              await brandedRequestLocale(deps, reply, request.params.tenant),
             ),
           );
         }
