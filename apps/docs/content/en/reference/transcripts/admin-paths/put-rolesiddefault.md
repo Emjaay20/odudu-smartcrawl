@@ -144,7 +144,7 @@ ids are a fresh run's, not those above:
 
 ```bash
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
-  'http://localhost:3082/admin/tenants/composites-demo/audit?action=role.default_set&to=2026-09-29T19:09:44.000Z&limit=3'; echo
+  'http://localhost:3082/admin/tenants/composites-demo/audit?action=role.default_set&to=2026-10-27T01:35:42.000Z&limit=3'; echo
 ```
 
 ```
@@ -205,6 +205,9 @@ x-request-id: 01a10f7f-ccde-786c-ae84-8c0cda061c50
 cache-control: no-store
 content-type: application/problem+json; charset=utf-8
 content-length: 165
+Date: Tue, 27 Oct 2026 01:36:16 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 
 {"type":"about:blank","title":"Conflict","status":409,"detail":"at most 200 roles are handed to every new subject","instance":"01a10f7f-ccde-786c-ae84-8c0cda061c50"}
 ```
