@@ -76,8 +76,8 @@ export const ERROR_DOCS: Record<ErrorCode, ErrorDoc> = {
       'value. The message names them.',
   ),
   seed_conflict: command(
-    'The thing `odudu seed` was asked to create exists already in a form that disagrees with ' +
-      'the request, such as a client of the other type.',
+    'The thing `odudu seed` was asked to create already exists, or exists in a form that ' +
+      'disagrees with the request, such as a client of the other type.',
   ),
   seed_not_found: command('`odudu seed` was told to act on something that does not exist.'),
   seed_unknown_setting: command(

@@ -20,7 +20,9 @@ Each item below is tested, not captured:
 - **An assertion signed with a key no tenant registers, or naming another
   tenant's token endpoint**, redeeming a code: refused `invalid_client`, and
   the code stays good. An integration test covers it.
-- **The `__Host-` cookies**, which need `ODUDU_TLS=true`. An integration test
-  covers these, and the `conformance` job asserts both over the stack's TLS
-  proxy ([its
+- **The cookies in a browser over real TLS.** [Behind
+  TLS](./get-consoleauthcallback.md#behind-tls) shows the `__Host-` names and
+  `Secure` on a plain-http stack run with `ODUDU_TLS=true`, with the cookies sent by
+  hand; a browser keeping them over https is covered by an integration test, and
+  the `conformance` job asserts both over the stack's TLS proxy ([its
   README](https://github.com/wizzywit/odudu/blob/main/infra/conformance/README.md#the-console-over-https)).

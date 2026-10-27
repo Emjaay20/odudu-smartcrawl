@@ -720,13 +720,28 @@ rather than asserted. `tests/docs/console-paths.test.ts` holds every
 audit row below answers `actor_name` and `actor_origin` as well, resolved when
 it is read ([Admin paths](../reference/transcripts/admin-paths/get-audit.md)).
 
+### Replayed on the final image
+
+Every page in this directory, and [First start](../reference/transcripts/first-start.md), was run again
+against the image built from `main` at `5eeac524` and compared with the recorded blocks, ids, times and
+the stack's `ip` aside. Pages that differed were re-derived from the run, and the `ada` and `grace`
+chains were refreshed as wholes so each reads as one run. The refresh sections were waited for in real
+time, since the token lives 300 s. The stack was the compose project `odudu-p4g-rerun-console-a` on
+`http://localhost:3701` (every command on a page names `3000`, `3082` or the port it was first run on;
+only the port was changed), on one fresh volume, with `ODUDU_THROTTLE_LIMIT=1000
+ODUDU_LOGIN_THROTTLE_LIMIT=1000`. "Behind TLS" in
+[`GET /console/auth/callback`](../reference/transcripts/console-paths/get-consoleauthcallback.md#behind-tls)
+ran on the same stack, recreated with `ODUDU_TLS=true` and an `https` base. The full list, with what
+changed on each page, is in `docs/phases/p4g.md`.
+
 **The stack.** The `docker-odudu-1` container of `infra/docker/compose.yaml`,
 restarted on the existing database volume. For the first two runs its `odudu`
 service was built at commit `5fd4b11`; for the third it was rebuilt at
 `6401476`. `ODUDU_PUBLIC_BASE_URL` is `http://localhost:3000` and
 `ODUDU_CONSOLE` is left at its default, `true`. `ODUDU_TLS` is off, so the
 cookies are `odudu-console` and `odudu-console-login`; with `ODUDU_TLS=true` they are
-`__Host-odudu-console` and `__Host-odudu-console-login` and carry `Secure`.
+`__Host-odudu-console`, `__Host-odudu-console-login` and `__Host-odudu-console-restart` and carry
+`Secure` ([captured](../reference/transcripts/console-paths/get-consoleauthcallback.md#behind-tls)).
 The image built at those commits shipped no console build, so
 `ODUDU_CONSOLE_DIR` (`/app/console`) was absent, and the third run logged
 that below. The image has carried a build since `78826ac`;

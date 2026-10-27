@@ -8,10 +8,8 @@ description: "The two requests between the gateway's redirect and its callback a
 The two requests between the gateway's redirect and its callback are the
 tenant's authorization endpoint and sign-in form, which [the request
 paths](../request-paths/index.md) documents. They are shown here only so that
-the callback below has a real code. This section and the `authenticate` request
-below ran at `http://localhost:3094`, with `console-paths` and `grace` seeded on
-it; `$LOCATION` is the `location` that stack's own `login` printed, so its ids
-are not the ones in the blocks above and below.
+the callback below has a real code. `$LOCATION` is the `location` the `login`
+above printed.
 
 ```bash
 curl -sS -D - -c jar -b jar "$LOCATION"
@@ -22,16 +20,17 @@ at the end of the password form, where a `…` line says so.
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a137da-0686-7870-954e-e3de76d272b7
+x-request-id: 01a17b02-8ab9-72ca-8420-9d0b5cb0db9c
+set-cookie: odudu-sign-in=01a17b02-8ad6-7f28-a5de-160ccba3fde5.3ljPUKnwSzSEvf4Wr9sA-93R5HntWiLC7yd16IfCg3s; HttpOnly; SameSite=Lax; Path=/tenants/console-paths/; Max-Age=1800
 content-type: text/html
-content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:3094; base-uri 'none'; script-src 'nonce-OMn01UznIrcg/AqkJ+gqsg=='; connect-src 'self'
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:3000; base-uri 'none'; script-src 'nonce-GV/Ii0wiUDX9O6SDtClJVA=='; connect-src 'self'
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 3305
-Date: Wed, 14 Oct 2026 00:39:57 GMT
+content-length: 3581
+Date: Tue, 27 Oct 2026 01:38:46 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -55,7 +54,7 @@ Keep-Alive: timeout=72
 <p class="tenant"><bdi>console-paths</bdi></p>
 </header>
 <form method="post" action="/tenants/console-paths/login-actions/authenticate">
-  <input type="hidden" name="auth_session_id" value="01a137da-0690-7e7c-b322-b21a3a5e09ee">
+  <input type="hidden" name="auth_session_id" value="01a17b02-8ad6-7f28-a5de-160ccba3fde5">
   <label>Username <input type="text" name="username" autocomplete="username"></label>
   <label>Password <input type="password" name="password" autocomplete="current-password"></label>
   <button type="submit">Sign in</button>
@@ -72,20 +71,21 @@ can reach changes.
 
 ```bash
 curl -sS -D - -c jar -b jar -X POST \
-  --data-urlencode auth_session_id=01a137da-0690-7e7c-b322-b21a3a5e09ee \
+  --data-urlencode auth_session_id=01a17b02-8ad6-7f28-a5de-160ccba3fde5 \
   --data-urlencode username=grace \
   --data-urlencode password=console-paths-throwaway \
-  http://localhost:3094/tenants/console-paths/login-actions/authenticate
+  http://localhost:3000/tenants/console-paths/login-actions/authenticate
 ```
 
 ```
 HTTP/1.1 302 Found
-x-request-id: 01a137da-06c8-7cbc-a848-777c6b74759d
-set-cookie: console-paths-session=01a137da-06ff-7602-b6c3-23886c64fba6:oAApL7Omp-0WwioQ9gy4rgUndQOZCix751Wx4WntqTY; HttpOnly; SameSite=Lax; Path=/
+x-request-id: 01a17b02-c88f-7021-ab16-c3c59c320339
+set-cookie: console-paths-session=01a17b02-c90d-7d65-a61c-8380a55dceed:JcZY8IODtyTttYAwKcuAlTa9PDDtc1ho--5ZtooaGT4; HttpOnly; SameSite=Lax; Path=/
 set-cookie: console-paths-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
-location: http://localhost:3094/console/auth/callback?code=W_2mMr2fbUUNmes4CDXdS8NOkBgRb4i1amEwJf7BcSc&state=01a137da-01b1-75f9-9d2e-78567e208441.26s_IdV-sgdsmCgH0R8Auchb963B7ltflwolNOwPBsE&iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Fconsole-paths
+set-cookie: odudu-sign-in=; HttpOnly; SameSite=Lax; Path=/tenants/console-paths/; Max-Age=0
+location: http://localhost:3000/console/auth/callback?code=85eAmeU6LFGcTdS2rwRq1DbseXWPhqCrhtszaj9-Q34&state=01a17b02-1a9a-78f4-a746-1a223a533ca7.3CtlssHNJxU43xqp5aDXjUjTYI3DUcyyvPx-gvAS0dI&iss=http%3A%2F%2Flocalhost%3A3000%2Ftenants%2Fconsole-paths
 content-length: 0
-Date: Wed, 14 Oct 2026 00:39:57 GMT
+Date: Tue, 27 Oct 2026 01:39:02 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 ```

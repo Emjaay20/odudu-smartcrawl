@@ -167,6 +167,7 @@ Odudu is ready.
 Sign in with the password you chose.
 It stays in the setup container environment until that container
 is removed: docker compose rm -f setup
+
 $ odudu init --state-dir ./state; echo "exit $?"
 An administrator already exists. Console: http://localhost:3000/console/
 If you cannot sign in, `odudu seed admin --username <name>` creates another.
