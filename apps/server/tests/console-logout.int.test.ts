@@ -14,7 +14,6 @@ import {
   adminAssertion,
   holdSessionLock,
   type ConsoleStack,
-  field,
   Jar,
   KEK,
   pathOf,
@@ -207,7 +206,7 @@ describe('POST /console/auth/logout', () => {
     });
   });
 
-  it('asks before ending the SSO session when the returned URL is followed with the tenant’s cookie', async () => {
+  it('ends the SSO session at once, with no page, when the returned URL is followed with the tenant’s cookie', async () => {
     await withStack(async (stack) => {
       const jar = new Jar();
       const { subjectId } = await signIn(stack, jar);
@@ -215,21 +214,10 @@ describe('POST /console/auth/logout', () => {
       expect(await ssoSessionsExpired(subjectId)).toEqual([false]);
 
       const redirect = redirectOf(await logout(stack, jar));
-      const asked = await browse(stack, jar, pathOf(stack, redirect));
+      const followed = await browse(stack, jar, pathOf(stack, redirect));
 
-      expect(asked.statusCode).toBe(200);
-      expect(asked.body).toContain('<title>Sign out?</title>');
-      expect(await ssoSessionsExpired(subjectId)).toEqual([false]);
-
-      const confirmed = await post(stack, jar, new URL(redirect).pathname, {
-        session_id: field(asked.body, 'session_id'),
-        csrf: field(asked.body, 'csrf'),
-        client_id: field(asked.body, 'client_id'),
-        post_logout_redirect_uri: field(asked.body, 'post_logout_redirect_uri'),
-      });
-
-      expect(confirmed.statusCode).toBe(302);
-      expect(confirmed.headers.location).toBe(`${BASE}/console/`);
+      expect(followed.statusCode).toBe(302);
+      expect(followed.headers.location).toBe(`${BASE}/console/`);
       expect(await ssoSessionsExpired(subjectId)).toEqual([true]);
       const replayed = await authorizeWith(stack, before);
       expect(replayed.statusCode).toBe(200);

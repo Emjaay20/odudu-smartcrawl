@@ -12,10 +12,30 @@ export interface LogoutSession {
   subjectId: string;
 }
 
+// The hint, once its signature, issuer and key have verified and it names
+// exactly one client and a session. Anything less reaches the decision as no
+// hint at all.
+export interface ValidHint {
+  clientId: string;
+  sid: string;
+}
+
+export interface LogoutClient {
+  id: string;
+  skipsConfirmation: boolean;
+}
+
+// A post_logout_redirect_uri that matches the client's registered list
+// exactly (§3).
+export interface RegisteredRedirect {
+  uri: string;
+}
+
 export interface LogoutInput {
-  session: LogoutSession | null;
-  requested: string | null;
-  registered: readonly string[];
+  session: { id: string } | null;
+  hint: ValidHint | null;
+  client: LogoutClient | null;
+  redirect: RegisteredRedirect | null;
 }
 
 export type LogoutDecision =
@@ -33,19 +53,52 @@ export function decideRedirect(
     : { kind: 'render', error: 'invalid_request' };
 }
 
-// §2: the OP SHOULD ask the End-User, so a session present is never ended on
-// first contact, whatever hint came with it; a hint only identifies which
-// session to ask about (docs/protocols/oidc-rpinitiated.md). With no session
-// there is nothing to end, and a matched redirect is still honoured so an RP
-// is not stranded after an idle-out. The redirect match is exact (§3).
-export function decideLogout(
-  input: LogoutInput,
-): { kind: 'confirm' } | { kind: 'end'; redirectTo: string } {
-  if (input.session !== null) return { kind: 'confirm' };
-  if (input.requested !== null && input.registered.includes(input.requested)) {
-    return { kind: 'end', redirectTo: input.requested };
+export type FirstContactDecision =
+  | { kind: 'confirm' }
+  // The session is ended without asking; the redirect is then judged as the
+  // confirmation POST judges it.
+  | { kind: 'end'; sessionEnds: true }
+  | { kind: 'end'; sessionEnds: false; redirectTo: string };
+
+// §2: the OP SHOULD ask the End-User, so a session present is ended on first
+// contact only for a client whose operator turned the confirmation off
+// (ADR 0047), and only for that client's own hint naming this very session.
+// Every other hint only identifies which session to ask about
+// (docs/protocols/oidc-rpinitiated.md). With no session there is nothing to
+// end, and a matched redirect is still honoured so an RP is not stranded
+// after an idle-out.
+export function decideLogout(input: LogoutInput): FirstContactDecision {
+  const { session, hint, client, redirect } = input;
+  if (session === null) {
+    return redirect === null
+      ? { kind: 'confirm' }
+      : { kind: 'end', sessionEnds: false, redirectTo: redirect.uri };
   }
-  return { kind: 'confirm' };
+  const skips =
+    hint !== null &&
+    client !== null &&
+    client.skipsConfirmation &&
+    hint.clientId === client.id &&
+    hint.sid === session.id;
+  return skips ? { kind: 'end', sessionEnds: true } : { kind: 'confirm' };
+}
+
+// `exp` is left unjudged by the reader, as for every logout hint, so a
+// lapsed one still counts: what bounds it is the session its `sid` must name.
+export function toValidHint(
+  hint: { audiences: readonly string[]; sid: string | null } | null,
+): ValidHint | null {
+  const [only, ...rest] = hint?.audiences ?? [];
+  const sid = hint?.sid ?? null;
+  if (sid === null || only === undefined || rest.length > 0) return null;
+  return { clientId: only, sid };
+}
+
+export function registeredRedirectOf(
+  requested: string | null,
+  registered: readonly string[],
+): RegisteredRedirect | null {
+  return requested !== null && registered.includes(requested) ? { uri: requested } : null;
 }
 
 export interface LogoutRequestParams {
@@ -98,16 +151,21 @@ export type LogoutOutcome =
       frontChannelLogoutUrls: readonly string[];
     };
 
+export interface LogoutClientRecord extends LogoutClient {
+  postLogoutRedirectUris: readonly string[];
+}
+
 export interface LogoutUsecaseDeps {
   findTenant(name: string): Promise<TenantLookup | null>;
   // Shared with /authorize's own hint validation — this tenant's own keys,
   // this tenant's issuer.
   listPublishableKeys(tenantId: string): Promise<SigningKeyRecord[]>;
-  // Resolved from a client (the request's `client_id`, else its hint's one
-  // audience) to that client's registered post_logout_redirect_uris; an
-  // unknown or unspecified client yields an empty list, refusing any redirect
-  // rather than resolving one with no client to trust it against (§3).
-  postLogoutRedirectUris(tenantId: string, oauthClientId: string): Promise<readonly string[]>;
+  // A client (the request's `client_id`, else its hint's one audience) with
+  // its registered post_logout_redirect_uris and whether it skips the
+  // confirmation, read in one go. An unknown or disabled client yields null,
+  // which refuses any redirect rather than resolving one with no client to
+  // trust it against (§3) and never skips.
+  logoutClient(tenantId: string, oauthClientId: string): Promise<LogoutClientRecord | null>;
   // The browser's session cookies, resolved to their live rows exactly the
   // way /authorize resolves them — never trusted for anything but that
   // lookup.
@@ -186,13 +244,12 @@ function clientOfRequest(
   return only !== undefined && rest.length === 0 ? only : null;
 }
 
-async function registeredUris(
+function logoutClientOf(
   deps: LogoutUsecaseDeps,
   tenantId: string,
   clientId: string | null,
-): Promise<readonly string[]> {
-  if (clientId === null) return [];
-  return deps.postLogoutRedirectUris(tenantId, clientId);
+): Promise<LogoutClientRecord | null> {
+  return clientId === null ? Promise.resolve(null) : deps.logoutClient(tenantId, clientId);
 }
 
 // The confirmation concerns one session, while a browser may hold several.
@@ -221,14 +278,17 @@ function toLogoutSession(session: PresentedSession | null): LogoutSession | null
 const LOGOUT_CONFIRMATION = 'logout-confirm';
 
 // A `GET` (or unconfirmed `POST`) against the logout endpoint: the first
-// contact. A session is never ended here; the page asks, and nothing ends
-// until the confirmation form is posted back to handleLogoutConfirmation.
+// contact. A session is ended here only when decideLogout says the client
+// opted out and the hint proves the request; otherwise the page asks, and
+// nothing ends until the confirmation form is posted back to
+// handleLogoutConfirmation.
 export async function handleLogoutRequest(
   deps: LogoutUsecaseDeps,
   tenantName: string,
   issuer: string,
   header: string | undefined,
   params: LogoutRequestParams,
+  request: RequestContext,
 ): Promise<LogoutOutcome> {
   const tenant = await deps.findTenant(tenantName);
   if (!tenant?.enabled) return { kind: 'not_found' };
@@ -255,7 +315,8 @@ export async function handleLogoutRequest(
       ? null
       : await subjectOfLogoutHint(deps, tenant.id, issuer, params.idTokenHint);
   const clientId = clientOfRequest(params.clientId, hint);
-  const registered = await registeredUris(deps, tenant.id, clientId);
+  const client = await logoutClientOf(deps, tenant.id, clientId);
+  const registered = client?.postLogoutRedirectUris ?? [];
 
   // §2: "When both `client_id` and `id_token_hint` are present, the OP MUST
   // verify that the Client Identifier matches the one used when issuing the
@@ -265,36 +326,52 @@ export async function handleLogoutRequest(
   const disagreeing =
     params.clientId !== null && hint !== null && !hint.audiences.includes(params.clientId);
   const requested = disagreeing ? null : params.postLogoutRedirectUri;
-  const hintSid = disagreeing ? null : (hint?.sid ?? null);
-  const selected = selectLogoutSession(sessions, hintSid);
+  const usableHint = disagreeing ? null : hint;
+  const selected = selectLogoutSession(sessions, usableHint?.sid ?? null);
   const session = toLogoutSession(selected);
 
-  const decision = decideLogout({ session, requested, registered });
+  const decision = decideLogout({
+    session,
+    hint: toValidHint(usableHint),
+    client,
+    redirect: registeredRedirectOf(requested, registered),
+  });
 
-  if (decision.kind === 'confirm') {
+  if (decision.kind === 'end' && decision.sessionEnds && session !== null) {
+    return endAndAnswer(
+      deps,
+      tenant.id,
+      issuer,
+      session,
+      requested,
+      registered,
+      params.state,
+      request,
+    );
+  }
+  if (decision.kind === 'end' && !decision.sessionEnds) {
+    // Reached only with no session: a matched redirect with nothing to end.
     return {
-      kind: 'confirm',
-      sessionId: session?.id ?? null,
-      csrf:
-        selected?.entry.proof(LOGOUT_CONFIRMATION, [
-          clientId ?? '',
-          requested ?? '',
-          params.state ?? '',
-        ]) ?? null,
-      clientId,
-      postLogoutRedirectUri: requested,
-      registeredRedirect: requested !== null && registered.includes(requested) ? requested : null,
+      kind: 'end',
+      redirectTo: decision.redirectTo,
       state: params.state,
+      sessionEnded: false,
+      frontChannelLogoutUrls: [],
     };
   }
-
-  // Reached only with no session: a matched redirect with nothing to end.
   return {
-    kind: 'end',
-    redirectTo: decision.redirectTo,
+    kind: 'confirm',
+    sessionId: session?.id ?? null,
+    csrf:
+      selected?.entry.proof(LOGOUT_CONFIRMATION, [
+        clientId ?? '',
+        requested ?? '',
+        params.state ?? '',
+      ]) ?? null,
+    clientId,
+    postLogoutRedirectUri: requested,
+    registeredRedirect: registeredRedirectOf(requested, registered)?.uri ?? null,
     state: params.state,
-    sessionEnded: false,
-    frontChannelLogoutUrls: [],
   };
 }
 
@@ -349,28 +426,51 @@ export async function handleLogoutConfirmation(
   }
   const session: LogoutSession = { id: confirmed.id, subjectId: confirmed.subjectId };
 
-  const registered = await registeredUris(deps, tenant.id, params.clientId);
-  // Consent was given by posting this form, so only the redirect rule is
-  // still live.
-  const decision = decideRedirect(params.postLogoutRedirectUri, registered);
+  const client = await logoutClientOf(deps, tenant.id, params.clientId);
+  return endAndAnswer(
+    deps,
+    tenant.id,
+    issuer,
+    session,
+    params.postLogoutRedirectUri,
+    client?.postLogoutRedirectUris ?? [],
+    params.state,
+    request,
+  );
+}
 
-  await deps.endSession(tenant.id, session.id, session.subjectId, deps.now(), issuer, request);
+// The work that ends a session, shared by the confirmation POST and by the
+// first contact of a client that skips the confirmation: end it, then judge
+// the redirect (§3), which is the only rule still live once consent has been
+// given or waived.
+async function endAndAnswer(
+  deps: LogoutUsecaseDeps,
+  tenantId: string,
+  issuer: string,
+  session: LogoutSession,
+  requested: string | null,
+  registered: readonly string[],
+  state: string | null,
+  request: RequestContext,
+): Promise<LogoutOutcome> {
+  const decision = decideRedirect(requested, registered);
 
+  await deps.endSession(tenantId, session.id, session.subjectId, deps.now(), issuer, request);
+
+  const frontChannel = await frontChannelLogoutUrls(deps, tenantId, issuer, session.id);
   if (decision.kind === 'end') {
-    const frontChannel = await frontChannelLogoutUrls(deps, tenant.id, issuer, session.id);
     return {
       kind: 'end',
       redirectTo: decision.redirectTo,
-      state: params.state,
+      state,
       sessionEnded: true,
       frontChannelLogoutUrls: frontChannel,
     };
   }
-  const refusedFrontChannel = await frontChannelLogoutUrls(deps, tenant.id, issuer, session.id);
   return {
     kind: 'render',
     error: decision.error,
-    state: params.state,
-    frontChannelLogoutUrls: refusedFrontChannel,
+    state,
+    frontChannelLogoutUrls: frontChannel,
   };
 }

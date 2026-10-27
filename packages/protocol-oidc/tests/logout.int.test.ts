@@ -27,6 +27,7 @@ import { NO_CLIENT_KEY_FETCHER } from '#/repository/client-keys';
 import { UNLIMITED_CLIENT_SECRET_LIMITER } from '#/service/client-secret-throttle';
 import { clientOidcConfigRepository } from '#/repository/client-oidc-config';
 import { tokenGrantRepository } from '#/repository/grants';
+import { backchannelLogoutDeliveries } from '#/schema/logout-deliveries';
 import { UNLIMITED_AUDIT_REFUSAL_BUDGET } from '#/service/audit-refusal-budget';
 import { confirmationFields, confirmLogoutPage } from '#/testing/logout-confirmation';
 
@@ -1449,5 +1450,213 @@ describe('[ODUDU-LOGOUT-HINT-CLIENT-01] a valid hint with no client_id names the
     expect(confirmed.statusCode).toBe(302);
     expect(confirmed.headers.location).toBe(POST_LOGOUT_REDIRECT_URI);
     expect(await ended(sessionId)).toBe(true);
+  });
+});
+
+describe('[ODUDU-LOGOUT-SKIP-01] a client that skips the confirmation', () => {
+  const BACKCHANNEL_URI = 'https://app.example/backchannel';
+
+  async function skippingTenant(
+    prefix: string,
+    skips: boolean,
+  ): Promise<{ tenantName: string; tenantId: string; clientDbId: string }> {
+    const tenantName = `${prefix}-${newId()}`;
+    const { tenantId, clientDbId } = await setupTenant(tenantName);
+    await owner.db
+      .update(clients)
+      .set({ skipLogoutConfirmation: skips })
+      .where(eq(clients.id, clientDbId));
+    return { tenantName, tenantId, clientDbId };
+  }
+
+  async function deliveriesFor(tenantId: string): Promise<string[]> {
+    const rows = await owner.db
+      .select({ endpoint: backchannelLogoutDeliveries.endpoint })
+      .from(backchannelLogoutDeliveries)
+      .where(eq(backchannelLogoutDeliveries.tenantId, tenantId));
+    return rows.map((row) => row.endpoint);
+  }
+
+  async function signedInWithGrant(
+    tenantName: string,
+    tenantId: string,
+    clientDbId: string,
+  ): Promise<{ cookie: string; sessionId: string; hint: string }> {
+    await withTenant(app.db, tenantId, (tx) =>
+      clientOidcConfigRepository(tx).update(clientDbId, { backchannelLogoutUri: BACKCHANNEL_URI }),
+    );
+    const cookie = await signIn(tenantName);
+    const sessionId = sessionIdFromCookie(cookie);
+    const subjectId = await subjectIdOf(tenantId, USERNAME);
+    await withTenant(app.db, tenantId, (tx) =>
+      tokenGrantRepository(tx).create({
+        id: newId(),
+        tenantId,
+        clientId: clientDbId,
+        subjectId,
+        scope: 'openid',
+        audience: [],
+        sessionId,
+      }),
+    );
+    return { cookie, sessionId, hint: await mintIdToken(tenantName, subjectId, sessionId) };
+  }
+
+  const redirectParams = (hint: string | undefined, extra: Record<string, string> = {}) => ({
+    ...(hint === undefined ? {} : { id_token_hint: hint }),
+    client_id: CLIENT_ID,
+    post_logout_redirect_uri: POST_LOGOUT_REDIRECT_URI,
+    state: 'skip-state',
+    ...extra,
+  });
+
+  it('signs out at once for its own valid hint, enqueues its back-channel logout and redirects', async () => {
+    const { tenantName, tenantId, clientDbId } = await skippingTenant('logout-skip-on', true);
+    const { cookie, sessionId, hint } = await signedInWithGrant(tenantName, tenantId, clientDbId);
+
+    const res = await http.inject({
+      url: logoutUrl(tenantName, redirectParams(hint)),
+      headers: { cookie },
+    });
+
+    expect(res.statusCode).toBe(302);
+    const location = new URL(locationHeader(res));
+    expect(location.origin + location.pathname).toBe(POST_LOGOUT_REDIRECT_URI);
+    expect(location.searchParams.get('state')).toBe('skip-state');
+    expect(String(res.headers['set-cookie'])).toContain('Max-Age=0');
+    expect(await isLive(tenantId, sessionId)).toBe(false);
+    expect(await deliveriesFor(tenantId)).toEqual([BACKCHANNEL_URI]);
+  });
+
+  it('answers a POST carrying the same request the same way', async () => {
+    const { tenantName, tenantId, clientDbId } = await skippingTenant('logout-skip-post', true);
+    const { cookie, sessionId, hint } = await signedInWithGrant(tenantName, tenantId, clientDbId);
+
+    const res = await postConfirmation(tenantName, cookie, redirectParams(hint));
+
+    expect(res.statusCode).toBe(302);
+    expect(await isLive(tenantId, sessionId)).toBe(false);
+  });
+
+  it('a non-skipping client’s identical request asks, and ends nothing', async () => {
+    const { tenantName, tenantId, clientDbId } = await skippingTenant('logout-skip-off', false);
+    const { cookie, sessionId, hint } = await signedInWithGrant(tenantName, tenantId, clientDbId);
+
+    const res = await http.inject({
+      url: logoutUrl(tenantName, redirectParams(hint)),
+      headers: { cookie },
+    });
+
+    expectAskedAbout(res, sessionId);
+    expect(res.headers['set-cookie']).toBeUndefined();
+    expect(await isLive(tenantId, sessionId)).toBe(true);
+    expect(await deliveriesFor(tenantId)).toEqual([]);
+  });
+
+  it('still honours the redirect rule: an unregistered redirect ends the session and renders the refusal', async () => {
+    const { tenantName, tenantId, clientDbId } = await skippingTenant('logout-skip-badredir', true);
+    const { cookie, sessionId, hint } = await signedInWithGrant(tenantName, tenantId, clientDbId);
+
+    const res = await http.inject({
+      url: logoutUrl(
+        tenantName,
+        redirectParams(hint, { post_logout_redirect_uri: 'https://evil.example/after' }),
+      ),
+      headers: { cookie },
+    });
+
+    expect(res.statusCode).toBe(400);
+    expect(res.headers.location).toBeUndefined();
+    expect(await isLive(tenantId, sessionId)).toBe(false);
+  });
+
+  describe('asks all the same', () => {
+    it('with client_id and no hint', async () => {
+      const { tenantName, tenantId, clientDbId } = await skippingTenant('logout-skip-nohint', true);
+      const { cookie, sessionId } = await signedInWithGrant(tenantName, tenantId, clientDbId);
+
+      const res = await http.inject({
+        url: logoutUrl(tenantName, redirectParams(undefined)),
+        headers: { cookie },
+      });
+
+      expectAskedAbout(res, sessionId);
+      expect(await isLive(tenantId, sessionId)).toBe(true);
+    });
+
+    it('for a hint that does not verify', async () => {
+      const { tenantName, tenantId, clientDbId } = await skippingTenant('logout-skip-bad', true);
+      const { cookie, sessionId, hint } = await signedInWithGrant(tenantName, tenantId, clientDbId);
+
+      const res = await http.inject({
+        url: logoutUrl(tenantName, redirectParams(`${hint.slice(0, -4)}AAAA`)),
+        headers: { cookie },
+      });
+
+      expectAskedAbout(res, sessionId);
+      expect(await isLive(tenantId, sessionId)).toBe(true);
+    });
+
+    it('for a hint minted for another client, even when this client skips', async () => {
+      const { tenantName, tenantId, clientDbId } = await skippingTenant('logout-skip-other', true);
+      const { cookie, sessionId } = await signedInWithGrant(tenantName, tenantId, clientDbId);
+      const subjectId = await subjectIdOf(tenantId, USERNAME);
+      const foreign = await mintIdToken(tenantName, subjectId, sessionId, 'another-client');
+
+      const named = await http.inject({
+        url: logoutUrl(tenantName, redirectParams(foreign)),
+        headers: { cookie },
+      });
+      const unnamed = await http.inject({
+        url: logoutUrl(tenantName, { id_token_hint: foreign }),
+        headers: { cookie },
+      });
+
+      expectAskedAbout(named, sessionId);
+      expectAskedAbout(unnamed, sessionId);
+      expect(await isLive(tenantId, sessionId)).toBe(true);
+    });
+
+    it('when the hint’s sid is not the live session', async () => {
+      const { tenantName, tenantId, clientDbId } = await skippingTenant('logout-skip-sid', true);
+      const { cookie, sessionId } = await signedInWithGrant(tenantName, tenantId, clientDbId);
+      const subjectId = await subjectIdOf(tenantId, USERNAME);
+      const stale = await mintIdToken(tenantName, subjectId, newId());
+
+      const res = await http.inject({
+        url: logoutUrl(tenantName, redirectParams(stale)),
+        headers: { cookie },
+      });
+
+      expectAskedAbout(res, sessionId);
+      expect(await isLive(tenantId, sessionId)).toBe(true);
+    });
+  });
+
+  it('a hint whose exp has passed still counts, as it does for every logout hint', async () => {
+    const { tenantName, tenantId, clientDbId } = await skippingTenant('logout-skip-exp', true);
+    const { cookie, sessionId } = await signedInWithGrant(tenantName, tenantId, clientDbId);
+    const key = signingKeyOf.get(tenantName);
+    if (key === undefined) throw new Error('no signing key');
+    const past = Math.floor(Date.now() / 1000) - 3600;
+    const lapsed = await signJwt(
+      {
+        iss: await issuerFor(tenantName),
+        aud: CLIENT_ID,
+        sub: await subjectIdOf(tenantId, USERNAME),
+        sid: sessionId,
+        iat: past - 300,
+        exp: past,
+      },
+      { key, kek: KEK },
+    );
+
+    const res = await http.inject({
+      url: logoutUrl(tenantName, redirectParams(lapsed)),
+      headers: { cookie },
+    });
+
+    expect(res.statusCode).toBe(302);
+    expect(await isLive(tenantId, sessionId)).toBe(false);
   });
 });
