@@ -430,6 +430,7 @@ docker compose -f infra/docker/compose.yaml exec -T postgres \
 ```
 
 ```
+UPDATE 1
     client_id    | enabled
 -----------------+---------
  disableddoc-spa | f
@@ -643,6 +644,7 @@ docker compose -f infra/docker/compose.yaml exec -T postgres \
 ```
 
 ```
+UPDATE 1
                   id                  | username | disabled
 --------------------------------------+----------+----------
  01a0ed76-cc3a-7f71-a4ac-2c62b3c966fc | ada      | t

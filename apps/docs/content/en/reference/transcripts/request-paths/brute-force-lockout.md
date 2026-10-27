@@ -275,6 +275,7 @@ status 200, location ''
 HTTP/1.1 302 Found
 set-cookie: lockout-demo-session=01a0de1d-56f0-752b-bdda-35fea9a3bd12:sSLOTtksH5BK5FC8ou5gmQ4cvjhvanx9_xokqpQ5w0k; HttpOnly; SameSite=Lax; Path=/
 set-cookie: lockout-demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
+set-cookie: odudu-sign-in=; HttpOnly; SameSite=Lax; Path=/tenants/lockout-demo/; Max-Age=0
 location: http://localhost:8080/callback?code=QnWfcy1CggMc-sXu1mjrahD5SrkuKrVuVx8wdy7AYug&state=xyz-123&iss=http%3A%2F%2Flocalhost%3A3000%2Ftenants%2Flockout-demo
 ```
 
@@ -361,7 +362,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 829
+content-length: 895
 Date: Thu, 15 Oct 2026 11:54:12 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -390,7 +391,7 @@ Keep-Alive: timeout=72
 HTTP/1.1 429 Too Many Requests
 retry-after: 60
 content-type: text/html
-content-length: 239
+content-length: 895
 ```
 
 A page rather than a bare status, because a person at a browser who submitted
@@ -430,7 +431,7 @@ done
 ```
 --- the sign-in submission shares the same budget ---
 HTTP/1.1 429 Too Many Requests
-retry-after: 53
+retry-after: 54
 ```
 
 ```
@@ -444,7 +445,7 @@ token request 3: 400
 
 `retry-after` is what is left of the oldest counted request's minute,
 rounded up to a second — `60` after a burst this fast (the sign-in refusal
-above came a few seconds later and says `53`), and lower after a
+above came a few seconds later and says `54`), and lower after a
 slower one, since the window slides rather than resetting. The three `400`s
 are `invalid_grant` on a code that never existed — an OAuth refusal, which
 is the point.
@@ -516,19 +517,19 @@ echo '--- another username, same address ---'; attempt grace
 ```
 
 ```
-lena, submission 1: HTTP/1.1 200 OK content-length: 2489
-lena, submission 2: HTTP/1.1 200 OK content-length: 2489
-lena, submission 3: HTTP/1.1 200 OK content-length: 2489
-lena, submission 4: HTTP/1.1 200 OK content-length: 2489
-lena, submission 5: HTTP/1.1 200 OK content-length: 2489
+lena, submission 1: HTTP/1.1 200 OK content-length: 3655
+lena, submission 2: HTTP/1.1 200 OK content-length: 3655
+lena, submission 3: HTTP/1.1 200 OK content-length: 3655
+lena, submission 4: HTTP/1.1 200 OK content-length: 3655
+lena, submission 5: HTTP/1.1 200 OK content-length: 3655
 --- the sixth, for lena ---
-HTTP/1.1 429 Too Many Requests retry-after: 60 content-length: 239
+HTTP/1.1 429 Too Many Requests retry-after: 60 content-length: 895
 --- a username nobody holds, after five of its own ---
-HTTP/1.1 429 Too Many Requests retry-after: 60 content-length: 239
+HTTP/1.1 429 Too Many Requests retry-after: 60 content-length: 895
 --- lena again, in other letters ---
-HTTP/1.1 429 Too Many Requests retry-after: 60 content-length: 239
+HTTP/1.1 429 Too Many Requests retry-after: 60 content-length: 895
 --- another username, same address ---
-HTTP/1.1 200 OK content-length: 2490
+HTTP/1.1 200 OK content-length: 3656
 ```
 
 The fifth wrong password also starts the account lockout, and its answer is

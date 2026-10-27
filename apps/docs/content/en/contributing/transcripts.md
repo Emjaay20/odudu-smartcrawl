@@ -249,6 +249,16 @@ served. The recorded nonces, ids and times are those of the earlier runs, except
 whose script was added, which come from live responses. The `ETag` of the first `GET /settings` is the live
 one.
 
+Every command in the 26 pages of this directory was then run again, in the page's own order, against the
+image built from `main` at `758fdb6e`: Bootstrap, Path A, the account pages, Paths B and C, the CORS, branches, mail and documentation
+pages on the compose project `odudu-p4g-rerun-request-paths` (port 3611, a fresh volume), Retention on its own
+fresh stack (`odudu-p4g-rerun-ret`, 3612) and RP-initiated logout, Brute-force lockout and Path D on a third
+(`odudu-p4g-rerun-lo`, 3613). Each output was compared with the block after it, ports, ids, times, nonces and
+tokens masked and `content-length` not. Where a block differed it was written again from the run, and where a
+command could not have printed its block as written the command was corrected; a block that shows part of a
+response says so. `docs/phases/p4g.md` lists, page by page, what was identical, what changed and what was not
+run again.
+
 The authorization and token endpoints now send an `error_description`. A block that quotes one shows the
 real body or query from a live capture on a stack of this branch (project `odudu-p4g-31r`, port `3197`),
 with its `content-length`. The blocks were not replayed from the top, so the keys,

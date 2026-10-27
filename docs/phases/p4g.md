@@ -3839,3 +3839,62 @@ Each finding was checked against the repository before it was changed.
   Sending it to the server is a P4h row in `docs/NEXT.md`, on the roadmap and in section 11.
 - **Restore dialog.** `RESTORE_DIALOG_TITLE` and `RESTORE_CONFIRM_LABEL` live in `service/restore.ts`;
   the `settled` flag is `held` in `useRestoreScopes` and `ConfirmDialog`.
+
+## Transcripts replayed on the final image: `reference/transcripts/request-paths`
+
+The owner asked (2026-10-21) for every transcript the phase touched to be run again against the
+final image and diffed against the committed blocks. This is the record for the 26 pages of
+`request-paths`; the other two directories have their own entries.
+
+- **Image.** Built from `main` at `758fdb6e` with `ODUDU_REVISION=758fdb6e`
+  (`docker compose up -d --build`, image `86d45fc52ec6`).
+- **Stacks**, each on a fresh volume: `odudu-p4g-rerun-request-paths` on port 3611 (Bootstrap through
+  Path D, the CORS, branches, docs and mail pages, with the server recreated for the pages that
+  name a variable: `ODUDU_OUTBOX_ENABLED=false`, `ODUDU_REAP_ENABLED=false`,
+  `ODUDU_ALLOW_PRIVATE_SMTP_HOSTS=true`, `ODUDU_TRUST_PROXY=true`, `ODUDU_DOCS_DIR`, `ODUDU_DOCS`, an
+  SMTP relay to Mailpit 1.31.5); `odudu-p4g-rerun-ret` on 3612 for Retention alone, driven only as
+  far as that page says; `odudu-p4g-rerun-lo` on 3613 for RP-initiated logout, Brute-force lockout
+  and Path D, with `ODUDU_REAP_ENABLED=false`, `ODUDU_LOGOUT_SENDER_ENABLED=false` and
+  `ODUDU_ALLOW_PRIVATE_CLIENT_URLS=true`, and the default throttle budgets where the page needs them.
+- **Method.** A driver outside the repository ran each fenced command in the page's order in one
+  shell with its variables kept, rewrote only the port, supplied the values the page took from an
+  earlier stack (a parked session, a mailed key, an admin token from `odudu console assertion`) and
+  compared the output with the next block. Ports, ids, timestamps, nonces, tokens, request ids,
+  `Date` and the elisions the pages already make were masked; `content-length` was not. The
+  pages that run a command as prose or in an untagged fence were replayed by hand.
+- **Changed, from the run:** a login `302` and a consent `302` now clear `odudu-sign-in` (11 blocks in
+  Path A, TOTP, Recovery codes, Password reset, Password expiry, RP-initiated logout, Brute-force lockout); the
+  authorization form's GET carries `set-cookie: odudu-sign-in` (Path A); the refused-login page grew to
+  3654 bytes (Path A) and the spent-link page offers a way to request a new link (Required-actions
+  link); the logout confirmation form carries `csrf` (RP-initiated logout); the browser-visible 500 is
+  `application/problem+json` with no cause (Bootstrap); two recorded `content-length` values were from
+  before the shell (signed-out page 318 to 974, recovery codes 2041 to 2107); the CORS discovery
+  `content-length` is 2490; the 429 page is 895 bytes and the refused sign-in form 3655 and 3656
+  (Brute-force lockout); `docs` build values (CSP hashes, `etag`, length) are this build's.
+- **Commands that could not have produced their block as written, corrected:** the-branches' reuse
+  `CODE=$(curl …)` sent no `-D`, so `CODE` was empty; its `ADA_SESSION` `grep` matched the chooser's
+  markup from before the buttons carried classes; the two `/revoke` calls in RP-initiated logout printed
+  nothing without `-i`; the offline-logout confirmation was posted without `csrf`, which is a `400`; a
+  `grep` in Password reset printed `</a>` that the pattern never matches.
+- **Queries scoped so another stack gives the same answer:** the recovery-code count by tenant.
+  Blocks that showed only part of a response now say so ("elided here", "omitted").
+- **Stale or wrong:** a literal `…` in two plain blocks (now `…`); the cap-demo cookies, the reset
+  login's cookie and the `auth_time` pair in the-branches, re-run (the pair is 38 seconds apart).
+- **Identical:** Bootstrap's seeds and registrations, Path A's discovery, JWKS, authorize, token and
+  userinfo blocks (the encrypted `/userinfo` re-run with generated RSA keys: 1451 and 513 bytes),
+  Path A as a confidential client (the Mailpit anchors included), Self-registration (every block),
+  Path B, Path C (and `seed client --client-credentials-scope`), Path D, Retention (every count, on
+  its own stack), Sending queued mail, One sign-in's audit trail (the `ip` is the stack's), the
+  mail captures' `htmlBytes` (5839, 5922, 6039 and the reset's).
+- **No commands, not run:** the index, The shape of it, What to do next, Enrolling a passkey and Signing
+  in with a passkey (the second's form excerpt was re-derived from the sign-in page).
+- **Not re-run:** Bootstrap's host and no-Docker runs (the page says so); the-branches' tables for
+  `/token`, the login POST and `/userinfo` (the `/authorize` tables, the `code_challenge` and empty or
+  repeated parameter rows and the `id_token_hint` rows were run and agree).
+- **State prepared, said here because a page does not say it:** unsent `email_outbox` rows deleted
+  before Sending queued mail (this stack held rows from the required-actions section);
+  `login_failures` emptied before the first brute-force run, as that page says.
+- **Observations, not changed:** `odudu seed grant-role` and `map-role` fail with a raw unique-key error
+  when repeated; `seed --send-verification-email` warns that `--issuer-base` was not given and mails
+  `http://localhost:3000`, the container's own port; Node prints a `DeprecationWarning` for a TLS server
+  name that is an IP address on the back-channel send (stderr, left out, and the page says so).
