@@ -46,16 +46,16 @@ the theme's own icons. The page revalidates by `etag`:
 ```
 $ curl -sI http://localhost:3261/docs/ | tr -d '\r' | grep -viE '^(date|x-request-id|connection|keep-alive):'
 HTTP/1.1 200 OK
-content-security-policy: default-src 'self'; script-src 'self' 'sha256-XzbohOdLBHFS8lNAlXYAVACbmod6JzK/jbZ8kS4rKFA='; style-src 'self'; style-src-attr 'unsafe-hashes' 'sha256-AIsMoEZ2AFYSNPqPHAPTfeQBkBx0uwe/S138h7oBgqk=' 'sha256-IcqGb0TAbH6mKQhvd8hBx2FAalfysv4UbOSlrgEnNqs=' 'sha256-biLFinpqYMtWHmXfkA1BPeCY0/fNt46SAZ+BBk5YUog=' 'sha256-eslHeDkvJNiffFsT711OoAWNr5i7S9CBs7nlwyVzHxo=' 'sha256-jKE6QZqne5OsrfemNvuLSNoud++NsCOiSlGuIsQns5o=' 'sha256-sDIENtrZwmox3spLJOzzFKFmi3ELZ0v+EkEB+J8SMrA=' 'sha256-wfFRBRN9VtnoKyjFp7nESoyL5GicNVcIrkvfmAPxv1s='; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'none'
+content-security-policy: default-src 'self'; script-src 'self' 'sha256-XzbohOdLBHFS8lNAlXYAVACbmod6JzK/jbZ8kS4rKFA='; style-src 'self'; style-src-attr 'unsafe-hashes' 'sha256-Ttpoc3tSKRg5N48uBLnp89v0S8hV/3pNb8OivYW4Jak=' 'sha256-biLFinpqYMtWHmXfkA1BPeCY0/fNt46SAZ+BBk5YUog='; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; frame-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'none'
 x-frame-options: DENY
 referrer-policy: no-referrer
 x-content-type-options: nosniff
 x-robots-tag: noindex, nofollow
 content-language: en
-etag: "g0JO9AjGJhhNIfLpiG7FYhXh8Rn"
+etag: "rNNQhY6VaZbT7Gzyooq-8LqoH4W"
 cache-control: no-cache
 content-type: text/html; charset=utf-8
-content-length: 10350
+content-length: 12191
 
 ```
 
@@ -67,16 +67,16 @@ fixed name, such as the agent copy `llms.txt`, a Markdown copy of a page or the
 search index, revalidates, and carries the same `x-robots-tag`:
 
 ```
-$ curl -sI http://localhost:3261/docs/assets/js/main.52f8d3ec.js | tr -d '\r' | grep -iE '^(HTTP|content-type|cache-control|x-robots-tag|etag)'
+$ curl -sI http://localhost:3261/docs/assets/js/main.21a3a812.js | tr -d '\r' | grep -iE '^(HTTP|content-type|cache-control|x-robots-tag|etag)'
 HTTP/1.1 200 OK
 x-robots-tag: noindex, nofollow
-etag: "K3NlSXVr_bqnqZhg4Klex2OVBDU"
+etag: "Bzj_QBy2JbNi6YOlPkKrAqw-o8c"
 cache-control: public, max-age=31536000, immutable
 content-type: text/javascript; charset=utf-8
 $ curl -sI http://localhost:3261/docs/llms.txt | tr -d '\r' | grep -iE '^(HTTP|content-type|cache-control|x-robots-tag|etag)'
 HTTP/1.1 200 OK
 x-robots-tag: noindex, nofollow
-etag: "mZXvM6DAzatbM2ITwae2rfkA19h"
+etag: "nFmJkzvMCSoZKlF_aLktKFIvSbO"
 cache-control: no-cache
 content-type: text/plain; charset=utf-8
 ```

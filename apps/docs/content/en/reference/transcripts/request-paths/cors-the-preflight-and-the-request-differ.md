@@ -197,7 +197,7 @@ content-length: 455
 HTTP/1.1 200 OK
 access-control-allow-origin: *
 content-type: application/json; charset=utf-8
-content-length: 2300
+content-length: 2490
 ```
 
 (no `Vary` on either — a fixed wildcard has nothing to vary the response
