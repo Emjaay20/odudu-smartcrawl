@@ -3840,6 +3840,71 @@ Each finding was checked against the repository before it was changed.
 - **Restore dialog.** `RESTORE_DIALOG_TITLE` and `RESTORE_CONFIRM_LABEL` live in `service/restore.ts`;
   the `settled` flag is `held` in `useRestoreScopes` and `ConfirmDialog`.
 
+## Transcripts replayed on the final image: `reference/transcripts/console-paths` and `first-start.md`
+
+Same request as the `request-paths` entry (owner, 2026-10-21). This is the record for the 22 pages
+of `console-paths` and for `first-start.md`.
+
+- **Image.** Built from `main` at `5eeac524` with `ODUDU_REVISION=5eeac524` (`docker compose up
+-d --build`, image `e5edfb2ab9a8`); `first-start.md` ran on an image built from the same commit
+  with `docker build` (`6f726d626236`).
+- **Stacks.** `odudu-p4g-rerun-console-a` on 3701 (Postgres 5701) for every console page, on one
+  fresh volume, with `ODUDU_THROTTLE_LIMIT=1000 ODUDU_LOGIN_THROTTLE_LIMIT=1000`. Once, after
+  the others, its server was recreated with `ODUDU_TLS=true` and
+  `ODUDU_PUBLIC_BASE_URL=https://localhost:3701` (the server refuses `ODUDU_TLS=true` with an http
+  base) and `odudu console provision` run for the new base; only the new "Behind TLS" section ran
+  there. `odudu-p4g-rerun-console-qs1` and `-qs2` on 3702 (`quickstart/compose.yaml`, one fresh
+  volume each) and a `postgres:17-alpine` container on 5702 for `odudu init`. Every stack was
+  removed with `down -v`, the image and the container with `rmi` and `rm`.
+- **Method.** Shell helpers outside the repository ran each command of a page in order with a
+  curl jar per browser, took the ids the page takes from the run before it (`$LOCATION`, `$CB`, the
+  subject ids), rewrote only the port, and compared each response with the next block after
+  masking ids, timestamps, tokens, `Date`, ports and the stack's `ip`; `content-length` was not
+  masked. The three second-run chains were kept as the pages have them: `grace` on `console-paths`
+  through the callback, the second tab and the writes; `ada` on `system` through the loopback
+  sign-in, the gateway's assertion pages, the refresh pages and the logout. The refresh pages were
+  waited for in real time: the token lives 300 s, so the three of them took about 20 minutes.
+- **Re-derived (a real difference):** the login cookie lasts 1800 s (the page's 600 s first run and
+  its 1800 s second run are now one block); the tenant's authenticate `302` clears `odudu-sign-in`
+  (four blocks); the callback `302` also clears `odudu-console-restart`; the sign-in form's `GET`
+  sets `odudu-sign-in` and is longer (3581 bytes with the passkey form, so the block is cut at the
+  password form and says so with `…`); the discovery document lists `ui_locales_supported` and
+  `prompt_values_supported` (2412 bytes for `system`, 2508 for the second tenant); the console
+  shell names the favicon and apple-touch icon, and a hashed asset carries
+  `x-content-type-options: nosniff` (the shell is 1340 bytes, the entry 326713 and the Subjects
+  chunk 392705 on this build, still the largest chunk). First-start: the `--add-admin` banner ends
+  with the blank line the other banner has.
+- **Identical (ids, times and the `ip` aside):** the restart and the refusal pages (888 bytes), the
+  access-denied callback, the session and subjects reads, the `PATCH` with its `412`, the audit
+  row, the cross-site and principal refusals (the principal page's audit read, run here over a
+  millisecond window because the cross-site section's write fell in the same second), the
+  escaping paths and the request log that shows
+  which route took them, the gateway's refusals without an assertion, the refresh with one, the
+  once-only assertion (`200 401`), the refresh, the lock section (`502` after 5.0 s, the refresh
+  after the commit), the server-refused refresh (the `400` from the token endpoint, the row gone),
+  the logout and its redirect, and the three first-start compose and `init` transcripts.
+- **Ids made consistent:** the blocks of the console-paths first run (login to the next page),
+  the refused and restarted callbacks, the `ada` chain (gateway, refreshes, logout) and the
+  restarted callback were replaced by this run's, so each chain reads as one run. The `PATCH`,
+  cross-site and principal pages (one run of their own) and the unchanged blocks of the others
+  keep their earlier ids.
+- **Prose changed to say what the run did:** the refresh section waited until the token was under
+  30 s from expiry (6 s here, not 18); the lock section runs on a session whose last refresh was
+  4.5 minutes before, without the refresh before it being shown.
+- **Removed:** two `docker compose down -v` blocks for stacks of other runs (the discovery and
+  Console shell pages), commands nobody can run against these pages.
+- **New, run for real:** "Behind TLS" in `GET /console/auth/callback`: `__Host-odudu-console-login`,
+  `__Host-odudu-console-restart` and `__Host-odudu-console`, each with `Secure`, the tenant's own
+  `__Secure-odudu-sign-in` and `__Host-<tenant>-session`, and a write refused for an `http`
+  `Origin` once the base is `https`. curl does not send a `Secure` cookie over http, so the cookies
+  were sent by hand. A browser over real TLS stays an integration test and the `conformance` job.
+- **Run for a block's sake:** the boot warnings in `contributing/transcripts.md` (the first two
+  lines reproduce, ids and times aside; the third was about a missing console build the image has
+  carried for a long time).
+- **Observation, not changed:** `GET /console/auth/callback`'s first run returned to `/console/` in
+  the original record and to `/console/x` here, because the `return_to` of the sign-in used was
+  `/console/x`; the page's sign-in command was not shown for the `ada` chain.
+
 ## Transcripts replayed on the final image: `reference/transcripts/request-paths`
 
 The owner asked (2026-10-21) for every transcript the phase touched to be run again against the
