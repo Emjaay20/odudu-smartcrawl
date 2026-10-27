@@ -59,3 +59,11 @@ export { etagMatches, staticEtag } from '#/static-etag';
 export { type Logger } from '#/logger';
 export { ModuleRegistry, type ModuleContext, type OduduModule } from '#/registry';
 export { ClaimMapperRegistry, type ClaimMapper } from '#/registries/claim-mapper';
+export {
+  MAX_SLOT_NAME_LENGTH,
+  MAX_TEMPLATE_LENGTH,
+  fillTemplate,
+  scanSlots,
+  type Slot,
+} from '#/slots';
+export { PAGE_KINDS, type PageKind, type PageManifest } from '#/page-kinds';

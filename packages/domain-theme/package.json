@@ -13,12 +13,13 @@
   "main": "./src/index.ts",
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "test": "vitest run --config ../../vitest.config.ts"
+    "test": "vitest run --config ../../vitest.config.ts --reporter=default --reporter=json --outputFile=trace-report.json"
   },
   "dependencies": {
     "@odudu/db": "workspace:*",
     "@odudu/kernel": "workspace:*",
-    "drizzle-orm": "0.45.4"
+    "drizzle-orm": "0.45.4",
+    "parse5": "8.0.1"
   },
   "devDependencies": {
     "@odudu/domain-tenant": "workspace:*",

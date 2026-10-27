@@ -13,3 +13,10 @@ export {
   type ThemeScope,
   type ThemeState,
 } from '#/service/theme-body';
+export {
+  MAX_TEMPLATE_SLOTS,
+  checkTemplate,
+  type TemplateIssue,
+  type TemplateIssueCode,
+  type TemplateOptions,
+} from '#/service/template';
