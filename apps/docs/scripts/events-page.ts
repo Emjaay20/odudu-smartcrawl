@@ -32,7 +32,7 @@ export function renderEventsPage(): string {
     'Odudu records what happens to a tenant as audit events. Each event has an `event_type`, an ' +
       '`action`, an `outcome`, who did it and to what, the request’s `request_id` and `ip`, ' +
       'and a `detail` object that never holds a secret. Read them with `GET /admin/tenants/{tenant}/audit` ' +
-      '(see the [audit operations](./admin-api/audit.md)); a tenant’s `audit_event_types` ' +
+      '(see the [audit operations](./admin-api/audit/index.md)); a tenant’s `audit_event_types` ' +
       'setting chooses which types it stores.',
     '## Event types',
     table(['Event type', 'What it records'], types),

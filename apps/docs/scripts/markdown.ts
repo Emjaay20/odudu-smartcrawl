@@ -71,8 +71,13 @@ export function table(headers: readonly string[], rows: readonly (readonly strin
 }
 
 // A double-quoted JSON string is a valid YAML scalar.
-export function frontMatter(title: string, description: string): string {
-  return `---\ntitle: ${JSON.stringify(title)}\ndescription: ${JSON.stringify(description)}\n---\n`;
+export function frontMatter(
+  title: string,
+  description: string,
+  extra: Readonly<Record<string, string | number>> = {},
+): string {
+  const more = Object.entries(extra).map(([key, value]) => `${key}: ${JSON.stringify(value)}\n`);
+  return `---\ntitle: ${JSON.stringify(title)}\ndescription: ${JSON.stringify(description)}\n${more.join('')}---\n`;
 }
 
 const ACRONYMS = new Set(['smtp', 'api', 'url', 'uri', 'id', 'jwks', 'oidc']);

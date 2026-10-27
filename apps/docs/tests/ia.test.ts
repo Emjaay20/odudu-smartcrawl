@@ -172,11 +172,19 @@ describe('the information architecture', () => {
         }
       }
     }
-    // A recorded transcript is looked up from a group index the reference links,
-    // so it is one click further than the sections' own pages.
+    // A recorded transcript and an operation page of the admin API are looked
+    // up from a group index the reference links, so each is one click further
+    // than the sections' own pages. The admin API overview and the index of
+    // an area are not: the reference links them.
     const transcripts = `${PAGES_DOCS_BASE}reference/transcripts/`;
+    const adminApi = `${PAGES_DOCS_BASE}reference/generated/admin-api/`;
+    const allowed = (route: string): number => {
+      if (route.startsWith(transcripts)) return 3;
+      const inside = route.startsWith(adminApi) ? route.slice(adminApi.length) : '';
+      return inside.split('/').filter((part) => part !== '').length >= 2 ? 3 : 2;
+    };
     const tooFar = [...pages.keys()].filter(
-      (route) => (depth.get(route) ?? Infinity) > (route.startsWith(transcripts) ? 3 : 2),
+      (route) => (depth.get(route) ?? Infinity) > allowed(route),
     );
     expect(tooFar).toEqual([]);
     const homeLinks = pages.get(PAGES_BASE) ?? [];

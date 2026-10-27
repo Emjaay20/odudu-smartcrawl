@@ -42,6 +42,7 @@ interface Row {
   readonly required: boolean;
   readonly details: string;
   readonly described: boolean;
+  readonly patterns: readonly string[];
 }
 
 function typeOf(schema: Json): string {
@@ -190,13 +191,16 @@ function collect(
     isObject || (items !== undefined && record(resolveRef(items, root).properties) !== undefined);
   const truncated = depth >= MAX_DEPTH && hasChildren;
   if (path !== '' || !isObject) {
+    const own: string[] = [];
     rows.push({
       path: path === '' ? '(body)' : path,
       type: describeType(inner, nullable),
       required,
-      details: detailsOf(inner, unknown, truncated),
+      details: detailsOf(inner, own, truncated),
       described: (str(inner.description) ?? '').trim() !== '',
+      patterns: own,
     });
+    unknown.push(...own);
   }
   if (depth >= MAX_DEPTH) return;
   if (isObject) {
@@ -232,8 +236,7 @@ export function fieldRows(schema: Json, root: OpenApiDocument, unknown: string[]
   return rows;
 }
 
-function schemaTable(schema: Json, root: OpenApiDocument, unknown: string[]): string {
-  const rows = fieldRows(schema, root, unknown);
+function rowsTable(rows: readonly Row[]): string {
   return table(
     ['Field', 'Type', 'Required', 'Details'],
     rows.map((row) => [
@@ -243,6 +246,10 @@ function schemaTable(schema: Json, root: OpenApiDocument, unknown: string[]): st
       row.details,
     ]),
   );
+}
+
+function schemaTable(schema: Json, root: OpenApiDocument, unknown: string[]): string {
+  return rowsTable(fieldRows(schema, root, unknown));
 }
 
 interface Parameter {
@@ -311,41 +318,111 @@ function examplesOf(media: Json): string[] {
   return values.map((value) => `\`\`\`json\n${JSON.stringify(value, null, 2)}\n\`\`\``);
 }
 
+// A body with more fields than this is listed on pages of its own, so that no
+// page carries a table a browser has to lay out in one piece.
+const MAX_TABLE_ROWS = 60;
+
+interface Part {
+  readonly slug: string;
+  readonly heading: string;
+  readonly rows: readonly Row[];
+  readonly mediaType: string;
+  readonly patterns: readonly string[];
+}
+
+interface Context {
+  readonly root: OpenApiDocument;
+  readonly problemLink: string;
+  readonly unknown: string[];
+  readonly slug: string;
+  readonly parts: Part[];
+}
+
+function topLevel(row: Row): string {
+  return /^[^.[]*/u.exec(row.path)?.[0] ?? row.path;
+}
+
+// Rows are kept together by their top-level field, so a field and what is
+// inside it are never on different pages.
+function chunkRows(rows: readonly Row[]): Row[][] {
+  const groups = new Map<string, Row[]>();
+  for (const row of rows) {
+    const group = groups.get(topLevel(row));
+    if (group === undefined) groups.set(topLevel(row), [row]);
+    else group.push(row);
+  }
+  const chunks: Row[][] = [];
+  for (const group of groups.values()) {
+    const last = chunks.at(-1);
+    if (last !== undefined && last.length + group.length <= MAX_TABLE_ROWS) last.push(...group);
+    else chunks.push([...group]);
+  }
+  return chunks;
+}
+
+function partLines(
+  ctx: Context,
+  section: string,
+  heading: string,
+  mediaType: string,
+  rows: readonly Row[],
+): string[] {
+  const chunks = chunkRows(rows);
+  const links: string[] = [];
+  for (const [index, chunk] of chunks.entries()) {
+    const slug = `${ctx.slug}-${section}-part-${String(index + 1)}`;
+    ctx.parts.push({
+      slug,
+      heading: `${heading}, part ${String(index + 1)} of ${String(chunks.length)}`,
+      rows: chunk,
+      mediaType,
+      patterns: chunk.flatMap((row) => row.patterns),
+    });
+    const names = [...new Set(chunk.map(topLevel))].map((name) => code(name)).join(', ');
+    links.push(`- [${names}](./${slug}.md)`);
+  }
+  return [
+    `The body has ${String(rows.length)} fields, listed on ${String(chunks.length)} pages, grouped by the top-level field they belong to:`,
+    '',
+    ...links,
+  ];
+}
+
 function mediaBlock(
+  ctx: Context,
+  section: string,
+  heading: string,
   mediaType: string,
   media: Json,
-  root: OpenApiDocument,
-  problemLink: string,
-  unknown: string[],
 ): string[] {
   if (mediaType === 'application/problem+json') {
     return [
-      `Body: ${code(mediaType)}, an RFC 9457 problem document described under [problem details](${problemLink}).`,
+      `Body: ${code(mediaType)}, an RFC 9457 problem document described under [problem details](${ctx.problemLink}).`,
     ];
   }
   const schema = record(media.schema);
+  const rows = schema === undefined ? [] : fieldRows(schema, ctx.root, []);
+  const split = rows.length > MAX_TABLE_ROWS;
+  const listing = split ? partLines(ctx, section, heading, mediaType, rows) : [rowsTable(rows)];
+  if (!split) ctx.unknown.push(...rows.flatMap((row) => row.patterns));
   return [
     `Body: ${code(mediaType)}`,
-    ...(schema === undefined ? [] : ['', schemaTable(schema, root, unknown)]),
+    ...(schema === undefined ? [] : ['', ...listing]),
     ...examplesOf(media).flatMap((example) => ['', example]),
   ];
 }
 
-function responseBlocks(
-  operation: Json,
-  root: OpenApiDocument,
-  problemLink: string,
-  unknown: string[],
-): string[] {
+function responseBlocks(operation: Json, ctx: Context): string[] {
   const lines: string[] = [];
   for (const [status, response] of Object.entries(record(operation.responses) ?? {})) {
     const found = record(response) ?? {};
     const description = str(found.description) ?? '';
-    lines.push(`#### ${status} ${escapeProse(description)}`.trimEnd(), '');
+    lines.push(`### ${status} ${escapeProse(description)}`.trimEnd(), '');
     const content = Object.entries(record(found.content) ?? {});
     if (content.length === 0) lines.push('No body.', '');
     for (const [mediaType, media] of content) {
-      lines.push(...mediaBlock(mediaType, record(media) ?? {}, root, problemLink, unknown), '');
+      const heading = `${status} response body`;
+      lines.push(...mediaBlock(ctx, status, heading, mediaType, record(media) ?? {}), '');
     }
   }
   return lines;
@@ -363,39 +440,34 @@ function patternBlock(patterns: readonly string[]): string {
   ].join('\n');
 }
 
-function operationSection(
-  method: string,
-  path: string,
-  operation: Json,
-  root: OpenApiDocument,
-  problemLink: string,
-): string {
-  const unknown: string[] = [];
-  const lines = [`## ${method.toUpperCase()} ${path}`, ''];
+function operationBody(operation: Json, ctx: Context): string {
+  const lines: string[] = [];
   const summary = str(operation.summary);
   if (summary !== undefined) lines.push(escapeProse(summary), '');
   const description = str(operation.description);
   if (description !== undefined) lines.push(escapeProse(description), '');
 
-  const parameters = parametersOf(operation, root);
+  const parameters = parametersOf(operation, ctx.root);
   for (const [place, label] of [
     ['path', 'Path parameters'],
     ['query', 'Query parameters'],
   ] as const) {
     const ofPlace = parameters.filter((parameter) => parameter.in === place);
-    if (ofPlace.length > 0) lines.push(`### ${label}`, '', parameterTable(ofPlace, unknown), '');
+    if (ofPlace.length > 0) {
+      lines.push(`## ${label}`, '', parameterTable(ofPlace, ctx.unknown), '');
+    }
   }
 
   const body = record(operation.requestBody);
   if (body !== undefined) {
-    lines.push('### Request body', '');
+    lines.push('## Request body', '');
     for (const [mediaType, media] of Object.entries(record(body.content) ?? {})) {
-      lines.push(...mediaBlock(mediaType, record(media) ?? {}, root, problemLink, unknown), '');
+      lines.push(...mediaBlock(ctx, 'request', 'Request body', mediaType, record(media) ?? {}), '');
     }
   }
 
-  lines.push('### Responses', '', ...responseBlocks(operation, root, problemLink, unknown));
-  if (unknown.length > 0) lines.push(patternBlock(unknown));
+  lines.push('## Responses', '', ...responseBlocks(operation, ctx));
+  if (ctx.unknown.length > 0) lines.push(patternBlock(ctx.unknown));
   return lines.join('\n').replace(/\n+$/u, '\n');
 }
 
@@ -537,7 +609,38 @@ function titleOf(area: string): string {
   return AREA_TITLES[area] ?? titleCase(area);
 }
 
-function areaPage(area: string, operations: readonly Operation[], doc: OpenApiDocument): string {
+// The path a reader sees under an area: what follows the tenant.
+function tailOf(path: string): readonly string[] {
+  const parts = path.split('/').filter((part) => part !== '');
+  const [, ...rest] = parts;
+  const [first, second, ...after] = rest;
+  if (first === 'tenants' && second === '{tenant}' && after.length > 0) return after;
+  return rest;
+}
+
+export function operationSlug(method: string, path: string): string {
+  const words = tailOf(path).map((part) =>
+    part
+      .replace(/^\{(.+)\}$/u, '$1')
+      .replace(/([a-z])([A-Z])/gu, '$1-$2')
+      .toLowerCase(),
+  );
+  return [method, ...words].join('-');
+}
+
+function operationShort(method: string, path: string): string {
+  return `${method.toUpperCase()} /${tailOf(path).join('/')}`;
+}
+
+function capabilityOf(operation: Json): string {
+  return str(operation.summary) ?? 'Requires an authenticated admin caller.';
+}
+
+function areaIndexPage(
+  area: string,
+  operations: readonly Operation[],
+  doc: OpenApiDocument,
+): string {
   const label = titleOf(area);
   const noun = operations.length === 1 ? 'operation' : 'operations';
   const subject = AREA_SUBJECTS[area] ?? area.replaceAll('-', ' ');
@@ -545,14 +648,91 @@ function areaPage(area: string, operations: readonly Operation[], doc: OpenApiDo
     `${String(operations.length)} ${noun} of the Odudu admin API on ${subject}, ` +
     'each with its method, path, required capability, parameters, request body and responses.';
   const intro =
-    `Operations on ${subject} in the ${doc.info.title}, one section each. ` +
-    'Every request carries a bearer token; the [index](./index.md) says which audience it needs ' +
+    `Operations on ${subject} in the ${doc.info.title}, one page each. ` +
+    'Every request carries a bearer token; the [admin API overview](../index.md) says which audience it needs ' +
     'and how a refusal is shaped.';
-  const sections = operations.map(({ method, path, operation }) =>
-    operationSection(method, path, operation, doc, './index.md#problem-details'),
+  const items = operations.map(
+    ({ method, path, operation }) =>
+      `- [${code(`${method.toUpperCase()} ${path}`)}](./${operationSlug(method, path)}.md): ${escapeProse(capabilityOf(operation))}`,
   );
   const footer = coverageLine(coverageOfArea(operations, doc));
-  return `${frontMatter(`Admin API: ${label}`, description)}\n# Admin API: ${label}\n\n${intro}\n\n${sections.join('\n')}\n${footer}\n`;
+  return [
+    frontMatter(`Admin API: ${label}`, description),
+    `# Admin API: ${label}`,
+    '',
+    intro,
+    '',
+    '## Operations',
+    '',
+    ...items,
+    '',
+    `${footer}\n`,
+  ].join('\n');
+}
+
+function operationPages(
+  area: string,
+  { method, path, operation }: Operation,
+  position: number,
+  doc: OpenApiDocument,
+): ReadonlyMap<string, string> {
+  const slug = operationSlug(method, path);
+  const short = operationShort(method, path);
+  const label = `Admin API: ${short}`;
+  const full = code(`${method.toUpperCase()} ${path}`);
+  const areaName = titleOf(area);
+  const ctx: Context = {
+    root: doc,
+    problemLink: '../index.md#problem-details',
+    unknown: [],
+    slug,
+    parts: [],
+  };
+  const body = operationBody(operation, ctx);
+  const where = `in the [${areaName}](./index.md) area of the [admin API](../index.md)`;
+  const intro =
+    `${full}, ${where}, which says which audience the bearer token needs ` +
+    'and how a refusal is shaped.';
+  const pages = new Map<string, string>([
+    [
+      slug,
+      [
+        frontMatter(
+          label,
+          `${short} in the Odudu admin API (${areaName}): its capability, parameters, bodies and responses.`,
+          { sidebar_position: position },
+        ),
+        `# ${label}`,
+        '',
+        intro,
+        '',
+        body,
+      ].join('\n'),
+    ],
+  ]);
+  ctx.parts.forEach((part, index) => {
+    const heading = `${label}: ${part.heading}`;
+    pages.set(
+      part.slug,
+      [
+        frontMatter(
+          heading,
+          `One page of the fields of ${short} in the Odudu admin API (${areaName}): its ${part.heading}.`,
+          { sidebar_position: position + (index + 1) / 100 },
+        ),
+        `# ${heading}`,
+        '',
+        `The fields of one body of [${full}](./${slug}.md), ${where}.`,
+        '',
+        `Body: ${code(part.mediaType)}`,
+        '',
+        rowsTable(part.rows),
+        '',
+        ...(part.patterns.length > 0 ? [patternBlock(part.patterns)] : []),
+      ].join('\n'),
+    );
+  });
+  return pages;
 }
 
 function indexPage(areas: ReadonlyMap<string, readonly Operation[]>, doc: OpenApiDocument): string {
@@ -586,7 +766,7 @@ function indexPage(areas: ReadonlyMap<string, readonly Operation[]>, doc: OpenAp
     '',
     ...[...areas].map(
       ([area, operations]) =>
-        `- [${titleOf(area)}](./${area}.md): ${String(operations.length)} ${operations.length === 1 ? 'operation' : 'operations'}.`,
+        `- [${titleOf(area)}](./${area}/index.md): ${String(operations.length)} ${operations.length === 1 ? 'operation' : 'operations'}.`,
     ),
     '',
     '## Problem details',
@@ -599,13 +779,30 @@ function indexPage(areas: ReadonlyMap<string, readonly Operation[]>, doc: OpenAp
   return lines.join('\n');
 }
 
-// One page per area of the admin API, and an index, as Markdown by path
+export function adminApiAreas(
+  doc: OpenApiDocument,
+): readonly (readonly [area: string, label: string])[] {
+  return [...operationsOf(doc).keys()].map(
+    (area) => [area, `Admin API: ${titleOf(area)}`] as const,
+  );
+}
+
+// An index, an index per area and one page per operation, as Markdown by path
 // relative to the generated reference directory.
 export function renderOpenApiPages(doc: OpenApiDocument): ReadonlyMap<string, string> {
   const areas = operationsOf(doc);
   const pages = new Map<string, string>([[`${PAGE_DIR}/index.md`, indexPage(areas, doc)]]);
   for (const [area, operations] of areas) {
-    pages.set(`${PAGE_DIR}/${area}.md`, areaPage(area, operations, doc));
+    pages.set(`${PAGE_DIR}/${area}/index.md`, areaIndexPage(area, operations, doc));
+    operations.forEach((found, position) => {
+      for (const [slug, page] of operationPages(area, found, position + 1, doc)) {
+        const name = `${PAGE_DIR}/${area}/${slug}.md`;
+        if (pages.has(name)) {
+          throw new Error(`${found.method} ${found.path} has the same page as another: ${name}`);
+        }
+        pages.set(name, page);
+      }
+    });
   }
   return new Map([...pages].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
 }
