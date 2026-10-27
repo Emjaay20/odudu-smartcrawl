@@ -31,8 +31,8 @@ two are unrelated and the code keeps the words apart.
   metadata, and Arabic shipped as the right-to-left locale.
 - A Branding area in the console and the same operations in the admin API,
   with draft, preview, publish and a way back.
-- Logout always confirms, and its form's fields are bound into the anti-forgery
-  token.
+- Logout confirms by default, a client can opt out with a clearly warned
+  setting, and the form's fields are bound into the anti-forgery token.
 
 **Non-goals**
 
@@ -291,14 +291,30 @@ ADR 0043 is the design; this phase delivers its tenant part.
 
 ## 11. Sign-out
 
-`/logout` always shows its confirmation page (OIDC RP-Initiated Logout 1.0:
+`/logout` shows its confirmation page by default (OIDC RP-Initiated Logout 1.0:
 the OP "SHOULD ask"; its security section calls a hintless logout a
 denial-of-service vector and asks for explicit confirmation). The form's
 `client_id` and `post_logout_redirect_uri` are bound into the anti-forgery
 token. An expired `id_token_hint` still identifies the session (the spec says to
-accept it). A skip path for a trusted client is decided against for now,
-recorded with this reason; Keycloak skips with a hint, which is the leaked-token
-sign-out this closes.
+accept it).
+
+**A client may opt out of the confirmation.** A per-client setting,
+`skip_logout_confirmation`, is off by default. When it is on, and only then,
+`/logout` ends the session and redirects without asking, provided the hint's
+signature verifies, its audience is that client and its `sid` is the live
+session's. No hint, an invalid hint, a hint for another client or another
+session still ask, and so does every client with the setting off. Dynamic
+Client Registration never accepts the field, so an unauthenticated registration
+cannot turn it on. The console's own client has it on, because its ID token is
+held server side and its sign-out is a click in an authenticated, anti-forgery
+protected page. Keycloak skips the page for any hint; this is the same
+convenience, opt-in per client.
+
+The residual risk is the one the confirmation closes: anyone holding a
+still-valid ID token for such a client can force that sign-out with a `GET`.
+The client's page in the console says so in plain words next to the setting
+(section 13), and the setting is changed only through the admin API with the
+`manage-clients` capability, audited like any client change.
 
 ## 12. Accessibility
 
@@ -314,6 +330,7 @@ responsibility, because no server-side check can prove them.
 - Admin API under `/admin/tenants/{tenant}/`: theme (get, draft, publish,
   restore, reset), assets (upload, delete), a client's theme beside the client,
   locales and overrides, previews. Capability roles as for every admin route.
+- Console: the client's Logout tab holds the `skip_logout_confirmation` toggle with this warning, worded as a service constant: "When this is on, anyone who holds a still-valid ID token for this application can sign its users out by opening a link, with no confirmation. Turn it on only for an application you run yourself whose ID token never reaches a browser." It is off for every new client.
 - Console: a **Branding** feature with Theme, Pages, Mail and Languages tabs,
   and a Branding tab on a client. Five layers, one `index.ts`, Instrument
   components, a draft keyed by tenant and record, a rebase on `412`.
