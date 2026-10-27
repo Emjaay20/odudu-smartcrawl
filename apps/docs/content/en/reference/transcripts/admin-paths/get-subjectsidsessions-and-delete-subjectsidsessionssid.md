@@ -72,16 +72,28 @@ and nothing left:
 curl -sS -D - -X DELETE \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   http://localhost:3000/admin/tenants/demo/subjects/01a0d6fd-ede7-704b-8d83-fa3801d427a0/sessions/01a0d6fe-9d8f-783b-b244-ea4a85ab9bfb
+curl -sS -D - -X DELETE \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  http://localhost:3000/admin/tenants/demo/subjects/01a0d6fd-ede7-704b-8d83-fa3801d427a0/sessions/01a0d6fe-9d8f-783b-b244-ea4a85ab9bfb
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
+  http://localhost:3000/admin/tenants/demo/subjects/01a0d6fd-ede7-704b-8d83-fa3801d427a0/sessions
 ```
 
 ```
 HTTP/1.1 204 No Content
 x-request-id: 01a0d6fe-9df1-760b-8e13-7763f4c28a3d
+cache-control: no-store
+Date: Tue, 27 Oct 2026 01:32:58 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 
 HTTP/1.1 204 No Content
 x-request-id: 01a0d6fe-9e09-7004-9844-b3c1b3abb219
+cache-control: no-store
+Date: Tue, 27 Oct 2026 01:32:58 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 
 {"items":[]}
 ```
 
-_(This read predates the `cache-control: no-store` header and was not re-run.)_
