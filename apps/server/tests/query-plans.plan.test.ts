@@ -34,6 +34,7 @@ import {
 } from '#/testing/plan-background-drives';
 import { unindexedForeignKeys } from '#/testing/plan-catalog';
 import { driveAdminWrites } from '#/testing/plan-admin-writes';
+import { BRANDING_PATHS, driveBranding } from '#/testing/plan-branding-drives';
 import { driveOidc } from '#/testing/plan-oidc-drives';
 import { pathLog, type PathRun } from '#/testing/plan-paths';
 import { startPlanWorld, type PlanWorld } from '#/testing/plan-world';
@@ -69,6 +70,7 @@ beforeAll(async () => {
     rowsUnderLimit: COUNT_CAP + 1000,
   };
   await driveOidc(world, log.capture);
+  await driveBranding(world, log.capture);
   await driveAccount(world, log.capture);
   await driveRequiredActions(world, log.capture);
   const ids = await adminIds(world);
@@ -186,6 +188,32 @@ async function violations(run: PathRun): Promise<string[]> {
   }
   return out;
 }
+
+function workOf(path: string): Statement[] {
+  const run = log.runs.find((candidate) => candidate.path === path);
+  if (run === undefined) throw new Error(`no run named ${path}`);
+  return run.statements.filter(isWork);
+}
+
+const themeReads = (statements: Statement[]): number =>
+  statements.filter((statement) => statement.query.includes('theme_versions')).length;
+
+describe('a themed page render', () => {
+  it("sends the cached render's statements plus at most one theme read on a miss", () => {
+    const baseline = workOf(BRANDING_PATHS.cachedHit);
+    const miss = workOf(BRANDING_PATHS.themedMiss);
+    expect(themeReads(baseline)).toBe(0);
+    expect(themeReads(miss)).toBe(1);
+    expect(miss.length).toBeLessThanOrEqual(baseline.length + 1);
+  });
+
+  it("sends exactly the cached render's statements on a hit", () => {
+    const baseline = workOf(BRANDING_PATHS.cachedHit);
+    const hit = workOf(BRANDING_PATHS.themedHit);
+    expect(themeReads(hit)).toBe(0);
+    expect(hit.length).toBe(baseline.length);
+  });
+});
 
 describe('every foreign key', () => {
   it('is found by an index, so a parent row can be deleted without reading its children whole', async () => {
