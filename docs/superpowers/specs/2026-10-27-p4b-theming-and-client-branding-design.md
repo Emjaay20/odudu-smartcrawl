@@ -310,8 +310,10 @@ held server side and its sign-out is a click in an authenticated, anti-forgery
 protected page. Keycloak skips the page for any hint; this is the same
 convenience, opt-in per client.
 
-The residual risk is the one the confirmation closes: anyone holding a
-still-valid ID token for such a client can force that sign-out with a `GET`.
+The residual risk is the one the confirmation closes: anyone holding an ID
+token that client received, even an expired one (the spec says to accept
+expired hints, and the console's five-minute tokens need it), can force that
+sign-out with a `GET` while the session lasts.
 The client's page in the console says so in plain words next to the setting
 (section 13), and the setting is changed only through the admin API with the
 `manage-clients` capability, audited like any client change.
@@ -330,7 +332,7 @@ responsibility, because no server-side check can prove them.
 - Admin API under `/admin/tenants/{tenant}/`: theme (get, draft, publish,
   restore, reset), assets (upload, delete), a client's theme beside the client,
   locales and overrides, previews. Capability roles as for every admin route.
-- Console: the client's Logout tab holds the `skip_logout_confirmation` toggle with this warning, worded as a service constant: "When this is on, anyone who holds a still-valid ID token for this application can sign its users out by opening a link, with no confirmation. Turn it on only for an application you run yourself whose ID token never reaches a browser." It is off for every new client.
+- Console: the client's Logout tab holds the `skip_logout_confirmation` toggle with this warning, worded as a service constant: "When this is on, anyone who holds an ID token this application received, even an expired one, can sign its users out by opening a link while their session lasts, with no confirmation. Turn it on only for an application you run yourself whose ID tokens never reach a browser or a log." It is off for every new client.
 - Console: a **Branding** feature with Theme, Pages, Mail and Languages tabs,
   and a Branding tab on a client. Five layers, one `index.ts`, Instrument
   components, a draft keyed by tenant and record, a rebase on `412`.
