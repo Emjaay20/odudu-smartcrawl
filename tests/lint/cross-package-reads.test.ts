@@ -34,6 +34,14 @@ const READS: readonly { file: string; targets: readonly string[] }[] = [
     ],
   },
   {
+    file: 'packages/protocol-oidc/src/view/theme-reach.test.ts',
+    targets: [
+      'packages/*/src/view/**',
+      'apps/*/src/**',
+      'tests/lint/fixtures/renderer-without-theme/**',
+    ],
+  },
+  {
     file: 'packages/protocol-oidc/src/view/routes/session-cookie-authority.test.ts',
     targets: ['packages/protocol-oidc/src/view/routes/*'],
   },

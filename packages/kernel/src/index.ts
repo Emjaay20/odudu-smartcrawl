@@ -88,3 +88,9 @@ export {
   type PageBranding,
 } from '#/branding-resolver';
 export { PAGE_KINDS, type PageKind, type PageManifest } from '#/page-kinds';
+export {
+  CLIENT_RULES,
+  NO_TENANT_IN_SCOPE,
+  type ClientRule,
+  type ClientSource,
+} from '#/page-kinds-registry';
