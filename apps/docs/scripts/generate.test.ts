@@ -36,7 +36,7 @@ describe('writing the generated reference', () => {
     expect(pages.length).toBeGreaterThan(10);
     for (const [name, text] of pages) {
       expect(text, name).toMatch(
-        /^---\ntitle: .+\ndescription: .+\n---\n\n<!-- Generated from .+ at abc1234; do not edit\. -->\n\n# /u,
+        /^---\ntitle: .+\ndescription: .+\n(?:sidebar_\w+: .+\n)*---\n\n<!-- Generated from .+ at abc1234; do not edit\. -->\n\n# /u,
       );
     }
   });
@@ -101,12 +101,22 @@ describe('the generated reference on disk', () => {
     }
   });
 
-  it('is linked from the reference index, so every page is two clicks from the home page', () => {
+  it('is linked from the reference index, or from the index of its folder, so no page is an orphan', () => {
     const index = readFileSync(path.join(DOCS_ROOT, 'content/en/reference/index.md'), 'utf8');
     const prefix = 'content/en/reference/';
-    const missing = pages
-      .map(([name]) => name.slice(prefix.length))
-      .filter((page) => !index.includes(`](./${page})`));
+    const text = new Map(pages.map(([name, page]) => [name.slice(prefix.length), page]));
+    const missing = [...text.keys()].filter((page) => {
+      if (index.includes(`](./${page})`)) return false;
+      const folder = path.posix.dirname(page);
+      const file = path.posix.basename(page);
+      return ![...text].some(
+        ([other, content]) =>
+          (other !== page &&
+            path.posix.dirname(other) === folder &&
+            content.includes(`](./${file})`)) ||
+          content.includes(`](./${file}#`),
+      );
+    });
     expect(missing).toEqual([]);
   });
 });

@@ -19,13 +19,13 @@ Each row links to a page that shows the capability working, with the requests th
 | Client credentials for services                   | [Path C](../reference/transcripts/request-paths/path-c-client_credentials.md)               |
 | Token exchange                                    | [Path D](../reference/transcripts/request-paths/path-d-token-exchange.md)                   |
 | Logout started by the app                         | [RP-initiated logout](../reference/transcripts/request-paths/rp-initiated-logout.md)        |
-| Many tenants in one installation                  | [Tenants in the admin API](../reference/generated/admin-api/tenants.md)                     |
+| Many tenants in one installation                  | [Tenants in the admin API](../reference/generated/admin-api/tenants/index.md)               |
 | Two-factor sign-in with an authenticator app      | [TOTP](../reference/transcripts/request-paths/two-factor-authentication-with-totp.md)       |
 | Passkeys                                          | [Enrolling a passkey](../reference/transcripts/request-paths/enrolling-a-passkey.md)        |
 | Recovery codes                                    | [Recovery codes](../reference/transcripts/request-paths/recovery-codes.md)                  |
 | Lockout after repeated failures                   | [Brute-force lockout](../reference/transcripts/request-paths/brute-force-lockout.md)        |
 | Self-registration and password reset              | [Self-registration](../reference/transcripts/request-paths/self-registration.md)            |
-| Roles, groups and client scopes                   | [Roles](../reference/generated/admin-api/roles.md)                                          |
+| Roles, groups and client scopes                   | [Roles](../reference/generated/admin-api/roles/index.md)                                    |
 | An admin console                                  | [Admin console](../admin-console/index.md)                                                  |
 | An admin API                                      | [Admin API overview](../reference/generated/admin-api/index.md)                             |
 | An audit trail of what was done and by whom       | [Audit events](../reference/generated/events.md)                                            |

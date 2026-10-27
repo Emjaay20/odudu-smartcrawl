@@ -257,7 +257,7 @@ describe('a link into the generated reference', () => {
     const planned = await plannedGenerated();
     expect(planned.has(path.join(root, 'configuration.md'))).toBe(true);
     expect(linkResolves(path.join(root, 'configuration.md'), planned)).toBe(true);
-    expect(linkResolves(path.join(root, 'admin-api/subjects.md'), planned)).toBe(true);
+    expect(linkResolves(path.join(root, 'admin-api/subjects/index.md'), planned)).toBe(true);
   });
 
   it('fails when it names a generated page nothing plans', async () => {

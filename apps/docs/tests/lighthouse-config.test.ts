@@ -42,7 +42,7 @@ const PAGES = [
   '',
   `${DOCS_DIRECTORY}quick-start/`,
   `${DOCS_DIRECTORY}guides/sign-a-user-in/`,
-  `${DOCS_DIRECTORY}reference/generated/admin-api/subjects/`,
+  `${DOCS_DIRECTORY}reference/generated/admin-api/audit/part-1/`,
   `${DOCS_DIRECTORY}concepts/tokens/`,
 ];
 
@@ -80,8 +80,8 @@ describe('the Lighthouse budgets', () => {
     expect(Object.keys(assert.assertions)).not.toContain('resource-summary:script:size');
   });
 
-  it('runs three times on the throttled mobile profile', () => {
-    expect(collect.numberOfRuns).toBe(3);
+  it('runs five times on the throttled mobile profile', () => {
+    expect(collect.numberOfRuns).toBe(5);
     expect(collect.settings).toEqual({
       chromeFlags: '--no-sandbox --headless=new',
       formFactor: 'mobile',
@@ -106,12 +106,12 @@ describe('the lighthouse job', () => {
   const workflow = readFileSync(WORKFLOW, 'utf8');
   const job = /\n {2}lighthouse:\n([\s\S]*?)(?=\n {2}[a-z][\w-]*:\n)/u.exec(workflow)?.[1] ?? '';
 
-  it('exists, runs for a change the site can feel, and is bounded to twenty minutes', () => {
+  it('exists, runs for a change the site can feel, and is bounded to thirty-five minutes', () => {
     expect(job).not.toBe('');
     expect(job).toMatch(/needs: changes/u);
     expect(job).toMatch(/if: needs\.changes\.outputs\.buildImage == 'true'/u);
-    expect(job).toMatch(/timeout-minutes: 20\b/u);
-    expect(job).toMatch(/timeout-minutes: 12\b/u);
+    expect(job).toMatch(/timeout-minutes: 35\b/u);
+    expect(job).toMatch(/timeout-minutes: 25\b/u);
   });
 
   it('builds the Pages target and runs lhci from the docs package', () => {

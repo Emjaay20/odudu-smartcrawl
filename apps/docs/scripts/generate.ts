@@ -10,7 +10,7 @@ import { renderConfigPage } from './config-page.ts';
 import { renderEndpointsPage } from './endpoints-page.ts';
 import { renderErrorsPage } from './errors-page.ts';
 import { renderEventsPage } from './events-page.ts';
-import { renderOpenApiPages } from './openapi-pages.ts';
+import { adminApiAreas, renderOpenApiPages } from './openapi-pages.ts';
 
 const APP_ROOT = path.resolve(import.meta.dirname, '..');
 
@@ -94,10 +94,14 @@ export async function generatedFiles(commit: string): Promise<ReadonlyMap<string
       files.set(`${REFERENCE_DIR}/${name}`, withBanner(page, source.name, commit));
     }
   }
-  files.set(
-    `${REFERENCE_DIR}/admin-api/_category_.json`,
-    `${JSON.stringify({ label: 'Admin API' }, null, 2)}\n`,
-  );
+  const admin = buildAdminOpenApiDocument();
+  const categories: [string, string][] = [
+    ['admin-api', 'Admin API'],
+    ...adminApiAreas(admin).map(([area, label]): [string, string] => [`admin-api/${area}`, label]),
+  ];
+  for (const [dir, label] of categories) {
+    files.set(`${REFERENCE_DIR}/${dir}/_category_.json`, `${JSON.stringify({ label }, null, 2)}\n`);
+  }
   files.set(
     'static/openapi/admin.json',
     `${JSON.stringify(buildAdminOpenApiDocument(), null, 2)}\n`,
