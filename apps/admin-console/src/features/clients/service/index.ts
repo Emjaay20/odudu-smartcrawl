@@ -36,6 +36,7 @@ export {
   listsReadOnly,
   deleteFixed,
   scopesFixed,
+  skipLogoutFixed,
 } from '#/features/clients/service/blocks';
 export { deleteConsequence } from '#/features/clients/service/confirm';
 export {
@@ -140,6 +141,9 @@ export {
   LOGOUT_FIELD,
   POST_LOGOUT_NOUN,
   SECTIONS_LOGOUT,
+  SKIP_LOGOUT_HINT,
+  SKIP_LOGOUT_LABEL,
+  SKIP_LOGOUT_WARNING,
 } from '#/features/clients/service/logout';
 export {
   GRACE_LABEL,

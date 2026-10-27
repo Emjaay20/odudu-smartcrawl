@@ -1,6 +1,7 @@
 import {
   useClientConfigSaves,
   type BackchannelValues,
+  type ConfirmationValues,
   type FrontchannelValues,
   type PostLogoutValues,
 } from '#/features/clients/repository/useClientConfigSaves';
@@ -12,6 +13,8 @@ import {
   listCount,
   POST_LOGOUT_NOUN,
   SECTIONS_LOGOUT,
+  skipLogoutFixed,
+  SKIP_LOGOUT_LABEL,
 } from '#/features/clients/service';
 import {
   useClientSection,
@@ -23,6 +26,9 @@ import { orBlank } from '#/shared/service/format';
 export interface ClientLogout {
   postLogout: SectionSave<PostLogoutValues>;
   postLogoutCount: string;
+  confirmation: SectionSave<ConfirmationValues>;
+  // Why the setting cannot be changed on this client, or null where it can.
+  confirmationFixed: string | null;
   backchannel: SectionSave<BackchannelValues>;
   frontchannel: SectionSave<FrontchannelValues>;
 }
@@ -43,6 +49,19 @@ export function useClientLogout(args: ClientRecordRead): ClientLogout {
       },
     },
     save: saves.postLogout,
+  });
+  const confirmation = useSectionSave({
+    ...shared,
+    section: 'confirmation',
+    label: SECTIONS_LOGOUT.confirmation,
+    fields: {
+      skip_logout_confirmation: {
+        value: client.skip_logout_confirmation,
+        label: SKIP_LOGOUT_LABEL,
+        kind: 'plain',
+      },
+    },
+    save: saves.confirmation,
   });
   const backchannel = useSectionSave({
     ...shared,
@@ -87,6 +106,8 @@ export function useClientLogout(args: ClientRecordRead): ClientLogout {
       CLIENT_LIST_LIMIT,
       POST_LOGOUT_NOUN,
     ),
+    confirmation,
+    confirmationFixed: skipLogoutFixed(client),
     backchannel,
     frontchannel,
   };

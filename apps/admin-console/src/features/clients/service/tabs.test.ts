@@ -45,6 +45,10 @@ it("marks the service account's tab from the roles it saves on the account's own
   expect(tabsWithEdits(new Set(), new Set(['other']))).toEqual(new Set());
 });
 
+it('marks the logout tab when the sign-out confirmation holds edits', () => {
+  expect([...tabsWithEdits(new Set(['confirmation']))]).toEqual(['logout']);
+});
+
 it('names each section once', () => {
   const all = Object.values(TAB_SECTIONS).flat();
   expect(new Set(all).size).toBe(all.length);

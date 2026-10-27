@@ -1,12 +1,10 @@
 import { randomBytes } from 'node:crypto';
-import { confirmSignOut, expect, signInAtTenant, test } from './fixtures';
+import { expectSignedOut, expect, signInAtTenant, test } from './fixtures';
 import { psql, seed } from './stack';
 
 const LIFETIME_SECONDS = 3;
 
-test('signing out after the ID token has expired asks like any other, and then signs out', async ({
-  page,
-}) => {
+test('signing out after the ID token has expired still signs out at once', async ({ page }) => {
   const tenant = `lapsed-${randomBytes(4).toString('hex')}`;
   const password = randomBytes(18).toString('base64url');
   seed(['tenant', '--name', tenant]);
@@ -33,5 +31,5 @@ test('signing out after the ID token has expired asks like any other, and then s
   await expect.poll(() => Date.now() - signedInAt).toBeGreaterThan(LIFETIME_SECONDS * 1000 + 500);
 
   await page.getByRole('button', { name: 'Sign out' }).first().click();
-  await confirmSignOut(page);
+  await expectSignedOut(page);
 });
