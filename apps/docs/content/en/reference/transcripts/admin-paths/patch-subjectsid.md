@@ -43,9 +43,6 @@ Keep-Alive: timeout=72
 {"id":"01a17aed-7bb8-7f5e-9b9c-d205689a4e89","type":"user","username":"ada","email":"ada@example.com","enabled":false,"created_at":"2026-10-27T01:15:46.485Z"}
 ```
 
-_(Not re-run for the `cache-control: no-store` pass: same reason as the
-read above.)_
-
 The `ETag` is the one `GET /subjects/:id` above returned, recomputed — a
 caller that read before this write holds a stale one.
 
