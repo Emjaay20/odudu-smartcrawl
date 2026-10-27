@@ -208,6 +208,14 @@ curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" $P/groups/01a10bd6-2d5b-707e-96
 {"path":"/finance/oncall"}
 {"path":"/ops/oncall"}
 HTTP/1.1 409 Conflict
+x-request-id: 01a17afe-5fab-7db6-b1e3-35954f19a1b5
+cache-control: no-store
+content-type: application/problem+json; charset=utf-8
+content-length: 161
+Date: Tue, 27 Oct 2026 01:34:13 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+
 {"type":"about:blank","title":"Conflict","status":409,"detail":"a group named \"oncall\" already exists there","instance":"01a10bd6-2ee5-745c-bb66-a51d6aad8e30"}
 {"path":"/ops/oncall","parent_id":"01a10bd6-2d3d-743c-bcd6-7b868d510375"}
 ```
