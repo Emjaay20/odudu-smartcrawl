@@ -1019,12 +1019,14 @@ test("a client's sign-out confirmation is skipped once the toggle is on, and ask
     const section = page.getByRole('region', { name: 'Sign-out confirmation' });
     const toggle = section.getByRole('switch', { name: 'Skip the sign-out confirmation' });
     await expect(toggle).not.toBeChecked();
+    await expect(section.getByText(/^Off: the person is always asked/u)).toBeVisible();
     await expect(section.getByText(/even an expired one, can sign its users out/u)).toBeVisible();
     await expectAccessible(page);
 
     await toggle.focus();
     await page.keyboard.press('Space');
     await expect(toggle).toBeChecked();
+    await expect(section.getByText(/^On: signing out with this/u)).toBeVisible();
     await section.getByRole('button', { name: 'Save Sign-out confirmation' }).click();
     await expect.poll(() => clientColumn('skipper', 'skip_logout_confirmation')).toBe('true');
 

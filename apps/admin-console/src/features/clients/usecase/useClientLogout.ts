@@ -14,6 +14,7 @@ import {
   POST_LOGOUT_NOUN,
   SECTIONS_LOGOUT,
   skipLogoutFixed,
+  skipLogoutHint,
   SKIP_LOGOUT_LABEL,
 } from '#/features/clients/service';
 import {
@@ -29,6 +30,7 @@ export interface ClientLogout {
   confirmation: SectionSave<ConfirmationValues>;
   // Why the setting cannot be changed on this client, or null where it can.
   confirmationFixed: string | null;
+  confirmationHint: string | undefined;
   backchannel: SectionSave<BackchannelValues>;
   frontchannel: SectionSave<FrontchannelValues>;
 }
@@ -108,6 +110,10 @@ export function useClientLogout(args: ClientRecordRead): ClientLogout {
     ),
     confirmation,
     confirmationFixed: skipLogoutFixed(client),
+    confirmationHint: skipLogoutHint(
+      skipLogoutFixed(client),
+      confirmation.values.skip_logout_confirmation,
+    ),
     backchannel,
     frontchannel,
   };

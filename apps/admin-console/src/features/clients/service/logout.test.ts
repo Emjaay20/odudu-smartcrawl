@@ -3,6 +3,8 @@ import { skipLogoutFixed } from '#/features/clients/service/blocks';
 import {
   SECTIONS_LOGOUT,
   SKIP_LOGOUT_HINT,
+  SKIP_LOGOUT_HINT_ON,
+  skipLogoutHint,
   SKIP_LOGOUT_LABEL,
   SKIP_LOGOUT_WARNING,
 } from '#/features/clients/service/logout';
@@ -24,4 +26,17 @@ it('fixes the setting on the built-in admin client alone, and says it is on and 
     /^odudu-admin always signs out at once and this cannot be changed\. This is the tenant's/u,
   );
   expect(skipLogoutFixed({ builtin_admin: false, client_id: 'billing' })).toBeNull();
+});
+
+it('says what on means beside the switch once it is on, and what off means otherwise', () => {
+  expect(skipLogoutHint(null, false)).toBe(SKIP_LOGOUT_HINT);
+  expect(skipLogoutHint(null, true)).toBe(SKIP_LOGOUT_HINT_ON);
+  expect(SKIP_LOGOUT_HINT_ON).toBe(
+    "On: signing out with this application's ID token ends the session without asking.",
+  );
+});
+
+it('has no hint where the setting is fixed, whatever the value', () => {
+  expect(skipLogoutHint('fixed', true)).toBeUndefined();
+  expect(skipLogoutHint('fixed', false)).toBeUndefined();
 });

@@ -7,7 +7,6 @@ import {
   FRONTCHANNEL_SESSION_RULE,
   POST_LOGOUT_RULE,
   SECTIONS_LOGOUT,
-  SKIP_LOGOUT_HINT,
   SKIP_LOGOUT_LABEL,
   SKIP_LOGOUT_WARNING,
   SKIP_LOGOUT_WARNING_ID,
@@ -47,7 +46,7 @@ export function LogoutTab({ tenant, client, etag, gone, writable }: ClientTabPro
           )}
           <ToggleField
             label={SKIP_LOGOUT_LABEL}
-            description={page.confirmationFixed === null ? SKIP_LOGOUT_HINT : undefined}
+            description={page.confirmationHint}
             describedBy={SKIP_LOGOUT_WARNING_ID}
             value={confirmation.values.skip_logout_confirmation}
             changed={confirmation.changed.includes('skip_logout_confirmation')}

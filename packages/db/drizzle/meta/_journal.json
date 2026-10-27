@@ -750,6 +750,13 @@
       "when": 1789913681736,
       "tag": "0106_clients_skip_logout_confirmation",
       "breakpoints": true
+    },
+    {
+      "idx": 107,
+      "version": "7",
+      "when": 1790000081736,
+      "tag": "0107_themes",
+      "breakpoints": true
     }
   ]
 }
