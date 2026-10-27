@@ -22,8 +22,11 @@ carry it, `etags-app` as `optional` from the transcript under "The client's new
 `manage-tenant` alone suffices is shown by an integration test, not here:
 
 ```bash
+NEXT=$(curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
+  'http://localhost:3080/admin/tenants/etags-demo/scopes/01a0e9ec-d68e-7463-8023-bd155594d026/clients?limit=1' | jq -r .next)
 curl -sS -D - -H "Authorization: Bearer $ADMIN_TOKEN" \
-  'http://localhost:3080/admin/tenants/etags-demo/scopes/01a0e9ec-d68e-7463-8023-bd155594d026/clients?limit=1'
+  'http://localhost:3080/admin/tenants/etags-demo/scopes/01a0e9ec-d68e-7463-8023-bd155594d026/clients?limit=1' \
+  | grep -E '^(HTTP/|link:|\{)'
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
   "http://localhost:3080/admin/tenants/etags-demo/scopes/01a0e9ec-d68e-7463-8023-bd155594d026/clients?limit=1&cursor=$NEXT"
 ```

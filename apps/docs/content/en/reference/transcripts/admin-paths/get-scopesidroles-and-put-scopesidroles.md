@@ -56,24 +56,31 @@ cache-control: no-store
 etag: "eef46741adfc3a9f76294d3b78f37a45f113092ac9d44ee77c7a038a88ff09a1"
 content-type: application/json; charset=utf-8
 content-length: 12
+Date: Tue, 27 Oct 2026 01:39:59 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 
 {"items":[]}
-
 HTTP/1.1 200 OK
 x-request-id: 01a12d29-87fd-7315-8c85-41228d438cda
 cache-control: no-store
 etag: "164913dddef8ca9524b83eb1a02276e669aad0ce89edef3f05c68f1cd24dbcc9"
 content-type: application/json; charset=utf-8
 content-length: 306
+Date: Tue, 27 Oct 2026 01:39:59 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 
 {"items":[{"id":"01a12d29-71bb-7e4c-91c8-845063e60e93","name":"view-audit","client_id":"01a12d29-713b-7852-a836-47dc3d851563","client_key":"odudu-admin","admin_reach":["view-audit"]},{"id":"01a12d29-72f8-74a0-a73a-0fa6dd6d4d76","name":"billing-viewer","client_id":null,"client_key":null,"admin_reach":[]}]}
-
 HTTP/1.1 200 OK
 x-request-id: 01a12d29-8836-759c-a401-4f31b886a3d9
 cache-control: no-store
 etag: "164913dddef8ca9524b83eb1a02276e669aad0ce89edef3f05c68f1cd24dbcc9"
 content-type: application/json; charset=utf-8
 content-length: 306
+Date: Tue, 27 Oct 2026 01:39:59 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 
 {"items":[{"id":"01a12d29-71bb-7e4c-91c8-845063e60e93","name":"view-audit","client_id":"01a12d29-713b-7852-a836-47dc3d851563","client_key":"odudu-admin","admin_reach":["view-audit"]},{"id":"01a12d29-72f8-74a0-a73a-0fa6dd6d4d76","name":"billing-viewer","client_id":null,"client_key":null,"admin_reach":[]}]}
 ```
