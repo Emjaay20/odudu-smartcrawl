@@ -138,43 +138,57 @@ describe('every negotiation of a page locale carries the theme', () => {
   });
 });
 
-// A themeable page asks for its theme through the one branding step; the
-// unbranded helpers remain for the pages that have no tenant in scope and
-// for the two places that wrap them.
+// A themeable page asks for its theme through the one branding step. The
+// unbranded builders are named at every call site: only the pages with no
+// tenant in scope and the three helpers that wrap them may call one.
 const NO_TENANT_ROUTES = new Set([
   'packages/protocol-oidc/src/view/routes/throttled.ts',
   'packages/protocol-oidc/src/view/routes/unrouted.ts',
 ]);
-const BRANDING_STEPS =
-  /(?<![\w.])(?:brandLocale|brandedLocale|brandedRequestLocale|continuation)\(/u;
-const UNBRANDED_LOCALE = /(?<![\w.])(?:requestLocale|negotiatePageLocale)\(/u;
+const LOCALE_BUILDERS = new Set([
+  'packages/protocol-oidc/src/view/routes/continuation.ts',
+  'packages/protocol-oidc/src/view/routes/expired-sign-in.ts',
+  'packages/account/src/view/request-locale.ts',
+]);
+const UNBRANDED_LOCALE = /(?<![\w.])(?:requestLocale|negotiatePageLocale)\(/gu;
 
-// Why a route file's way of getting a locale cannot reach a theme, or null.
-export function unbrandedRoute(file: string, text: string): string | null {
+// Each call site of an unbranded builder outside the exempt files, and, for
+// a helper that builds one, whether it also asks for a theme.
+export function unbrandedSites(file: string, text: string): string[] {
   const code = text.replace(/\/\/.*$/gmu, '');
-  if (NO_TENANT_ROUTES.has(file) || !UNBRANDED_LOCALE.test(code)) return null;
-  const defines = /export (?:async )?function (?:requestLocale|brandedRequestLocale)\(/u.test(code);
-  return BRANDING_STEPS.test(code) || defines
-    ? null
-    : `${file} builds a page locale but never calls the branding step`;
+  if (NO_TENANT_ROUTES.has(file)) return [];
+  if (LOCALE_BUILDERS.has(file)) {
+    return /(?<![\w.])brandLocale\(/u.test(code)
+      ? []
+      : [`${file} builds a page locale but never calls brandLocale`];
+  }
+  return [...code.matchAll(UNBRANDED_LOCALE)].map(
+    (match) =>
+      `${file}:${String(code.slice(0, match.index).split('\n').length)} ${match[0]} is an unbranded page locale`,
+  );
 }
 
 describe('every page locale a route builds can carry a theme', () => {
-  it('names a route whose locale never reaches the branding step', () => {
-    const route = 'packages/account/src/view/routes/x.ts';
-    expect(unbrandedRoute(route, 'const locale = requestLocale(request, deps);')).not.toBeNull();
+  it('names each call site of an unbranded builder', () => {
+    const route = 'packages/protocol-oidc/src/view/routes/authorize.ts';
+    const mixed =
+      'const a = await brandedRequestLocale(deps, reply, t);\nconst b = requestLocale(reply, deps);';
+    expect(unbrandedSites(route, mixed)).toEqual([
+      `${route}:2 requestLocale( is an unbranded page locale`,
+    ]);
+    expect(unbrandedSites(route, 'const l = negotiatePageLocale({});')).toHaveLength(1);
+    expect(unbrandedSites(route, 'const l = await brandedLocale(request, deps, tenant);')).toEqual(
+      [],
+    );
     expect(
-      unbrandedRoute(route, 'const l = negotiatePageLocale({}); render(page, l);'),
-    ).not.toBeNull();
-    expect(
-      unbrandedRoute(route, 'const l = await brandedLocale(request, deps, tenant);'),
-    ).toBeNull();
-    expect(
-      unbrandedRoute(
+      unbrandedSites(
         'packages/protocol-oidc/src/view/routes/throttled.ts',
         'render(requestLocale(reply))',
       ),
-    ).toBeNull();
+    ).toEqual([]);
+    expect(
+      unbrandedSites('packages/account/src/view/request-locale.ts', 'negotiatePageLocale({})'),
+    ).toHaveLength(1);
   });
 
   it('holds for every route of the packages that render tenant pages', async () => {
@@ -186,8 +200,7 @@ describe('every page locale a route builds can carry a theme', () => {
     expect(routes.length).toBeGreaterThan(15);
     const offences: string[] = [];
     for (const file of routes) {
-      const reason = unbrandedRoute(file, await readFile(path.join(REPO_ROOT, file), 'utf8'));
-      if (reason !== null) offences.push(reason);
+      offences.push(...unbrandedSites(file, await readFile(path.join(REPO_ROOT, file), 'utf8')));
     }
     expect(offences).toEqual([]);
   });

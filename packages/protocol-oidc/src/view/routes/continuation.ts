@@ -57,6 +57,24 @@ export function requestLocale(
   );
 }
 
+// One lookup of a tenant per request: the usecase and the page it renders
+// ask for the same name, and the second answer is the first.
+export function lookingUpTenantOnce<D extends { findTenant(name: string): Promise<unknown> }>(
+  deps: D,
+): D {
+  const found = new Map<string, ReturnType<D['findTenant']>>();
+  return {
+    ...deps,
+    findTenant: (name: string) => {
+      const held = found.get(name);
+      if (held !== undefined) return held;
+      const asked = deps.findTenant(name) as ReturnType<D['findTenant']>;
+      found.set(name, asked);
+      return asked;
+    },
+  };
+}
+
 // A page that has a tenant by name and no parked request: the browser's
 // language and the tenant's theme, never a client's, since nothing the
 // request carries names one reliably.

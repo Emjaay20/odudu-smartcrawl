@@ -17,7 +17,7 @@ import { sendSignInExpired } from '#/view/routes/expired-sign-in';
 import { sendHtml } from '#/view/html-response';
 import { sendRequestError } from '#/view/routes/request-error';
 import { issuerBaseFor } from '#/view/issuer';
-import { continuation } from '#/view/routes/continuation';
+import { continuation, lookingUpTenantOnce } from '#/view/routes/continuation';
 import { sendLoginOutcome, type LoginResponseDeps } from '#/view/routes/login-response';
 
 // A finished action resumes the login it was parked on through the same
@@ -37,13 +37,14 @@ function firstString(value: string | string[] | undefined): string | undefined {
 // login.ts gives: this is Odudu's own UI, not the OIDC wire protocol.
 export function registerRequiredActionRoute(
   app: FastifyInstance,
-  deps: RequiredActionRouteDeps,
+  routeDeps: RequiredActionRouteDeps,
 ): void {
   app.post<{
     Params: { tenant: string };
     Querystring: { action?: string };
     Body: Record<string, string | string[] | undefined>;
   }>('/tenants/:tenant/login-actions/required-action', async (request, reply) => {
+    const deps = lookingUpTenantOnce(routeDeps);
     const body = request.body;
     const tenantName = request.params.tenant;
     const authSessionId = firstString(body.auth_session_id);

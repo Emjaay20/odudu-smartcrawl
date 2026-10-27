@@ -18,7 +18,11 @@ import {
   renderNoActiveSessionPage,
 } from '#/view/logout-html';
 import { sendHtml } from '#/view/html-response';
-import { brandedRequestLocale, type ContinuationDeps } from '#/view/routes/continuation';
+import {
+  brandedRequestLocale,
+  lookingUpTenantOnce,
+  type ContinuationDeps,
+} from '#/view/routes/continuation';
 import { tenantIssuerFor } from '#/view/issuer';
 
 const PATH = '/tenants/:tenant/protocol/openid-connect/logout';
@@ -143,12 +147,13 @@ function logoutRequestParams(
 }
 
 async function respondToLogoutRequest(
-  deps: LogoutRouteDeps,
+  routeDeps: LogoutRouteDeps,
   request: FastifyRequest<{ Params: { tenant: string } }>,
   reply: FastifyReply,
   params: LogoutRequestParams,
 ): Promise<FastifyReply> {
   const tenant = request.params.tenant;
+  const deps = lookingUpTenantOnce(routeDeps);
   const outcome = await handleLogoutRequest(
     deps,
     tenant,
@@ -160,12 +165,12 @@ async function respondToLogoutRequest(
   return respondToOutcome(outcome, tenant, deps.tls, reply, deps);
 }
 
-export function registerLogoutRoute(app: FastifyInstance, deps: LogoutRouteDeps): void {
+export function registerLogoutRoute(app: FastifyInstance, routeDeps: LogoutRouteDeps): void {
   app.get<{
     Params: { tenant: string };
     Querystring: Record<string, string | undefined>;
   }>(PATH, async (request, reply) =>
-    respondToLogoutRequest(deps, request, reply, logoutRequestParams(request.query)),
+    respondToLogoutRequest(routeDeps, request, reply, logoutRequestParams(request.query)),
   );
 
   app.post<{
@@ -179,9 +184,10 @@ export function registerLogoutRoute(app: FastifyInstance, deps: LogoutRouteDeps)
     // which §2 requires the endpoint to answer exactly as it answers `GET`.
     // The field is the confirmation form's own, and only the form sends it.
     if (confirmedSessionId === undefined) {
-      return respondToLogoutRequest(deps, request, reply, logoutRequestParams(body));
+      return respondToLogoutRequest(routeDeps, request, reply, logoutRequestParams(body));
     }
 
+    const deps = lookingUpTenantOnce(routeDeps);
     const outcome = await handleLogoutConfirmation(
       deps,
       request.params.tenant,

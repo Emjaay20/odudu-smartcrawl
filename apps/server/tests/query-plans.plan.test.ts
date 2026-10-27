@@ -215,6 +215,33 @@ describe('a themed page render', () => {
   });
 });
 
+const tenantLookups = (statements: Statement[]): number =>
+  statements.filter((statement) => statement.query.includes('"tenants"."name"')).length;
+const clientLookups = (statements: Statement[]): number =>
+  statements.filter(
+    (statement) =>
+      statement.query.includes('from "clients"') && statement.query.includes('"client_id" = $'),
+  ).length;
+
+describe('the pages a tenant theme reaches without a parked request', () => {
+  it('looks the tenant up once for a logout page', () => {
+    expect(tenantLookups(workOf(BRANDING_PATHS.logoutPage))).toBe(1);
+  });
+
+  it('checks a return_to client with one indexed lookup, found or not', () => {
+    const plain = workOf(BRANDING_PATHS.registrationPlain);
+    const garbage = workOf(BRANDING_PATHS.registrationGarbage);
+    const client = workOf(BRANDING_PATHS.registrationClient);
+    const miss = workOf(BRANDING_PATHS.registrationClientMiss);
+    expect(clientLookups(garbage)).toBe(clientLookups(plain) + 1);
+    expect(garbage.length).toBe(plain.length + 1);
+    expect(client.length).toBe(garbage.length);
+    expect(themeReads(client)).toBe(0);
+    expect(miss.length).toBe(client.length + 1);
+    expect(themeReads(miss)).toBe(1);
+  });
+});
+
 describe('every foreign key', () => {
   it('is found by an index, so a parent row can be deleted without reading its children whole', async () => {
     expect(await unindexedForeignKeys(world.owner)).toEqual([]);

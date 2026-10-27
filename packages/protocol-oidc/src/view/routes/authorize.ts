@@ -15,7 +15,11 @@ import { renderConsentPage } from '#/view/consent-html';
 import { sendHtml } from '#/view/html-response';
 import { tenantIssuerFor } from '#/view/issuer';
 import { namesUnsupportedRepresentation } from '#/view/media-type';
-import { brandedRequestLocale, continuation } from '#/view/routes/continuation';
+import {
+  brandedRequestLocale,
+  continuation,
+  lookingUpTenantOnce,
+} from '#/view/routes/continuation';
 import { sendSignInExpired } from '#/view/routes/expired-sign-in';
 import { sendRequestError } from '#/view/routes/request-error';
 import {
@@ -213,7 +217,7 @@ async function renderAuthorizationOutcome(
 // `unknown` because that is the truth: they are whatever a body parser
 // produced, and normalizeAuthorizeQuery turns them back into strings.
 async function respondToAuthorizationRequest(
-  deps: AuthorizeRouteDeps,
+  routeDeps: AuthorizeRouteDeps,
   tenant: string,
   params: unknown,
   issuer: string,
@@ -224,6 +228,7 @@ async function respondToAuthorizationRequest(
   reply: FastifyReply,
   reloadable: boolean,
 ): Promise<FastifyReply> {
+  const deps = lookingUpTenantOnce(routeDeps);
   const outcome = await handleAuthorizationRequest(deps, tenant, params, issuer, header);
   return renderAuthorizationOutcome(deps, tenant, issuer, outcome, reply, reloadable);
 }
@@ -236,7 +241,7 @@ function firstString(value: string | string[] | undefined): string | undefined {
 // naming consent and required-action already use for Odudu's own UI
 // actions, never under /protocol/openid-connect/.
 async function respondToSelectAccountSubmission(
-  deps: AuthorizeRouteDeps,
+  routeDeps: AuthorizeRouteDeps,
   tenant: string,
   body: Record<string, string | string[] | undefined> | undefined,
   issuer: string,
@@ -248,6 +253,7 @@ async function respondToSelectAccountSubmission(
   // invalid_request handling below runs instead of throwing on a missing
   // read.
   const fields = body ?? {};
+  const deps = lookingUpTenantOnce(routeDeps);
   const outcome = await handleSelectAccountSubmission(
     deps,
     tenant,

@@ -7,9 +7,15 @@ import { type Capture } from '#/testing/plan-paths';
 const CHALLENGE = 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM';
 
 export const BRANDING_PATHS = {
-  cachedHit: 'sign-in page of a client with an empty theme, theme cached',
+  cachedHit: 'sign-in page of a client with no theme applied, theme cached',
   themedMiss: 'sign-in page of a themed client, theme not cached',
   themedHit: 'sign-in page of a themed client, theme cached',
+  logoutPage: 'logout page of a themed tenant',
+  registrationPlain: 'registration page, no return_to',
+  registrationGarbage: 'registration page, return_to names no client',
+  registrationClientMiss:
+    'registration page, return_to names a registered client, theme not cached',
+  registrationClient: 'registration page, return_to names a registered client, theme cached',
 } as const;
 
 const SIGN_IN =
@@ -94,4 +100,48 @@ export async function driveBranding(world: PlanWorld, capture: Capture): Promise
   }
   const hit = await capture(BRANDING_PATHS.themedHit, 'oidc', () => http.inject({ url }));
   if (!hit.body.includes('plan-themed')) throw new Error('the cached sign-in was not themed');
+
+  await driveOtherPages(world, capture);
+}
+
+// The pages a tenant theme reaches without a parked request: logout, and
+// registration, whose `return_to` is checked against the tenant's clients.
+async function driveOtherPages(world: PlanWorld, capture: Capture): Promise<void> {
+  const http = world.http;
+  const base = `/tenants/${TARGET_TENANT}`;
+  const registration = (returnTo: string | null): string =>
+    `${base}/login-actions/registration` +
+    (returnTo === null ? '' : `?${new URLSearchParams({ return_to: returnTo }).toString()}`);
+  const authorizeFor = (clientId: string): string =>
+    `${base}/protocol/openid-connect/auth?client_id=${clientId}&response_type=code`;
+  await world.owner
+    .sql`update tenants set registration_allowed = true where id = ${world.tenantId}`;
+  try {
+    const logout = await capture(BRANDING_PATHS.logoutPage, 'oidc', () =>
+      http.inject({ url: `${base}/protocol/openid-connect/logout` }),
+    );
+    if (logout.statusCode !== 200) throw new Error(`logout answered ${String(logout.statusCode)}`);
+    await http.inject({ url: registration(null) });
+    const answers = [
+      await capture(BRANDING_PATHS.registrationPlain, 'account', () =>
+        http.inject({ url: registration(null) }),
+      ),
+      await capture(BRANDING_PATHS.registrationGarbage, 'account', () =>
+        http.inject({ url: registration(authorizeFor('no-such-client')) }),
+      ),
+      await capture(BRANDING_PATHS.registrationClientMiss, 'account', () =>
+        http.inject({ url: registration(authorizeFor('app-3')) }),
+      ),
+      await capture(BRANDING_PATHS.registrationClient, 'account', () =>
+        http.inject({ url: registration(authorizeFor('app-3')) }),
+      ),
+    ];
+    for (const answer of answers) {
+      if (answer.statusCode !== 200)
+        throw new Error(`registration answered ${String(answer.statusCode)}`);
+    }
+  } finally {
+    await world.owner
+      .sql`update tenants set registration_allowed = false where id = ${world.tenantId}`;
+  }
 }

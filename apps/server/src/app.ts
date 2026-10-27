@@ -16,7 +16,7 @@ import {
   type MailGate,
 } from '@odudu/account';
 import { type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
-import { createBranding } from '#/branding';
+import { createBranding, type Branding } from '#/branding';
 import { requiredActionRepository } from '@odudu/authn-flows';
 import { consoleGateway } from '@odudu/console-gateway';
 import { instrumentRoutes } from '@odudu/instrument';
@@ -91,6 +91,9 @@ export interface AppDeps {
    */
   readonly kek: Uint8Array;
   readonly logger: PinoLogger;
+  // How pages get their theme; a test passes its own. Defaults to the
+  // process's resolver over `database`.
+  readonly branding?: Branding;
   /**
    * The base a mailed verification link is built from, and the only source
    * of the WebAuthn relying party id — never derived from a request, since
@@ -506,11 +509,13 @@ export function buildApp(deps: AppDeps): FastifyInstance {
       },
     }),
   );
-  const branding = createBranding({
-    database: deps.database,
-    logger: deps.logger,
-    publicBaseUrl: deps.publicBaseUrl,
-  });
+  const branding =
+    deps.branding ??
+    createBranding({
+      database: deps.database,
+      logger: deps.logger,
+      publicBaseUrl: deps.publicBaseUrl,
+    });
   app.register(
     oidcRoutes({
       resolveBranding: branding.resolveBranding,
