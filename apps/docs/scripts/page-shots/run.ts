@@ -9,6 +9,7 @@
 import { mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { chromium, type BrowserContext } from '@playwright/test';
+import { staleParts } from './dist-fresh.ts';
 import {
   JOBS,
   THEMES,
@@ -28,6 +29,9 @@ interface Box {
 
 const ORIGIN = 'http://pages.test';
 const INSTRUMENT = path.resolve(import.meta.dirname, '../../../../packages/instrument/dist');
+const REPOSITORY = path.resolve(import.meta.dirname, '../../../..');
+const TOKENS = 'apps/admin-console/src/shared/view/tokens.css';
+const PAGES = 'packages/instrument/src/pages.css';
 const OUT = path.resolve(import.meta.dirname, '../../static/server-pages');
 const VIEWPORT = { width: 520, height: 1400 };
 const MARGIN = 20;
@@ -86,6 +90,15 @@ try {
     });
   });
   if (files(INSTRUMENT).length === 0) throw new Error('packages/instrument/dist is empty');
+  const stale = staleParts(readFileSync(path.join(INSTRUMENT, 'instrument.css'), 'utf8'), {
+    tokensCss: readFileSync(path.join(REPOSITORY, TOKENS), 'utf8'),
+    pagesCss: readFileSync(path.join(REPOSITORY, PAGES), 'utf8'),
+  });
+  if (stale.length > 0) {
+    throw new Error(
+      `packages/instrument/dist is out of date with ${stale.join(' and ')}: run pnpm --filter @odudu/instrument build`,
+    );
+  }
   await context.route(`${ORIGIN}/page`, async (route) => {
     await route.fulfill({ body: pending, contentType: 'text/html' });
   });

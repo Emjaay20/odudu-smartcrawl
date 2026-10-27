@@ -86,6 +86,9 @@ describe('parseThemeBody', () => {
   it('refuses a logo without alt text, an empty one or an overlong one', () => {
     expect(paths({ assets: { logo: { assetId: ID } } })).toEqual(['/assets/logo/alt']);
     expect(paths({ assets: { logo: { assetId: ID, alt: '' } } })).toEqual(['/assets/logo/alt']);
+    expect(paths({ assets: { logo: { assetId: ID, alt: '  \t ' } } })).toEqual([
+      '/assets/logo/alt',
+    ]);
     expect(paths({ assets: { darkLogo: { assetId: ID, alt: 'x'.repeat(201) } } })).toEqual([
       '/assets/darkLogo/alt',
     ]);

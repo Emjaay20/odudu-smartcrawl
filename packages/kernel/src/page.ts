@@ -151,7 +151,7 @@ function readBranding(input: unknown): Checked {
         urlProblem('logo.url', logoUrl, false),
         urlProblem('logo.darkUrl', logoDark, true),
         typeof logoAlt !== 'string' ? 'logo.alt is not a string' : null,
-        typeof logoAlt === 'string' && logoAlt.trim() === '' ? 'logo.alt is empty' : null,
+        typeof logoAlt === 'string' ? altProblem(logoAlt) : null,
       ];
       problems.push(...logoProblems.filter((problem) => problem !== null));
     }
@@ -198,6 +198,17 @@ function readBranding(input: unknown): Checked {
       assetUrls: assets as string[],
     },
   };
+}
+
+// The longest alt a theme body may carry, as domain-theme's MAX_ALT_LENGTH
+// states it; the kernel cannot import that package.
+const MAX_ALT_LENGTH = 200;
+
+function altProblem(alt: string): string | null {
+  if (alt.length > MAX_ALT_LENGTH) {
+    return `logo.alt is longer than ${String(MAX_ALT_LENGTH)} characters: ${quoted(alt)}`;
+  }
+  return alt.trim() === '' ? 'logo.alt is empty' : null;
 }
 
 function checked(input: unknown): Checked {

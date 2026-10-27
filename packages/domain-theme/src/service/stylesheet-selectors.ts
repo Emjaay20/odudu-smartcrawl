@@ -13,11 +13,13 @@ const PSEUDO_ELEMENTS = set('before after placeholder');
 // This reasons about the markup the renderers emit: a control sits in a form,
 // a label, main (.page), a p (the passkey button), or is a button itself, and
 // .rules wraps one. The decorative hooks may be hidden (heading, tenant name,
-// links); a tenant's own template may wrap a part in an allowed element and
+// links, the mark, wordmark and logo images); a tenant's own template may wrap a part in an allowed element and
 // hide that, which is accepted.
 const CONTROL_ELEMENTS = set('button input form label main div section');
 const HIDEABLE_ELEMENTS = set('img small span code h1 h2 h3 ul ol li a header footer');
-const HIDEABLE_HOOKS = set('brand context intro links mark tenant wordmark');
+const HIDEABLE_HOOKS = set(
+  'brand context intro links logo logo-dark logo-light mark tenant wordmark',
+);
 
 export interface Compound {
   element: string | null;

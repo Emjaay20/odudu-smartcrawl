@@ -819,6 +819,18 @@ describe('brandMarkup', () => {
     expect(() => brandMarkup(themed(url).locale, MARK)).toThrow(/branding/u);
   });
 
+  it('refuses a blank or overlong alt, quoting a bounded part of it', () => {
+    const blank = branding({ logo: { url: '/l.png', darkUrl: null, alt: ' \n ' } });
+    expect(brandingProblems(blank)).toEqual(['logo.alt is empty']);
+    const huge = branding({ logo: { url: '/l.png', darkUrl: null, alt: 'x'.repeat(10_000_000) } });
+    const problems = brandingProblems(huge);
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toMatch(/^logo\.alt is longer than 200 characters: /u);
+    expect(problems[0]?.length).toBeLessThan(200);
+    const exact = branding({ logo: { url: '/l.png', darkUrl: null, alt: 'x'.repeat(200) } });
+    expect(brandingProblems(exact)).toEqual([]);
+  });
+
   it('reads the logo from one validated copy', () => {
     let reads = 0;
     const logo = {

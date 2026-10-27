@@ -271,6 +271,7 @@ describe('checkStylesheet: properties', () => {
       expect(codes(`${selector} { display: none; }`), selector).toContain('value-not-allowed');
     }
     const allowed = ['small', '.brand', '.intro h1', '.links', 'p.context', '.wordmark', 'img'];
+    allowed.push('.logo', '.logo-light', '.logo-dark', '.brand .logo.logo-dark');
     for (const selector of allowed) {
       expect(checkStylesheet(`${selector} { display: none; }`), selector).toEqual([]);
     }

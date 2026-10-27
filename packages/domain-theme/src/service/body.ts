@@ -99,7 +99,10 @@ const palette = z.strictObject({
 });
 
 const assetId = z.uuid().transform((value) => value.toLowerCase());
-const alt = z.string().min(1).max(MAX_ALT_LENGTH);
+const alt = z
+  .string()
+  .max(MAX_ALT_LENGTH)
+  .refine((value) => value.trim() !== '');
 
 const pageKinds = Object.keys(PAGE_KINDS) as [PageKind, ...PageKind[]];
 

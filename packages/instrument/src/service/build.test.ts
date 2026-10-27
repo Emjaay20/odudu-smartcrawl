@@ -81,12 +81,16 @@ describe('buildInstrument', () => {
   });
 
   it('swaps a logo pair by colour scheme, following an explicit choice over the system', () => {
-    expect(pagesCss).toMatch(/\.logo-dark\s*\{\s*display:\s*none;/u);
+    expect(pagesCss).toMatch(/\.logo\.logo-dark\s*\{\s*display:\s*none;/u);
     expect(pagesCss).toMatch(
-      /@media \(prefers-color-scheme: dark\) \{\s*:root:not\(\[data-theme='light'\]\) \.logo-light \{\s*display: none;/u,
+      /@media \(prefers-color-scheme: dark\) \{\s*:root:not\(\[data-theme='light'\]\) \.logo\.logo-light \{\s*display: none;/u,
     );
-    expect(pagesCss).toMatch(/:root\[data-theme='dark'\] \.logo-dark \{\s*display: block;/u);
+    expect(pagesCss).toMatch(/:root\[data-theme='dark'\] \.logo\.logo-dark \{\s*display: block;/u);
     expect(pagesCss).toMatch(/\.logo \{[^}]*max-block-size: 2\.5rem;[^}]*object-fit: contain;/u);
+  });
+
+  it('never styles a logo variant by its own class alone, so a later .logo rule cannot win', () => {
+    expect(pagesCss).not.toMatch(/(^|[\s,}])\.logo-(dark|light)\b/mu);
   });
 
   it('stays inside the size budget', () => {

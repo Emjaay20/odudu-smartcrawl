@@ -327,25 +327,27 @@ input[aria-invalid='true'] {
   object-fit: contain;
 }
 
-.logo-dark {
+/* Two classes, so a tenant's plain `.logo { display }`, loaded after this
+   sheet, cannot show both images. */
+.logo.logo-dark {
   display: none;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) .logo-light {
+  :root:not([data-theme='light']) .logo.logo-light {
     display: none;
   }
 
-  :root:not([data-theme='light']) .logo-dark {
+  :root:not([data-theme='light']) .logo.logo-dark {
     display: block;
   }
 }
 
-:root[data-theme='dark'] .logo-light {
+:root[data-theme='dark'] .logo.logo-light {
   display: none;
 }
 
-:root[data-theme='dark'] .logo-dark {
+:root[data-theme='dark'] .logo.logo-dark {
   display: block;
 }
 
