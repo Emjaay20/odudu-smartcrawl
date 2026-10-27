@@ -1197,6 +1197,7 @@ The form posted back, with every hidden field it carries, ends the session and n
 frames `reports-widget`:
 
 ```bash
+field() { sed -n "s/.*name=.$1. value=.\([^>]*\).>.*/\1/p" page.txt; }
 curl -sS -b cookies.txt -i -X POST \
   --data-urlencode "session_id=$(field session_id)" --data-urlencode "csrf=$(field csrf)" \
   --data-urlencode "client_id=$(field client_id)" \
@@ -1241,8 +1242,8 @@ content-length: 974
 ```
 
 (`sid` shortened; it is the id half of the session cookie's entry, and `iss` is
-this tenant's issuer. `field` is the function from the first section, reading
-`page.txt` here. From the same stack at `http://localhost:3191`, with the two
+this tenant's issuer. `field` is redefined to read
+`page.txt` in the block above. From the same stack at `http://localhost:3191`, with the two
 commands above run against it and `x-request-id`, `Date` and the keep-alive
 headers omitted.) `sid` is present because `reports-widget` registered
 `frontchannel_logout_session_required`; a client that had not would be framed
@@ -1463,10 +1464,11 @@ content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; 
   <input type="hidden" name="state" value="xyz-bye">
 ```
 
-The form posted back, with `field` as in the first section reading `page.txt`,
+The form posted back, with `field` redefined to read `page.txt`,
 ends the session:
 
 ```bash
+field() { sed -n "s/.*name=.$1. value=.\([^>]*\).>.*/\1/p" page.txt; }
 curl -sS -i -b cookies.txt -X POST \
   --data-urlencode "session_id=$(field session_id)" --data-urlencode "csrf=$(field csrf)" \
   --data-urlencode "client_id=$(field client_id)" \

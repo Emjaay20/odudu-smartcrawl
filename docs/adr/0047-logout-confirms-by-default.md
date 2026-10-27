@@ -19,7 +19,7 @@ verified.
 
 - `/logout` shows its confirmation page by default. Only the confirmation
   `POST` ends a session; a request with no valid hint, a hint for another
-  session or an expired hint (still accepted to identify the session, as the
+  session or an expired hint (accepted only to identify the session, as the
   spec says) asks as well.
 - The form's `client_id`, `post_logout_redirect_uri` and `state` are bound into
   the anti-forgery token (`SessionEntry.proof`, each value length-prefixed).
