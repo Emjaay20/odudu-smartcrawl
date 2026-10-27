@@ -23,7 +23,7 @@ import { NO_CLIENT_KEY_FETCHER } from '#/repository/client-keys';
 import { UNLIMITED_CLIENT_SECRET_LIMITER } from '#/service/client-secret-throttle';
 import { clientOidcConfigRepository } from '#/repository/client-oidc-config';
 import { UNLIMITED_AUDIT_REFUSAL_BUDGET } from '#/service/audit-refusal-budget';
-import { confirmLogoutPage } from '#/testing/logout-confirmation';
+import { confirmationFields, confirmLogoutPage } from '#/testing/logout-confirmation';
 
 let containerHandle: TestDatabase | undefined;
 let ownerHandle: DatabaseHandle | undefined;
@@ -323,22 +323,24 @@ describe('[OIDC-RPINITIATED-2-05] a hint past its exp is accepted when it names 
   it('an expired hint still identifies the session and asks', async () => {
     const tenantName = `logout-lapsed-asks-${newId()}`;
     const { tenantId } = await setupTenant(tenantName);
-    const cookie = await signIn(tenantName);
-    const sessionId = sessionIdFromCookie(cookie);
+    const older = await signIn(tenantName);
+    const newer = await signIn(tenantName);
+    const olderId = sessionIdFromCookie(older);
     const hint = await mintHint(tenantName, await subjectIdOf(tenantId, USERNAME), {
-      sid: sessionId,
+      sid: olderId,
       expiredFor: AN_HOUR,
     });
 
     const page = await http.inject({
       url: logoutUrl(tenantName, { id_token_hint: hint, ...END_PARAMS }),
-      headers: { cookie },
+      headers: { cookie: browserHolding(tenantName, [older, newer]) },
     });
 
     expect(page.statusCode).toBe(200);
     expect(page.body).toContain('<title>Sign out?</title>');
-    expect(page.body).toContain(sessionId);
-    expect(await sessionIsLive(tenantId, sessionId)).toBe(true);
+    expect(confirmationFields(page).session_id).toBe(olderId);
+    expect(await sessionIsLive(tenantId, olderId)).toBe(true);
+    expect(await sessionIsLive(tenantId, sessionIdFromCookie(newer))).toBe(true);
   });
 
   it.each([
@@ -407,12 +409,21 @@ describe('[OIDC-RPINITIATED-2-05] a hint past its exp is accepted when it names 
   });
 });
 
+// One browser holding several sessions, the last signed in being the one
+// mostRecentlyActive picks when a hint names nothing usable.
+function browserHolding(tenantName: string, cookies: string[]): string {
+  return `${tenantName}-session=${cookies.map((cookie) => cookie.split('=')[1] ?? '').join('.')}`;
+}
+
 describe('a hint past its exp that does not name the live session still asks', () => {
+  // The page asks about `expectedSessionId`, the most recent live session:
+  // a hint that was accepted would have named another.
   async function expectConfirmation(
     tenantName: string,
     tenantId: string,
     cookie: string,
     hint: string,
+    expectedSessionId: string,
     survivors: string[],
     params: Record<string, string> = END_PARAMS,
   ): Promise<void> {
@@ -422,6 +433,7 @@ describe('a hint past its exp that does not name the live session still asks', (
     });
     expect(res.statusCode).toBe(200);
     expect(res.body).toContain('<title>Sign out?</title>');
+    expect(confirmationFields(res).session_id).toBe(expectedSessionId);
     for (const id of survivors) expect(await sessionIsLive(tenantId, id)).toBe(true);
   }
 
@@ -438,8 +450,17 @@ describe('a hint past its exp that does not name the live session still asks', (
       sessionRepository(tx).end(sessionIdFromCookie(first), new Date()),
     );
     const second = await signIn(tenantName);
+    const third = await signIn(tenantName);
+    const ids = [sessionIdFromCookie(second), sessionIdFromCookie(third)];
 
-    await expectConfirmation(tenantName, tenantId, second, hint, [sessionIdFromCookie(second)]);
+    await expectConfirmation(
+      tenantName,
+      tenantId,
+      browserHolding(tenantName, [second, third]),
+      hint,
+      ids[1] ?? '',
+      ids,
+    );
   });
 
   it('when its sid names a session this browser does not hold', async () => {
@@ -447,27 +468,42 @@ describe('a hint past its exp that does not name the live session still asks', (
     const { tenantId } = await setupTenant(tenantName);
     const subjectId = await subjectIdOf(tenantId, USERNAME);
     const elsewhere = await signIn(tenantName);
-    const here = await signIn(tenantName);
+    const hereOlder = await signIn(tenantName);
+    const hereNewer = await signIn(tenantName);
     const hint = await mintHint(tenantName, subjectId, {
       sid: sessionIdFromCookie(elsewhere),
       expiredFor: AN_HOUR,
     });
+    const ids = [elsewhere, hereOlder, hereNewer].map(sessionIdFromCookie);
 
-    await expectConfirmation(tenantName, tenantId, here, hint, [
-      sessionIdFromCookie(elsewhere),
-      sessionIdFromCookie(here),
-    ]);
+    await expectConfirmation(
+      tenantName,
+      tenantId,
+      browserHolding(tenantName, [hereOlder, hereNewer]),
+      hint,
+      ids[2] ?? '',
+      ids,
+    );
   });
 
   it('when it carries no sid', async () => {
     const tenantName = `logout-lapsed-nosid-${newId()}`;
     const { tenantId } = await setupTenant(tenantName);
-    const cookie = await signIn(tenantName);
+    const older = await signIn(tenantName);
+    const newer = await signIn(tenantName);
     const hint = await mintHint(tenantName, await subjectIdOf(tenantId, USERNAME), {
       expiredFor: AN_HOUR,
     });
+    const ids = [older, newer].map(sessionIdFromCookie);
 
-    await expectConfirmation(tenantName, tenantId, cookie, hint, [sessionIdFromCookie(cookie)]);
+    await expectConfirmation(
+      tenantName,
+      tenantId,
+      browserHolding(tenantName, [older, newer]),
+      hint,
+      ids[1] ?? '',
+      ids,
+    );
   });
 
   it('when the browser holds no session cookie at all', async () => {
@@ -484,7 +520,8 @@ describe('a hint past its exp that does not name the live session still asks', (
     });
 
     expect(res.statusCode).toBe(200);
-    expect(res.body).not.toContain('<title>Signed out</title>');
+    expect(res.body).toContain('<title>Already signed out</title>');
+    expect(confirmationFields(res).session_id).toBeUndefined();
     expect(await sessionIsLive(tenantId, sessionIdFromCookie(cookie))).toBe(true);
   });
 });
@@ -566,8 +603,13 @@ describe('a hint past its exp is no hint when anything else about it is wrong', 
     const { tenantId } = await setupTenant(tenantName);
     await setupTenant(otherTenant);
     const subjectId = await subjectIdOf(tenantId, USERNAME);
-    const cookie = await signIn(tenantName);
-    const sid = sessionIdFromCookie(cookie);
+    // The hint names the older session; rejected, it leaves the page asking
+    // about the newer, which an accepted one would not.
+    const older = await signIn(tenantName);
+    const newer = await signIn(tenantName);
+    const cookie = browserHolding(tenantName, [older, newer]);
+    const sid = sessionIdFromCookie(older);
+    const newerId = sessionIdFromCookie(newer);
 
     const generated = await generateSigningKey('ES256', KEK);
     const retiredKey: SigningKeyRecord = {
@@ -600,8 +642,10 @@ describe('a hint past its exp is no hint when anything else about it is wrong', 
     });
 
     expect(res.statusCode).toBe(200);
-    expect(res.body).not.toContain('<title>Signed out</title>');
+    expect(res.body).toContain('<title>Sign out?</title>');
     expect(res.headers.location).toBeUndefined();
+    expect(confirmationFields(res).session_id).toBe(newerId);
     expect(await sessionIsLive(tenantId, sid)).toBe(true);
+    expect(await sessionIsLive(tenantId, newerId)).toBe(true);
   });
 });

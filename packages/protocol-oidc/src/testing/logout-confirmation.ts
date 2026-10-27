@@ -1,5 +1,4 @@
 import { type FastifyInstance, type LightMyRequestResponse } from 'fastify';
-import { expect } from 'vitest';
 
 const ENTITIES: Record<string, string> = {
   '&amp;': '&',
@@ -13,10 +12,18 @@ function unescapeHtml(value: string): string {
   return value.replace(/&(?:amp|lt|gt|quot|#39);/g, (entity) => ENTITIES[entity] ?? entity);
 }
 
-// A logout request with a live session is only ever answered with the
-// confirmation page. This reads that page's hidden fields the way a browser
-// submits them and posts the form back, returning the answer that ends the
-// session.
+// The confirmation page's hidden fields, read the way a browser submits
+// them. Empty when the page is not a confirmation form.
+export function confirmationFields(page: LightMyRequestResponse): Record<string, string> {
+  const fields: Record<string, string> = {};
+  for (const match of page.body.matchAll(/<input type="hidden" name="([^"]*)" value="([^"]*)">/g)) {
+    fields[unescapeHtml(match[1] ?? '')] = unescapeHtml(match[2] ?? '');
+  }
+  return fields;
+}
+
+// Posts a confirmation page's form back and returns the answer that ends
+// the session. Throws when the page carries no form to post.
 export async function confirmLogoutPage(
   http: FastifyInstance,
   tenantName: string,
@@ -24,16 +31,14 @@ export async function confirmLogoutPage(
   page: LightMyRequestResponse,
   extraHeaders: Record<string, string> = {},
 ): Promise<LightMyRequestResponse> {
-  expect(page.statusCode).toBe(200);
-  expect(page.body).toContain('<title>Sign out?</title>');
-  const fields = new URLSearchParams();
-  for (const match of page.body.matchAll(/<input type="hidden" name="([^"]*)" value="([^"]*)">/g)) {
-    fields.set(unescapeHtml(match[1] ?? ''), unescapeHtml(match[2] ?? ''));
+  const fields = confirmationFields(page);
+  if (fields.session_id === undefined) {
+    throw new Error(`expected a confirmation page, got ${String(page.statusCode)}`);
   }
   return http.inject({
     method: 'POST',
     url: `/tenants/${tenantName}/protocol/openid-connect/logout`,
-    payload: fields.toString(),
+    payload: new URLSearchParams(fields).toString(),
     headers: { 'content-type': 'application/x-www-form-urlencoded', cookie, ...extraHeaders },
   });
 }

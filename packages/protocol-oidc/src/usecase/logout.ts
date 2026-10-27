@@ -26,7 +26,7 @@ export type LogoutDecision =
 export function decideRedirect(
   requested: string | null,
   registered: readonly string[],
-): LogoutDecision {
+): Exclude<LogoutDecision, { kind: 'confirm' }> {
   if (requested === null) return { kind: 'end', redirectTo: null };
   return registered.includes(requested)
     ? { kind: 'end', redirectTo: requested }
@@ -75,11 +75,12 @@ export type LogoutOutcome =
       registeredRedirect: string | null;
       state: string | null;
     }
-  // A session was ended, or there was none to end and the redirect alone
-  // was honoured (see decideLogout). `sessionEnded` tells the route whether
-  // there is a cookie to clear. `frontChannelLogoutUrls` is empty when no
-  // session ended; with a `redirectTo` it is the frames to show before the
-  // redirect (Front-Channel Logout 1.0 §3).
+  // The confirmation POST ended a session, or a first contact found none
+  // to end and the registered redirect alone was honoured (see
+  // decideLogout). `sessionEnded` tells the route whether there is a cookie
+  // to clear. `frontChannelLogoutUrls` is empty when no session ended; with
+  // a `redirectTo` it is the frames to show before the redirect
+  // (Front-Channel Logout 1.0 §3).
   | {
       kind: 'end';
       redirectTo: string | null;
@@ -87,9 +88,9 @@ export type LogoutOutcome =
       sessionEnded: boolean;
       frontChannelLogoutUrls: readonly string[];
     }
-  // The redirect was refused, but the session still ended and the page
-  // still renders — the same reason `end`'s no-redirect branch frames its
-  // relying parties applies here too.
+  // Only the confirmation POST returns this: the redirect was refused, but
+  // the session still ended and the page still renders — the same reason
+  // `end`'s no-redirect branch frames its relying parties applies here too.
   | {
       kind: 'render';
       error: string;
@@ -355,14 +356,11 @@ export async function handleLogoutConfirmation(
       frontChannelLogoutUrls: frontChannel,
     };
   }
-  if (decision.kind === 'render') {
-    const refusedFrontChannel = await frontChannelLogoutUrls(deps, tenant.id, issuer, session.id);
-    return {
-      kind: 'render',
-      error: decision.error,
-      state: params.state,
-      frontChannelLogoutUrls: refusedFrontChannel,
-    };
-  }
-  throw new Error('unreachable: decideRedirect never asks');
+  const refusedFrontChannel = await frontChannelLogoutUrls(deps, tenant.id, issuer, session.id);
+  return {
+    kind: 'render',
+    error: decision.error,
+    state: params.state,
+    frontChannelLogoutUrls: refusedFrontChannel,
+  };
 }
