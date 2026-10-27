@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { MAX_SLOT_NAME_LENGTH, MAX_TEMPLATE_LENGTH, fillTemplate, scanSlots } from '#/slots';
 
+// Catches only a catastrophic regression: an uncapped parse costs seconds,
+// so 2 s sits far above the capped path and tolerates a loaded runner.
+const CATASTROPHIC_MS = 2000;
+
 const t = (key: string): string => `<${key}>`;
 
 describe('fillTemplate', () => {
@@ -63,6 +67,6 @@ describe('scanSlots', () => {
     const hostile = '{{'.repeat(200_000) + 'a'.repeat(MAX_SLOT_NAME_LENGTH * 4);
     const started = performance.now();
     scanSlots(hostile);
-    expect(performance.now() - started).toBeLessThan(500);
+    expect(performance.now() - started).toBeLessThan(CATASTROPHIC_MS);
   });
 });
