@@ -15,6 +15,10 @@ describe('fillTemplate', () => {
     );
   });
 
+  it('escapes the backtick', () => {
+    expect(fillTemplate('{{t "a.b"}}', {}, () => '`x`')).toBe('&#96;x&#96;');
+  });
+
   it('an unknown slot throws', () => {
     expect(() => fillTemplate('{{nope}}', {}, t)).toThrow(/nope/);
   });

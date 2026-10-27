@@ -10,6 +10,7 @@ import { defaultTreeAdapter, html, parseFragment, type DefaultTreeAdapterMap } f
 type Node = DefaultTreeAdapterMap['node'];
 type Element = DefaultTreeAdapterMap['element'];
 
+// Slot and element bounds keep a save's work linear in a small input.
 export const MAX_TEMPLATE_SLOTS = 200;
 export const MAX_TEMPLATE_DEPTH = 32;
 export const MAX_TEMPLATE_ELEMENTS = 2000;
@@ -267,21 +268,23 @@ export function checkTemplate(
   // context (frame, a second body whose attributes would be merged onto the
   // page's) is refused by name rather than trusted to stay dropped. The same
   // linear scan bounds nesting and element count before the parser, whose
-  // cost grows faster than the input, is given the template.
-  const sourceTags = new Map<string, number>();
-  let depth = 0;
+  // cost grows faster than the input, is given the template. An end tag that
+  // does not close the innermost open one is not counted, so this never
+  // reads shallower than the tree; the tree's own depth is checked below.
+  const sourceTags: number[] = [];
+  const open: string[] = [];
   let elements = 0;
   for (const match of template.matchAll(TAG_NAME)) {
     const name = (match[2] ?? '').toLowerCase();
     if (!ALLOWED_ELEMENTS.has(name)) add('element-not-allowed', name);
     if (match[1] === '/') {
-      depth = Math.max(0, depth - 1);
+      if (open[open.length - 1] === name) open.pop();
       continue;
     }
     elements += 1;
-    sourceTags.set(name, (sourceTags.get(name) ?? 0) + 1);
-    if (!VOID_ELEMENTS.has(name)) depth += 1;
-    if (depth > MAX_TEMPLATE_DEPTH) {
+    sourceTags.push(match.index);
+    if (!VOID_ELEMENTS.has(name)) open.push(name);
+    if (open.length > MAX_TEMPLATE_DEPTH) {
       add('too-deep', String(MAX_TEMPLATE_DEPTH));
       return issues;
     }
@@ -295,18 +298,25 @@ export function checkTemplate(
   // A tag left open at the end would swallow the markup the server puts
   // after the template, so any end-of-input error refuses the template.
   const fragment = parseFragment(body, template, {
+    sourceCodeLocationInfo: true,
     onParseError: (error) => {
       if (error.code.startsWith('eof-')) add('unterminated', error.code);
     },
   });
-  const treeTags = new Map<string, number>();
+  // Where each element's own start tag begins; an element the parser made up
+  // (an implied tbody) has none.
+  const explicit = new Set<number>();
   // Slots the parser saw in text. A slot written with entities, or one a
   // tag splits, never matches the source's count.
   let slotsInText = 0;
-  const stack: Node[] = [...fragment.childNodes];
+  const stack: { node: Node; depth: number }[] = fragment.childNodes.map((node) => ({
+    node,
+    depth: 1,
+  }));
   while (stack.length > 0) {
-    const node = stack.pop();
-    if (node === undefined) break;
+    const entry = stack.pop();
+    if (entry === undefined) break;
+    const { node, depth } = entry;
     if (defaultTreeAdapter.isCommentNode(node)) {
       add('comment', 'comments are not allowed');
     } else if (defaultTreeAdapter.isTextNode(node)) {
@@ -319,17 +329,22 @@ export function checkTemplate(
         slotsInText += scanSlots(node.value).filter((slot) => slot.kind !== 'malformed').length;
       }
     } else if (defaultTreeAdapter.isElementNode(node)) {
-      treeTags.set(node.tagName, (treeTags.get(node.tagName) ?? 0) + 1);
+      const startTag = node.sourceCodeLocation?.startTag;
+      if (startTag !== undefined) explicit.add(startTag.startOffset);
+      if (depth > MAX_TEMPLATE_DEPTH) {
+        add('too-deep', String(MAX_TEMPLATE_DEPTH));
+        continue;
+      }
       if (node.namespaceURI !== html.NS.HTML || !ALLOWED_ELEMENTS.has(node.tagName)) {
         add('element-not-allowed', node.tagName);
       } else {
         checkAttributes(node, options, add);
       }
-      stack.push(...node.childNodes);
+      for (const child of node.childNodes) stack.push({ node: child, depth: depth + 1 });
     }
   }
-  for (const [name, count] of sourceTags) {
-    if (count > (treeTags.get(name) ?? 0)) add('unparsed-tag', name);
+  for (const offset of sourceTags) {
+    if (!explicit.has(offset)) add('unparsed-tag', template.slice(offset, offset + 16));
   }
   const slotsInSource = slots.filter((slot) => slot.kind !== 'malformed').length;
   // Only when nothing else was found: a slot in an attribute or a comment

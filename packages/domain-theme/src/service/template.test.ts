@@ -253,7 +253,54 @@ describe('what the parser would drop or never reach', () => {
   });
 });
 
+describe('dropped tags and implied elements', () => {
+  const required = (template: string): string[] =>
+    checkTemplate('required-action', template).map((issue) => issue.code);
+
+  it('refuses a tbody or tr the parser drops after a table that implied its own', () => {
+    expect(required('{{message}}<table><td>x</td></table><tbody onclick=alert(1)>')).toContain(
+      'unparsed-tag',
+    );
+    expect(required('{{message}}<table><td>x</td></table><tr onclick=alert(1)>')).toContain(
+      'unparsed-tag',
+    );
+  });
+
+  it('inspects a tbody or tr inside a real table and accepts one without attributes', () => {
+    expect(
+      required('{{message}}<table><tbody onclick="x"><tr><td>a</td></tr></tbody></table>'),
+    ).toContain('attribute-not-allowed');
+    expect(required('{{message}}<table><tr onclick="x"><td>a</td></tr></table>')).toContain(
+      'attribute-not-allowed',
+    );
+    expect(required('{{message}}<table><tr><td>x</td></tr></table>')).toEqual([]);
+    expect(required('{{message}}<table><tbody><tr><td>x</td></tr></tbody></table>')).toEqual([]);
+  });
+});
+
 describe('bounds before the parser', () => {
+  const required = (template: string): { codes: string[]; ms: number } => {
+    const started = performance.now();
+    const codes = checkTemplate('required-action', template).map((issue) => issue.code);
+    return { codes, ms: performance.now() - started };
+  };
+
+  it.each([
+    ['stray </b> ends', '<div></b>'.repeat(1000)],
+    ['stray </span> ends', '<div></span>'.repeat(1000)],
+    ['adoption agency with stray ends', '<b><p></b></span>'.repeat(1000)],
+    ['mismatched closers at the element cap', '<div>'.repeat(1990) + '</b>'.repeat(1990)],
+  ])('refuses nesting hidden by %s', (_name, markup) => {
+    const { codes, ms } = required(`{{message}}${markup}`);
+    expect(codes).toContain('too-deep');
+    expect(ms).toBeLessThan(100);
+  });
+
+  it('refuses properly closed nesting past the cap', () => {
+    const nested = `{{message}}${'<div>'.repeat(40)}${'</div>'.repeat(40)}`;
+    expect(required(nested).codes).toContain('too-deep');
+  });
+
   const timed = (template: string): { codes: string[]; ms: number } => {
     const started = performance.now();
     const codes = checkTemplate('sign-in', template).map((issue) => issue.code);
