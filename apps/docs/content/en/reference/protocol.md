@@ -55,7 +55,7 @@ A confidential client proves itself in one of the ways its record names: a secre
 ## Revoke, introspect and sign out
 
 - Revoke and introspect take `token` and the same client authentication as the token endpoint. `token_type_hint` is not read: both kinds of token are tried.
-- Sign out takes `id_token_hint`, `post_logout_redirect_uri`, `state` and `client_id`. The address must be registered for the client. When the session ends, each client that asked for it is told through its back-channel or front-channel logout address.
+- Sign out takes `id_token_hint`, `post_logout_redirect_uri`, `state` and `client_id`. The address must be registered for the client. A browser that holds a session is always asked to confirm, whatever the hint, and the confirmation ends it. When the session ends, each client that asked for it is told through its back-channel or front-channel logout address.
 
 ## What is not served
 

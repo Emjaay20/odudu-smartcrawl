@@ -22,6 +22,7 @@ import { NO_CLIENT_KEY_FETCHER } from '#/repository/client-keys';
 import { UNLIMITED_CLIENT_SECRET_LIMITER } from '#/service/client-secret-throttle';
 import { clientOidcConfigRepository } from '#/repository/client-oidc-config';
 import { UNLIMITED_AUDIT_REFUSAL_BUDGET } from '#/service/audit-refusal-budget';
+import { confirmLogoutPage } from '#/testing/logout-confirmation';
 
 // `disagreeing` makes the `client_id`/hint comparison after verification
 // rather than inside it, because §4 needs a disagreeing pair told apart
@@ -268,7 +269,7 @@ afterAll(async () => {
 });
 
 describe('/logout checks an id_token_hint against the client_id beside it', () => {
-  it('ends the session for a hint naming the client that asked', async () => {
+  it('asks, then ends the session, for a hint naming the client that asked', async () => {
     const tenantName = `logout-hint-aud-match-${newId()}`;
     const { tenantId } = await setupTenant(tenantName);
     const subjectId = await subjectIdOf(tenantId, USERNAME);
@@ -276,10 +277,12 @@ describe('/logout checks an id_token_hint against the client_id beside it', () =
     const sessionId = sessionIdFromCookie(cookie);
     const hint = await mintHint(tenantName, CLIENT_A_ID, subjectId, sessionId);
 
-    const res = await http.inject({
+    const page = await http.inject({
       url: logoutUrl(tenantName, { id_token_hint: hint, client_id: CLIENT_A_ID }),
       headers: { cookie },
     });
+    expect(await sessionIsStillLive(tenantId, sessionId)).toBe(true);
+    const res = await confirmLogoutPage(http, tenantName, cookie, page);
 
     // No post_logout_redirect_uri was requested, so ending the session
     // renders the logged-out page rather than redirecting away from it.
@@ -323,7 +326,7 @@ describe('/logout checks an id_token_hint against the client_id beside it', () =
   // A hint with no client_id names no claim to refute, so OIDC Core
   // §3.1.2.2 still lets it identify the session on its own
   // (RP-Initiated Logout §2) — a regression guard, not new behaviour.
-  it('regression guard: a hint alone, with no client_id, still ends the session it names', async () => {
+  it('a hint alone, with no client_id, still identifies the session it names, and asks', async () => {
     const tenantName = `logout-hint-no-clientid-${newId()}`;
     const { tenantId } = await setupTenant(tenantName);
     const subjectId = await subjectIdOf(tenantId, USERNAME);
@@ -331,10 +334,12 @@ describe('/logout checks an id_token_hint against the client_id beside it', () =
     const sessionId = sessionIdFromCookie(cookie);
     const hint = await mintHint(tenantName, CLIENT_A_ID, subjectId, sessionId);
 
-    const res = await http.inject({
+    const page = await http.inject({
       url: logoutUrl(tenantName, { id_token_hint: hint }),
       headers: { cookie },
     });
+    expect(await sessionIsStillLive(tenantId, sessionId)).toBe(true);
+    const res = await confirmLogoutPage(http, tenantName, cookie, page);
 
     expect(res.statusCode).toBe(200);
     expect(res.body).toContain('<title>Signed out</title>');

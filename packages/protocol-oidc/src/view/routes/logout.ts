@@ -144,7 +144,6 @@ async function respondToLogoutRequest(
     tenantIssuerFor(request, tenant),
     request.headers.cookie,
     params,
-    requestContextFrom(request),
   );
   return respondToOutcome(outcome, tenant, deps.tls, reply, deps.pageLocales);
 }

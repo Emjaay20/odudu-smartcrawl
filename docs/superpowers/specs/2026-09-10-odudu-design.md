@@ -1400,10 +1400,10 @@ window — and each turned reuse into the login form, and `prompt=none` into
 login's instant, 37 seconds before the `iat` of the token minted from it.
 
 **RP-initiated logout.** Driven over `GET` and `POST`: a hint naming the
-current session skips confirmation and honours an exactly registered
-`post_logout_redirect_uri`, clearing the cookie and revoking the
-session-bound refresh token; no hint renders the confirmation form carrying
-the session id, and a `client_id` disagreeing with the hint's `aud` renders
+current session renders the confirmation form, whose `POST` honours an
+exactly registered `post_logout_redirect_uri`, clearing the cookie and
+revoking the session-bound refresh token; no hint renders the same form
+carrying the session id, and a `client_id` disagreeing with the hint's `aud` renders
 that form with the redirect dropped entirely, ending nothing.
 
 **Offline access.** A second code redeemed from the same live session for

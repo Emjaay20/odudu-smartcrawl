@@ -23,6 +23,7 @@ import { NO_CLIENT_KEY_FETCHER } from '#/repository/client-keys';
 import { UNLIMITED_CLIENT_SECRET_LIMITER } from '#/service/client-secret-throttle';
 import { clientOidcConfigRepository } from '#/repository/client-oidc-config';
 import { UNLIMITED_AUDIT_REFUSAL_BUDGET } from '#/service/audit-refusal-budget';
+import { confirmLogoutPage } from '#/testing/logout-confirmation';
 
 let containerHandle: TestDatabase | undefined;
 let ownerHandle: DatabaseHandle | undefined;
@@ -309,11 +310,41 @@ const END_PARAMS = {
   state: 'st',
 };
 
+async function getAndConfirm(
+  tenantName: string,
+  cookie: string,
+  params: Record<string, string>,
+): Promise<LightMyRequestResponse> {
+  const page = await http.inject({ url: logoutUrl(tenantName, params), headers: { cookie } });
+  return confirmLogoutPage(http, tenantName, cookie, page);
+}
+
 describe('[OIDC-RPINITIATED-2-05] a hint past its exp is accepted when it names the live session', () => {
+  it('an expired hint still identifies the session and asks', async () => {
+    const tenantName = `logout-lapsed-asks-${newId()}`;
+    const { tenantId } = await setupTenant(tenantName);
+    const cookie = await signIn(tenantName);
+    const sessionId = sessionIdFromCookie(cookie);
+    const hint = await mintHint(tenantName, await subjectIdOf(tenantId, USERNAME), {
+      sid: sessionId,
+      expiredFor: AN_HOUR,
+    });
+
+    const page = await http.inject({
+      url: logoutUrl(tenantName, { id_token_hint: hint, ...END_PARAMS }),
+      headers: { cookie },
+    });
+
+    expect(page.statusCode).toBe(200);
+    expect(page.body).toContain('<title>Sign out?</title>');
+    expect(page.body).toContain(sessionId);
+    expect(await sessionIsLive(tenantId, sessionId)).toBe(true);
+  });
+
   it.each([
     ['an hour', AN_HOUR],
     ['three years', THREE_YEARS],
-  ])('ends the session without asking, for a hint expired %s ago', async (_name, expiredFor) => {
+  ])('ends the session once confirmed, for a hint expired %s ago', async (_name, expiredFor) => {
     const tenantName = `logout-lapsed-${newId()}`;
     const { tenantId } = await setupTenant(tenantName);
     const cookie = await signIn(tenantName);
@@ -323,10 +354,7 @@ describe('[OIDC-RPINITIATED-2-05] a hint past its exp is accepted when it names 
       expiredFor,
     });
 
-    const res = await http.inject({
-      url: logoutUrl(tenantName, { id_token_hint: hint, ...END_PARAMS }),
-      headers: { cookie },
-    });
+    const res = await getAndConfirm(tenantName, cookie, { id_token_hint: hint, ...END_PARAMS });
 
     expect(res.statusCode).toBe(302);
     const location = new URL(locationHeader(res));
@@ -344,19 +372,13 @@ describe('[OIDC-RPINITIATED-2-05] a hint past its exp is accepted when it names 
     const lapsedId = sessionIdFromCookie(lapsedCookie);
     const liveId = sessionIdFromCookie(liveCookie);
 
-    await http.inject({
-      url: logoutUrl(tenantName, {
-        id_token_hint: await mintHint(tenantName, subjectId, { sid: lapsedId, expiredFor: 60 }),
-        ...END_PARAMS,
-      }),
-      headers: { cookie: lapsedCookie },
+    await getAndConfirm(tenantName, lapsedCookie, {
+      id_token_hint: await mintHint(tenantName, subjectId, { sid: lapsedId, expiredFor: 60 }),
+      ...END_PARAMS,
     });
-    await http.inject({
-      url: logoutUrl(tenantName, {
-        id_token_hint: await mintHint(tenantName, subjectId, { sid: liveId }),
-        ...END_PARAMS,
-      }),
-      headers: { cookie: liveCookie },
+    await getAndConfirm(tenantName, liveCookie, {
+      id_token_hint: await mintHint(tenantName, subjectId, { sid: liveId }),
+      ...END_PARAMS,
     });
 
     const expected = [{ detail: { via: 'logout' }, outcome: 'allowed' }];
@@ -377,10 +399,7 @@ describe('[OIDC-RPINITIATED-2-05] a hint past its exp is accepted when it names 
     // joins a list (session-cookie.ts's SEPARATOR).
     const bothCookie = `${tenantName}-session=${older.split('=')[1] ?? ''}.${newer.split('=')[1] ?? ''}`;
 
-    const res = await http.inject({
-      url: logoutUrl(tenantName, { id_token_hint: hint, ...END_PARAMS }),
-      headers: { cookie: bothCookie },
-    });
+    const res = await getAndConfirm(tenantName, bothCookie, { id_token_hint: hint, ...END_PARAMS });
 
     expect(res.statusCode).toBe(302);
     expect(await sessionIsLive(tenantId, olderId)).toBe(false);

@@ -28,6 +28,7 @@ import { UNLIMITED_CLIENT_SECRET_LIMITER } from '#/service/client-secret-throttl
 import { clientOidcConfigRepository } from '#/repository/client-oidc-config';
 import { tokenGrantRepository } from '#/repository/grants';
 import { UNLIMITED_AUDIT_REFUSAL_BUDGET } from '#/service/audit-refusal-budget';
+import { confirmLogoutPage } from '#/testing/logout-confirmation';
 
 let containerHandle: TestDatabase | undefined;
 let ownerHandle: DatabaseHandle | undefined;
@@ -309,6 +310,24 @@ async function postConfirmation(
   });
 }
 
+// The first contact never ends a live session: this reads the page it asks
+// with and posts it back, returning the answer that ends the session.
+async function getAndConfirm(
+  tenantName: string,
+  cookie: string,
+  params: Record<string, string | undefined>,
+): Promise<LightMyRequestResponse> {
+  const page = await http.inject({ url: logoutUrl(tenantName, params), headers: { cookie } });
+  return confirmLogoutPage(http, tenantName, cookie, page);
+}
+
+async function isLive(tenantId: string, sessionId: string): Promise<boolean> {
+  const live = await withTenant(app.db, tenantId, (tx) =>
+    sessionRepository(tx).liveById(sessionId, GENEROUS_LIFESPANS, new Date()),
+  );
+  return live !== null;
+}
+
 beforeAll(async () => {
   containerHandle = await startTestDatabase();
   container = containerHandle;
@@ -346,6 +365,28 @@ afterAll(async () => {
 });
 
 describe('GET the logout endpoint with a hint matching the session', () => {
+  it('a valid hint for the cookie’s session still asks', async () => {
+    const tenantName = `logout-asks-${newId()}`;
+    const { tenantId } = await setupTenant(tenantName);
+    const cookie = await signIn(tenantName);
+    const sessionId = sessionIdFromCookie(cookie);
+    const hint = await mintIdToken(tenantName, await subjectIdOf(tenantId, USERNAME), sessionId);
+
+    const res = await http.inject({
+      url: logoutUrl(tenantName, {
+        id_token_hint: hint,
+        client_id: CLIENT_ID,
+        post_logout_redirect_uri: POST_LOGOUT_REDIRECT_URI,
+      }),
+      headers: { cookie },
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toContain('<title>Sign out?</title>');
+    expect(res.headers['set-cookie']).toBeUndefined();
+    expect(await isLive(tenantId, sessionId)).toBe(true);
+  });
+
   it('[OIDC-BACKCHANNEL-2.7-01] ends the session, revokes its grants, redirects, and leaves an offline grant alone', async () => {
     const tenantName = `logout-${newId()}`;
     const { tenantId, clientDbId } = await setupTenant(tenantName);
@@ -379,14 +420,11 @@ describe('GET the logout endpoint with a hint matching the session', () => {
       }),
     );
 
-    const res = await http.inject({
-      url: logoutUrl(tenantName, {
-        id_token_hint: hint,
-        client_id: CLIENT_ID,
-        post_logout_redirect_uri: POST_LOGOUT_REDIRECT_URI,
-        state: 'logout-state',
-      }),
-      headers: { cookie },
+    const res = await getAndConfirm(tenantName, cookie, {
+      id_token_hint: hint,
+      client_id: CLIENT_ID,
+      post_logout_redirect_uri: POST_LOGOUT_REDIRECT_URI,
+      state: 'logout-state',
     });
 
     expect(res.statusCode).toBe(302);
@@ -433,10 +471,7 @@ describe('GET the logout endpoint with a hint matching the session', () => {
     expect(tokenRes.statusCode).toBe(200);
     const refreshToken = tokenRes.json<{ refresh_token: string }>().refresh_token;
 
-    const logoutRes = await http.inject({
-      url: logoutUrl(tenantName, { id_token_hint: hint }),
-      headers: { cookie },
-    });
+    const logoutRes = await getAndConfirm(tenantName, cookie, { id_token_hint: hint });
     // No post_logout_redirect_uri requested: ends the session with nothing
     // to redirect to, which is a 200 page rather than a 302 — and a
     // distinct page from the redirect-refused one below: it must not claim
@@ -458,13 +493,10 @@ describe('GET the logout endpoint with a hint matching the session', () => {
     const subjectId = await subjectIdOf(tenantId, USERNAME);
     const hint = await mintIdToken(tenantName, subjectId, sessionId);
 
-    const res = await http.inject({
-      url: logoutUrl(tenantName, {
-        id_token_hint: hint,
-        client_id: CLIENT_ID,
-        post_logout_redirect_uri: 'https://evil.example/after-logout',
-      }),
-      headers: { cookie },
+    const res = await getAndConfirm(tenantName, cookie, {
+      id_token_hint: hint,
+      client_id: CLIENT_ID,
+      post_logout_redirect_uri: 'https://evil.example/after-logout',
     });
 
     expect(res.statusCode).toBe(400);
@@ -496,10 +528,7 @@ describe('a hint naming an older session, in a browser holding a newer one too',
     // way sessionCookies itself joins a list (session-cookie.ts's SEPARATOR).
     const bothCookie = `${tenantName}-session=${olderCookie.split('=')[1] ?? ''}.${newerCookie.split('=')[1] ?? ''}`;
 
-    const res = await http.inject({
-      url: logoutUrl(tenantName, { id_token_hint: hint }),
-      headers: { cookie: bothCookie },
-    });
+    const res = await getAndConfirm(tenantName, bothCookie, { id_token_hint: hint });
     expect(res.statusCode).toBe(200);
     expect(res.body).toContain('<title>Signed out</title>');
 
@@ -647,10 +676,24 @@ async function requestLogout(
   });
 }
 
+async function requestAndConfirm(
+  method: 'GET' | 'POST',
+  tenantName: string,
+  params: Record<string, string>,
+  cookie: string,
+): Promise<LightMyRequestResponse> {
+  return confirmLogoutPage(
+    http,
+    tenantName,
+    cookie,
+    await requestLogout(method, tenantName, params, cookie),
+  );
+}
+
 describe.each(['GET', 'POST'] as const)(
   '[OIDC-RPINITIATED-2-03] a logout request over %s',
   (method) => {
-    it('ends the session and redirects, on a hint that matches it', async () => {
+    it('asks, then ends the session and redirects, on a hint that matches it', async () => {
       const tenantName = `logout-${method.toLowerCase()}-ends-${newId()}`;
       const { tenantId } = await setupTenant(tenantName);
       const cookie = await signIn(tenantName);
@@ -658,7 +701,7 @@ describe.each(['GET', 'POST'] as const)(
       const subjectId = await subjectIdOf(tenantId, USERNAME);
       const hint = await mintIdToken(tenantName, subjectId, sessionId);
 
-      const res = await requestLogout(
+      const res = await requestAndConfirm(
         method,
         tenantName,
         {
@@ -710,7 +753,7 @@ describe.each(['GET', 'POST'] as const)(
       expect(stillLive).not.toBeNull();
     });
 
-    it('refuses a redirect that does not match exactly, having ended the session', async () => {
+    it('refuses a redirect that does not match exactly, having ended the session once confirmed', async () => {
       const tenantName = `logout-${method.toLowerCase()}-badredirect-${newId()}`;
       const { tenantId } = await setupTenant(tenantName);
       const cookie = await signIn(tenantName);
@@ -718,7 +761,7 @@ describe.each(['GET', 'POST'] as const)(
       const subjectId = await subjectIdOf(tenantId, USERNAME);
       const hint = await mintIdToken(tenantName, subjectId, sessionId);
 
-      const res = await requestLogout(
+      const res = await requestAndConfirm(
         method,
         tenantName,
         {
@@ -778,7 +821,7 @@ describe.each(['GET', 'POST'] as const)(
       // The contrast, on the same session: the identical request with a
       // hint issued to the `client_id` it names ends it and redirects.
       const agreeing = await mintIdToken(tenantName, subjectId, sessionId);
-      const honoured = await requestLogout(
+      const honoured = await requestAndConfirm(
         method,
         tenantName,
         {
@@ -1131,7 +1174,7 @@ describe('[ODUDU-LOGOUT-HINT-CLIENT-01] a valid hint with no client_id names the
       const sessionId = sessionIdFromCookie(cookie);
       const hint = await mintIdToken(tenantName, await subjectIdOf(tenantId, USERNAME), sessionId);
 
-      const res = await requestLogout(
+      const res = await requestAndConfirm(
         method,
         tenantName,
         { id_token_hint: hint, post_logout_redirect_uri: POST_LOGOUT_REDIRECT_URI, state: 's' },
@@ -1150,7 +1193,7 @@ describe('[ODUDU-LOGOUT-HINT-CLIENT-01] a valid hint with no client_id names the
       const sessionId = sessionIdFromCookie(cookie);
       const hint = await mintIdToken(tenantName, await subjectIdOf(tenantId, USERNAME), sessionId);
 
-      const res = await requestLogout(
+      const res = await requestAndConfirm(
         method,
         tenantName,
         { id_token_hint: hint, post_logout_redirect_uri: 'https://evil.example/after-logout' },
@@ -1170,7 +1213,7 @@ describe('[ODUDU-LOGOUT-HINT-CLIENT-01] a valid hint with no client_id names the
       const sessionId = sessionIdFromCookie(cookie);
       const hint = await mintIdToken(tenantName, await subjectIdOf(tenantId, USERNAME), sessionId);
 
-      const res = await requestLogout(
+      const res = await requestAndConfirm(
         method,
         tenantName,
         { id_token_hint: hint, post_logout_redirect_uri: OTHER_REDIRECT },
@@ -1201,7 +1244,7 @@ describe('[ODUDU-LOGOUT-HINT-CLIENT-01] a valid hint with no client_id names the
 
         // The address is registered to the registered client, so taking
         // either end of the list as the client would honour it.
-        const res = await requestLogout(
+        const res = await requestAndConfirm(
           method,
           tenantName,
           { id_token_hint: hint, post_logout_redirect_uri: POST_LOGOUT_REDIRECT_URI },
@@ -1224,7 +1267,7 @@ describe('[ODUDU-LOGOUT-HINT-CLIENT-01] a valid hint with no client_id names the
         sid: sessionId,
       });
 
-      const res = await requestLogout(
+      const res = await requestAndConfirm(
         method,
         tenantName,
         { id_token_hint: hint, post_logout_redirect_uri: POST_LOGOUT_REDIRECT_URI },
@@ -1246,7 +1289,7 @@ describe('[ODUDU-LOGOUT-HINT-CLIENT-01] a valid hint with no client_id names the
         'no-such-client',
       );
 
-      const res = await requestLogout(
+      const res = await requestAndConfirm(
         method,
         tenantName,
         { id_token_hint: hint, post_logout_redirect_uri: POST_LOGOUT_REDIRECT_URI },
@@ -1271,7 +1314,7 @@ describe('[ODUDU-LOGOUT-HINT-CLIENT-01] a valid hint with no client_id names the
       exp: Math.floor(Date.now() / 1000) - 3600,
     });
 
-    const res = await requestLogout(
+    const res = await requestAndConfirm(
       'GET',
       tenantName,
       { id_token_hint: hint, post_logout_redirect_uri: POST_LOGOUT_REDIRECT_URI },
@@ -1304,7 +1347,7 @@ describe('[ODUDU-LOGOUT-HINT-CLIENT-01] a valid hint with no client_id names the
     expect(await ended(sessionId)).toBe(false);
 
     const foreignClient = await mintIdToken(tenantName, subjectId, sessionId, 'only-in-b');
-    const viaForeignClient = await requestLogout(
+    const viaForeignClient = await requestAndConfirm(
       'GET',
       tenantName,
       { id_token_hint: foreignClient, post_logout_redirect_uri: OTHER_REDIRECT },
