@@ -42,7 +42,6 @@ Keep-Alive: timeout=72
 {"actions":["update-password"]}
 ```
 
-
 The same write twice: without the header, then with it.
 
 ```bash
@@ -77,7 +76,6 @@ Keep-Alive: timeout=72
 
 {"actions":["configure-totp"]}
 ```
-
 
 Replaying the first `ETag`, now one generation stale, changes nothing:
 

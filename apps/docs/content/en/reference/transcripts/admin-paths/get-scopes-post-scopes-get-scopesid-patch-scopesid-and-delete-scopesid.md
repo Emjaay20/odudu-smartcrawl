@@ -111,8 +111,7 @@ Keep-Alive: timeout=72
 ```
 
 `DELETE` cascades:
-`client_scope_assignments_scope_fk` and `client_scope_roles_scope_fk`
-(`packages/db/drizzle/0016_client_scopes.sql`, `0017_roles.sql`) both name
+`client_scope_assignments_scope_fk` and `client_scope_roles_scope_fk` both name
 `ON DELETE CASCADE`, not `RESTRICT`, so deleting an assigned, role-mapped
 scope removes it and both dependent rows together rather than refusing —
 **except the scope named `openid`**, refused with `409`: the same cascade
@@ -121,7 +120,7 @@ the built-in admin client's included, which
 `DELETE /scopes/:id/clients/:clientId` below refuses for that one client
 alone. Every other scope stays deletable whatever it is assigned to,
 unless the roles it maps reach an admin capability the caller does not hold
-([a removal is judged by what it removes](#a-removal-is-judged-by-what-it-removes))
+([a removal is judged by what it removes](./get-groupsidroles-and-put-groupsidroles.md#a-removal-is-judged-by-what-it-removes))
 — a tenant-wide decision, not a per-client one. A **built-in** scope, one every
 tenant is given, is deleted only when `?confirm=` names it again, so a script
 cannot take one by accident, and an ordinary scope needs no confirmation; the
