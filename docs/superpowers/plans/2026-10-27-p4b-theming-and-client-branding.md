@@ -99,7 +99,7 @@ No image, HTML or CSS library is installed (`git grep -l '"sharp"\|"parse5"\|"po
 
 ### Task 3: Bind the form's fields into the token; ADR 0047
 
-**Files:** Modify `packages/authn-flows/src/service/session-entry.ts` (`proof`, lines 51-58), `packages/protocol-oidc/src/usecase/logout.ts` (`LOGOUT_CONFIRMATION` use, `handleLogoutConfirmation` line 350), `packages/protocol-oidc/src/view/logout-html.ts`; Create `docs/adr/0047-logout-always-confirms.md`; Test `packages/authn-flows/src/service/session-entry.test.ts`, `packages/protocol-oidc/src/usecase/logout.test.ts`, `tests/logout.int.test.ts`.
+**Files:** Modify `packages/authn-flows/src/service/session-entry.ts` (`proof`, lines 51-58), `packages/protocol-oidc/src/usecase/logout.ts` (`LOGOUT_CONFIRMATION` use, `handleLogoutConfirmation` line 350), `packages/protocol-oidc/src/view/logout-html.ts`; Create the ADR numbered 0047 (`logout-always-confirms`); Test `packages/authn-flows/src/service/session-entry.test.ts`, `packages/protocol-oidc/src/usecase/logout.test.ts`, `tests/logout.int.test.ts`.
 
 **Interfaces:** Produces: `proof(purpose: string, bound?: readonly string[]): string` where `bound` values are length-prefixed into the HMAC input; the logout confirmation passes `[clientId ?? '', postLogoutRedirectUri ?? '', state ?? '']`.
 
@@ -295,7 +295,7 @@ Client rules (spec 6): authorization-session pages use the pending request's `cl
 
 ### Task 14: Upload pipeline
 
-**Files:** Create `packages/domain-theme/src/service/image.ts` (+ test), `packages/domain-theme/src/usecase/upload-asset.ts` (+ test); Modify `package.json` for the S1 image dependency; ADR 0046 `docs/adr/0046-theme-assets-live-in-postgresql.md`.
+**Files:** Create `packages/domain-theme/src/service/image.ts` (+ test), `packages/domain-theme/src/usecase/upload-asset.ts` (+ test); Modify `package.json` for the S1 image dependency; ADR 0046 (`theme-assets-live-in-postgresql`).
 
 **Interfaces:** Produces `inspectImage(bytes: Uint8Array): Promise<{ mime: 'image/png'|'image/jpeg'|'image/webp'; width: number; height: number; bytes: Uint8Array } | ImageRefusal>` (decodes, re-encodes, strips metadata), `uploadAsset(deps)(input: { tenantId; bytes; kind: 'logo'|'darkLogo'|'favicon'|'background' }): Promise<AssetRef | UploadRefusal>`; limits as constants: logo and favicon at most 256 KiB and 1024 px, background 1 MiB and 2560 px, tenant total 8 MiB, decoded pixels at most 16 M.
 
