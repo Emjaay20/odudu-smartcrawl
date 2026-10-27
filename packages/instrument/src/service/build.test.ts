@@ -80,12 +80,10 @@ describe('buildInstrument', () => {
     for (const pattern of physical) expect(pagesCss).not.toMatch(pattern);
   });
 
-  it('swaps a logo pair by colour scheme, following an explicit choice over the system', () => {
-    expect(pagesCss).toMatch(/\.logo\.logo-dark\s*\{\s*display:\s*none;/u);
-    expect(pagesCss).toMatch(
-      /@media \(prefers-color-scheme: dark\) \{\s*:root:not\(\[data-theme='light'\]\) \.logo\.logo-light \{\s*display: none;/u,
-    );
-    expect(pagesCss).toMatch(/:root\[data-theme='dark'\] \.logo\.logo-dark \{\s*display: block;/u);
+  it('hides only the logo variant not in use, and never shows the other', () => {
+    const rules = [...pagesCss.matchAll(/[^{}]*\.logo\.logo-(?:dark|light)[^{}]*\{([^}]*)\}/gu)];
+    expect(rules).toHaveLength(4);
+    for (const [, body] of rules) expect((body ?? '').trim()).toBe('display: none;');
     expect(pagesCss).toMatch(/\.logo \{[^}]*max-block-size: 2\.5rem;[^}]*object-fit: contain;/u);
   });
 

@@ -4,7 +4,9 @@ import { PAGE_KINDS } from '@odudu/kernel';
 export const CSS_HOOKS_VERSION = 1;
 
 // The classes the server pages render, which a tenant stylesheet may target,
-// and `page-` plus the page kind for themed pages. Not promised: a tenant can still draw
+// and `page-` plus the page kind for themed pages. `.logo { display: none }`
+// hides the logo whichever colour scheme is active; `.logo-light` and
+// `.logo-dark` hide that one variant. Not promised: a tenant can still draw
 // over the page with allowed means (a huge box-shadow or outline, large
 // margins) or shrink a control (width or height 0, font-size 0, a transparent
 // colour). None of it can run script, load an external resource or read a

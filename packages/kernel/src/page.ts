@@ -200,12 +200,15 @@ function readBranding(input: unknown): Checked {
   };
 }
 
-// The longest alt a theme body may carry, as domain-theme's MAX_ALT_LENGTH
-// states it; the kernel cannot import that package.
+// The longest alt a theme body may carry, counted in code points as the
+// theme body's schema counts it (domain-theme's MAX_ALT_LENGTH); the kernel
+// cannot import that package. A string over twice that cannot be within it,
+// so a huge one is refused without being iterated.
 const MAX_ALT_LENGTH = 200;
 
 function altProblem(alt: string): string | null {
-  if (alt.length > MAX_ALT_LENGTH) {
+  const tooLong = alt.length > 2 * MAX_ALT_LENGTH || Array.from(alt).length > MAX_ALT_LENGTH;
+  if (tooLong) {
     return `logo.alt is longer than ${String(MAX_ALT_LENGTH)} characters: ${quoted(alt)}`;
   }
   return alt.trim() === '' ? 'logo.alt is empty' : null;
