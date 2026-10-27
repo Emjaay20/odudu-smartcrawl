@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('node:crypto', () => {
@@ -25,13 +25,19 @@ describe('randomPassword', () => {
     expect(() => randomPassword('Ada-', ['ada'])).toThrow(/avoided/u);
   });
 
-  it('covers every username of three to six letters that the global setup seeds', () => {
-    const setup = readFileSync('apps/admin-console/e2e/global-setup.ts', 'utf8');
-    const seeded = [...setup.matchAll(/username: '([a-z]{3,6})'/gu)].map((m) => m[1]);
-    expect(seeded.length).toBeGreaterThan(40);
-    const missing = seeded.filter(
-      (name) => !(SEEDED_USERNAMES as readonly (string | undefined)[]).includes(name),
-    );
-    expect(missing).toEqual([]);
+  it('covers every username of three to six letters that the specs seed', () => {
+    const dir = 'apps/admin-console/e2e';
+    const files = readdirSync(dir).filter((f) => f === 'global-setup.ts' || f.endsWith('.spec.ts'));
+    const seeded = files.flatMap((file) => {
+      const text = readFileSync(`${dir}/${file}`, 'utf8');
+      const found = [
+        ...text.matchAll(/username: '([a-z]{3,6})'/gu),
+        ...text.matchAll(/'--username',\s*'([a-z]{3,6})'/gu),
+      ];
+      return found.map((m) => m[1]);
+    });
+    expect(seeded.length).toBeGreaterThan(48);
+    const known: readonly (string | undefined)[] = SEEDED_USERNAMES;
+    expect(seeded.filter((name) => !known.includes(name))).toEqual([]);
   });
 });
