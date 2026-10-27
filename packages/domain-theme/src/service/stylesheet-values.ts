@@ -92,7 +92,7 @@ function checkWord(word: string, ctx: ValueContext, inColourFunction: boolean): 
   } else if (HEX.test(lower) || COLOURS.has(lower) || KEYWORDS.has(lower)) {
     return;
   }
-  ctx.refuse('value-not-allowed', word.slice(0, 40));
+  ctx.refuse('value-not-allowed', word);
 }
 
 function checkNodes(
@@ -150,7 +150,7 @@ const oneOf =
     const only = parts[0];
     const word = only?.type === 'word' ? only.value.toLowerCase() : '';
     if (parts.length !== 1 || !allowed.has(word)) {
-      ctx.refuse('value-not-allowed', valueParser.stringify(nodes).slice(0, 40));
+      ctx.refuse('value-not-allowed', valueParser.stringify(nodes));
     }
   };
 
@@ -168,7 +168,7 @@ const fontFamily: Special = (nodes, ctx) => {
     }
   }
   for (const name of names) {
-    if (!FONT_FAMILY_NAMES.has(name)) ctx.refuse('value-not-allowed', name.slice(0, 40));
+    if (!FONT_FAMILY_NAMES.has(name)) ctx.refuse('value-not-allowed', name);
   }
 };
 

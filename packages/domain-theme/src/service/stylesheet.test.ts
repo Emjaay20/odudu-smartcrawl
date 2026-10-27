@@ -385,6 +385,53 @@ describe('checkStylesheet: values', () => {
     }
   });
 
+  // The same bug has come back at every place a detail was cut early, so
+  // every shape that echoes tenant text is tried with an astral character
+  // at each offset, and the whole detail must stay well-formed and short.
+  it('keeps every echoed detail well-formed and at most 60 units, at any offset', () => {
+    const shapes = [
+      (x: string) => `a{${x}:1}`,
+      (x: string) => `a{color:${x}}`,
+      (x: string) => `a{color:${x}(1)}`,
+      (x: string) => `a{color:rgb(${x})}`,
+      (x: string) => `a{color:var(${x})}`,
+      (x: string) => `a{color:var(--${x})}`,
+      (x: string) => `a{font-family:${x}}`,
+      (x: string) => `a{font-family:"${x}"}`,
+      (x: string) => `a{display:${x}}`,
+      (x: string) => `a{width:1${x}}`,
+      (x: string) => `a{content:"${x}"}`,
+      (x: string) => `a{background:url(${x})}`,
+      (x: string) => `a{background:url("${x}")}`,
+      (x: string) => `${x}{color:red}`,
+      (x: string) => `.${x}{color:red}`,
+      (x: string) => `a ${x}{color:red}`,
+      (x: string) => `a:${x}{color:red}`,
+      (x: string) => `a::${x}{color:red}`,
+      (x: string) => `@${x}{}`,
+      (x: string) => `@${x} y;`,
+      (x: string) => `@media ${x}{}`,
+      (x: string) => `@media (min-width: ${x}){}`,
+      (x: string) => `${x}:1;`,
+      (x: string) => `a{${x}`,
+      (x: string) => `a{b:"${x}`,
+      (x: string) => `a{b:url(${x}`,
+      (x: string) => `a{${x}}`,
+    ];
+    for (const astral of ['😀', '𝒳']) {
+      for (let offset = 0; offset <= 80; offset += 1) {
+        const x = `${'x'.repeat(offset)}${astral}y`;
+        for (const shape of shapes) {
+          const css = shape(x);
+          for (const issue of checkStylesheet(css)) {
+            expect(issue.detail.length, css).toBeLessThanOrEqual(60);
+            expect(issue.detail, css).not.toMatch(LONE_SURROGATE);
+          }
+        }
+      }
+    }
+  });
+
   it('refuses an over-long value', () => {
     expect(codes(`a { color: ${'x'.repeat(4097)}; }`)).toEqual(['too-long']);
   });
