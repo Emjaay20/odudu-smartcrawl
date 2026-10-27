@@ -31,7 +31,7 @@ odudu seed tenant --name otp-demo --set otp_required=true
 ```
 
 ```
-{"created":true,"tenant":"otp-demo","tenantId":"01a137d3-\u2026","clientId":"otp-spa","userSubjectId":"01a137d3-\u2026"}
+{"created":true,"tenant":"otp-demo","tenantId":"01a137d3-…","clientId":"otp-spa","userSubjectId":"01a137d3-…"}
 {"command":"tenant","created":false,"tenant":"otp-demo","tenantId":"01a137d3-93e5-7a35-b789-277980331f13","settings":["otp_required"]}
 ```
 
@@ -215,6 +215,7 @@ HTTP/1.1 302 Found
 x-request-id: 01a137d3-9aef-775e-a7a6-a250bd854b55
 set-cookie: otp-demo-session=01a137d3-9b25-7358-b71d-b4293a769a47:57eh4x7sl2aNGrjf91JFD2mnXWmy-ktG6t0dz5uTDfA; HttpOnly; SameSite=Lax; Path=/
 set-cookie: otp-demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
+set-cookie: odudu-sign-in=; HttpOnly; SameSite=Lax; Path=/tenants/otp-demo/; Max-Age=0
 location: http://localhost:8080/callback?code=TS_QW6o-8Y1kzRj1_rRh2hQ4FbtDaLhFaz9tBf5F6sw&state=xyz&iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Fotp-demo
 content-length: 0
 Date: Wed, 14 Oct 2026 00:32:57 GMT
@@ -379,6 +380,7 @@ HTTP/1.1 302 Found
 x-request-id: 01a137d3-9cf6-70e7-9bec-7754f5fb6e3d
 set-cookie: otp-demo-session=01a137d3-9d0a-760c-aa16-a26add0afde0:zTqnr3XE8dypwf4XLpxGBiuJ2OHjtAiWDmJs-tLj3Wk; HttpOnly; SameSite=Lax; Path=/
 set-cookie: otp-demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
+set-cookie: odudu-sign-in=; HttpOnly; SameSite=Lax; Path=/tenants/otp-demo/; Max-Age=0
 location: http://localhost:8080/callback?code=REWfO6a8FMPFBqjUJBmd7EFLtUciTh0GfCLSyFWNwl4&state=xyz&iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Fotp-demo
 content-length: 0
 Date: Wed, 14 Oct 2026 00:32:57 GMT

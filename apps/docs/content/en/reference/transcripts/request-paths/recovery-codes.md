@@ -156,6 +156,7 @@ HTTP/1.1 302 Found
 x-request-id: 01a137d3-9ea5-72a6-b4d1-3d451af1a220
 set-cookie: otp-demo-session=01a137d3-9ee4-774c-a1f0-7b51a53740c3:j1qO2TJFYsDsCP29koTcK5BgwzgDtSYtdpuBiFsEXD4; HttpOnly; SameSite=Lax; Path=/
 set-cookie: otp-demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
+set-cookie: odudu-sign-in=; HttpOnly; SameSite=Lax; Path=/tenants/otp-demo/; Max-Age=0
 location: http://localhost:8080/callback?code=5I3UGs_lZLJ8IzO16HHeB478eel2UUMkRKTQ7rbbDQs&state=xyz&iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Fotp-demo
 content-length: 0
 Date: Wed, 14 Oct 2026 00:32:58 GMT
@@ -317,7 +318,8 @@ rather than deleted:
 docker compose -p odudu-17a -f infra/docker/compose.yaml exec -T postgres \
   psql -U odudu -d odudu -c \
   "SELECT count(*) AS codes, count(secret_data->>'usedAt') AS spent
-     FROM user_credentials WHERE type = 'recovery-code';"
+     FROM user_credentials WHERE type = 'recovery-code'
+      AND tenant_id = (SELECT id FROM tenants WHERE name = 'otp-demo');"
 ```
 
 ```
@@ -357,6 +359,7 @@ HTTP/1.1 302 Found
 x-request-id: 01a137d4-5d60-7709-a701-0194a352560d
 set-cookie: rc8-demo-session=01a137d4-5e4e-7a32-826d-3d83b7545e54:-Z5iI7GF488P51f-1HRCTMKKXHGGsUyCG8mZF2ES0Ao; HttpOnly; SameSite=Lax; Path=/
 set-cookie: rc8-demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
+set-cookie: odudu-sign-in=; HttpOnly; SameSite=Lax; Path=/tenants/rc8-demo/; Max-Age=0
 location: http://localhost:8080/callback?code=4ClFExsSD-g_CG_ClPjfnaN3kBwgHoorQMiZiJELTvE&state=xyz&iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Frc8-demo
 content-length: 0
 Date: Wed, 14 Oct 2026 00:33:47 GMT
@@ -385,7 +388,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 2041
+content-length: 2107
 Date: Wed, 14 Oct 2026 00:33:47 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -437,6 +440,7 @@ HTTP/1.1 302 Found
 x-request-id: 01a137d4-6212-702f-98e3-e260b931935c
 set-cookie: rc8-demo-session=01a137d4-6228-72ef-acce-7825c414d1ce:s-AxqiUj8ccFNiWeaAltx-kfFz_ZHL4TTnKs6mn1xvk; HttpOnly; SameSite=Lax; Path=/
 set-cookie: rc8-demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
+set-cookie: odudu-sign-in=; HttpOnly; SameSite=Lax; Path=/tenants/rc8-demo/; Max-Age=0
 location: http://localhost:8080/callback?code=0X0v6AqfNZkZMfluApYongAIiQ1N0ovrRGryRx984X0&state=xyz&iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Frc8-demo
 content-length: 0
 Date: Wed, 14 Oct 2026 00:33:48 GMT

@@ -371,6 +371,7 @@ curl -sS -D - -o /dev/null \
 HTTP/1.1 302 Found
 set-cookie: demo-session=01a0de0f-e0c1-…:ymX2RgGntNQX…; HttpOnly; SameSite=Lax; Path=/
 set-cookie: demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
+set-cookie: odudu-sign-in=; HttpOnly; SameSite=Lax; Path=/tenants/demo/; Max-Age=0
 location: http://localhost:8080/callback?code=BHGxL9ZKCpm7…&state=xyz-123&iss=http%3A%2F%2Flocalhost%3A3000%2Ftenants%2Fdemo
 content-length: 0
 ```
@@ -386,13 +387,14 @@ alone, or with any secret but this one, resolves to no session at all, at
 the same cost as an id that names none. A browser holding several sessions
 carries several entries, joined with `.`.
 
-Two `set-cookie` headers, not one: the ephemeral `demo-session` this login
-just established, and `demo-session-persistent` cleared to empty with
-`Max-Age=0` because this submission carried no `remember_me` field. Both
-are always sent so a browser holding a stale persistent cookie from before
-this pair existed loses it on the next login rather than carrying it
-forward unnoticed. [A remembered login](#a-remembered-login) below shows
-the other case.
+Three `set-cookie` headers, not one: the ephemeral `demo-session` this login
+just established, `demo-session-persistent` cleared to empty with
+`Max-Age=0` because this submission carried no `remember_me` field, and
+`odudu-sign-in`, the cookie the form's page set, cleared too because the
+request it named is spent. The first two are always sent so a browser holding
+a stale persistent cookie from before this pair existed loses it on the next
+login rather than carrying it forward unnoticed. [A remembered
+login](#a-remembered-login) below shows the other case.
 
 Three things in that response:
 
@@ -441,16 +443,16 @@ curl -sS -i \
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a16366-e054-71c4-a744-5385c88243c3
+x-request-id: 01a17a89-5f66-7347-b6fd-04f4cf9b0e7f
 content-type: text/html
-content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-DwvFoSyXwPdlEuK/NfFg1A=='; connect-src 'self'
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-ga/V0OCL8nYHuyQADkB5Dw=='; connect-src 'self'
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 3588
-Date: Thu, 22 Oct 2026 11:37:28 GMT
+content-length: 3654
+Date: Mon, 26 Oct 2026 23:26:25 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -479,19 +481,19 @@ Keep-Alive: timeout=72
 </ul>
 </div>
 <form method="post" action="/tenants/demo/login-actions/authenticate">
-  <input type="hidden" name="auth_session_id" value="01a16366-e041-72e7-92f3-4de384beebc4">
+  <input type="hidden" name="auth_session_id" value="01a17a89-5f4f-71e1-a50b-49d5651d9943">
   <label>Username <input type="text" name="username" autocomplete="username" value="ada" aria-invalid="true" aria-describedby="form-error-0"></label>
   <label>Password <input type="password" name="password" autocomplete="current-password" aria-invalid="true" aria-describedby="form-error-0" autofocus></label>
   <button type="submit">Sign in</button>
 </form>
 <form method="post" action="/tenants/demo/login-actions/authenticate" id="passkey-form" data-failed="Your device did not finish signing in — {reason}. You can try again." data-cancelled="the request was cancelled" data-not-offered="this server is not offering passkeys">
-  <input type="hidden" name="auth_session_id" value="01a16366-e041-72e7-92f3-4de384beebc4">
+  <input type="hidden" name="auth_session_id" value="01a17a89-5f4f-71e1-a50b-49d5651d9943">
   <input type="hidden" name="assertion" id="passkey-assertion">
   <p><button type="submit" id="passkey-submit" class="secondary">Sign in with a passkey</button></p>
 </form>
 <p id="passkey-error" class="alert" role="alert" hidden></p>
 <noscript><p>Signing in with a passkey needs JavaScript, because only the browser can talk to your authenticator. Use your username and password above.</p></noscript>
-<script nonce="DwvFoSyXwPdlEuK/NfFg1A==">…</script>
+<script nonce="ga/V0OCL8nYHuyQADkB5Dw==">…</script>
 </main>
 </body>
 </html>
@@ -511,32 +513,31 @@ diff /tmp/refused-wrong-password.txt /tmp/refused-unknown-user.txt
 
 ```
 2c2
-< x-request-id: 01a16366-e054-71c4-a744-5385c88243c3
+< x-request-id: 01a17a89-5f66-7347-b6fd-04f4cf9b0e7f
 ---
-> x-request-id: 01a16366-e08f-7c35-bf2d-1e375367e50c
+> x-request-id: 01a17a89-5fad-7006-b71d-1e89078d4768
 4c4
-< content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-DwvFoSyXwPdlEuK/NfFg1A=='; connect-src 'self'
+< content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-ga/V0OCL8nYHuyQADkB5Dw=='; connect-src 'self'
 ---
-> content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-1+h8XNSIw5Rk+c2DYyo3ZQ=='; connect-src 'self'
-10,11c10,11
-< content-length: 3588
-< Date: Thu, 22 Oct 2026 11:37:28 GMT
+> content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-Bjx0VB6x6YcbAGsFeQU9fQ=='; connect-src 'self'
+10c10
+< content-length: 3654
 ---
-> content-length: 3591
-> Date: Thu, 22 Oct 2026 11:37:29 GMT
-40c40
+> content-length: 3657
+41c41
 <   <label>Username <input type="text" name="username" autocomplete="username" value="ada" aria-invalid="true" aria-describedby="form-error-0"></label>
 ---
 >   <label>Username <input type="text" name="username" autocomplete="username" value="nobody" aria-invalid="true" aria-describedby="form-error-0"></label>
-51c51
-< <script nonce="DwvFoSyXwPdlEuK/NfFg1A==">
+52c52
+< <script nonce="ga/V0OCL8nYHuyQADkB5Dw==">
 ---
-> <script nonce="1+h8XNSIw5Rk+c2DYyo3ZQ==">
+> <script nonce="Bjx0VB6x6YcbAGsFeQU9fQ==">
 ```
 
-Six lines differ: the request id, the script nonce (in the header and on
-the element), the length that follows the typed name and the time of the
-response, and the typed name itself. Nothing says whether the account exists.
+Five lines differ: the request id, the script nonce (in the header and on
+the element), the length that follows the typed name, and the typed name
+itself; the time of the response differs too when the second turns between
+the two requests, as it did not here. Nothing says whether the account exists.
 
 - **One message per step, whatever the cause.** The password step says
   `Sign-in failed. Check your details and try again.` for a wrong password,
@@ -693,6 +694,7 @@ curl -sS -D - -o /dev/null \
 HTTP/1.1 302 Found
 set-cookie: demo-session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
 set-cookie: demo-session-persistent=01a0de10-6e0f-…:_VOQ7Kojly1r…; HttpOnly; SameSite=Lax; Path=/; Max-Age=2592000
+set-cookie: odudu-sign-in=; HttpOnly; SameSite=Lax; Path=/tenants/demo/; Max-Age=0
 location: http://localhost:8080/callback?code=8DehL4bWBMqb…&state=xyz-123&iss=http%3A%2F%2Flocalhost%3A3000%2Ftenants%2Fdemo
 content-length: 0
 ```
@@ -847,6 +849,7 @@ same nonce the policy names:
 ```
 HTTP/1.1 200 OK
 x-request-id: 01a13fbe-5240-7c96-8789-6be19bcf58ab
+set-cookie: odudu-sign-in=01a17a85-9fd8-7a3b-884a-3d516ef4d141._AOgPuOPokggVhZBE9a3mKwiyCh8FWYJW40gYg0HqkA; HttpOnly; SameSite=Lax; Path=/tenants/demo/; Max-Age=1800
 content-type: text/html
 content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'; script-src 'nonce-A4EUaub9ChHrn95wQwVmDg=='; connect-src 'self'
 x-frame-options: DENY
@@ -854,7 +857,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 2528
+content-length: 3533
 Date: Thu, 15 Oct 2026 13:26:39 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72

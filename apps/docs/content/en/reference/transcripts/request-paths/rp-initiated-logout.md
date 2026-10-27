@@ -427,7 +427,8 @@ curl -sS -u revoke-doc-client:revoke-doc-secret \
 { "active": false }
 ```
 
-`exp` above is `1790114523`; this second call landed at `1790114223` — 300
+(The logout request itself answers with the signed-out page, `200`, which this
+block leaves out.) `exp` above is `1790114523`; this second call landed at `1790114223` — 300
 seconds still on the clock, and every one of them made no difference, because
 logout revoked the grant this token names along with the session
 (`tokenGrantRepository(tx).revokeForSession`, called by `endSession`), and
@@ -441,7 +442,7 @@ sign-in, the same way, gives a second, still-live access and refresh token
 pair. Revoking the refresh token:
 
 ```bash
-curl -sS -u revoke-doc-client:revoke-doc-secret \
+curl -sS -i -u revoke-doc-client:revoke-doc-secret \
   -X POST "http://localhost:3000/tenants/revokedoc/protocol/openid-connect/revoke" \
   --data-urlencode "token=$REFRESH_TOKEN"
 ```
@@ -452,7 +453,8 @@ cache-control: no-store
 content-length: 0
 ```
 
-The grant is really gone, not merely marked for it: redeeming the same
+(`x-request-id`, `Date` and the keep-alive headers are omitted, as elsewhere in
+this document.) The grant is really gone, not merely marked for it: redeeming the same
 refresh token now fails the same way an unknown one would (RFC 6749 §5.2's
 own rule against distinguishing them),
 
@@ -485,7 +487,7 @@ Revoking it again is RFC 7009 §2.2's other rule, pinned separately from the
 first `200` above: an already-revoked token is not an error either.
 
 ```bash
-curl -sS -u revoke-doc-client:revoke-doc-secret \
+curl -sS -i -u revoke-doc-client:revoke-doc-secret \
   -X POST "http://localhost:3000/tenants/revokedoc/protocol/openid-connect/revoke" \
   --data-urlencode "token=$REFRESH_TOKEN"
 ```
@@ -824,6 +826,7 @@ curl -sS -b cookies-aud.txt -X POST \
 <p>Signing out ends this session for every application that uses it.</p>
 <form method="post" action="/tenants/demo/protocol/openid-connect/logout">
   <input type="hidden" name="session_id" value="01a0cb1f-d286-…">
+  <input type="hidden" name="csrf" value="MvKAEuRTdkFN…">
   <input type="hidden" name="client_id" value="demo-post">
   <button type="submit">Sign out</button>
 </form>
@@ -832,7 +835,7 @@ curl -sS -b cookies-aud.txt -X POST \
 </html>
 ```
 
-(`session_id` shortened.) Nothing was ended, and the form carries no
+(`session_id` and `csrf` shortened.) Nothing was ended, and the form carries no
 `post_logout_redirect_uri` at all: §4 says information that failed to
 validate is not used, so the hint and the redirect it would have
 authorised are dropped together. The identical request with
@@ -944,7 +947,7 @@ referrer-policy: no-referrer
 cache-control: no-store
 x-content-type-options: nosniff
 content-language: en
-content-length: 318
+content-length: 974
 ```
 
 ```
@@ -1111,6 +1114,8 @@ docker compose -f infra/docker/compose.yaml exec -T \
 {"ran":true,"delivered":1,"failed":0}
 ```
 
+(Node also writes a `DeprecationWarning` to stderr about a TLS server name
+that is an IP address, left out here as the `ExperimentalWarning` lines are.)
 The listener's own log shows the request actually arrived:
 
 ```
@@ -1406,6 +1411,7 @@ curl -sS -b cookies-offline.txt "http://localhost:3000/tenants/demo/protocol/ope
 <p>Signing out ends this session for every application that uses it.</p>
 <form method="post" action="/tenants/demo/protocol/openid-connect/logout">
   <input type="hidden" name="session_id" value="01a0cb23-6b57-…">
+  <input type="hidden" name="csrf" value="DVXf1lmDU4DM…">
   <button type="submit">Sign out</button>
 </form>
 </main>
@@ -1413,11 +1419,13 @@ curl -sS -b cookies-offline.txt "http://localhost:3000/tenants/demo/protocol/ope
 </html>
 ```
 
-(`session_id` shortened, as elsewhere in this document.)
+(`session_id` and `csrf` shortened, as elsewhere in this document;
+`$SESSION_ID` and `$CSRF` below are the two hidden values read from it.)
 
 ```bash
 curl -sS -b cookies-offline.txt -D - \
-  --data-urlencode 'session_id=01a0cb23-6b57-7ed4-9d1c-065e8242dda7' \
+  --data-urlencode "session_id=$SESSION_ID" \
+  --data-urlencode "csrf=$CSRF" \
   "http://localhost:3000/tenants/demo/protocol/openid-connect/logout"
 ```
 
@@ -1425,7 +1433,14 @@ curl -sS -b cookies-offline.txt -D - \
 HTTP/1.1 200 OK
 set-cookie: demo-session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
 set-cookie: demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
+content-type: text/html
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'
+x-frame-options: DENY
+referrer-policy: no-referrer
 cache-control: no-store
+x-content-type-options: nosniff
+content-language: en
+content-length: 826
 
 <!doctype html>
 <html lang="en" dir="ltr">
@@ -1449,7 +1464,8 @@ cache-control: no-store
 </html>
 ```
 
-The session-bound refresh token is revoked with it:
+(`x-request-id`, `Date` and the keep-alive headers are omitted.) The
+session-bound refresh token is revoked with it:
 
 ```bash
 curl -sS \
@@ -1659,6 +1675,7 @@ HTTP/1.1 302 Found
 x-request-id: 01a137d6-c2c7-78cf-8e8d-1b9762557de3
 set-cookie: demo-session=01a137d6-c2e4-7f70-8fc3-6dbee704dde9:a-7981Ir1Wexv7gTDwGcUtsV2iJBTzlNF6CaRh_DHds; HttpOnly; SameSite=Lax; Path=/
 set-cookie: demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
+set-cookie: odudu-sign-in=; HttpOnly; SameSite=Lax; Path=/tenants/demo/; Max-Age=0
 location: https://rp.example/cb?code=NreYk9SzpC5ttZWW-ylIReNrfpOulmUMp4DXbH8_JDk&state=xyz-123&iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Fdemo
 content-length: 0
 Date: Wed, 14 Oct 2026 00:36:23 GMT
@@ -1863,6 +1880,8 @@ curl -sS -D - \
 HTTP/1.1 200 OK
 content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'
 <h1><bdi>Billing &amp; Co</bdi> is asking for access</h1>
+<p class="tenant"><bdi>email-demo</bdi></p>
+</header>
 <p><a href="https://billing.example/about?from=consent&amp;lang=en">About <bdi>Billing &amp; Co</bdi></a> · <a href="https://billing.example/privacy">Privacy policy</a> · <a href="https://billing.example/terms">Terms of service</a></p>
 <form method="post" action="/tenants/email-demo/login-actions/consent">
 ```

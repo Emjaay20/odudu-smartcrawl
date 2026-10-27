@@ -12,9 +12,9 @@ beside the password fields, and pressing it asks for nothing typed:
 <form method="post" action="/tenants/demo/login-actions/authenticate" id="passkey-form" data-failed="Your device did not finish signing in — {reason}. You can try again." data-cancelled="the request was cancelled" data-not-offered="this server is not offering passkeys">
   <input type="hidden" name="auth_session_id" value="01a13fbd-81d7-…">
   <input type="hidden" name="assertion" id="passkey-assertion">
-  <p><button type="submit" id="passkey-submit">Sign in with a passkey</button></p>
+  <p><button type="submit" id="passkey-submit" class="secondary">Sign in with a passkey</button></p>
 </form>
-<p id="passkey-error" hidden></p>
+<p id="passkey-error" class="alert" role="alert" hidden></p>
 <noscript><p>Signing in with a passkey needs JavaScript, because only the browser can talk to your authenticator. Use your username and password above.</p></noscript>
 ```
 

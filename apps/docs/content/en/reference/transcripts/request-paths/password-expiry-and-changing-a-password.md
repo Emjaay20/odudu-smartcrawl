@@ -32,7 +32,7 @@ docker compose -p odudu-t8d -f infra/docker/compose.yaml exec -T postgres \
 ```
 
 ```
-{"created":true,"tenant":"expiry-demo","tenantId":"01a10b6c-\u2026","clientId":"expiry-spa","userSubjectId":"01a10b6c-\u2026"}
+{"created":true,"tenant":"expiry-demo","tenantId":"01a10b6c-…","clientId":"expiry-spa","userSubjectId":"01a10b6c-…"}
 {"command":"tenant","created":false,"tenant":"expiry-demo","tenantId":"01a10b6c-99d6-7be3-8938-3d002dc8dc15","settings":["password_max_age_days","password_history_depth"]}
 UPDATE 1
 ```
@@ -157,14 +157,19 @@ curl -sS -X POST \
 ```
 
 ```
+<header class="intro">
 <h1>Change your password</h1>
+<p class="tenant"><bdi>expiry-demo</bdi></p>
+</header>
 <p>This account needs a new password before you can continue.</p>
+<div class="alert" role="alert" id="form-error">
 <ul>
-<li>Password must not be one you have used before.</li>
+<li id="form-error-0">Password must not be one you have used before.</li>
 </ul>
+</div>
 ```
 
-(both refusals re-render the whole form, elided to its top here; the hidden
+(both refusals re-render the whole form, the second elided here to its heading and its alert; the hidden
 `auth_session_id` comes back with it, so the same parked login survives a
 wrong answer.)
 
@@ -191,6 +196,7 @@ HTTP/1.1 302 Found
 x-request-id: 01a10b6c-9e27-7704-bf0a-d87e1a580945
 set-cookie: expiry-demo-session=01a10b6c-9e9a-7e01-94c9-b3e323ac2827:jzvh-oA-g-vYo4to48WNw7BB9g3eY-gyZlK_yf-MBHY; HttpOnly; SameSite=Lax; Path=/
 set-cookie: expiry-demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
+set-cookie: odudu-sign-in=; HttpOnly; SameSite=Lax; Path=/tenants/expiry-demo/; Max-Age=0
 location: http://localhost:8080/callback?code=Z2mgP39xHfH1nMBDl2Zo2TrkJU-AP0cnUHW85P-dS8E&state=xyz&iss=http%3A%2F%2Flocalhost%3A3086%2Ftenants%2Fexpiry-demo
 content-length: 0
 Date: Mon, 05 Oct 2026 09:37:10 GMT
