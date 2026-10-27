@@ -50,7 +50,7 @@ That client is guarded on the admin API like every field outside
   not read, so four. A skip that ends adds the end's seven (session update, audit
   event-type read, audit insert, grant revoke, back-channel client read, signing-key
   read for the logout token, delivery insert) and one front-channel client read:
-  thirteen. `logout.int.test.ts` asserts five and thirteen through the driver's
+  thirteen. `logout.int.test.ts` asserts five, four and thirteen through the driver's
   query hook. `pnpm test:plans` still passes, but its end-session drive posts the
   confirmation form and does not reach a skip, so the plan check does not cover
   the skipping path; no new index is needed, since no new predicate is read.

@@ -116,7 +116,13 @@ const CLAIMS: readonly (readonly [phase: string, sentence: string, ...criterion:
     'arabic',
   ],
   ['P4b', 'Logos, favicons and background images', 'logo, favicon and background image'],
-  ['P4b', 'Sign-out always asks', 'always shows its confirmation page', 'anti-forgery token'],
+  [
+    'P4b',
+    'Sign-out asks for confirmation by default',
+    'shows its confirmation page by default',
+    'anti-forgery token',
+  ],
+  ['P4b', 'A client can opt out of the confirmation', 'a client may opt out for its own hint'],
   ['P4j', 'A tenant is reached at', 'custom domain', 'public address of its own'],
   ['P4j', 'Odudu keeps a table of verified domains', 'table of verified domains', 'on-demand tls'],
   ['P4j', 'The issuer, the cookies', 'issuer', 'cookie scope', 'webauthn rp id'],
@@ -319,7 +325,11 @@ describe('the roadmap and section 11 of the design spec agree', () => {
       ['P4f'],
       'carried by the gap-audit capability check above',
     ],
-    ['`/logout` has two hardening gaps', ['P4b'], ['anti-forgery token', 'always asks']],
+    [
+      '`/logout` has two hardening gaps',
+      ['P4b'],
+      ['anti-forgery token', 'asks for confirmation by default'],
+    ],
     [
       '`tests/lint/production-guard-order.test.ts`',
       ['P12'],
