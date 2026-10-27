@@ -935,20 +935,24 @@ exports[`the logout pages under the default template > renders the redirecting p
 <iframe src="https://rp-b.test/logout"></iframe>
 <script nonce="NONCE">
 (function () {
-  var next = document.getElementById('continue').href;
-  var frames = document.querySelectorAll('iframe');
-  var pending = frames.length;
-  var left = false;
-  function leave() { if (!left) { left = true; location.replace(next); } }
-  frames.forEach(function (frame) {
-    frame.addEventListener('load', function () {
-      if (frame.dataset.seen) return;
-      frame.dataset.seen = '1';
-      pending -= 1;
-      if (pending === 0) leave();
+  function start() {
+    var next = document.getElementById('continue').href;
+    var frames = document.querySelectorAll('iframe');
+    var pending = frames.length;
+    var left = false;
+    function leave() { if (!left) { left = true; location.replace(next); } }
+    frames.forEach(function (frame) {
+      frame.addEventListener('load', function () {
+        if (frame.dataset.seen) return;
+        frame.dataset.seen = '1';
+        pending -= 1;
+        if (pending === 0) leave();
+      });
     });
-  });
-  setTimeout(leave, 2000);
+    setTimeout(leave, 2000);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
 })();
 </script>
 </main>
@@ -978,20 +982,24 @@ exports[`the logout pages under the default template > renders the redirecting p
 
 <script nonce="NONCE">
 (function () {
-  var next = document.getElementById('continue').href;
-  var frames = document.querySelectorAll('iframe');
-  var pending = frames.length;
-  var left = false;
-  function leave() { if (!left) { left = true; location.replace(next); } }
-  frames.forEach(function (frame) {
-    frame.addEventListener('load', function () {
-      if (frame.dataset.seen) return;
-      frame.dataset.seen = '1';
-      pending -= 1;
-      if (pending === 0) leave();
+  function start() {
+    var next = document.getElementById('continue').href;
+    var frames = document.querySelectorAll('iframe');
+    var pending = frames.length;
+    var left = false;
+    function leave() { if (!left) { left = true; location.replace(next); } }
+    frames.forEach(function (frame) {
+      frame.addEventListener('load', function () {
+        if (frame.dataset.seen) return;
+        frame.dataset.seen = '1';
+        pending -= 1;
+        if (pending === 0) leave();
+      });
     });
-  });
-  setTimeout(leave, 2000);
+    setTimeout(leave, 2000);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
 })();
 </script>
 </main>

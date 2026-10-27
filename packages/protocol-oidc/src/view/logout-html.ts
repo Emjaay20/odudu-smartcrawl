@@ -121,7 +121,8 @@ const NO_SCRIPT_WAIT_SECONDS = 5;
 // (Front-Channel Logout 1.0 §3). `redirectTo` is the address the route
 // already matched. The script reads it from the page's own link, so nothing
 // is spliced into script; it leaves when every frame has loaded or the wait
-// is up.
+// is up. It starts at DOMContentLoaded, so where a theme places it is
+// immaterial.
 export function renderLoggedOutRedirectPage(
   frontChannelLogoutUrls: readonly string[],
   redirectTo: string,
@@ -146,20 +147,24 @@ export function renderLoggedOutRedirectPage(
         ),
         script: `\n<script nonce="${nonce}">
 (function () {
-  var next = document.getElementById('continue').href;
-  var frames = document.querySelectorAll('iframe');
-  var pending = frames.length;
-  var left = false;
-  function leave() { if (!left) { left = true; location.replace(next); } }
-  frames.forEach(function (frame) {
-    frame.addEventListener('load', function () {
-      if (frame.dataset.seen) return;
-      frame.dataset.seen = '1';
-      pending -= 1;
-      if (pending === 0) leave();
+  function start() {
+    var next = document.getElementById('continue').href;
+    var frames = document.querySelectorAll('iframe');
+    var pending = frames.length;
+    var left = false;
+    function leave() { if (!left) { left = true; location.replace(next); } }
+    frames.forEach(function (frame) {
+      frame.addEventListener('load', function () {
+        if (frame.dataset.seen) return;
+        frame.dataset.seen = '1';
+        pending -= 1;
+        if (pending === 0) leave();
+      });
     });
-  });
-  setTimeout(leave, ${String(FRAME_WAIT_MS)});
+    setTimeout(leave, ${String(FRAME_WAIT_MS)});
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
 })();
 </script>`,
       },
