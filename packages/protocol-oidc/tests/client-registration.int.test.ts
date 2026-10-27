@@ -197,6 +197,40 @@ describe('[ODUDU-CLIENT-REGISTRATION-OPEN-01] the open policy', () => {
     expect(res.json<{ error: string }>().error).toBe('invalid_client_metadata');
   });
 
+  it('Dynamic Client Registration refuses the field and a registered client has it off', async () => {
+    const tenantName = `open-skip-${newId()}`;
+    const tenantId = newId();
+    await withTenant(app.db, tenantId, (tx) =>
+      seedTenant(tx, tenantId, { name: tenantName, policy: 'open' }),
+    );
+
+    const refused = await http.inject({
+      method: 'POST',
+      url: URL_FOR(tenantName),
+      payload: { ...MINIMAL, skip_logout_confirmation: true },
+    });
+    expect(refused.statusCode).toBe(400);
+    expect(refused.json<{ error: string }>().error).toBe('invalid_client_metadata');
+    await withTenant(app.db, tenantId, async (tx) => {
+      expect(await tx.select().from(clients)).toHaveLength(0);
+    });
+
+    const registered = await http.inject({
+      method: 'POST',
+      url: URL_FOR(tenantName),
+      payload: MINIMAL,
+    });
+    expect(registered.statusCode).toBe(201);
+    expect(registered.json<Record<string, unknown>>()).not.toHaveProperty(
+      'skip_logout_confirmation',
+    );
+    const { client_id: oauthClientId } = registered.json<{ client_id: string }>();
+    await withTenant(app.db, tenantId, async (tx) => {
+      const [row] = await tx.select().from(clients).where(eq(clients.clientId, oauthClientId));
+      expect(row?.skipLogoutConfirmation).toBe(false);
+    });
+  });
+
   it('marks an anonymous registration as requiring consent, with origin anonymous', async () => {
     const tenantName = `open-anon-${newId()}`;
     const tenantId = newId();

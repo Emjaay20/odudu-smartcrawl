@@ -15,6 +15,7 @@ const confidentialClient: ClientRecord = {
   fullScopeAllowed: false,
   registrationOrigin: 'seeded',
   builtinAdmin: false,
+  skipLogoutConfirmation: false,
   description: null,
   previousSecretHash: null,
   previousSecretExpiresAt: null,

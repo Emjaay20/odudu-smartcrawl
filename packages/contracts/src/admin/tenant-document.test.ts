@@ -14,6 +14,7 @@ const CLIENT: ExportedClient = {
   type: 'confidential',
   enabled: true,
   full_scope_allowed: false,
+  skip_logout_confirmation: false,
   registration_origin: 'operator',
   redirect_uris: ['https://billing.example/callback'],
   grant_types: ['authorization_code'],
@@ -158,6 +159,14 @@ describe('the lists a client of a document may hold', () => {
 describe('tenantDocumentSchema', () => {
   it('accepts a document with no subjects', () => {
     expect(tenantDocumentSchema.safeParse(DOCUMENT).success).toBe(true);
+  });
+
+  it('imports a client of an older document, which has no skip_logout_confirmation, with it off', () => {
+    const older: Record<string, unknown> = { ...CLIENT };
+    delete older.skip_logout_confirmation;
+    const result = tenantDocumentSchema.safeParse({ ...DOCUMENT, clients: [older] });
+    expect(result.success).toBe(true);
+    expect(result.data?.clients[0]?.skip_logout_confirmation).toBe(false);
   });
 
   it('accepts only version 1', () => {

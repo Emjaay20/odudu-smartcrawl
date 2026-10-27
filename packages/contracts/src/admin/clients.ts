@@ -22,6 +22,7 @@ export const clientFieldsSchema = z.object({
   type: clientTypeSchema,
   enabled: z.boolean(),
   full_scope_allowed: z.boolean(),
+  skip_logout_confirmation: z.boolean(),
   registration_origin: registrationOriginSchema,
   created_at: createdAtSchema,
   redirect_uris: z.array(z.string()),

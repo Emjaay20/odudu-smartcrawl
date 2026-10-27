@@ -48,6 +48,11 @@ export const clients = pgTable('clients', {
   // authorization here too — `authorizeAdmin` matches a role's client
   // against `ADMIN_CLIENT_ID` by that same string.
   builtinAdmin: boolean('builtin_admin').notNull().default(false),
+  // Lets /logout end this client's session without the confirmation page
+  // when the request carries its own valid hint for that session (ADR 0047).
+  // Off for every client but the console's own; set only through the admin
+  // API (packages/db/drizzle/0106_clients_skip_logout_confirmation.sql).
+  skipLogoutConfirmation: boolean('skip_logout_confirmation').notNull().default(false),
   // Search keys, in the C collation, filled by the database
   // (packages/db/drizzle/0074_list_indexes_tenants_clients.sql).
   clientIdSearch: text('client_id_search').generatedAlwaysAs(sql`lower(client_id)`),
@@ -75,4 +80,5 @@ export interface ClientRecord {
   fullScopeAllowed: boolean;
   registrationOrigin: 'seeded' | 'anonymous' | 'token' | 'operator';
   builtinAdmin: boolean;
+  skipLogoutConfirmation: boolean;
 }

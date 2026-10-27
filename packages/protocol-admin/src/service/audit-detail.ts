@@ -13,6 +13,7 @@ const ALLOWLISTS: Record<string, ResourceAllowlist> = {
     enabled: 'value',
     type: 'value',
     full_scope_allowed: 'value',
+    skip_logout_confirmation: 'value',
     redirect_uris: 'value',
     grant_types: 'value',
     token_endpoint_auth_method: 'value',
