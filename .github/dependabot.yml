@@ -120,7 +120,8 @@ updates:
         patterns: ['*']
     # Odudu runs on an even-numbered Node LTS (ADR 0001). A release becomes LTS
     # months after it ships, and Dependabot cannot tell, so the Node major moves
-    # by hand each October. Patch and minor updates still come.
+    # by hand each October (ADR 0001, amendment 2026-10-27). Patch and minor
+    # updates still come.
     ignore:
       - dependency-name: node
         update-types: ['version-update:semver-major']
