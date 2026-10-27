@@ -1,9 +1,11 @@
 ---
-title: 'GET /roles/:id/composites and DELETE…'
+title: 'Role composites: list and remove'
 description: "Both require manage-tenant. The read answers the role's direct children only, each in the same shape GET /roles/:id answers, ordered by name — not…"
 ---
 
-## `GET /roles/:id/composites` and `DELETE /roles/:id/composites/:childId`
+# Role composites: list and remove
+
+This page covers `GET /roles/:id/composites` and `DELETE /roles/:id/composites/:childId`.
 
 Both require `manage-tenant`. The read answers the role's **direct**
 children only, each in the same shape `GET /roles/:id` answers, ordered by
@@ -118,7 +120,7 @@ curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
 {"items":[{"id":"01a0ee92-a3d6-72f5-8f9e-9b31dd3f3923","occurred_at":"2026-09-29T19:09:42.712Z","event_type":"admin_mutation","action":"role.composite_remove","outcome":"allowed","actor_tenant_id":"0199aa00-0000-7000-8000-000000000001","actor_subject_id":"01a0ee8a-bfb8-763c-ac22-0c8d97b0fada","actor_client_id":"01a0ee8a-bf72-77c9-a423-f61084924d9f","actor_name":null,"actor_origin":"system","resource_type":"role","resource_id":"01a0ee92-a1c5-70f4-b754-e2b9d40c22c7","request_id":"01a0ee92-a38e-7adc-ab75-39fad347ea6c","ip":"172.22.0.1","detail":{"child_role_id":"01a0ee92-a205-756a-8ca0-a2fbca9167e0"}}]}
 ```
 
-### Composites answer an `ETag`
+## Composites answer an `ETag`
 
 `GET …/composites` answers an `ETag` over the list it returns, and both
 composite writes answer the list's new one — `POST` beside its `204`, and

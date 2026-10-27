@@ -1,9 +1,11 @@
 ---
-title: 'POST …/subjects, refused for another principal'
+title: 'Subject create, refused for another principal'
 description: "Every tab shares the console cookie, so another tab's sign-in can replace the session; the console names the subject it expects on each request."
 ---
 
-## `POST /console/api/admin/tenants/{tenant}/subjects`, refused for another principal
+# Subject create, refused for another principal
+
+This page covers `POST /console/api/admin/tenants/{tenant}/subjects`, refused for another principal.
 
 On the same tenant. Every tab of a browser shares the console cookie, so another
 tab's sign-in can replace the session under a page that still shows the old

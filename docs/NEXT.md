@@ -2,87 +2,46 @@
 
 ## Start here
 
-**P0, P1, P2a, P2b, P3a, P3b, P4a, P4c, P4d and P4e are complete, the tenant
-rename is done, and P4g is the phase in progress. P4 has been split five
-ways.** Phases are section 11 of
+**P0, P1, P2a, P2b, P3a, P3b, P4a, P4c, P4d and P4e are complete, and the
+tenant rename is done. P4g has closed as release candidates, and only its
+stable tag is left.** Phases are section 11 of
 [the umbrella spec](superpowers/specs/2026-09-10-odudu-design.md), whose
 "P4 became four phases, then five" subsection has the reasoning.
 
-**P4g, the public release, has shipped as release candidates**
-(`0.1.0-rc.1` to `rc.3`, from pull request #64 and the fixes after it); the
-stable `0.1.0` waits on the owner steps in `RELEASING.md`. Built and reviewed:
-the release workflow and process, `odudu init` and the one-file quickstart,
-every server page under Instrument with a catalogue, the documentation site and
-landing page, the Core Web Vitals and Lighthouse budgets in CI, the guides,
-concepts, console tour and operating pages, the four examples and a WordPress
-guide, the README and community files, the CLA, the Pages deployment, and
-`prompt=create`, neutral registration, password rules, cookies under TLS and an
-issuer taken from configuration. Its notes are in
-[`docs/phases/p4g.md`](phases/p4g.md), the licences in `LICENSING.md`, and the
-work it placed on later phases is on
+**P4g, the public release, shipped as `0.1.0-rc.1` to `rc.3`.** The stable
+`0.1.0` is an owner step in `RELEASING.md` (the quick start run by hand on a
+Mac, on Windows and on arm64, and the CLA tested from a second account), not
+more phase work. What it built, and what the whole-phase review found, is in
+[`docs/phases/p4g.md`](phases/p4g.md); the licences are in `LICENSING.md`.
+What it placed on later phases is on
 [the roadmap page](../apps/docs/content/en/roadmap.md).
 
-The order is **P4a → P4c → P4e → P4d → P4g → P4b → P5a → P4f → P4h → P4i**, so P4b
-(theming and client branding) is the next phase after P4g, and the letters deliberately
-do not read in execution order, because `P4b` was spent on theming before P4
-split and an accepted ADR cites it. P4a was token exchange
-([spec](archive/specs/2026-09-23-p4a-token-exchange-design.md)); P4c was
-the admin API
-([spec](archive/specs/2026-09-24-p4c-admin-api-design.md)); P4e was
-authentication and token audit events
-([spec](archive/specs/2026-09-26-p4e-audit-events-design.md)); **P4d**,
-the admin console and the admin API it needs
-([spec](archive/specs/2026-09-26-p4d-admin-console-design.md)); **P4f**,
-self-service through a "me" API and application-initiated actions, replaced
-the account console; P4b stays theming; **P4h**, console localization, follows it ([ADR 0043](adr/0043-localization-is-a-catalogue-a-negotiation-and-a-set-of-owners.md)).
+**What is next, in this order: P4b, P5a, P4f, P4h, P4i, P5, P5b**, then the
+phases the roadmap page lists as "Later", P6 to P14. The letters do not read
+in execution order, because `P4b` was spent on theming before P4 split and an
+accepted ADR cites it. P4b is theming and client branding; P5a the MCP server;
+P4f self-service through a "me" API and application-initiated actions; P4h
+console localization ([ADR 0043](adr/0043-localization-is-a-catalogue-a-negotiation-and-a-set-of-owners.md));
+P4i the SDKs.
 
-**P4c shipped the admin API** at `/admin/tenants/{tenant}/`, authorized per
-request by a capability role on the tenant's `odudu-admin` client, with
-`odudu seed admin` bootstrapping `system` and its first administrator. The
-narrative is [the admin paths](../apps/docs/content/en/reference/transcripts/admin-paths/index.md), every transcript
-executed; the reference is `/admin/openapi.json`.
+**`gate` is required on `main`**, beside `verify`, `container`,
+`commit-messages` and `query-plans`. It covers every job, `e2e` and
+`conformance` included, and passes a job skipped for a prose-only change
+([ADR 0044](adr/0044-ci-runs-what-a-change-can-affect.md)).
 
-**P4d built the admin console and the admin API it needs.** Part 1 added
-`whoami` capabilities, prefix search with filter-bound keyset cursors,
-bounded counts, a target ceiling on every mutation of a subject or client
-that holds admin capabilities, tenant export and import, and per-package
-Turbo test caching in CI (ADRs 0038 and 0039). Part 2 is the console gateway
-under `/console` ([the console paths](../apps/docs/content/en/reference/transcripts/console-paths/index.md)); Part 3 the
-transport, the Instrument design system, the shell and the e2e harness; Part
-4 every area of the rail, the hardening the features found, and the
-localization placement (ADR 0043). `odudu-admin` is confidential, and the
-server needs `ODUDU_CONSOLE_CLIENT_KEY` to boot with the console on.
-[docs/phases/p4d.md](phases/p4d.md) has what building found, the defects it
-fixed and the VoiceOver checklist, which is still to be run by a person.
-
-**P4e filled that audit trail.** Beside `admin_mutation`, it writes
-`admin_access`, `authentication`, `session`, `token` and `credential` rows,
-each in the transaction that did the work, each carrying the request's
-`request_id` and `ip`, none carrying a secret or an attempted username. A
-refusal is a row only where the principal it names bounds it, and is
-otherwise a `warn` line (ADR 0037). `requested_userinfo_claims` now rides
-on the grant, closing ADR 0036's follow-up.
-
-What turned out to be **wrong** while building each is in
-[docs/phases/p4c.md](phases/p4c.md) and [docs/phases/p4e.md](phases/p4e.md),
-not here. Two themes are worth keeping in view: a mechanism built
-with no caller (P4c), and an audit write that changes what it records — an
-extra statement, an aborted transaction, a lock (P4e).
-
-**What P4c decided that other phases were waiting on** is in ADR 0007's
-amendment (the admin API is its first JSON surface), ADR 0036 (UserInfo's
-claims narrowing) and [p4c.md](phases/p4c.md) (`client.enabled`).
-
-**A bare `P4` below means P4d, which is complete and merged into `main`,** unless it concerns token exchange, the grant
-allowlist, the admin API, audit events, the grant's UserInfo claims,
-theming or client branding — the
-same disambiguation the P2 split used, and for the same reason: a citation
-renumbered wrongly is invisible for good. Nothing below is a plan for any of
-them, only what they inherit and what is still open.
-
-**The tenant rename changed the wire**: `realm` is `tenant` everywhere, the
-issuer included, as a hard cutover nothing deployed had to survive
+**What the closed phases left that a later phase has to know.** The admin API
+at `/admin/tenants/{tenant}/` is authorized per request by a capability role
+on the tenant's `odudu-admin` client, and that client is confidential, so the
+server needs `ODUDU_CONSOLE_CLIENT_KEY` to boot with the console on. The
+audit trail has six kinds of row and a reader (`AUDIT_ACTIONS` in
+`@odudu/domain-audit`); `request_id` in it is a correlation any caller sets,
+not evidence (ADR 0037's third amendment). The VoiceOver checklist from P4d is
+still to be run by a person ([p4d.md](phases/p4d.md)). The tenant rename
+changed the wire: `realm` is `tenant` everywhere, the issuer included
 ([tenant-rename.md](phases/tenant-rename.md)).
+
+Nothing below is a plan for any phase, only what it inherits and what is still
+open.
 
 ### What each phase found while building it
 
@@ -113,7 +72,7 @@ another paragraph. `tests/docs/next-budget.test.ts` holds the file to 400
 lines and any one section to 130, so an entry that has somewhere better to
 live is pushed there rather than accumulating here.
 
-## What P4g, P4b and P4f inherit
+## What P4b, P4f and P4h inherit
 
 **A console to build on, and the ways in.** The SPA talks to nothing but
 `/console/api/session`, `/console/api/admin/*`, `/console/auth/login` and
@@ -126,19 +85,6 @@ see, are in [p4d.md](phases/p4d.md), "what building the features found".
 P4h's catalogue replaces the console's English strings (ADR 0043); P4f's
 self-service pages are server-rendered, not console areas.
 
-**The audit trail has six kinds of row and a reader.** The vocabulary is
-`AUDIT_ACTIONS` in `@odudu/domain-audit`, the filters are in the admin API,
-and the console's Audit trail area shows them. Two facts a new reader needs:
-`request_id` is a correlation any caller sets, not evidence (ADR 0037's third
-amendment), and a refresh whose rotation committed before a refusal leaves
-both an `allowed` and a `refused` row under one request id
-([p4e.md](phases/p4e.md)).
-
-**`gate` is required on `main`**, beside `verify`, `container`,
-`commit-messages` and `query-plans`. It covers every job, `e2e` and
-`conformance` included, and passes a job skipped for a prose-only change
-([ADR 0044](adr/0044-ci-runs-what-a-change-can-affect.md)).
-
 **Two recovery-code gaps that need self-service.** A subject cannot
 ask for a fresh set before running out, and nothing warns as the list gets
 short. Both are named in P4f's exit criterion; `beginRecoveryCodes` already
@@ -150,12 +96,17 @@ single authority for a page's headers (ADR 0029). A theme replaces a body
 fragment and a token set, never the document, because the document carries
 the CSP nonce, the framing defence and the `auth_session_id` — ADR 0030 has
 the reasoning, and the `frames` member ADR 0034 added is part of the same
-contract.
+contract. Every server page already renders under Instrument with its text in
+a catalogue, so a theme overrides what is there.
+
+## What P11 and P12 inherit
 
 **The image is published by a tag, and the rest of deployment is later.**
 `release.yml` publishes a signed image with its contents listed from a `v*`
 tag, and the base images are pinned by digest. Secrets are still environment
-variables, and there is no backup or restore guidance (**P12**).
+variables. Backup and restore guidance exists (`operating/backups.md`, run on
+the quick start's stack) but is not yet proven by a restore and a login
+against it, and the secret store is also owed (**P12**).
 Multi-replica deployment is blocked on migration locking and on the
 in-process bounds (throttles, the client-secret limiter, the registration and
 reset limiters), all **P11**, which also owes the Helm chart or manifests.
@@ -215,24 +166,25 @@ that should hold it, which is usually false.
 
 ### Argued elsewhere, and pointed at from here
 
-| What is open                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Where it is argued                                                                                | Trigger                                                                          |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| No scope means anything in particular at an audience; RFC 9068 §2.2.3 wants `scope` coherent with `aud`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | [rfc9068.md](protocols/rfc9068.md), "Why §2.2.3 is accepted, not held"                            | **P9**, with the row below                                                       |
-| `/introspect` answers every registered client alike: no per-resource scope narrowing, no "may introspect"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | [rfc7662.md](protocols/rfc7662.md), "Two MAYs left `gap`"                                         | **P9**, with the row above                                                       |
-| RFC 7523 has no clause table, so the clauses of an implemented RFC are untracked by the system built for it                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | [rfc7523.md](protocols/rfc7523.md)'s own header                                                   | **P13**                                                                          |
-| The session cap is per browser and admits `cap + (k - 1)` under `k` concurrent logins, orphaning one                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | [ADR 0033](adr/0033-admitting-a-session-locks-the-tenant-row.md)                                  | **P4f**, wanting a session's device                                              |
-| `CLAUDE.md` states an untagged-fence rule that `tests/docs/markdown.ts` cannot see, so no JSON response is byte-checked                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | [p3b.md](phases/p3b.md), "`CLAUDE.md` states a rule its own tests forbid"                         | its own change; it untags every JSON transcript at once                          |
-| Migrations are hard cutovers: Drizzle runs every pending migration in one transaction, so no index is built `CONCURRENTLY`, `0073`–`0075` add stored generated columns that rewrite their tables under lock, `0076` rebuilds an `audit_events` index without `CONCURRENTLY`, `0079` adds three more such columns to `users`, `0080`, `0081` and `0097` build indexes plain, and `0095` builds twenty-odd, four of them on `audit_events`, as `0099` builds a fifth, and `0100` three on `email_outbox`, whose `failed` mail read still sorts a tenant's unsent rows (about 100 ms at 1,000,000 unsent, an incident-sized backlog) | the umbrella spec's §5, "Migrations", and §11's P11 row                                           | **P11**, with rolling upgrades across replicas                                   |
-| `audit_events` at 100,000,000 rows is one table with seven secondary indexes and per-tenant unbatched retention deletes; the query-plan check ran at a fifth of the subjects and a hundredth of the events, on one node                                                                                                                                                                                                                                                                                                                                                                                                           | `docs/phases/p4d.md`, "Server query plans", and §11's P11 row                                     | **P11**, partitioning by month and batched deletes                               |
-| Tenant delete is one transaction cascading through every tenant table, `audit_events` included, so it holds locks as long as the tenant's audit trail is deep; no bound or timeout (`apps/docs/content/en/reference/transcripts/admin-paths/`, "Delete a tenant")                                                                                                                                                                                                                                                                                                                                                                 | the umbrella spec's §11, P11 row                                                                  | **P11**, a chunked, resumable delete                                             |
-| Localization has its catalogue mechanism and the server pages' and mail's English catalogues; the tenant default locale and per-tenant mail theming (**P4b**) and the console's extraction (**P4h**) remain, and the new-code rule is unenforced in the console until its lint lands                                                                                                                                                                                                                                                                                                                                              | [ADR 0043](adr/0043-localization-is-a-catalogue-a-negotiation-and-a-set-of-owners.md)             | **P4b** and **P4h**                                                              |
-| No composite index serves the two-filter audit reads (actor and type, type and action); a 5 s timeout bounds them                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [p4d.md](phases/p4d.md), "Server query plans"                                                     | **P11**, whose plan check at scale is the evidence                               |
-| The console's failure ID is made in the browser and never sent, so an operator cannot search the server's logs for it; sending it with the route to a gateway endpoint that logs it would make it findable                                                                                                                                                                                                                                                                                                                                                                                                                        | [`docs/phases/p4g.md`](phases/p4g.md)                                                             | **P4h**, which reworks the failure screen's text and reports for the catalogue   |
-| Two console dom tests (`gateway.test.ts`, `useWrite.test.tsx`) once failed alone under the root project; not reproduced on 2026-10-19 under `--project dom`, with and without the other file, or with every project                                                                                                                                                                                                                                                                                                                                                                                                               | [p4g.md](phases/p4g.md), "The console's theme choice reaches the server pages"                    | if it recurs: [p4g.md](phases/p4g.md), "CI runs what a change can affect"        |
-| An address can be spent by anyone: three mails an hour per kind per address, and a repeat registration request replaces the address's pending row, so a link already mailed dies                                                                                                                                                                                                                                                                                                                                                                                                                                                  | [ADR 0037](adr/0037-refusal-rows-are-bounded-by-the-principal-they-name.md), amendment 2026-10-26 | **P11**, when the limiter is shared across instances and can use more signals    |
-| A person who confirms a "finish registration" mail they did not ask for gets the account its sender chose                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | [ADR 0037](adr/0037-refusal-rows-are-bounded-by-the-principal-they-name.md), amendment 2026-10-26 | **P4f**, registration flow: the confirm page can ask for more than a click       |
-| Accounts that differ only by the case of their address may already exist, so `users.email_search` has no unique index; reconcile them, then add a partial unique index on `(tenant_id, email_search)`                                                                                                                                                                                                                                                                                                                                                                                                                             | [ADR 0037](adr/0037-refusal-rows-are-bounded-by-the-principal-they-name.md), amendment 2026-10-26 | **P4f**, credentials and account lifecycle, which owns account merge and cleanup |
-| Committed development credentials                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [ADR 0014](adr/0014-committed-development-credentials.md)                                         | the conditions that ADR names                                                    |
+| What is open                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Where it is argued                                                                                | Trigger                                                                                                        |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| No scope means anything in particular at an audience; RFC 9068 §2.2.3 wants `scope` coherent with `aud`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | [rfc9068.md](protocols/rfc9068.md), "Why §2.2.3 is accepted, not held"                            | **P9**, with the row below                                                                                     |
+| `/introspect` answers every registered client alike: no per-resource scope narrowing, no "may introspect"                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | [rfc7662.md](protocols/rfc7662.md), "Two MAYs left `gap`"                                         | **P9**, with the row above                                                                                     |
+| RFC 7523 has no clause table, so the clauses of an implemented RFC are untracked by the system built for it                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | [rfc7523.md](protocols/rfc7523.md)'s own header                                                   | **P13**                                                                                                        |
+| The session cap is per browser and admits `cap + (k - 1)` under `k` concurrent logins, orphaning one                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | [ADR 0033](adr/0033-admitting-a-session-locks-the-tenant-row.md)                                  | **P4f**, wanting a session's device                                                                            |
+| `CLAUDE.md` states an untagged-fence rule that `tests/docs/markdown.ts` cannot see, so no JSON response is byte-checked                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | [p3b.md](phases/p3b.md), "`CLAUDE.md` states a rule its own tests forbid"                         | its own change; it untags every JSON transcript at once                                                        |
+| Migrations are hard cutovers: Drizzle runs every pending migration in one transaction, so no index is built `CONCURRENTLY`, `0073`–`0075` add stored generated columns that rewrite their tables under lock, `0076` rebuilds an `audit_events` index without `CONCURRENTLY`, `0079` adds three more such columns to `users`, `0080`, `0081` and `0097` build indexes plain, and `0095` builds twenty-odd, four of them on `audit_events`, as `0099` builds a fifth, and `0100` three on `email_outbox`, whose `failed` mail read still sorts a tenant's unsent rows (about 100 ms at 1,000,000 unsent, an incident-sized backlog) | the umbrella spec's §5, "Migrations", and §11's P11 row                                           | **P11**, with rolling upgrades across replicas                                                                 |
+| `audit_events` at 100,000,000 rows is one table with seven secondary indexes and per-tenant unbatched retention deletes; the query-plan check ran at a fifth of the subjects and a hundredth of the events, on one node                                                                                                                                                                                                                                                                                                                                                                                                           | `docs/phases/p4d.md`, "Server query plans", and §11's P11 row                                     | **P11**, partitioning by month and batched deletes                                                             |
+| Tenant delete is one transaction cascading through every tenant table, `audit_events` included, so it holds locks as long as the tenant's audit trail is deep; no bound or timeout (`apps/docs/content/en/reference/transcripts/admin-paths/`, "Delete a tenant")                                                                                                                                                                                                                                                                                                                                                                 | the umbrella spec's §11, P11 row                                                                  | **P11**, a chunked, resumable delete                                                                           |
+| Localization has its catalogue mechanism and the server pages' and mail's English catalogues; the tenant default locale and per-tenant mail theming (**P4b**) and the console's extraction (**P4h**) remain, and the new-code rule is unenforced in the console until its lint lands                                                                                                                                                                                                                                                                                                                                              | [ADR 0043](adr/0043-localization-is-a-catalogue-a-negotiation-and-a-set-of-owners.md)             | **P4b** and **P4h**                                                                                            |
+| No composite index serves the two-filter audit reads (actor and type, type and action); a 5 s timeout bounds them                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [p4d.md](phases/p4d.md), "Server query plans"                                                     | **P11**, whose plan check at scale is the evidence                                                             |
+| The console's failure ID is made in the browser and never sent, so an operator cannot search the server's logs for it; sending it with the route to a gateway endpoint that logs it would make it findable                                                                                                                                                                                                                                                                                                                                                                                                                        | [`docs/phases/p4g.md`](phases/p4g.md)                                                             | **P4h**, which reworks the failure screen's text and reports for the catalogue                                 |
+| Two console dom tests (`gateway.test.ts`, `useWrite.test.tsx`) once failed alone under the root project; not reproduced on 2026-10-19 under `--project dom`, with and without the other file, or with every project                                                                                                                                                                                                                                                                                                                                                                                                               | [p4g.md](phases/p4g.md), "The console's theme choice reaches the server pages"                    | if it recurs: [p4g.md](phases/p4g.md), "CI runs what a change can affect"                                      |
+| An address can be spent by anyone: three mails an hour per kind per address, and a repeat registration request replaces the address's pending row, so a link already mailed dies                                                                                                                                                                                                                                                                                                                                                                                                                                                  | [ADR 0037](adr/0037-refusal-rows-are-bounded-by-the-principal-they-name.md), amendment 2026-10-26 | **P11**, when the limiter is shared across instances and can use more signals                                  |
+| A person who confirms a "finish registration" mail they did not ask for gets the account its sender chose                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | [ADR 0037](adr/0037-refusal-rows-are-bounded-by-the-principal-they-name.md), amendment 2026-10-26 | **P4f**, registration flow: the confirm page can ask for more than a click                                     |
+| Accounts that differ only by the case of their address may already exist, so `users.email_search` has no unique index; reconcile them, then add a partial unique index on `(tenant_id, email_search)`                                                                                                                                                                                                                                                                                                                                                                                                                             | [ADR 0037](adr/0037-refusal-rows-are-bounded-by-the-principal-they-name.md), amendment 2026-10-26 | **P4f**, credentials and account lifecycle, which owns account merge and cleanup                               |
+| The Node major moves by hand: Node 24 to 26 once 26 is LTS and tested, by running the full CI, replacing `corepack` if Node drops it, amending ADR 0001 and moving `engines`, the Dockerfile and CI                                                                                                                                                                                                                                                                                                                                                                                                                               | [ADR 0001](adr/0001-typescript-on-node.md), amendment 2026-10-27                                  | **P12**, operations: a runtime move is deployment work, and no earlier phase changes what a deployment runs on |
+| Committed development credentials                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | [ADR 0014](adr/0014-committed-development-credentials.md)                                         | the conditions that ADR names                                                                                  |
 
 ### Argued here, because there is nowhere else
 
@@ -324,12 +276,6 @@ a phase note.
   the hint's age, so a leaked ID token forces that sign-out, limited by the
   session's lifetime and the victim's cookie. **P4b**, whose criterion names
   both: it rewrites that page and the branch that serves it.
-- The `codes`/`spent` count of `user_credentials` in `apps/docs/content/en/reference/transcripts/request-paths/`'s
-  recovery-code section is unscoped, and correct only in document order — the
-  unspent count after it names its tenant. Re-scoping it needs a re-run
-  against a live stack. **P4f**, which re-captures those transcripts anyway:
-  its criterion gives a subject a fresh set of recovery codes before the old
-  set is spent, which is what that query counts.
 - `tests/lint/production-guard-order.test.ts` compares source offsets and
   breaks on a rename or a helper extraction. A reasonable stopgap for the
   still-positional server-boot path, but its narrowness should be visible to

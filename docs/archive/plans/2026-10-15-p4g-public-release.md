@@ -8,7 +8,7 @@
 
 **Tech Stack:** `@docusaurus/core`, `@docusaurus/preset-classic` and `@docusaurus/faster` 3.10.2 (rspack build, `future: { v4: true }`) with React 19.3.0 as the console pins it (the site only: no Vue, no Vite), `@mdx-js/react` 3.1.1, `prism-react-renderer` 2.4.1, `@easyops-cn/docusaurus-search-local` 0.55.3 (offline search) and `docusaurus-plugin-llms` 0.6.1 (`llms.txt` and Markdown copies); `intl-messageformat` 12.1.3; Docker Buildx multi-arch with cosign keyless signing and Syft SBOMs on GitHub Actions; GitHub Pages; `contributor-assistant/github-action`; Playwright 1.63.0 and `@axe-core/playwright` 4.13.0 (the versions `apps/admin-console` already pins); `@lhci/cli` 0.15.1 (Lighthouse 12.6.1) for the public site's Core Web Vitals gates (the sitemap is Docusaurus's own plugin); example applications on `jose` 6.2.12, `openid-client` 6.8.8, `oauth4webapi` 3.8.8 and Vite 8.3.1 (npm, outside the workspace).
 
-**Spec:** `docs/superpowers/specs/2026-10-15-p4g-public-release-design.md` (the phase design), the P4g row and the documentation outline under "Public release moved earlier" in `docs/superpowers/specs/2026-09-10-odudu-design.md` §11, ADR 0042 (licensing), ADR 0043 (localization), ADR 0029 and its amendments (page headers), ADR 0018's amendment (a page declares its script). Read all five before Task 1.
+**Spec:** `docs/archive/specs/2026-10-15-p4g-public-release-design.md` (the phase design), the P4g row and the documentation outline under "Public release moved earlier" in `docs/superpowers/specs/2026-09-10-odudu-design.md` §11, ADR 0042 (licensing), ADR 0043 (localization), ADR 0029 and its amendments (page headers), ADR 0018's amendment (a page declares its script). Read all five before Task 1.
 
 ## Global Constraints
 

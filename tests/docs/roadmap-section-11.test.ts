@@ -107,7 +107,9 @@ const CLAIMS: readonly (readonly [phase: string, sentence: string, ...criterion:
     'mail templates',
   ],
   ['P4b', 'Translated pages and mail', 'translated pages and mail'],
+  ['P4b', 'Logos, favicons and background images', 'logo, favicon and background image'],
   ['P4b', 'It also fixes two weak spots in sign-out', 'anti-forgery token', 'leaked id token'],
+  ['P5a', 'It passes the MCP authorization profile', 'claude and cursor configuration examples'],
   ['P5a', 'The admin API as tools', 'read-only by default', 'protect an mcp server with odudu'],
   [
     'P5a',
@@ -115,7 +117,7 @@ const CLAIMS: readonly (readonly [phase: string, sentence: string, ...criterion:
     'protected-resource and authorization-server metadata',
     '`idempotency-key` header',
   ],
-  ['P5a', 'A retried request', '`idempotency-key` header'],
+  ['P5a', 'The admin API has no `Idempotency-Key` header today', '`idempotency-key` header'],
   ['P4f', 'A "me" API', '"me" api', 'application-initiated actions'],
   [
     'P4f',
@@ -125,6 +127,18 @@ const CLAIMS: readonly (readonly [phase: string, sentence: string, ...criterion:
     'owner notice by mail',
     "end the subject's other sessions",
   ],
+  [
+    'P4f',
+    'A person can ask for a new verification email',
+    'a new verification email',
+    'per-tenant totp policy',
+    'a session shown against the device',
+  ],
+  [
+    'P4f',
+    'A link an administrator mailed',
+    'a place to return to for a mailed link an administrator issued',
+  ],
   ['P4f', 'It also reconciles accounts', 'differ only by case', 'more than one click'],
   [
     'P4h',
@@ -133,6 +147,7 @@ const CLAIMS: readonly (readonly [phase: string, sentence: string, ...criterion:
     'a locale switch',
     'right-to-left locale',
   ],
+  ['P4h', 'Lists sort by', '`intl.collator`', 'machine-readable `code`'],
   ['P4h', 'It also sends the failure screen', "failure screen's error id sent to the server"],
   [
     'P4i',
@@ -151,8 +166,21 @@ const CLAIMS: readonly (readonly [phase: string, sentence: string, ...criterion:
   ['P4i', 'Each ships with a guide', 'a runnable example in ci', 'a version of its own'],
   ['P4i', 'They wrap what exists', 'the "me" api wrapped'],
   ['P5', 'Budgets, attenuation and approval', 'ciba approvals'],
+  ['P5', 'Delegation depth becomes a setting', '`max_depth`'],
+  [
+    'P5',
+    'A restriction on a grant holds',
+    'persisted on the grant',
+    'revoking every grant exchanged from it',
+  ],
   ['P5b', 'The irreversible tools', 'out-of-band approval'],
   ['P6', 'Sign in with Google', 'upstream oidc idp'],
+  [
+    'P6',
+    'A person is created on first sign-in',
+    'provisioned just in time',
+    'account-linking decision',
+  ],
   [
     'P7',
     'LDAP-backed sign-in',
@@ -161,6 +189,7 @@ const CLAIMS: readonly (readonly [phase: string, sentence: string, ...criterion:
     'beyond the 10,000',
   ],
   ['P8', 'Odudu as a SAML identity provider', 'saml 2.0 idp'],
+  ['P7', 'Usernames that look alike', 'confusable-character policy'],
   ['P9', 'Policy evaluation and UMA 2.0', 'uma 2.0', 'resource server as a first-class thing'],
   ['P10', 'Third-party providers loaded', 'third-party provider loads without a rebuild'],
   [
@@ -170,7 +199,14 @@ const CLAIMS: readonly (readonly [phase: string, sentence: string, ...criterion:
     'eventlistener',
   ],
   ['P11', 'One instance only today', 'advisory lock', 'per-origin throttle'],
-  ['P11', 'Also a deadline', 'deadline to the outbound dns lookups', 'a metrics endpoint'],
+  [
+    'P11',
+    'Also a deadline',
+    'deadline to the outbound dns lookups',
+    'a metrics endpoint',
+    'documented p99',
+  ],
+  ['P11', 'Upgrades run in place', 'migration runner', 'concurrently', 'backfilled in batches'],
   ['P11', 'Audit events are partitioned', 'partitioned by month', 'chunked and resumable'],
   ['P11', 'A Helm chart', 'helm chart', 'kubernetes manifests'],
   [
@@ -180,6 +216,7 @@ const CLAIMS: readonly (readonly [phase: string, sentence: string, ...criterion:
     'restoring into an empty database',
     'neither a superuser nor able to bypass row-level security',
   ],
+  ['P12', 'Odudu also moves to the next even-numbered Node', 'node runtime moved by hand'],
   [
     'P13',
     'Pushed authorization requests',
@@ -190,6 +227,7 @@ const CLAIMS: readonly (readonly [phase: string, sentence: string, ...criterion:
     'self_signed_tls_client_auth',
     'acr_values',
   ],
+  ['P13', 'A client can read, change and delete', "rfc 7592's client configuration endpoint"],
   ['P14', 'More platforms', 'vue, svelte and angular', 'rfc 8252', 'go, java, .net, php and ruby'],
   ['P14', 'Headless sign-in components', 'flow api', 'headless sign-in components'],
   ['P14', 'An agent library', 'agent library for delegation'],
@@ -271,7 +309,6 @@ describe('the roadmap and section 11 of the design spec agree', () => {
       'carried by the gap-audit capability check above',
     ],
     ['`/logout` has two hardening gaps', ['P4b'], ['anti-forgery token', 'leaked id token']],
-    ['The `codes`/`spent` count', ['P4f'], 'a transcript re-capture, no product behaviour'],
     [
       '`tests/lint/production-guard-order.test.ts`',
       ['P12'],
@@ -300,6 +337,7 @@ describe('the roadmap and section 11 of the design spec agree', () => {
     ['An address can be spent by anyone', ['P11'], ['per-address mail limit']],
     ['A person who confirms a "finish registration"', ['P4f'], ['more than one click']],
     ['Accounts that differ only by the case', ['P4f'], ['differ only by case']],
+    ['The Node major moves by hand', ['P12'], ['even-numbered node lts']],
   ];
 
   function nextPlacements(): { start: string; phases: string[] }[] {

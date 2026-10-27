@@ -278,7 +278,7 @@ a session exists to force past, in the same section below.
 
 ## Signing in again from an existing session
 
-`/authorize` reads the `demo-session` cookie the login POST sets (P2b), so
+`/authorize` reads the `demo-session` cookie the login POST sets, so
 a second authorization request from the same browser can complete without
 the form — and `prompt` decides whether that is allowed to happen. This
 section runs one login, keeps the cookie, and sends it back three ways.

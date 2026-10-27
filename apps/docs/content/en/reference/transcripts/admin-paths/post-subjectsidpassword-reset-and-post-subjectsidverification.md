@@ -1,9 +1,11 @@
 ---
-title: 'POST /subjects/:id/password-reset and POST…'
+title: 'Password reset and verification mail for a subject'
 description: "Requires manage-users. Each queues a link to the subject's own address, minted and mailed by the same write the self-service door makes…"
 ---
 
-## `POST /subjects/:id/password-reset` and `POST /subjects/:id/verification`
+# Password reset and verification mail for a subject
+
+This page covers `POST /subjects/:id/password-reset` and `POST /subjects/:id/verification`.
 
 Requires `manage-users`. Each queues a link to the subject's own address, minted
 and mailed by the same write the self-service door makes (`enqueueResetLink` and

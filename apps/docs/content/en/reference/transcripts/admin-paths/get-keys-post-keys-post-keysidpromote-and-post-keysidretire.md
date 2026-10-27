@@ -1,9 +1,11 @@
 ---
-title: 'GET /keys, POST /keys, POST /keys/:id/promote and POST…'
+title: 'Signing keys: list, create, promote, retire'
 description: 'All four require manage-keys, never manage-tenant — a tenant admin who may reconfigure clients need not also be trusted to rotate what signs their…'
 ---
 
-## `GET /keys`, `POST /keys`, `POST /keys/:id/promote` and `POST /keys/:id/retire`
+# Signing keys: list, create, promote, retire
+
+This page covers `GET /keys`, `POST /keys`, `POST /keys/:id/promote` and `POST /keys/:id/retire`.
 
 All four require `manage-keys`, never `manage-tenant` — a tenant admin who
 may reconfigure clients need not also be trusted to rotate what signs their
@@ -76,7 +78,7 @@ curl -sS -X POST \
 {"id":"01a0d6fc-3654-7f93-817b-bd7f1bb2ff55","status":"retired","kid":"01a0d6fc-3654-7f93-817b-bd7eb6490305","alg":"ES256","created_at":"2026-09-25T05:14:08.294Z","not_after":null}
 ```
 
-### The refusals have types
+## The refusals have types
 
 Retire answers `409` in two cases and delete in one, each of a type of its own, so a
 caller tells them apart without reading `detail`: `about:blank#key-active` (the key's
@@ -162,7 +164,7 @@ curl -sS \
 {"type":"about:blank","title":"Error","status":400,"detail":"querystring must NOT have additional properties: kid","errors":[{"path":"kid","message":"must NOT have additional properties"}],"instance":"01a0ea5e-5ec1-775d-8b09-75ee325d8104"}
 ```
 
-### A key's `ETag`
+## A key's `ETag`
 
 `POST /keys`, promote and retire each answer an `ETag` over the key they answer.
 Promote and retire honour it as `If-Match` when it is sent, taken over the key

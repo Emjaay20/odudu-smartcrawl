@@ -1,9 +1,11 @@
 ---
-title: 'GET /admin/tenants/count, GET /subjects/count, GET…'
+title: 'Counts: tenants, subjects, clients, roles, groups, scopes'
 description: 'How many rows a listing would page through, without paging through them.'
 ---
 
-## `GET /admin/tenants/count`, `GET /subjects/count`, `GET /clients/count`, `GET /roles/count`, `GET /groups/count` and `GET /scopes/count`
+# Counts: tenants, subjects, clients, roles, groups, scopes
+
+This page covers `GET /admin/tenants/count`, `GET /subjects/count`, `GET /clients/count`, `GET /roles/count`, `GET /groups/count` and `GET /scopes/count`.
 
 How many rows a listing would page through, without paging through them.
 Each count takes its list's own parameters minus `?cursor=` and `?limit=`,

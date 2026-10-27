@@ -1,6 +1,6 @@
 # Initiating User Registration via OpenID Connect 1.0
 
-**Status in Odudu:** in scope for P4g in full. The specification (Final,
+**Status in Odudu:** implemented in P4g, in full. The specification (Final,
 2 December 2022) defines one `prompt` value, `create`, and one discovery
 member, `prompt_values_supported`. §1 (Introduction), §2 (Requirements
 Notation), §3 (Terminology), §5 (Security Considerations, which only

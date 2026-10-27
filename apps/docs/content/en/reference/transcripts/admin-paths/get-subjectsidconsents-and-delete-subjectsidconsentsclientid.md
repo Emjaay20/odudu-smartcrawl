@@ -1,9 +1,11 @@
 ---
-title: 'GET /subjects/:id/consents and DELETE…'
+title: "A subject's consents: list and revoke"
 description: 'The read requires view-users, the delete manage-users.'
 ---
 
-## `GET /subjects/:id/consents` and `DELETE /subjects/:id/consents/:clientId`
+# A subject's consents: list and revoke
+
+This page covers `GET /subjects/:id/consents` and `DELETE /subjects/:id/consents/:clientId`.
 
 The read requires `view-users`, the delete `manage-users`. A consent is what the
 consent screen records when a `consent_required` client asks and a subject
@@ -260,7 +262,7 @@ Keep-Alive: timeout=72
 {"type":"about:blank","title":"Not Found","status":404,"detail":"no subject 0199aa00-0000-7000-8000-0000000000ff","instance":"01a0e559-3dd9-7b6f-8091-e483704fa066"}
 ```
 
-### Paging a subject's consents
+## Paging a subject's consents
 
 In `perf-demo` (a subject `grace` and four clients `alpha-app` to `delta-app`,
 one consent each, written with `insert into consents` because the consent screen

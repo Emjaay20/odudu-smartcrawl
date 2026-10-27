@@ -90,9 +90,9 @@ The server speaks plain http and never ends TLS itself. Put a reverse proxy in f
 
 **Serve Odudu at the root of its origin.** The documentation built into the server is served under a `docs` route, and its links name that route from the root. The documentation must sit at the root of the address `ODUDU_PUBLIC_BASE_URL` names: a reverse proxy that mounts the server under a path prefix is not supported. Give Odudu a host of its own.
 
-**Overwrite `X-Forwarded-*`, never append.** Set `ODUDU_TRUST_PROXY=true` only behind a proxy that overwrites `X-Forwarded-*`, or `request.ip` becomes client-controlled, and with it the key the per-origin throttle counts on, which a spoofed `X-Forwarded-For` then bypasses a header at a time. Appending is not enough: the value must be replaced.
+**Overwrite `X-Forwarded-*`, never append.** Set `ODUDU_TRUST_PROXY=true` only behind a proxy that overwrites `X-Forwarded-*`. Otherwise a client controls `request.ip`, and with it the key the throttle counts on. A spoofed `X-Forwarded-For` then gets round the limit. Appending is not enough: the value must be replaced.
 
-**Raise the request body limit for tenant import.** `POST /admin/tenant-imports` accepts a body of up to 16 MiB, since an export with its subjects runs to several megabytes. Every other route keeps a 1 MiB limit. nginx refuses anything over 1 MiB by default and answers `413` before Odudu sees the request, so set `client_max_body_size 16m;` on the location that forwards `/admin/` and `/console/api/`.
+**Raise the request body limit for tenant import.** `POST /admin/tenant-imports` accepts a body of up to 16 MiB, since an export with its subjects runs to several megabytes. Every other route keeps a 1 MiB limit. nginx refuses anything over 1 MiB by default and answers `413` before Odudu sees the request. Set `client_max_body_size 16m;` on the location that forwards `/admin/` and `/console/api/`.
 
 **Mutual TLS is the proxy's job.** `tls_client_auth` client authentication works only while `ODUDU_TRUST_PROXY` is on. The server reads the client certificate's subject from the header named by `ODUDU_TLS_CLIENT_CERT_HEADER` (default `x-ssl-client-s-dn`). The name is not standardized, so set it to whatever your proxy emits.
 
@@ -130,7 +130,7 @@ The server runs three background passes by itself, and you should leave them on.
 - **Mail.** It sends queued mail every 15 seconds. With nothing sending, every verification and reset link sits unsent, and the flows that queued them answer exactly as they do when mail is going out.
 - **Back-channel logout.** It delivers logout tokens to the apps that registered for them.
 
-To schedule one yourself instead, set its `ODUDU_REAP_ENABLED`, `ODUDU_OUTBOX_ENABLED` or `ODUDU_LOGOUT_SENDER_ENABLED` to `false` and run `odudu reap`, `odudu send-mail` or `odudu send-logouts` from cron or a Kubernetes CronJob. Do one or the other. Doing both is harmless: the retention pass takes a Postgres advisory lock and whoever loses a tick skips it, and the mail and logout senders claim each message so none is sent twice.
+To schedule one yourself instead, set its `ODUDU_REAP_ENABLED`, `ODUDU_OUTBOX_ENABLED` or `ODUDU_LOGOUT_SENDER_ENABLED` to `false` and run `odudu reap`, `odudu send-mail` or `odudu send-logouts` from cron or a Kubernetes CronJob. Do one or the other. Doing both is harmless. The retention pass takes a Postgres advisory lock, and whoever loses a tick skips it. The mail and logout senders claim each message, so none is sent twice.
 
 The retention pass needs `ODUDU_APP_DATABASE_URL`, because its deletes are scoped by the row-level-security policy that the owner role escapes. Its one transaction covers every tenant, which is what to watch if a deployment has many tenants and very large tables.
 

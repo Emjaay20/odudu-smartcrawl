@@ -48,7 +48,7 @@ One setting decides every cookie: `ODUDU_TLS`. Turn it on and each cookie gains 
 | Console sign-in in progress | `__Host-odudu-console-login` and `-restart` | `odudu-console-login` and `-restart` |
 | Theme choice                | `odudu-theme`, with `Secure`                | `odudu-theme`                        |
 
-All but the theme cookie are `HttpOnly`, none sets a `Domain`, and the sign-in in progress is scoped to its tenant's path, which is why it takes `__Secure-` rather than `__Host-`. The theme cookie is a preference the console's script writes, so it keeps its name. The browser, not the server, decides what to do with `Secure`. If a person opens the server over plain http while `ODUDU_TLS=true`, the browser may refuse the cookies. Sign-in then fails visibly instead of working without protection.
+All but the theme cookie are `HttpOnly`, and none sets a `Domain`. The sign-in in progress is scoped to its tenant's path, which is why it takes `__Secure-` rather than `__Host-`. The theme cookie is a preference the console's script writes, so it keeps its name. The browser, not the server, decides what to do with `Secure`. If a person opens the server over plain http while `ODUDU_TLS=true`, the browser may refuse the cookies. Sign-in then fails visibly instead of working without protection.
 
 ## Related settings, by the job they do
 

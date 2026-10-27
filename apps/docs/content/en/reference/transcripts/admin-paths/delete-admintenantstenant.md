@@ -56,7 +56,7 @@ The deletion is a single transaction, and its duration grows with the
 tenant's audit trail, the largest table it cascades through: there is no
 bound, batch or timeout, so a tenant holding tens of millions of audit rows
 holds its locks until the last is gone. A chunked, resumable delete is
-**P11**'s (the umbrella spec's §11, P11 row). A tenant-scoped write
+planned on [the roadmap](../../../roadmap.md#later). A tenant-scoped write
 that raced it and began second fails its foreign-key check once the
 deletion commits, and answers `500`; nothing is orphaned, since the row it
 needed is gone and it writes nothing.

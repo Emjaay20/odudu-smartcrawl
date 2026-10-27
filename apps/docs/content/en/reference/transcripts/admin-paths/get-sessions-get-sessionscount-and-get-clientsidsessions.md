@@ -1,9 +1,11 @@
 ---
-title: 'GET /sessions, GET /sessions/count and GET…'
+title: "Sessions: list, count, and a client's sessions"
 description: "Requires manage-sessions. Every live session in the tenant, whoever holds it, in id order and cursored, each naming its subject and that subject's…"
 ---
 
-## `GET /sessions`, `GET /sessions/count` and `GET /clients/:id/sessions`
+# Sessions: list, count, and a client's sessions
+
+This page covers `GET /sessions`, `GET /sessions/count` and `GET /clients/:id/sessions`.
 
 Requires `manage-sessions`. Every live session in the tenant, whoever holds
 it, in id order and cursored, each naming its subject and that subject's

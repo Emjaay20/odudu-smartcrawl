@@ -1,9 +1,11 @@
 ---
-title: 'GET /subjects/:id/required-actions and PUT…'
+title: "A subject's required actions: read and set"
 description: "Reading a subject's required actions requires view-users, and replacing them requires manage-users."
 ---
 
-## `GET /subjects/:id/required-actions` and `PUT /subjects/:id/required-actions`
+# A subject's required actions: read and set
+
+This page covers `GET /subjects/:id/required-actions` and `PUT /subjects/:id/required-actions`.
 
 The read requires `view-users`, the write `manage-users`. Sets a subject's
 required actions wholesale — an action left out of the list is one the

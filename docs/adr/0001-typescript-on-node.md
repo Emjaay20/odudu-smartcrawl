@@ -63,3 +63,14 @@ protocol learning that motivates the project.
 **Rust.** Best type system, best performance, no GC. Rejected because async
 Rust would dominate the project; fighting the borrow checker is not
 learning OAuth.
+
+## Amendment, 2026-10-27: the Node major moves by hand
+
+Odudu runs on an even-numbered Node LTS release, and the major moves by hand
+once a year, never by a bot. A release becomes LTS months after it ships and
+Dependabot cannot tell, so its `ignore` for the `node` base image and for
+`@types/node` skips majors; minor and patch updates still come. The move to
+Node 26 is planned and owned by P12: run the whole CI, replace `corepack` if
+Node drops it, move the Node version in `engines`, the Dockerfile and CI, and
+amend this ADR. Dependabot's ignore blocks every major already and stays. The
+move is reviewed when P12 starts.

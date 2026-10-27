@@ -1,7 +1,7 @@
 # P4g — Public release: design
 
 **Status:** draft for the owner's review · 2026-10-15
-**Phase row:** [section 11 of the umbrella spec](2026-09-10-odudu-design.md), P4g.
+**Phase row:** [section 11 of the umbrella spec](../../superpowers/specs/2026-09-10-odudu-design.md), P4g.
 That row is the exit criterion and is not restated here. This document
 records what the brainstorm added to it, the calls made, and what is left to
 the builder.
