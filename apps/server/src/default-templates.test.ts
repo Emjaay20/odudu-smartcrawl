@@ -84,7 +84,7 @@ describe('an account form template that loses what the server must show', () => 
     expect(details('required-actions', own)).toEqual(expect.arrayContaining(['actions', 'error']));
   });
 
-  it('is refused for a verification page that omits the form it may need', () => {
+  it('is refused for a verification page that omits its form', () => {
     expect(checkTemplate('verification', '{{message}}').map((issue) => issue.detail)).toEqual(
       expect.arrayContaining(['form.open', 'submit', 'form.close']),
     );
@@ -98,8 +98,7 @@ describe('an account form template that loses what the server must show', () => 
 
 describe('a notice template', () => {
   it('is refused without its message', () => {
-    const without = ACCOUNT.notice.replace('{{message}}', '');
-    expect(checkTemplate('notice', without).map((issue) => issue.detail)).toContain('message');
+    expect(checkTemplate('notice', '{{links}}').map((issue) => issue.detail)).toContain('message');
   });
 
   it('is refused when it opens a form or places a script, which a notice has none of', () => {
