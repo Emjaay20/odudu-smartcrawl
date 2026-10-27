@@ -29,17 +29,16 @@ curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
 ```
 
 ```
-{"revoked":1,"beyond_ceiling":1}
-{"revoked":1,"beyond_ceiling":0}
+{"revoked":1,"beyond_ceiling":1,"remaining":0}
+{"revoked":1,"beyond_ceiling":0,"remaining":0}
 {"items":[]}
 ```
 
 ## How many one call revokes
 
 Likewise at most 10,000 grants per call, with `remaining` counting what is left.
-The transcript above predates the cap, so its answer lacks `remaining`; the one
-below is the current shape. Against `perf-demo`, with one grant for `grace`
-through `alpha-app` written by `insert into token_grants`:
+Against `perf-demo`, with one grant for `grace` through `alpha-app` written by
+`insert into token_grants`:
 
 ```bash
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$P/subjects/$G/grants"; echo
