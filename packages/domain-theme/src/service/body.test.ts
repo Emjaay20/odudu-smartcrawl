@@ -7,10 +7,13 @@ const ID = '3f2b8c1e-5a4d-4e6f-9b7a-1c2d3e4f5a6b';
 const PALETTE = {
   surfacePage: '#FFFFFF',
   surfacePanel: '#ffffff',
+  surfaceSunken: '#ffffff',
   inkPrimary: '#000000',
   inkMuted: '#767676',
   signalActive: '#ffffff',
   signalActiveInk: '#000000',
+  signalDanger: '#ffffff',
+  signalDangerInk: '#000000',
   borderStrong: '#949494',
   focusRing: '#949494',
 };
@@ -61,6 +64,23 @@ describe('parseThemeBody', () => {
     expect(paths({ assets: { favicon: { assetId: 'nope' } } })).toEqual([
       '/assets/favicon/assetId',
     ]);
+  });
+
+  it('lower-cases asset ids so two spellings are one id', () => {
+    const parsed = parseThemeBody({ assets: { logo: { assetId: ID.toUpperCase(), alt: 'x' } } });
+    expect(parsed.ok && parsed.body.assets.logo?.assetId).toBe(ID);
+  });
+
+  // Zod's record parser skips `__proto__` rather than reporting it, so the
+  // key is dropped; what matters is that it neither lands nor repoints.
+  it('drops a __proto__ template key without touching the prototype', () => {
+    const templates: unknown = JSON.parse('{"__proto__": "x"}');
+    const parsed = parseThemeBody({ templates });
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    expect(Object.keys(parsed.body.templates)).toEqual([]);
+    expect(Object.getPrototypeOf(parsed.body.templates)).toBe(Object.prototype);
+    expect(Object.getOwnPropertyNames(parsed.body.templates)).toEqual([]);
   });
 
   it('refuses a logo without alt text, an empty one or an overlong one', () => {

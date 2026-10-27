@@ -24,12 +24,23 @@ export const PIECE_NAMES: readonly PieceName[] = [
   ...SLOTS.map((slot): PieceName => `assets.${slot}`),
 ];
 
+const HOLDERS: Record<PieceName, (body: ThemeBody) => unknown> = {
+  'tokens.light': (body) => body.tokens.light,
+  'tokens.dark': (body) => body.tokens.dark,
+  'tokens.font': (body) => body.tokens.font,
+  stylesheet: (body) => body.stylesheet,
+  ...Object.fromEntries(
+    KINDS.map((kind) => [`templates.${kind}`, (body: ThemeBody) => body.templates[kind]]),
+  ),
+  'assets.logo': (body) => body.assets.logo,
+  'assets.darkLogo': (body) => body.assets.darkLogo,
+  'assets.favicon': (body) => body.assets.favicon,
+  'assets.background': (body) => body.assets.background,
+} as Record<PieceName, (body: ThemeBody) => unknown>;
+
 function has(body: ThemeBody, name: PieceName): boolean {
-  if (name === 'stylesheet') return body.stylesheet !== null;
-  const [section, key = ''] = name.split('.');
-  if (section === 'tokens') return body.tokens[key as keyof TokenGroups] !== undefined;
-  if (section === 'templates') return body.templates[key as PageKind] !== undefined;
-  return body.assets[key as keyof ThemeAssets] !== undefined;
+  const value = HOLDERS[name](body);
+  return value !== undefined && value !== null;
 }
 
 // Layers run most specific first. For each piece, the index of the first
@@ -56,5 +67,5 @@ export function resolvePieces(layers: readonly (ThemeBody | null)[]): ThemeBody 
     Object.assign(resolved.assets, layer.assets);
     if (layer.stylesheet !== null) resolved.stylesheet = layer.stylesheet;
   }
-  return resolved;
+  return structuredClone(resolved);
 }

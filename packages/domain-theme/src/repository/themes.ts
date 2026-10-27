@@ -139,7 +139,8 @@ export function themeRepository(tx: TenantScopedDatabase) {
 
     // `ifMatch` is the etag of the draft being replaced; null states that
     // there is no draft yet, so a save that would replace one it never saw is
-    // refused.
+    // refused. The body must already have passed `parseThemeBody`; the admin
+    // route is the boundary that runs it.
     async saveDraft(
       scope: ThemeScope,
       body: ThemeBody,

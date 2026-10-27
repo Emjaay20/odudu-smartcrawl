@@ -18,7 +18,7 @@ import { themeRepository } from '#/repository/themes';
 import { themeAssets } from '#/schema/theme-assets';
 import { themeVersionAssets } from '#/schema/theme-version-assets';
 import { themeVersions } from '#/schema/theme-versions';
-import { type ThemeBody } from '#/service/body';
+import { parseThemeBody, type ThemeBody } from '#/service/body';
 import { type ThemeScope } from '#/service/theme-body';
 
 let containerHandle: TestDatabase | undefined;
@@ -306,6 +306,27 @@ describe('themeRepository', () => {
       .from(themeVersionAssets)
       .where(eq(themeVersionAssets.tenantId, tenantId));
     expect(rows.map((row) => row.assetId)).toEqual([assetId]);
+  });
+
+  it('treats two spellings of one asset id as one', async () => {
+    const tenantId = await freshTenant();
+    const scope = { tenantId, clientId: null };
+    const assetId = newId();
+    const parsed = parseThemeBody({
+      assets: { logo: { assetId, alt: 'logo' }, favicon: { assetId: assetId.toUpperCase() } },
+    });
+    if (!parsed.ok) throw new Error('body refused');
+    await withTenant(app.db, tenantId, (tx) =>
+      themeRepository(tx).saveDraft(scope, parsed.body, null),
+    );
+
+    const rows = await owner.db
+      .select()
+      .from(themeVersionAssets)
+      .where(eq(themeVersionAssets.tenantId, tenantId));
+    expect(rows.map((row) => row.assetId)).toEqual([assetId]);
+    const draft = await withTenant(app.db, tenantId, (tx) => themeRepository(tx).draft(scope));
+    expect(draft?.body.assets.favicon?.assetId).toBe(assetId);
   });
 
   it('lists at most the limit, newest first, without the draft', async () => {

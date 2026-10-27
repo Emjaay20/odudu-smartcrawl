@@ -1,7 +1,8 @@
+import { PAGE_KINDS, type PageKind } from '@odudu/kernel';
 import { describe, expect, it } from 'vitest';
 
 import { type Palette, type ThemeBody } from '#/service/body';
-import { pieceSources, resolvePieces } from '#/service/resolve';
+import { PIECE_NAMES, pieceSources, resolvePieces } from '#/service/resolve';
 
 const EMPTY: ThemeBody = { tokens: {}, stylesheet: null, templates: {}, assets: {} };
 
@@ -9,10 +10,13 @@ function palette(ink: string): Palette {
   return {
     surfacePage: '#ffffff',
     surfacePanel: '#ffffff',
+    surfaceSunken: '#ffffff',
     inkPrimary: ink,
     inkMuted: '#767676',
     signalActive: '#ffffff',
     signalActiveInk: '#000000',
+    signalDanger: '#ffffff',
+    signalDangerInk: '#000000',
     borderStrong: '#949494',
     focusRing: '#949494',
   };
@@ -64,6 +68,42 @@ describe('resolvePieces', () => {
   it('falls through to absent when no layer has a piece', () => {
     expect(resolvePieces([null, EMPTY, null])).toEqual(EMPTY);
     expect(resolvePieces([])).toEqual(EMPTY);
+  });
+});
+
+describe('resolvePieces isolation', () => {
+  it('shares no nested object with the layers it read', () => {
+    const layer: ThemeBody = {
+      ...EMPTY,
+      tokens: { light: palette('#111111') },
+      assets: { logo: { assetId: ASSET_A, alt: 'a' } },
+    };
+    const resolved = resolvePieces([layer]);
+    if (resolved.tokens.light !== undefined) resolved.tokens.light.inkPrimary = '#000000';
+    if (resolved.assets.logo !== undefined) resolved.assets.logo.alt = 'changed';
+    expect(layer.tokens.light?.inkPrimary).toBe('#111111');
+    expect(layer.assets.logo?.alt).toBe('a');
+  });
+});
+
+describe('PIECE_NAMES', () => {
+  it('names every piece a body can hold', () => {
+    const templates: Partial<Record<PageKind, string>> = {};
+    for (const kind of Object.keys(PAGE_KINDS) as PageKind[]) templates[kind] = kind;
+    const full: ThemeBody = {
+      tokens: { light: palette('#111111'), dark: palette('#eeeeee'), font: 'IBM Plex Sans' },
+      stylesheet: 'a{}',
+      templates,
+      assets: {
+        logo: { assetId: ASSET_A, alt: 'a' },
+        darkLogo: { assetId: ASSET_A, alt: 'a' },
+        favicon: { assetId: ASSET_A },
+        background: { assetId: ASSET_A },
+      },
+    };
+    const sources = pieceSources([full]);
+    expect(PIECE_NAMES.filter((name) => sources[name] !== 0)).toEqual([]);
+    expect(resolvePieces([full])).toEqual(full);
   });
 });
 

@@ -12,14 +12,20 @@ export const MAX_ALT_LENGTH = 200;
 const HEX_COLOUR = /^#[0-9a-f]{6}$/iu;
 
 // Named after the custom properties the pages read. A group is complete or
-// absent, so a client that overrides one replaces it whole.
+// absent, so a client that overrides one replaces it whole. Not themeable,
+// because they carry no text, surface or control relationship: the grid
+// lines, hairline and label line (decoration), and the warning and system
+// signals, which no server page reads.
 export interface Palette {
   surfacePage: string;
   surfacePanel: string;
+  surfaceSunken: string;
   inkPrimary: string;
   inkMuted: string;
   signalActive: string;
   signalActiveInk: string;
+  signalDanger: string;
+  signalDangerInk: string;
   borderStrong: string;
   focusRing: string;
 }
@@ -81,15 +87,18 @@ const colour = z
 const palette = z.strictObject({
   surfacePage: colour,
   surfacePanel: colour,
+  surfaceSunken: colour,
   inkPrimary: colour,
   inkMuted: colour,
   signalActive: colour,
   signalActiveInk: colour,
+  signalDanger: colour,
+  signalDangerInk: colour,
   borderStrong: colour,
   focusRing: colour,
 });
 
-const assetId = z.uuid();
+const assetId = z.uuid().transform((value) => value.toLowerCase());
 const alt = z.string().min(1).max(MAX_ALT_LENGTH);
 
 const pageKinds = Object.keys(PAGE_KINDS) as [PageKind, ...PageKind[]];

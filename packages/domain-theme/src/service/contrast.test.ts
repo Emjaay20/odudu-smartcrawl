@@ -6,10 +6,13 @@ import { type Palette } from '#/service/body';
 const PASSING: Palette = {
   surfacePage: '#ffffff',
   surfacePanel: '#ffffff',
+  surfaceSunken: '#ffffff',
   inkPrimary: '#000000',
   inkMuted: '#767676',
   signalActive: '#ffffff',
   signalActiveInk: '#000000',
+  signalDanger: '#ffffff',
+  signalDangerInk: '#000000',
   borderStrong: '#949494',
   focusRing: '#949494',
 };
@@ -30,6 +33,14 @@ describe('contrastRatio', () => {
     expect(contrastRatio('#949494', '#ffffff')).toBeCloseTo(3.03, 2);
     expect(contrastRatio('#979797', '#ffffff')).toBeCloseTo(2.92, 2);
   });
+
+  it('puts two colours either side of 4.5:1 on their own sides', () => {
+    expect(contrastRatio('#757589', '#ffffff')).toBeCloseTo(4.504, 3);
+    expect(contrastRatio('#75758a', '#ffffff')).toBeCloseTo(4.499, 3);
+    const palette = (ink: string): Palette => ({ ...PASSING, inkMuted: ink });
+    expect(contrastFailures({ light: palette('#757589') })).toEqual([]);
+    expect(contrastFailures({ light: palette('#75758a') })).toHaveLength(3);
+  });
 });
 
 describe('contrastFailures', () => {
@@ -39,8 +50,12 @@ describe('contrastFailures', () => {
 
   it('flags a 4.4:1 text pair and passes 4.5:1', () => {
     const failing = contrastFailures({ light: { ...PASSING, inkMuted: '#787878' } });
-    expect(failing).toHaveLength(2);
-    expect(failing.map((f) => f.pair)).toEqual(['inkMuted/surfacePage', 'inkMuted/surfacePanel']);
+    expect(failing).toHaveLength(3);
+    expect(failing.map((f) => f.pair)).toEqual([
+      'inkMuted/surfacePage',
+      'inkMuted/surfacePanel',
+      'inkMuted/surfaceSunken',
+    ]);
     expect(failing[0]).toMatchObject({ scheme: 'light', required: 4.5 });
     expect(failing[0]?.ratio).toBeCloseTo(4.42, 2);
     expect(contrastFailures({ light: PASSING })).toEqual([]);
@@ -48,7 +63,11 @@ describe('contrastFailures', () => {
 
   it('flags a 2.9:1 focus ring and passes 3:1', () => {
     const failing = contrastFailures({ dark: { ...PASSING, focusRing: '#979797' } });
-    expect(failing.map((f) => f.pair)).toEqual(['focusRing/surfacePage', 'focusRing/surfacePanel']);
+    expect(failing.map((f) => f.pair)).toEqual([
+      'focusRing/surfacePage',
+      'focusRing/surfacePanel',
+      'focusRing/surfaceSunken',
+    ]);
     expect(failing[0]).toMatchObject({ scheme: 'dark', required: 3 });
     expect(failing[0]?.ratio).toBeCloseTo(2.92, 2);
     expect(contrastFailures({ dark: { ...PASSING, focusRing: '#949494' } })).toEqual([]);
@@ -65,7 +84,24 @@ describe('contrastFailures', () => {
     });
     expect(failing.map((f) => [f.pair, f.required])).toEqual([
       ['signalActiveInk/signalActive', 4.5],
+      ['signalActiveInk/surfaceSunken', 4.5],
       ['borderStrong/surfacePage', 3],
+      ['borderStrong/surfaceSunken', 3],
+    ]);
+  });
+
+  it('flags a sunken pair and a danger pair', () => {
+    const sunken = contrastFailures({ light: { ...PASSING, surfaceSunken: '#777777' } });
+    expect(sunken.map((f) => f.pair)).toEqual([
+      'inkMuted/surfaceSunken',
+      'borderStrong/surfaceSunken',
+      'focusRing/surfaceSunken',
+    ]);
+    const danger = contrastFailures({
+      dark: { ...PASSING, signalDanger: '#777777', signalDangerInk: '#888888' },
+    });
+    expect(danger.map((f) => [f.pair, f.required])).toEqual([
+      ['signalDangerInk/signalDanger', 4.5],
     ]);
   });
 
