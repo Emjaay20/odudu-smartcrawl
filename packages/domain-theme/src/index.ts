@@ -3,16 +3,14 @@ export { themeVersionAssets } from '#/schema/theme-version-assets';
 export { themeAssets } from '#/schema/theme-assets';
 export { themeRepository, NoDraftError, VersionNotFoundError } from '#/repository/themes';
 export { assetRepository, type NewAsset } from '#/repository/assets';
-export {
-  publishedThemeRepository,
-  type PublishedAsset,
-  type PublishedLayer,
-  type PublishedLayers,
-} from '#/repository/published-themes';
+export { publishedThemeRepository } from '#/repository/published-themes';
 export {
   THEME_VERSION_LIMIT,
   type AssetRecord,
   type AssetRef,
+  type PublishedAsset,
+  type PublishedLayer,
+  type PublishedLayers,
   type ThemeRecord,
   type ThemeScope,
   type ThemeState,
@@ -55,3 +53,18 @@ export {
   type StylesheetIssueCode,
   type StylesheetOptions,
 } from '#/service/stylesheet';
+export {
+  brandingCache,
+  createBrandingCache,
+  type BrandingCache,
+  type BrandingCacheOptions,
+} from '#/service/branding-cache';
+export { assetPath, stylesheetPath } from '#/service/branding-urls';
+export { brandingCss, tokensCss } from '#/service/branding-css';
+export {
+  MAX_BRANDING_READS_IN_FLIGHT,
+  MAX_LOGGED_BRANDING_PROBLEMS,
+  resolveBranding,
+  type BrandingProblem,
+  type ResolveBrandingDeps,
+} from '#/usecase/resolve-branding';

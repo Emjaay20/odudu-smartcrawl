@@ -1,27 +1,11 @@
 import { type TenantScopedDatabase } from '@odudu/db';
 import { and, eq, isNull, or, sql, type SQL } from 'drizzle-orm';
 import { themeVersions } from '#/schema/theme-versions';
-
-export interface PublishedAsset {
-  id: string;
-  sha256: string;
-  mime: string;
-}
-
-// A published version as stored. `body` is whatever the row holds and is not
-// trusted: the reader parses it before use.
-export interface PublishedLayer {
-  versionId: string;
-  version: number;
-  body: unknown;
-  // The images the version names that still exist.
-  assets: PublishedAsset[];
-}
-
-export interface PublishedLayers {
-  tenant: PublishedLayer | null;
-  client: PublishedLayer | null;
-}
+import {
+  type PublishedAsset,
+  type PublishedLayer,
+  type PublishedLayers,
+} from '#/service/theme-body';
 
 export function publishedThemeRepository(tx: TenantScopedDatabase) {
   return {
