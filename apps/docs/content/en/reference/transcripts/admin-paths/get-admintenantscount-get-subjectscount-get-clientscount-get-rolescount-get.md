@@ -28,9 +28,9 @@ test holds both plans). A capped count says only that there are more; it is
 never an estimate. No capped response is shown here, since nothing here holds
 ten thousand of anything — an integration test covers it with a lowered ceiling.
 
-As `ada-whoami`, after its `odudu` service was rebuilt from this branch, with
-the roles, groups, subjects and clients the sections above created in its
-`demo`. The tenant collection first, then the list the second count agrees with:
+As `ada`, with the roles, groups, subjects and clients the sections above
+created in its `demo`. The tenant collection first, then the list the second
+count agrees with:
 
 ```bash
 curl -sS \
@@ -45,9 +45,9 @@ curl -sS \
 ```
 
 ```
-{"count":8,"capped":false}
+{"count":53,"capped":false}
 {"count":1,"capped":false}
-{"items":[{"id":"01a0db22-1c32-7d17-b351-697d7911033c","name":"demo","display_name":null,"enabled":true,"created_at":"2026-09-26T00:34:00.885Z"}]}
+{"items":[{"id":"01a0d6fc-3626-7e23-94d7-3b1b666e278f","name":"demo","display_name":"Demo","enabled":true,"created_at":"2026-10-27T00:58:50.257Z"}]}
 ```
 
 Subjects, unfiltered and then under `?username=ADA` — the three the search
@@ -67,7 +67,7 @@ curl -sS \
 ```
 
 ```
-{"count":7,"capped":false}
+{"count":11,"capped":false}
 {"count":3,"capped":false}
 {"count":0,"capped":false}
 ```
@@ -100,12 +100,12 @@ curl -sS \
 ```
 
 ```
-{"count":5,"capped":false}
-{"count":1,"capped":false}
+{"count":10,"capped":false}
 {"count":3,"capped":false}
 {"count":2,"capped":false}
 {"count":2,"capped":false}
-{"count":8,"capped":false}
+{"count":2,"capped":false}
+{"count":9,"capped":false}
 {"count":2,"capped":false}
 ```
 

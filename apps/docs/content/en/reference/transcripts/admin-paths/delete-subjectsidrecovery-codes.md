@@ -56,23 +56,27 @@ etag: "7d357b0ef1f85ba71c5ccebb6671b0c34f4b3950f5b21d2af7b4a3d4e9dcd570"
 {"actions":[]}
 ```
 
-The `PUT` owes a set, the sign-in that follows ends on the page that
-issues it (its title printed, by `signin` from that section, and none of
-the codes), and the credentials list then counts ten:
+The `PUT` owes a set, but `ines` holds no TOTP enrolment, so a set would serve
+nothing. The sign-in that follows (its status and `location` printed, by `signin`
+from that section) completes with a code instead of stopping on the page that
+issues one, the owed action is dropped, and the credentials list counts no
+codes:
 
 ```bash
 curl -sS -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
   -H 'if-match: "7d357b0ef1f85ba71c5ccebb6671b0c34f4b3950f5b21d2af7b4a3d4e9dcd570"' \
   -d '{"actions":["generate-recovery-codes"]}' "$INES/required-actions"
 signin 'correct horse battery staple'
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$INES/required-actions"; echo
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$INES/credentials"
 ```
 
 ```
 {"actions":["generate-recovery-codes"]}
-HTTP/1.1 200 OK
-<title>Save your recovery codes</title>
-{"items":[{"id":"01a0ec85-0c6d-75c9-a720-81d3b70c0811","type":"password","created_at":"2026-09-29T09:35:37.542Z","expired":false},{"type":"recovery-code","created_at":"2026-09-29T09:36:10.866Z","recovery_code_count":10}]}
+HTTP/1.1 302 Found
+location: https://app.example/callback?code=HESdIKBxIduiL9PbuAXpDM-sYKuZ8bOL1-1bgg4SnTo&state=xyz&iss=http%3A%2F%2Flocalhost%3A3080%2Ftenants%2Flockout-demo
+{"actions":[]}
+{"items":[{"id":"01a0ec85-0c6d-75c9-a720-81d3b70c0811","type":"password","created_at":"2026-10-27T01:20:59.351Z","expired":false}]}
 ```
 
 The rest is on the tenant the credential section above names (`recovery-life`, a
@@ -153,7 +157,7 @@ signin() {
     grep -o '<title>[^<]*</title>' body.html || true
   fi
 }
-curl -sS -D - -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "$S/$NOOR/recovery-codes?require_new_set=maybe"
+curl -sS -D - -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "$S/$NOOR/recovery-codes?require_new_set=maybe"; echo
 docker compose -p odudu-p4g-recovery exec -T postgres psql -U odudu -d odudu -tA -c \
   "select count(*) from user_credentials where subject_id = '$NOOR' and type = 'recovery-code'"
 curl -sS -D - -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "$S/$NOOR/recovery-codes?require_new_set=false"
@@ -167,21 +171,30 @@ signin noor code "$(python3 totp.py GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ)"
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$S/$NOOR/required-actions"; echo
 ```
 
-The `400` is cut to the lines that identify it: its `x-request-id`,
-`cache-control`, `date` and keep-alive lines are dropped with `grep -v`, which
-the commands above do not show. The status lines and titles are what `signin`
-prints, status and title after the password, then status, any `location` and
-title after the code. The wrong value is refused by the router's own query
-check, whose message is its validator's:
+The status lines and titles are what `signin` prints, status and title after
+the password, then status, any `location` and title after the code. The wrong
+value is refused by the router's own query check, whose message is its
+validator's:
 
 ```
 HTTP/1.1 400 Bad Request
+x-request-id: 01a1554c-6f30-7642-b969-feb18871fdc9
+cache-control: no-store
 content-type: application/problem+json; charset=utf-8
 content-length: 276
+Date: Tue, 27 Oct 2026 01:26:57 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 
 {"type":"about:blank","title":"Error","status":400,"detail":"querystring/require_new_set must be equal to one of the allowed values","errors":[{"path":"require_new_set","message":"must be equal to one of the allowed values"}],"instance":"01a1554c-6f30-7642-b969-feb18871fdc9"}
 10
 HTTP/1.1 204 No Content
+x-request-id: 01a17af7-b84b-7c47-8ad1-189f92c86676
+cache-control: no-store
+Date: Tue, 27 Oct 2026 01:26:57 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+
 {"actions":[]}
 {"action": "subject.recovery_codes_revoke", "outcome": "allowed", "detail": {"revoked": 10, "new_set_required": false}}
 HTTP/1.1 200 OK
@@ -211,15 +224,31 @@ curl -sS -D - -o body.html --data-urlencode "auth_session_id=$sid" --data-urlenc
   http://localhost:3187/tenants/recovery-life/login-actions/authenticate
 ```
 
-The two `DELETE`s were piped through `grep -E '^HTTP'` and the sign-in through
-`grep -iE '^(HTTP|location)' | cut -c1-70`, none of which the commands above
-show:
-
 ```
 HTTP/1.1 204 No Content
+x-request-id: 01a17af7-ee89-704a-92ca-cd753a64220d
+cache-control: no-store
+Date: Tue, 27 Oct 2026 01:27:11 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+
 {"actions":["generate-recovery-codes"]}
 HTTP/1.1 204 No Content
+x-request-id: 01a17af7-eebc-7305-9b17-41a84a5c5169
+cache-control: no-store
+Date: Tue, 27 Oct 2026 01:27:11 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+
 {"actions":[]}
 HTTP/1.1 302 Found
-location: https://app.example/callback?code=WZ04g9i_owPX2Tov5E4GvsHbZ1
+x-request-id: 01a17af7-ef03-7a65-bd2d-1e5e9cbe4d0e
+set-cookie: recovery-life-session=01a17af7-ef36-7ca0-ac65-f9eeea0cf11e:XzGU66lkGUYr7IK4UZn6a3ZF8_AnXyAWrWJWojxPWFE; HttpOnly; SameSite=Lax; Path=/
+set-cookie: recovery-life-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
+set-cookie: odudu-sign-in=; HttpOnly; SameSite=Lax; Path=/tenants/recovery-life/; Max-Age=0
+location: https://app.example/callback?code=6ZCnFFbW27Ex8es1NprEVmt2ImDtLH_E5QuvGPzCfD0&state=xyz&iss=http%3A%2F%2Flocalhost%3A3080%2Ftenants%2Frecovery-life
+content-length: 0
+Date: Tue, 27 Oct 2026 01:27:11 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 ```

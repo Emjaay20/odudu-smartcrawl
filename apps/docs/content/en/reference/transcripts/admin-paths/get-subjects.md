@@ -46,14 +46,14 @@ curl -sS \
   "http://localhost:3000/admin/tenants/demo/subjects?limit=50"
 ```
 
-Three subjects by the time this ran, and the first is the point of the
-paragraph above: `demo-backend`'s service account, created with the client
-and carrying no `users` row, so `username` and `email` are `null` and no
-search would ever return it. `ada` is `POST /subjects` below; `bob` is
-the seeded user the sessions section needs:
+Eight subjects by the time this ran, and the first five are the point of the
+paragraph above: the service accounts of confidential clients, each created
+with its client and carrying no `users` row, so `username` and `email` are
+`null` and no search would ever return them. `ada`, `Adaline` and `adam` are
+`POST /subjects` below:
 
 ```
-{"items":[{"id":"01a0d6fc-e571-7685-b843-00be9303dd03","type":"service","username":null,"email":null,"enabled":true,"created_at":"2026-09-25T05:14:53.164Z"},{"id":"01a0d6fd-9453-7bf0-9823-a5fc6ea34836","type":"user","username":"ada","email":"ada@demo.example","enabled":true,"created_at":"2026-09-25T05:15:37.939Z"},{"id":"01a0d6fd-ede7-704b-8d83-fa3801d427a0","type":"user","username":"bob","email":"bob@demo.example","enabled":true,"created_at":"2026-09-25T05:16:00.867Z"}]}
+{"items":[{"id":"01a109b6-1e08-73b5-b63f-7e89c1af0ad1","type":"service","username":null,"email":null,"enabled":true,"created_at":"2026-10-27T01:05:16.783Z"},{"id":"01a17ae4-195d-7ecf-bfaf-30bee34797e1","type":"service","username":null,"email":null,"enabled":true,"created_at":"2026-10-27T01:05:31.483Z"},{"id":"01a17ae4-19b4-7fde-aca3-15bba4e88ff5","type":"service","username":null,"email":null,"enabled":true,"created_at":"2026-10-27T01:05:31.570Z"},{"id":"01a109b6-1f0b-7a0b-89d2-3a6006154ef9","type":"service","username":null,"email":null,"enabled":true,"created_at":"2026-10-27T01:06:12.713Z"},{"id":"01a17aed-008d-762d-9c16-3a49394b8edb","type":"service","username":null,"email":null,"enabled":true,"created_at":"2026-10-27T01:15:14.953Z"},{"id":"01a0ea54-2519-7513-8bf7-c105e0cfd9dd","type":"user","username":"ada","email":"ada@example.com","enabled":true,"created_at":"2026-10-27T01:15:46.485Z"},{"id":"01a0ea54-2556-7831-8443-acf0d9ac9f1d","type":"user","username":"Adaline","email":null,"enabled":true,"created_at":"2026-10-27T01:16:21.119Z"},{"id":"01a0ea54-256c-7e66-a2f7-ab933f2e09c8","type":"user","username":"adam","email":null,"enabled":true,"created_at":"2026-10-27T01:16:21.168Z"}]}
 ```
 
 In the searches below `demo` holds `ada` (`ada@example.com`, created by `POST
@@ -147,8 +147,8 @@ curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
 ```
 
 ```
-{"items":[{"id":"01a0ea0f-36a4-7377-b18e-c6e48982a5cf","type":"user","username":"grace","email":null,"enabled":true,"created_at":"2026-09-28T22:07:40.707Z"}]}
-{"items":[{"id":"01a0ea0f-36a4-7377-b18e-c6e48982a5cf","type":"user","username":"grace","email":null,"enabled":true,"created_at":"2026-09-28T22:07:40.707Z"}]}
+{"items":[{"id":"01a0ea0f-36a4-7377-b18e-c6e48982a5cf","type":"user","username":"grace","email":null,"enabled":true,"created_at":"2026-10-27T01:16:21.310Z","admin_capabilities":[{"name":"tenant-admin","direct":true},{"name":"view-users","direct":false},{"name":"manage-users","direct":false},{"name":"manage-clients","direct":false},{"name":"manage-tenant","direct":false},{"name":"manage-keys","direct":false},{"name":"manage-sessions","direct":false},{"name":"view-audit","direct":false}]}]}
+{"items":[{"id":"01a0ea0f-36a4-7377-b18e-c6e48982a5cf","type":"user","username":"grace","email":null,"enabled":true,"created_at":"2026-10-27T01:16:21.310Z","admin_capabilities":[{"name":"tenant-admin","direct":true},{"name":"view-users","direct":false},{"name":"manage-users","direct":false},{"name":"manage-clients","direct":false},{"name":"manage-tenant","direct":false},{"name":"manage-keys","direct":false},{"name":"manage-sessions","direct":false},{"name":"view-audit","direct":false}]}]}
 ```
 
 Holding through a group or a composite is shown by an integration test, not

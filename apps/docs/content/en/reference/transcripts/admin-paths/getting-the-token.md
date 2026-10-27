@@ -150,6 +150,7 @@ HTTP/1.1 302 Found
 x-request-id: 01a1203b-533a-7119-94ff-8e90304357b2
 set-cookie: system-session=01a1203b-5383-79a0-892a-1da6060f57f0:AwhbliF-ogxYzIWVNx7EtXc3LSGLG6tess9MT_vLbnU; HttpOnly; SameSite=Lax; Path=/
 set-cookie: system-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
+set-cookie: odudu-sign-in=; HttpOnly; SameSite=Lax; Path=/tenants/system/; Max-Age=0
 location: http://127.0.0.1:8080/callback?code=uNtx2kbG23_7tdxFwbLiFIPfeWGfj2HGKG-mqC3XSYs&state=s&iss=http%3A%2F%2Flocalhost%3A3082%2Ftenants%2Fsystem
 content-length: 0
 Date: Fri, 09 Oct 2026 10:35:21 GMT
@@ -400,8 +401,8 @@ docker compose -p odudu-docs-12b exec -T postgres psql -U odudu -d odudu -c \
 ```
   name  | client_row | config_row
 --------+------------+------------
- legacy | 811        | 811
- system | 746        | 746
+ legacy | 782        | 782
+ system | 757        | 757
 (2 rows)
 ```
 
@@ -412,8 +413,8 @@ provisioned 2 tenants
 ```
   name  | client_row | config_row
 --------+------------+------------
- legacy | 811        | 811
- system | 746        | 746
+ legacy | 782        | 782
+ system | 757        | 757
 (2 rows)
 ```
 
@@ -514,7 +515,7 @@ console is on (`ODUDU_CONSOLE`, `true` by default) — two more built from
 URI `${ODUDU_PUBLIC_BASE_URL}/console/`. `seed admin`, `seed tenant`, `seed
 --tenant`, `POST /admin/tenants` and `POST /admin/tenant-imports` write them;
 none is ever taken from a request's `Host`. The query is scoped to the `system`
-tenant's own admin client; the database held 31 tenants. psql ends each header
+tenant's own admin client; the database held 2 tenants. psql ends each header
 line with a space, trimmed in every block below:
 
 ```bash
@@ -542,7 +543,7 @@ docker compose exec -T odudu node dist/main.js console provision 2>/dev/null
 ```
 
 ```
-provisioned 31 tenants
+provisioned 2 tenants
 ```
 
 and the same query then reads:
@@ -563,7 +564,7 @@ docker compose exec -T -e ODUDU_PUBLIC_BASE_URL=http://127.0.0.1:3000 odudu \
 ```
 
 ```
-provisioned 31 tenants
+provisioned 2 tenants
 ```
 
 The same psql query then reads:
@@ -582,7 +583,7 @@ docker compose exec -T odudu node dist/main.js console provision 2>/dev/null
 ```
 
 ```
-provisioned 31 tenants
+provisioned 2 tenants
 ```
 
 puts the `http://localhost:3000` pair back, and the query reads:

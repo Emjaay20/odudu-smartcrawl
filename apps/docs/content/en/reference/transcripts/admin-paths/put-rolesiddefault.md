@@ -144,7 +144,7 @@ ids are a fresh run's, not those above:
 
 ```bash
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
-  'http://localhost:3082/admin/tenants/composites-demo/audit?action=role.default_set&to=2026-09-29T19:09:44.000Z&limit=3'; echo
+  'http://localhost:3082/admin/tenants/composites-demo/audit?action=role.default_set&to=2026-10-27T01:35:42.000Z&limit=3'; echo
 ```
 
 ```
@@ -205,9 +205,31 @@ x-request-id: 01a10f7f-ccde-786c-ae84-8c0cda061c50
 cache-control: no-store
 content-type: application/problem+json; charset=utf-8
 content-length: 165
+Date: Tue, 27 Oct 2026 01:36:16 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 
 {"type":"about:blank","title":"Conflict","status":409,"detail":"at most 200 roles are handed to every new subject","instance":"01a10f7f-ccde-786c-ae84-8c0cda061c50"}
 ```
 
-`PUT /groups/:id/default` answers the same `409` for groups, with the detail
-`at most 200 groups are joined by every new subject`; it was not run separately.
+`PUT /groups/:id/default` answers the same `409` for groups. On `perf-demo`, after
+200 groups `gd-1` to `gd-200` were each set default, the 201st:
+
+```bash
+curl -sS -D - -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H 'content-type: application/json' -d '{"default":true}' \
+  "$P/groups/$GD_201/default"
+```
+
+```
+HTTP/1.1 409 Conflict
+x-request-id: 01a17b29-7b0a-7d29-9938-ffd14b747ea5
+cache-control: no-store
+content-type: application/problem+json; charset=utf-8
+content-length: 166
+Date: Tue, 27 Oct 2026 02:21:18 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+
+{"type":"about:blank","title":"Conflict","status":409,"detail":"at most 200 groups are joined by every new subject","instance":"01a17b29-7b0a-7d29-9938-ffd14b747ea5"}
+```

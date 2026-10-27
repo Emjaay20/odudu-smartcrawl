@@ -255,7 +255,8 @@ capability itself and reaches one two levels down — what its default is then
 refused for:
 
 ```bash
-curl -sS -D - -H "Authorization: Bearer $ADMIN_TOKEN" $P/roles/01a10bd6-2cbc-706c-8d46-891aad99d5bb
+curl -sS -D - -H "Authorization: Bearer $ADMIN_TOKEN" $P/roles/01a10bd6-2cbc-706c-8d46-891aad99d5bb \
+  | grep -E '^(HTTP/|etag:|\{)'
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" $P/roles/01a10bd6-2cbc-706c-8d46-891aad99d5bb/composites; echo
 curl -sS -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
   -d '{"default":true}' $P/roles/01a10bd6-2cbc-706c-8d46-891aad99d5bb/default; echo
@@ -314,5 +315,5 @@ curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
 
 ```
 {"type":"about:blank","title":"Forbidden","status":403,"instance":"01a0ee91-6bf2-708d-839a-f58481e120e8"}
-{"items":[{"id":"01a0ee91-6c24-7df3-aff4-f3b3cb39e5c3","occurred_at":"2026-09-29T19:08:22.941Z","event_type":"admin_access","action":"capability.refused","outcome":"refused","actor_tenant_id":"01a0ee91-5500-7587-bec8-ccd5ea0cfb56","actor_subject_id":"01a0ee91-621f-7416-9ebf-80d7244ddda7","actor_client_id":"01a0ee91-551f-76e0-b7f0-ff2a01e786b4","actor_name":"kai","actor_origin":"tenant","resource_type":null,"resource_id":null,"request_id":"01a0ee91-6bf2-708d-839a-f58481e120e8","ip":"172.22.0.1","detail":{"reason":"missing_capability","capability":"manage-tenant","also_admits":["view-users"]}}]}
+{"items":[{"id":"01a17b00-fab5-79b4-ac4b-85cf3c61ac0d","occurred_at":"2026-10-27T01:37:04.180Z","event_type":"admin_access","action":"capability.refused","outcome":"refused","actor_tenant_id":"01a17aee-035a-7fbd-b91e-5d1bf526e06a","actor_subject_id":"01a17b00-f2ad-73d0-9614-632615bd007d","actor_client_id":"01a17aee-036f-79c1-9d61-075c9eb9f690","actor_name":"kai","actor_origin":"tenant","resource_type":null,"resource_id":null,"request_id":"01a0ee91-6bf2-708d-839a-f58481e120e8","ip":"172.20.0.1","detail":{"reason":"missing_capability","capability":"manage-tenant","also_admits":["view-users"]}}],"next":"eyJhZnRlciI6IjIwMjYtMTAtMjdUMDE6Mzc6MDQuMTgwWnwwMWExN2IwMC1mYWI1LTc5YjQtYWM0Yi04NWNmM2M2MWFjMGQiLCJjb2xsZWN0aW9uIjoiYXVkaXQiLCJ0ZW5hbnRJZCI6IjAxYTE3YWVlLTAzNWEtN2ZiZC1iOTFlLTVkMWJmNTI2ZTA2YSIsImZpbHRlcnMiOiJzV3pnMmJuM3FLa3djU0htSGVxS1gyYlZ5VlA3Tl8wRWdhSmI3Si1TeWRrIn0.p7U0bK0GfLYBChgI0CUD3PbRR6ClAVOiDVsLOoDqPTw"}
 ```

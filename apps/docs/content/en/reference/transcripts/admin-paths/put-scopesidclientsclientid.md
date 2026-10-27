@@ -73,8 +73,12 @@ curl -sS -D - -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: a
 ```
 HTTP/1.1 409 Conflict
 x-request-id: 01a11266-79f9-7975-86e7-096bbe095f7a
+cache-control: no-store
 content-type: application/problem+json; charset=utf-8
 content-length: 151
+Date: Tue, 27 Oct 2026 01:40:36 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 
 {"type":"about:blank","title":"Conflict","status":409,"detail":"a client carries at most 200 scopes","instance":"01a11266-79f9-7975-86e7-096bbe095f7a"}
 ```
@@ -94,19 +98,31 @@ curl -sS -D - -o /dev/null -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H 'co
 ```
 HTTP/1.1 200 OK
 x-request-id: 01a11266-7a17-7584-8e68-b4b9c45f32b3
+cache-control: no-store
 etag: "503949510281d7d735db6e6e49b2c747bb77b4ab31a603787f51128c2d66278b"
 content-type: application/json; charset=utf-8
 content-length: 18114
+Date: Tue, 27 Oct 2026 01:40:36 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 
 HTTP/1.1 204 No Content
 x-request-id: 01a11266-7a3b-777b-8a1d-d24bebbc2997
+cache-control: no-store
 etag: "cf9515f4a03e3ad1376ded152fb7d06a21547fbc3fa73cb5fc11a2c0e18e4cdd"
+Date: Tue, 27 Oct 2026 01:40:36 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 
 HTTP/1.1 200 OK
 x-request-id: 01a11266-7a5d-7430-b8cf-9ae20b95ab3c
+cache-control: no-store
 etag: "70c5724820911f7214efcc042bf5eaabba371e3b0b22b95156a1bd5dab33c757"
 content-type: application/json; charset=utf-8
 content-length: 18118
+Date: Tue, 27 Oct 2026 01:40:36 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 ```
 
 The client carries 200 again, so `odudu seed assign-scope` of `late` is refused,
@@ -115,7 +131,8 @@ refusal (its Web Crypto warnings and the stack's frames are left out):
 
 ```bash
 docker compose -p odudu-tx exec -T odudu node dist/main.js seed assign-scope \
-  --tenant scope-limit-docs --client-id limit-app --scope late --assignment optional
+  --tenant scope-limit-docs --client-id limit-app --scope late --assignment optional 2>&1 \
+  | grep -E '^OduduError|code:'
 ```
 
 ```
@@ -129,16 +146,20 @@ export with one more scope, `one-more`, listing `limit-app`, which makes 201:
 
 ```bash
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$P/export" > export.json
-# add to export.json's scopes an entry named one-more whose clients lists limit-app
+jq -c '{name: "limit-import", document: (.scopes += [{name: "one-more", description: null, include_in_id_token: true, include_in_access_token: false, default_client_assignment: null, consent_text: null, display_order: 0, builtin: false, roles: [], mappers: [], clients: [{client_id: "limit-app", assignment: "optional"}]}])}' export.json > import.json
 curl -sS -D - -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
-  --data @import.json "$A/../tenant-imports"
+  --data @import.json http://localhost:3000/admin/tenant-imports
 ```
 
 ```
 HTTP/1.1 400 Bad Request
 x-request-id: 01a11266-7d24-7c2d-8672-de80c4d9f7bc
+cache-control: no-store
 content-type: application/problem+json; charset=utf-8
 content-length: 270
+Date: Tue, 27 Oct 2026 01:41:00 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 
 {"type":"about:blank","title":"Bad Request","status":400,"detail":"the import was refused for 1 problem(s), listed under errors","errors":[{"path":"document.clients[0].scopes","message":"holds 201 scopes, at most 200"}],"instance":"01a11266-7d24-7c2d-8672-de80c4d9f7bc"}
 ```
@@ -152,7 +173,7 @@ curl -sS http://localhost:3080/admin/openapi.json | node -e 'let s="";process.st
 ```
 
 ```
-{"description":"OK","content":{"application/json":{"schema":{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"client_id":{"type":"string"},"scopes":{"type":"array","items":{"type":"object","properties":{"id":{"type":"string"},"name":{"type":"string"},"assignment":{"type":"string","enum":["default","optional"]}},"required":["id","name","assignment"],"additionalProperties":false}}},"required":["client_id","scopes"],"additionalProperties":false}}}}
+{"description":"OK","content":{"application/json":{"schema":{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","properties":{"client_id":{"type":"string","description":"The client’s internal identifier."},"scopes":{"type":"array","items":{"type":"object","properties":{"id":{"type":"string","description":"The scope’s identifier."},"name":{"type":"string","description":"The scope name."},"assignment":{"type":"string","enum":["default","optional"],"description":"`default` is requested for the client without being asked for, `optional` only when the request names it."}},"required":["id","name","assignment"],"additionalProperties":false},"description":"The client’s scopes after the change."}},"required":["client_id","scopes"],"additionalProperties":false}}}}
 ```
 
 ## The client's new `ETag`
@@ -169,9 +190,11 @@ In `etags-demo`, on a public client `etags-app`
 ```bash
 curl -sS -D - -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
   -d '{"assignment":"optional"}' \
-  http://localhost:3080/admin/tenants/etags-demo/scopes/01a0e9ec-d68e-7463-8023-bd155594d026/clients/01a0e9ec-d64a-7d5d-a0ac-a01efd56b6f3
+  http://localhost:3080/admin/tenants/etags-demo/scopes/01a0e9ec-d68e-7463-8023-bd155594d026/clients/01a0e9ec-d64a-7d5d-a0ac-a01efd56b6f3 \
+  | grep -E '^(HTTP/|etag:|\{)'
 curl -sS -D - -o /dev/null -H "Authorization: Bearer $ADMIN_TOKEN" \
-  http://localhost:3080/admin/tenants/etags-demo/clients/01a0e9ec-d64a-7d5d-a0ac-a01efd56b6f3
+  http://localhost:3080/admin/tenants/etags-demo/clients/01a0e9ec-d64a-7d5d-a0ac-a01efd56b6f3 \
+  | grep -E '^(HTTP/|etag:)'
 ```
 
 ```

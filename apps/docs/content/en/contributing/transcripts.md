@@ -258,6 +258,12 @@ tokens masked and `content-length` not. Where a block differed it was written ag
 command could not have printed its block as written the command was corrected; a block that shows part of a
 response says so. `docs/phases/p4g.md` lists, page by page, what was identical, what changed and what was not
 run again.
+
+The 73 pages of the admin paths were run the same way, in index order on one fresh stack (compose project
+`odudu-p4g-rerun-admin-a`, port 3650) built from `main` at `9b81712c`, so a tenant holds what the pages above it
+left. The pages that name a tenant's state say how it was made; where a page showed a response cut by hand,
+the command now cuts it or the whole response is shown, and a page that showed fewer commands than answers
+now shows each one. The audit bound page ran against 12,000,000 rows inserted as the database owner.
 Bootstrap's host mode (Postgres in a container, the server from the source on a high port) and no-Docker mode
 (a throwaway PostgreSQL 18.6 cluster) were run for real afterwards, and the `/token`, login POST and
 `/userinfo` tables in The branches were run row by row.

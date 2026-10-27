@@ -42,14 +42,16 @@ is needed first). `/authorize`, asking for `offline_access` too, followed by
 logging in:
 
 ```bash
-curl -sS \
-  'http://localhost:3000/tenants/consents-demo2/protocol/openid-connect/auth?response_type=code&client_id=consents-demo-app2&redirect_uri=https%3A%2F%2Fapp.example%2Fcallback&scope=openid%20offline_access&state=xyz&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256'
+AUTH_SESSION_ID=$(curl -sS \
+  'http://localhost:3000/tenants/consents-demo2/protocol/openid-connect/auth?response_type=code&client_id=consents-demo-app2&redirect_uri=https%3A%2F%2Fapp.example%2Fcallback&scope=openid%20offline_access&state=xyz&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256' \
+  | sed -n 's/.*name="auth_session_id" value="\([^"]*\)".*/\1/p' | head -1)
 
 curl -sS \
-  --data-urlencode "auth_session_id=01a0e558-b0a9-763b-84f8-f348efaacd53" \
+  --data-urlencode "auth_session_id=$AUTH_SESSION_ID" \
   --data-urlencode "username=grace" \
   --data-urlencode "password=correct horse battery staple" \
-  'http://localhost:3000/tenants/consents-demo2/login-actions/authenticate'
+  'http://localhost:3000/tenants/consents-demo2/login-actions/authenticate' \
+  | grep '<form'
 ```
 
 The consent screen, `openid` shown as already implied and `offline_access`
@@ -93,7 +95,7 @@ token:
 
 ```bash
 curl -sS -D - -c jar -b jar \
-  --data-urlencode "auth_session_id=01a0e558-b0a9-763b-84f8-f348efaacd53" \
+  --data-urlencode "auth_session_id=$AUTH_SESSION_ID" \
   --data-urlencode "decision=allow" \
   --data-urlencode "scope=offline_access" \
   'http://localhost:3000/tenants/consents-demo2/login-actions/consent'
@@ -102,7 +104,7 @@ curl -sS -X POST \
   --data-urlencode "grant_type=authorization_code" \
   --data-urlencode "code=SInvyBACjbt6xBEec6hT1Way6Fpm4tj_6SEyiZr3dEM" \
   --data-urlencode "redirect_uri=https://app.example/callback" \
-  --data-urlencode "code_verifier=a5e606dca6f98d0037ee563f4c510264114ab7bd5b9cc0c5eb3fecbcfbf9f046" \
+  --data-urlencode "code_verifier=dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk" \
   -u "consents-demo-app2:PaTErX2vTk6H_-eAP-1xOIh2BHMOp6dPekxmkisf-gg" \
   'http://localhost:3000/tenants/consents-demo2/protocol/openid-connect/token'
 ```
@@ -112,6 +114,7 @@ HTTP/1.1 302 Found
 x-request-id: 01a0e558-ce27-7849-80eb-a2d2dcf6a18a
 set-cookie: consents-demo2-session=01a0e558-ce34-74a4-a8ac-7da0e3702e69:7pi1cgx3w7uKV4Afg2Aq_3M4snQunDoUOl7OmUaLNvc; HttpOnly; SameSite=Lax; Path=/
 set-cookie: consents-demo2-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
+set-cookie: odudu-sign-in=; HttpOnly; SameSite=Lax; Path=/tenants/consents-demo2/; Max-Age=0
 location: https://app.example/callback?code=SInvyBACjbt6xBEec6hT1Way6Fpm4tj_6SEyiZr3dEM&state=xyz&iss=http%3A%2F%2Flocalhost%3A3000%2Ftenants%2Fconsents-demo2
 content-length: 0
 Date: Mon, 28 Sep 2026 00:09:57 GMT
@@ -194,14 +197,16 @@ A fresh login for the same client, after the revoke, stops at the consent
 screen again rather than redirecting straight to a code:
 
 ```bash
-curl -sS \
-  'http://localhost:3000/tenants/consents-demo2/protocol/openid-connect/auth?response_type=code&client_id=consents-demo-app2&redirect_uri=https%3A%2F%2Fapp.example%2Fcallback&scope=openid%20offline_access&state=xyz&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256'
+AUTH_SESSION_ID=$(curl -sS \
+  'http://localhost:3000/tenants/consents-demo2/protocol/openid-connect/auth?response_type=code&client_id=consents-demo-app2&redirect_uri=https%3A%2F%2Fapp.example%2Fcallback&scope=openid%20offline_access&state=xyz&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256' \
+  | sed -n 's/.*name="auth_session_id" value="\([^"]*\)".*/\1/p' | head -1)
 
 curl -sS \
-  --data-urlencode "auth_session_id=01a0e559-2045-7007-9e06-58a4406e6007" \
+  --data-urlencode "auth_session_id=$AUTH_SESSION_ID" \
   --data-urlencode "username=grace" \
   --data-urlencode "password=correct horse battery staple" \
-  'http://localhost:3000/tenants/consents-demo2/login-actions/authenticate'
+  'http://localhost:3000/tenants/consents-demo2/login-actions/authenticate' \
+  | grep '<form'
 ```
 
 ```
@@ -273,6 +278,9 @@ cache-control: no-store
 link: </admin/tenants/perf-demo/subjects/01a10f7d-bb83-7e78-ab4a-84756ef68b49/consents?limit=2&cursor=eyJhZnRlciI6ImJldGEtYXBwIiwiY29sbGVjdGlvbiI6ImNvbnNlbnRzIiwidGVuYW50SWQiOiIwMWExMGY3ZC1iYjBhLTdjYTctYjRhNS0xZjE3MzYwOWJmZjUiLCJmaWx0ZXJzIjoiMnl5WFJXMExValpHa2tfZ0dvR3Rlay04Qm0yeUZ6Mk9JZm9ZSE1MUUVVdyJ9.8a7ijDgE6fTMcaoWF-jKtQYjWaIOU58H3jE-WAI4mDc>; rel="next"
 content-type: application/json; charset=utf-8
 content-length: 550
+Date: Tue, 27 Oct 2026 01:29:05 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 
 {"items":[{"client_id":"01a10f7d-edbc-792a-b693-f9abee8b7a7e","client_key":"alpha-app","scope_names":["openid"],"granted_at":"2026-10-06T04:34:33.829Z"},{"client_id":"01a10f7d-edff-7361-b906-289b7b5f7ef3","client_key":"beta-app","scope_names":["openid"],"granted_at":"2026-10-06T04:34:33.829Z"}],"next":"eyJhZnRlciI6ImJldGEtYXBwIiwiY29sbGVjdGlvbiI6ImNvbnNlbnRzIiwidGVuYW50SWQiOiIwMWExMGY3ZC1iYjBhLTdjYTctYjRhNS0xZjE3MzYwOWJmZjUiLCJmaWx0ZXJzIjoiMnl5WFJXMExValpHa2tfZ0dvR3Rlay04Qm0yeUZ6Mk9JZm9ZSE1MUUVVdyJ9.8a7ijDgE6fTMcaoWF-jKtQYjWaIOU58H3jE-WAI4mDc"}
 ```

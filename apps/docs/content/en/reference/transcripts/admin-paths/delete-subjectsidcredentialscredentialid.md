@@ -140,16 +140,24 @@ import json,sys
 for r in json.load(sys.stdin)['items']: print(json.dumps({k:r[k] for k in ('action','outcome','detail')}))"
 ```
 
-The `400` is shown as its status line and body only, and the `204` without its
-`date`, `connection` and keep-alive lines:
-
 ```
 1 session(s); client_ids []
 HTTP/1.1 400 Bad Request
-{"type":"about:blank","title":"Error","status":400,"detail":"querystring/end_sessions must be equal to one of the allowed values","errors":[{"path":"end_sessions","message":"must be equal to one of th
+x-request-id: 01a17af7-127b-75a6-ac66-dda117fe3978
+cache-control: no-store
+content-type: application/problem+json; charset=utf-8
+content-length: 270
+Date: Tue, 27 Oct 2026 01:26:14 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
+
+{"type":"about:blank","title":"Error","status":400,"detail":"querystring/end_sessions must be equal to one of the allowed values","errors":[{"path":"end_sessions","message":"must be equal to one of the allowed values"}],"instance":"01a17af7-127b-75a6-ac66-dda117fe3978"}
 HTTP/1.1 204 No Content
 x-request-id: 01a15574-986f-7acd-b2fd-3e31164a4c33
 cache-control: no-store
+Date: Tue, 27 Oct 2026 01:26:14 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 
 {"items":[]}
 {"action": "subject.recovery_codes_revoke", "outcome": "allowed", "detail": {"reason": "last_factor_removed", "revoked": 10}}

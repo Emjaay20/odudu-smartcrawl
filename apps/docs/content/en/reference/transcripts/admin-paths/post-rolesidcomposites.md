@@ -53,6 +53,12 @@ curl -sS -D - -X POST \
   -H "Content-Type: application/json" \
   -d '{"child_role_id": "01a0ea58-0e45-76eb-be5f-bd76e03e4b6e"}' \
   http://localhost:3080/admin/tenants/demo/roles/01a0ea62-7fb3-79e7-b158-93f29fa138ec/composites
+echo
+curl -sS -X POST \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"child_role_id": "01a0ea62-7fb3-79e7-b158-93f29fa138ec"}' \
+  http://localhost:3080/admin/tenants/demo/roles/01a0ea58-0e45-76eb-be5f-bd76e03e4b6e/composites
 ```
 
 `billing-viewer` nested under a second role, `billing-admin`, then the reverse
@@ -89,6 +95,9 @@ x-request-id: 01a10f7f-293d-76a0-ba3e-cc037c7c8436
 cache-control: no-store
 content-type: application/problem+json; charset=utf-8
 content-length: 151
+Date: Tue, 27 Oct 2026 01:35:02 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 
 {"type":"about:blank","title":"Conflict","status":409,"detail":"a role nests at most 200 composites","instance":"01a10f7f-293d-76a0-ba3e-cc037c7c8436"}
 ```

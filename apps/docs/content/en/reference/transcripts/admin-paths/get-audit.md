@@ -51,9 +51,8 @@ curl -sS -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: appl
   -d '{"audit_event_types":["admin_access","token"]}' "$P/settings"; echo
 ```
 
-`$P` is `http://localhost:3082/admin/tenants/audit-types-demo`, and the
-`for` loop ran once before the two `PATCH`es and once after the second
-sign-in:
+`$P` is `http://localhost:3082/admin/tenants/audit-types-demo`. The `for` loop, then the
+two `PATCH`es and their answers:
 
 ```
 authentication {"count":1,"capped":false}
@@ -61,6 +60,17 @@ session {"count":1,"capped":false}
 token {"count":1,"capped":false}
 {"audit_event_types":["admin_mutation","admin_access","token","credential"]}
 {"type":"about:blank","title":"Bad Request","status":400,"detail":"1 tenant setting(s) refused, listed under errors","errors":[{"path":"audit_event_types","message":"must include admin_mutation and admin_access, which can never be turned off; admin_mutation is missing"}],"instance":"01a109f6-7586-7863-93ba-e73e8b24afc1"}
+```
+
+`ivy` signs in again, then the same loop:
+
+```bash
+for t in authentication session token; do
+  echo "$t $(curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$P/audit/count?event_type=$t")"
+done
+```
+
+```
 authentication {"count":1,"capped":false}
 session {"count":1,"capped":false}
 token {"count":2,"capped":false}
@@ -261,7 +271,7 @@ answers an empty page rather than an error:
 ```bash
 curl -sS -G -H "Authorization: Bearer $ADMIN_TOKEN" \
   --data-urlencode "event_type=token" \
-  http://localhost:3000/admin/tenants/demo/audit
+  http://localhost:3000/admin/tenants/audit-demo/audit
 ```
 
 ```
@@ -341,6 +351,13 @@ capability in `demo`. Its ids refer only to each other.
 the admin API. Its payload, decoded as in
 [Getting the token](./getting-the-token.md), and `demo` accepting it:
 
+```bash
+echo "$DEMO_TOKEN" | cut -d. -f2 | python3 -c "
+import sys, base64, json
+s = sys.stdin.read().strip()
+print(json.dumps(json.loads(base64.urlsafe_b64decode(s + '=' * (-len(s) % 4))), indent=2))"
+```
+
 ```
 {
   "iss": "http://localhost:3000/tenants/demo",
@@ -364,7 +381,7 @@ curl -sS -H "Authorization: Bearer $DEMO_TOKEN" \
 ```
 
 ```
-{"subjectId":"01a0dc0c-ec16-7566-adfb-a8bf7681149c","issuerTenantId":"01a0db22-1c32-7d17-b351-697d7911033c"}
+{"subjectId":"01a17ae4-19b4-7fde-aca3-15bba4e88ff5","issuerTenantId":"01a17add-fa11-73de-add5-820806cedd78","capabilities":[],"crossTenant":false}
 ```
 
 Presented at `acme` instead, it is refused with the `401` a string that is
@@ -383,6 +400,7 @@ curl -sS -D - -H "Authorization: Bearer not-a-token" \
 ```
 HTTP/1.1 401 Unauthorized
 x-request-id: foreign-issuer-doc
+cache-control: no-store
 content-type: application/problem+json; charset=utf-8
 content-length: 90
 Date: Sat, 26 Sep 2026 04:50:58 GMT
@@ -392,6 +410,7 @@ Keep-Alive: timeout=72
 {"type":"about:blank","title":"Unauthorized","status":401,"instance":"foreign-issuer-doc"}
 HTTP/1.1 401 Unauthorized
 x-request-id: foreign-issuer-doc
+cache-control: no-store
 content-type: application/problem+json; charset=utf-8
 content-length: 90
 Date: Sat, 26 Sep 2026 04:51:03 GMT
@@ -413,6 +432,10 @@ this deployment serves, and its signature verifies against `demo`'s own
 keys, so it is recorded in `acme`'s trail — the tenant the attempt was made
 against — naming `demo` as the caller's tenant, its subject and its client.
 The second writes only a `warn` line to the server's log:
+
+```bash
+docker compose logs --no-log-prefix odudu | grep foreign-issuer-doc | grep malformed_token | tail -n 1
+```
 
 ```
 {"level":40,"time":1790398263230,"pid":1,"hostname":"bd66202e30bc","reqId":"foreign-issuer-doc","reason":"malformed_token","msg":"admin request unauthenticated"}
@@ -509,15 +532,18 @@ Connection: keep-alive
 Keep-Alive: timeout=72
 
 {"type":"about:blank#audit-query-too-broad","title":"Bad Request","status":400,"detail":"these filters could not be searched within 5 seconds; narrow the time range with from and to, or drop a filter","instance":"01a13cfd-82b0-7ec2-8445-39b5e544e774"}
-5.125595 s
+5.022991 s
 ```
 
-The same filters with a ten minute window, which the time index serves, and the count, which
-answered inside the bound this time, and the export, which did not:
+The same filters with a ten minute window, which the time index serves, then the
+count and the export, which have no window and sit close to the bound. Both
+finished inside it this time; on an earlier pass over the same rows, before
+the table had been read once, each was refused with the same `400` as the
+first request:
 
 ```bash
 curl -sS -D - -w "\n%{time_total} s\n" -H "Authorization: Bearer $ADMIN_TOKEN" \
-  "$P/audit?action=bulk.a&actor_subject_id=$A&from=2026-10-15T00:26:49Z&limit=1"
+  "$P/audit?action=bulk.a&actor_subject_id=$A&from=2026-10-27T02:09:50Z&limit=1"
 curl -sS -D - -w "\n%{time_total} s\n" -H "Authorization: Bearer $ADMIN_TOKEN" \
   "$P/audit/count?action=bulk.a&actor_subject_id=$A"
 curl -sS -D - -w "\n%{time_total} s\n" -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -535,7 +561,7 @@ Connection: keep-alive
 Keep-Alive: timeout=72
 
 {"items":[]}
-0.029296 s
+0.014213 s
 ```
 
 ```
@@ -549,21 +575,21 @@ Connection: keep-alive
 Keep-Alive: timeout=72
 
 {"count":0,"capped":false}
-4.107103 s
+4.528085 s
 ```
 
 ```
-HTTP/1.1 400 Bad Request
+HTTP/1.1 200 OK
 x-request-id: 01a13cfd-a709-7603-815f-a3c9f0ad99a0
 cache-control: no-store
-content-type: application/problem+json; charset=utf-8
-content-length: 251
+content-type: application/x-ndjson; charset=utf-8
+content-length: 0
 Date: Thu, 15 Oct 2026 00:37:03 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"type":"about:blank#audit-query-too-broad","title":"Bad Request","status":400,"detail":"these filters could not be searched within 5 seconds; narrow the time range with from and to, or drop a filter","instance":"01a13cfd-a709-7603-815f-a3c9f0ad99a0"}
-5.067626 s
+
+3.268358 s
 ```
 
 And an instant before 1970, refused by the contract with a sentence naming the
@@ -586,7 +612,7 @@ Connection: keep-alive
 Keep-Alive: timeout=72
 
 {"type":"about:blank","title":"Bad Request","status":400,"detail":"from must be a date between 1970 and 9999","errors":[{"path":"from","message":"from must be a date between 1970 and 9999"}],"instance":"01a13d62-c82f-7859-866d-bb29899ca1a1"}
-0.022757 s
+0.011033 s
 ```
 
 A year after 9999 is refused earlier, by the route's own date pattern rather

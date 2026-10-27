@@ -31,14 +31,17 @@ curl -sS -D - -X PATCH \
 
 ```
 HTTP/1.1 200 OK
+x-request-id: 01a17af0-6b18-7a88-bb13-b6ceff00a682
+cache-control: no-store
 etag: "e0aa2da695d68cf78750779f56f4003957282bd6a88ddab5b3aa117e2efa7a19"
 content-type: application/json; charset=utf-8
+content-length: 158
+Date: Tue, 27 Oct 2026 01:18:58 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 
-{"id":"01a0d6fd-9453-7bf0-9823-a5fc6ea34836","type":"user","username":"ada","email":"ada@demo.example","enabled":false,"created_at":"2026-09-25T05:15:37.939Z"}
+{"id":"01a17aed-7bb8-7f5e-9b9c-d205689a4e89","type":"user","username":"ada","email":"ada@example.com","enabled":false,"created_at":"2026-10-27T01:15:46.485Z"}
 ```
-
-_(Not re-run for the `cache-control: no-store` pass: same reason as the
-read above.)_
 
 The `ETag` is the one `GET /subjects/:id` above returned, recomputed — a
 caller that read before this write holds a stale one.

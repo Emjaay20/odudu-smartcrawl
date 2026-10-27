@@ -57,6 +57,9 @@ cache-control: no-store
 link: </admin/tenants/perf-demo/subjects/01a10f7d-bb83-7e78-ab4a-84756ef68b49/effective-roles?limit=2&cursor=eyJhZnRlciI6IjAxYTEwZjdlLTE4NDktNzY0MC1iZmQ2LTE5YThmZGY3YzA0NSIsImNvbGxlY3Rpb24iOiJlZmZlY3RpdmUtcm9sZXMiLCJ0ZW5hbnRJZCI6IjAxYTEwZjdkLWJiMGEtN2NhNy1iNGE1LTFmMTczNjA5YmZmNSIsImZpbHRlcnMiOiIyeXlYUlcwTFVqWkdra19nR29HdGVrLThCbTJ5RnoyT0lmb1lITUxRRVV3In0.CbEhjt6kfAHKMMl3V9_y4nRH3orhNcgZDKYzJT7wwN4>; rel="next"
 content-type: application/json; charset=utf-8
 content-length: 568
+Date: Tue, 27 Oct 2026 01:31:45 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 
 {"items":[{"id":"01a10f7e-1815-797f-8beb-a15490ebc8b1","name":"role-reader","client_id":null,"client_key":null,"via":[{"kind":"direct"}]},{"id":"01a10f7e-1849-7640-bfd6-19a8fdf7c045","name":"role-writer","client_id":null,"client_key":null,"via":[{"kind":"direct"}]}],"next":"eyJhZnRlciI6IjAxYTEwZjdlLTE4NDktNzY0MC1iZmQ2LTE5YThmZGY3YzA0NSIsImNvbGxlY3Rpb24iOiJlZmZlY3RpdmUtcm9sZXMiLCJ0ZW5hbnRJZCI6IjAxYTEwZjdkLWJiMGEtN2NhNy1iNGE1LTFmMTczNjA5YmZmNSIsImZpbHRlcnMiOiIyeXlYUlcwTFVqWkdra19nR29HdGVrLThCbTJ5RnoyT0lmb1lITUxRRVV3In0.CbEhjt6kfAHKMMl3V9_y4nRH3orhNcgZDKYzJT7wwN4"}
 ```

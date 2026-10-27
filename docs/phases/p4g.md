@@ -3969,3 +3969,65 @@ final image and diffed against the committed blocks. This is the record for the 
   when repeated; `seed --send-verification-email` warns that `--issuer-base` was not given and mails
   `http://localhost:3000`, the container's own port; Node prints a `DeprecationWarning` for a TLS server
   name that is an IP address on the back-channel send (stderr, left out, and the page says so).
+
+## Transcripts replayed on the final image: `reference/transcripts/admin-paths`
+
+The 73 pages of `admin-paths` (70 with commands; the index, What to do next and `DELETE
+/subjects/:id` have none), run again and diffed against the committed blocks.
+
+- **Image and stack.** Built from `main` at `9b81712c` with `ODUDU_REVISION=9b81712c` (image
+  `bf06b3731f5d`). One stack, compose project `odudu-p4g-rerun-admin-a`, ports 3650 and 5650, run in
+  index order on one volume, so a tenant's state is what the pages above it left. Started with
+  `ODUDU_THROTTLE_LIMIT=1000` and `ODUDU_LOGIN_THROTTLE_LIMIT=1000`; the server was recreated once with
+  `ODUDU_ALLOW_PRIVATE_CLIENT_URLS=true`, `ODUDU_LOGOUT_SENDER_ENABLED=false`,
+  `ODUDU_ALLOW_PRIVATE_SMTP_HOSTS=true` and `ODUDU_OUTBOX_ENABLED=false` for the pages that name them.
+  Mailpit 1.31.5 served the one page that shows a delivered mail.
+- **Method.** A driver outside the repository ran each fenced command in the page's order in one shell
+  with its variables kept, replaced only the port and the compose project, and compared the output with
+  the block that follows. Ids, `Date`, nonces, tokens, request ids, etags, cursors, container
+  addresses, log `time`, `pid` and `hostname` were masked; `content-length` was not. A command that
+  used an id an earlier block printed got the new id by position. Where a block differed it was
+  written again from the run, keeping the page's own ids on every line that did not change.
+- **Changed, from the run:** a login `302` clears `odudu-sign-in` (Getting the token, the consent `302`);
+  the client record carries `service_account_admin_reach` (every client block, `content-length` +33);
+  a role listing carries `admin_reach` (a group's roles) and a capability-filtered subject listing
+  carries `admin_capabilities`; `whoami` answers `capabilities` and `crossTenant` to a token holding none;
+  a `401` carries `cache-control: no-store`; `DELETE /clients/:id/grants` and `DELETE /lockouts` answer
+  `remaining` (the notes saying they did not are gone); the tenant rename refusal names ADR 0039; the
+  change-password `POST` completes the sign-in (`302` with a code) where it once returned the sign-in
+  page (Password issue); a subject with no TOTP is not owed recovery codes, so the sign-in after `PUT
+required-actions` does not stop on a page (Recovery codes); `odudu console assertion` writes a
+  `console.assertion` row (Password issue); the tenant has a 37th table, `pending_registrations`
+  (Delete a tenant); the published OpenAPI schemas carry descriptions; the mail log's Node frame is line 2083 and the SMTP error names `originalCode`;
+  `seed --user` without `--password` is refused, so the lockout page's seed command now passes one.
+- **Commands that could not have produced their block as written, corrected or completed:** the
+  tenant-create page had a response listing tagged as a command and no refusal commands; Amend tenant,
+  Amend client, Required actions, Composites, Flow, SMTP, Keys (the whole rotation), Consent and
+  Sessions showed one command for several outputs or none for a block; Delete client showed one `DELETE`
+  for three answers; Scopes had a four-backtick fence that swallowed the `DELETE` section (now three,
+  and the section is prose again) and a `psql` with no host; Required actions and Sessions used a
+  session id typed by hand; `$A/../tenant-imports` resolved to a path the router does not have; the
+  `$NEW_SECRET` the rotation used was never set; a session id, an `If-Match` after an out-of-band write
+  and a cursor were read from the previous command by hand.
+- **Hand-cut output, now the real output:** many blocks printed only some headers or lines, with a
+  sentence saying so. Where the cut was the point, the command now does it (`grep -E
+'^(HTTP/|etag:|\{)'`); elsewhere the whole response is shown.
+- **State prepared, because a page does not say it:** `odudu-admin` of `system` set back to the loopback
+  redirect list with `UPDATE` (the "seeded before the console existed" state); `demo`'s `grace` deleted
+  before Scopes seeds her with a password; unsent deliveries of other tenants deleted before Delete a
+  tenant (its `send-logouts` pass sends every tenant's); 12,000,000 `audit_events` rows inserted as the
+  database owner for the audit bound, then deleted and the table vacuumed; 20,001 clients inserted for
+  the export bound; `demo`'s flow put back after Flow; the built-in scopes page runs in its own tenant,
+  `builtins-demo`, because `demo` now has many more clients than that page counts.
+- **Prose that described a state the stack no longer has, rewritten:** the subject counts in the list and
+  count pages (they now describe `demo` as it stands), Sessions (no `bob`), Password issue (which rows
+  the trail holds), the clients page (no note that the records predate a field).
+- **Timing.** The audit bound page's second block is not stable: the unwindowed request is refused at
+  about 5.0 s every time, but the count and the export sit at the bound. On the first pass over fresh
+  rows each was refused; on the pass recorded they finished in 4.5 s and 3.3 s, and warm (1.3 s) they are
+  well inside it. The page says which happened.
+- **Identical:** `GET /admin/tenants`, `GET /whoami`, `GET`/`PATCH /settings`, evaluate, installation,
+  logout deliveries, `DELETE /sessions`, the subject sessions and lockout pages, grants, credentials,
+  bulk, password reset and verification, the group roles and default pages, the audit export, the
+  username policy and `DELETE /keys/:id`.
+- **No commands, not run:** the index, What to do next and `DELETE /subjects/:id`.

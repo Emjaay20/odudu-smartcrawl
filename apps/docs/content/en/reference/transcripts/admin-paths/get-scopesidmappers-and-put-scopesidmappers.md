@@ -64,24 +64,31 @@ cache-control: no-store
 etag: "59c1141bb2da82132d257ffa8b417c0a7c4e9985057f06388c4d62534ecb2183"
 content-type: application/json; charset=utf-8
 content-length: 106
+Date: Tue, 27 Oct 2026 01:42:17 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 
 {"available":["sub","profile","email","roles","groups","address","phone"],"bound":[],"declared":["email"]}
-
 HTTP/1.1 200 OK
 x-request-id: 01a12d29-9b36-777e-8b19-641e3f840103
 cache-control: no-store
 etag: "e853268082f466e074aba6be62bd16b45ac4a0037e40335ae4eaf476c9defcb4"
 content-type: application/json; charset=utf-8
 content-length: 111
+Date: Tue, 27 Oct 2026 01:42:17 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 
 {"available":["sub","profile","email","roles","groups","address","phone"],"bound":["sub"],"declared":["email"]}
-
 HTTP/1.1 200 OK
 x-request-id: 01a12d29-9b55-74f9-a386-3516a179a75a
 cache-control: no-store
 etag: "e853268082f466e074aba6be62bd16b45ac4a0037e40335ae4eaf476c9defcb4"
 content-type: application/json; charset=utf-8
 content-length: 111
+Date: Tue, 27 Oct 2026 01:42:17 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 
 {"available":["sub","profile","email","roles","groups","address","phone"],"bound":["sub"],"declared":["email"]}
 ```

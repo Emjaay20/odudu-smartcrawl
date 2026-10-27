@@ -17,7 +17,7 @@ ignored.
 
 Every block below ran on a stack built from this branch and driven only as far
 as this page needs: `odudu seed admin`, `$ADMIN_TOKEN` got as in [Getting the
-token](./getting-the-token.md), then the tenant `demo`, a public client
+token](./getting-the-token.md), then the tenant `builtins-demo`, a public client
 `portal`, and the role `auditor` mapped to the `roles` scope with `odudu seed`.
 The stack published port `3192`.
 
@@ -30,7 +30,7 @@ however large the tenant is. `roles` is carried by `portal` and by the tenant's
 own admin client, and `auditor` is mapped to it:
 
 ```bash
-curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:3192/admin/tenants/demo/scopes/01a163f6-3841-7c44-8665-e0d89bc86380/impact; echo
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:3192/admin/tenants/builtins-demo/scopes/01a163f6-3841-7c44-8665-e0d89bc86380/impact; echo
 ```
 
 ```
@@ -45,7 +45,7 @@ what to send. Nothing is deleted, and the refusal is audited. A `confirm` that i
 not the scope's own name is refused the same way:
 
 ```bash
-curl -sS -D - -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:3192/admin/tenants/demo/scopes/01a163f6-3841-7c44-8665-e0d89bc86380
+curl -sS -D - -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:3192/admin/tenants/builtins-demo/scopes/01a163f6-3841-7c44-8665-e0d89bc86380
 ```
 
 ```
@@ -62,7 +62,7 @@ Keep-Alive: timeout=72
 ```
 
 ```bash
-curl -sS -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "http://localhost:3192/admin/tenants/demo/scopes/01a163f6-3841-7c44-8665-e0d89bc86380?confirm=role"; echo
+curl -sS -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "http://localhost:3192/admin/tenants/builtins-demo/scopes/01a163f6-3841-7c44-8665-e0d89bc86380?confirm=role"; echo
 ```
 
 ```
@@ -73,7 +73,7 @@ curl -sS -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "http://localhost:319
 every client would lock every administrator of the tenant out:
 
 ```bash
-curl -sS -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "http://localhost:3192/admin/tenants/demo/scopes/01a163f6-3833-718e-8f5e-7f326dd666c0?confirm=openid"; echo
+curl -sS -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "http://localhost:3192/admin/tenants/builtins-demo/scopes/01a163f6-3833-718e-8f5e-7f326dd666c0?confirm=openid"; echo
 ```
 
 ```
@@ -84,7 +84,7 @@ Naming the scope deletes it, with the assignments and role mappings that
 referred to it:
 
 ```bash
-curl -sS -D - -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "http://localhost:3192/admin/tenants/demo/scopes/01a163f6-3841-7c44-8665-e0d89bc86380?confirm=roles"
+curl -sS -D - -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" "http://localhost:3192/admin/tenants/builtins-demo/scopes/01a163f6-3841-7c44-8665-e0d89bc86380?confirm=roles"
 ```
 
 ```
@@ -103,7 +103,7 @@ Keep-Alive: timeout=72
 them, with whether this tenant has it; narrowed with `jq` to the missing ones:
 
 ```bash
-curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:3192/admin/tenants/demo/scopes/builtins | jq -c ".items[] | select(.present | not)"
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:3192/admin/tenants/builtins-demo/scopes/builtins | jq -c ".items[] | select(.present | not)"
 ```
 
 ```
@@ -116,8 +116,8 @@ neither read nor changed, edited or not, so a second call creates none. It takes
 no body:
 
 ```bash
-curl -sS -X POST -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:3192/admin/tenants/demo/scopes/restore-builtins; echo
-curl -sS -X POST -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:3192/admin/tenants/demo/scopes/restore-builtins; echo
+curl -sS -X POST -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:3192/admin/tenants/builtins-demo/scopes/restore-builtins; echo
+curl -sS -X POST -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:3192/admin/tenants/builtins-demo/scopes/restore-builtins; echo
 ```
 
 ```
@@ -132,8 +132,8 @@ creating nothing, when the missing scopes would pass the tenant's limit of 1,000
 scopes or of 200 scopes marked for every new client.
 
 ```bash
-curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:3192/admin/tenants/demo/scopes/01a163f6-3e95-77a2-8c20-0621710b44f2; echo
-curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:3192/admin/tenants/demo/scopes/01a163f6-3e95-77a2-8c20-0621710b44f2/impact; echo
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:3192/admin/tenants/builtins-demo/scopes/01a163f6-3e95-77a2-8c20-0621710b44f2; echo
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:3192/admin/tenants/builtins-demo/scopes/01a163f6-3e95-77a2-8c20-0621710b44f2/impact; echo
 ```
 
 ```
@@ -151,8 +151,8 @@ nothing writes none. The two refusals and the delete of `roles` above, narrowed
 with `jq` to the counts, and the restore:
 
 ```bash
-curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "http://localhost:3192/admin/tenants/demo/audit?resource_type=scope&action=scope.delete&resource_id=01a163f6-3841-7c44-8665-e0d89bc86380" | jq -c ".items[] | {outcome, builtin: .detail.builtin, clients: .detail.client_assignments, roles: .detail.role_mappings}"
-curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "http://localhost:3192/admin/tenants/demo/audit?action=scope.restore_builtins" | jq -c ".items[] | {action, outcome, detail}"
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "http://localhost:3192/admin/tenants/builtins-demo/audit?resource_type=scope&action=scope.delete&resource_id=01a163f6-3841-7c44-8665-e0d89bc86380" | jq -c ".items[] | {outcome, builtin: .detail.builtin, clients: .detail.client_assignments, roles: .detail.role_mappings}"
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "http://localhost:3192/admin/tenants/builtins-demo/audit?action=scope.restore_builtins" | jq -c ".items[] | {action, outcome, detail}"
 ```
 
 ```
@@ -171,11 +171,11 @@ with `?confirm=groups`; the command's own warnings on standard error are
 discarded:
 
 ```bash
-docker compose exec -T odudu node dist/main.js seed restore-scopes --tenant demo 2>/dev/null
-docker compose exec -T odudu node dist/main.js seed restore-scopes --tenant demo 2>/dev/null
+docker compose exec -T odudu node dist/main.js seed restore-scopes --tenant builtins-demo 2>/dev/null
+docker compose exec -T odudu node dist/main.js seed restore-scopes --tenant builtins-demo 2>/dev/null
 ```
 
 ```
-{"command":"restore-scopes","tenant":"demo","tenantId":"01a163f6-381e-7464-8b39-7093a24cdfc9","created":["groups"]}
-{"command":"restore-scopes","tenant":"demo","tenantId":"01a163f6-381e-7464-8b39-7093a24cdfc9","created":[]}
+{"command":"restore-scopes","tenant":"builtins-demo","tenantId":"01a163f6-381e-7464-8b39-7093a24cdfc9","created":["groups"]}
+{"command":"restore-scopes","tenant":"builtins-demo","tenantId":"01a163f6-381e-7464-8b39-7093a24cdfc9","created":[]}
 ```

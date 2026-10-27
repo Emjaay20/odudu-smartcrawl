@@ -35,7 +35,7 @@ locale is P4b's, with the rest of the translated pages. Both travel in the
 tenant document and are amended by `PATCH`.
 
 In `demo` (with `$ADMIN_TOKEN` got as above for its own system administrator),
-with `billing` created and marked as above: a public client `consent-portal`,
+with `billing` created and marked as below: a public client `consent-portal`,
 named `Consent <Portal>`, made with `consent_required` and given the vocabulary
 — `billing` among it — by `POST /clients`; `profile` given a text and an order;
 `grace` seeded with `odudu seed user`; then a sign-in asking for the four scopes
@@ -52,18 +52,16 @@ curl -sS -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: appl
   http://localhost:3094/admin/tenants/demo/scopes/01a137d6-beba-78b4-a54d-34603e6f37fa > /dev/null
 docker compose exec -T odudu node dist/main.js seed user --tenant demo \
   --username grace --password 'correct-horse-battery-8c2' > /dev/null
-curl -sS -c jar -b jar -o /dev/null \
-  'http://localhost:3094/tenants/demo/protocol/openid-connect/auth?response_type=code&client_id=consent-portal&redirect_uri=https%3A%2F%2Fportal.demo.example%2Fcallback&scope=openid%20billing%20profile%20offline_access&state=xyz&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256'
+AUTH_SESSION_ID=$(curl -sS -c jar -b jar \
+  'http://localhost:3094/tenants/demo/protocol/openid-connect/auth?response_type=code&client_id=consent-portal&redirect_uri=https%3A%2F%2Fportal.demo.example%2Fcallback&scope=openid%20billing%20profile%20offline_access&state=xyz&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256' \
+  | sed -n 's/.*name="auth_session_id" value="\([^"]*\)".*/\1/p' | head -1)
 curl -sS -D - -c jar -b jar \
-  --data-urlencode "auth_session_id=01a137da-fe1b-73d0-adb7-877a0657f131" \
+  --data-urlencode "auth_session_id=$AUTH_SESSION_ID" \
   --data-urlencode 'username=grace' --data-urlencode 'password=correct-horse-battery-8c2' \
   http://localhost:3094/tenants/demo/login-actions/authenticate
 ```
 
-The `auth_session_id` is the one the login form that request rendered
-carried.
-
-````
+```
 HTTP/1.1 200 OK
 x-request-id: 01a137da-fe58-7897-8b4c-bcd168243669
 content-type: text/html
@@ -110,9 +108,10 @@ Keep-Alive: timeout=72
 </main>
 </body>
 </html>
-``` `DELETE` cascades:
-`client_scope_assignments_scope_fk` and `client_scope_roles_scope_fk`
-(`packages/db/drizzle/0016_client_scopes.sql`, `0017_roles.sql`) both name
+```
+
+`DELETE` cascades:
+`client_scope_assignments_scope_fk` and `client_scope_roles_scope_fk` both name
 `ON DELETE CASCADE`, not `RESTRICT`, so deleting an assigned, role-mapped
 scope removes it and both dependent rows together rather than refusing —
 **except the scope named `openid`**, refused with `409`: the same cascade
@@ -121,7 +120,7 @@ the built-in admin client's included, which
 `DELETE /scopes/:id/clients/:clientId` below refuses for that one client
 alone. Every other scope stays deletable whatever it is assigned to,
 unless the roles it maps reach an admin capability the caller does not hold
-([a removal is judged by what it removes](#a-removal-is-judged-by-what-it-removes))
+([a removal is judged by what it removes](./get-groupsidroles-and-put-groupsidroles.md#a-removal-is-judged-by-what-it-removes))
 — a tenant-wide decision, not a per-client one. A **built-in** scope, one every
 tenant is given, is deleted only when `?confirm=` names it again, so a script
 cannot take one by accident, and an ordinary scope needs no confirmation; the
@@ -136,7 +135,7 @@ curl -sS -X POST \
   -H "Content-Type: application/json" \
   -d '{"name": "billing", "include_in_id_token": false}' \
   http://localhost:3082/admin/tenants/demo/scopes
-````
+```
 
 In `demo`: `billing` given a consent text, a place on the consent screen and a
 client default, then a default that is none of the three values refused by name,
@@ -240,6 +239,9 @@ x-request-id: 01a10f80-e222-7bae-bfa8-615be1af2feb
 cache-control: no-store
 content-type: application/problem+json; charset=utf-8
 content-length: 152
+Date: Tue, 27 Oct 2026 01:39:26 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 
 {"type":"about:blank","title":"Conflict","status":409,"detail":"a tenant defines at most 1000 scopes","instance":"01a10f80-e222-7bae-bfa8-615be1af2feb"}
 ```
@@ -258,8 +260,8 @@ Against `scope-limit-docs`, with 192 more marked scopes written by `psql` beside
 8 the tenant is provisioned with, and `$SID` (`reports:read`) still unmarked:
 
 ```bash
-psql -tA -c "select count(*) from client_scopes s join tenants t on t.id = s.tenant_id where t.name = 'scope-limit-docs' and s.default_client_assignment is not null"
-psql -tA -c "select default_client_assignment is null from client_scopes where id = '$SID'"
+docker compose exec -T postgres psql -U odudu -d odudu -tA -c "select count(*) from client_scopes s join tenants t on t.id = s.tenant_id where t.name = 'scope-limit-docs' and s.default_client_assignment is not null"
+docker compose exec -T postgres psql -U odudu -d odudu -tA -c "select default_client_assignment is null from client_scopes where id = '$SID'"
 curl -sS -D - -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
   -d '{"name":"one-too-many","default_client_assignment":"default"}' "$P/scopes"
 curl -sS -D - -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
@@ -271,14 +273,22 @@ curl -sS -D - -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type:
 t
 HTTP/1.1 409 Conflict
 x-request-id: 01a11266-7e50-7aa7-b1c0-b61c81b5ffaa
+cache-control: no-store
 content-type: application/problem+json; charset=utf-8
 content-length: 167
+Date: Tue, 27 Oct 2026 01:39:33 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 
 {"type":"about:blank","title":"Conflict","status":409,"detail":"at most 200 scopes are assigned to every new client","instance":"01a11266-7e50-7aa7-b1c0-b61c81b5ffaa"}
 HTTP/1.1 409 Conflict
 x-request-id: 01a11266-7e68-7325-9085-2fbd3433ea6d
+cache-control: no-store
 content-type: application/problem+json; charset=utf-8
 content-length: 167
+Date: Tue, 27 Oct 2026 01:39:33 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 
 {"type":"about:blank","title":"Conflict","status":409,"detail":"at most 200 scopes are assigned to every new client","instance":"01a11266-7e68-7325-9085-2fbd3433ea6d"}
 ```

@@ -35,10 +35,19 @@ default, which is what lets a client migrate ahead of the promotion that
 makes the new key the tenant's own.
 
 ```bash
+curl -sS \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  http://localhost:3000/admin/tenants/demo/keys
 curl -sS -X POST \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"alg": "ES256"}' \
+  http://localhost:3000/admin/tenants/demo/keys
+curl -sS -X POST \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  http://localhost:3000/admin/tenants/demo/keys/01a0d6fe-e527-77e6-b71d-57ed1a903cc3/promote
+curl -sS \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
   http://localhost:3000/admin/tenants/demo/keys
 ```
 
@@ -56,6 +65,12 @@ again:
 The promotion demoted the old key in the same transaction, so the second
 listing has exactly one `active`. Retiring the one it demoted succeeds;
 retiring the newly promoted one is refused, as the typed refusals below show:
+
+```bash
+curl -sS -X POST \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  http://localhost:3000/admin/tenants/demo/keys/01a0d6fc-3654-7f93-817b-bd7f1bb2ff55/retire
+```
 
 ```
 {"id":"01a0d6fc-3654-7f93-817b-bd7f1bb2ff55","status":"retired","kid":"01a0d6fc-3654-7f93-817b-bd7eb6490305","alg":"ES256","created_at":"2026-09-25T05:14:08.294Z","not_after":null}
@@ -156,12 +171,15 @@ neither requires it. In `etags-demo`:
 
 ```bash
 curl -sS -D - -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
-  -d '{"alg":"RS256"}' http://localhost:3080/admin/tenants/etags-demo/keys
+  -d '{"alg":"RS256"}' http://localhost:3080/admin/tenants/etags-demo/keys \
+  | grep -E '^(HTTP/|etag:|\{)'
 curl -sS -D - -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H 'If-Match: "0000"' \
-  http://localhost:3080/admin/tenants/etags-demo/keys/01a0e9ec-b000-7842-96c3-6475d4f6e651/promote
+  http://localhost:3080/admin/tenants/etags-demo/keys/01a0e9ec-b000-7842-96c3-6475d4f6e651/promote \
+  | grep -E '^(HTTP/|etag:|\{)'
 curl -sS -D - -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H 'If-Match: "3ec2140faff0825bec2afd86b419e16bd83744ce67f7fc3020a050e9f9e859a2"' \
-  http://localhost:3080/admin/tenants/etags-demo/keys/01a0e9ec-b000-7842-96c3-6475d4f6e651/promote
+  http://localhost:3080/admin/tenants/etags-demo/keys/01a0e9ec-b000-7842-96c3-6475d4f6e651/promote \
+  | grep -E '^(HTTP/|etag:|\{)'
 ```
 
 ```

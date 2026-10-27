@@ -56,6 +56,17 @@ tenant of its own, `showcase`. The `etag` header is the one `GET
 Both refusals, against that same stack — the reserved name, then the name
 the call above had just taken:
 
+```bash
+for n in system showcase; do
+  curl -sS -X POST \
+    -H "Authorization: Bearer $SYSTEM_ADMIN_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "{\"name\": \"$n\"}" \
+    http://localhost:3080/admin/tenants
+  echo
+done
+```
+
 ```
 {"type":"about:blank","title":"Conflict","status":409,"detail":"the name \"system\" is reserved","instance":"01a0ea4d-e458-716d-b8f4-40f64c2a23d9"}
 {"type":"about:blank","title":"Conflict","status":409,"detail":"the name \"showcase\" is already in use","instance":"01a0ea4d-e471-75f2-9cc8-f15b363d1512"}
@@ -65,7 +76,11 @@ And the DNS-label refusal — the request above with `Acme` in place of
 `showcase`:
 
 ```bash
-{"items":[{"id":"01a0ea4d-1647-757b-8635-57ab1ac4d518","name":"register-audit","display_name":null,"enabled":true,"created_at":"2026-09-28T23:15:15.656Z"},{"id":"01a0ea4d-167d-7480-af45-b58c2bf96cbf","name":"registration-audit","display_name":null,"enabled":true,"created_at":"2026-09-28T23:15:15.709Z"},{"id":"01a0ea4d-16b5-70ca-8567-d7268cbcbe18","name":"reset-audit","display_name":null,"enabled":true,"created_at":"2026-09-28T23:15:15.766Z"}]}
+curl -sS -D - -X POST \
+  -H "Authorization: Bearer $SYSTEM_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Acme", "display_name": "Showcase"}' \
+  http://localhost:3080/admin/tenants
 ```
 
 ```

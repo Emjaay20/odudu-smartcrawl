@@ -93,9 +93,7 @@ shape of what it is filling.
 for every route in the route table (`registerAdminRoutes`), refusals included —
 `/admin/openapi.json`, which is public and the same for every caller, is not one
 of them: each is specific to the caller that asked, and several carry a secret
-shown once — a registration token, a client secret, a one-time password. A
-handful of header blocks below predate this and were not re-run — each says so,
-and why, where it appears.
+shown once — a registration token, a client secret, a one-time password.
 
 | Method   | Path                                                             | What it is                                 |
 | -------- | ---------------------------------------------------------------- | ------------------------------------------ |
@@ -259,7 +257,7 @@ answered, and a flow naming `password` twice, under its own:
 curl -sS -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
   -H 'If-Match: "eef46741adfc3a9f76294d3b78f37a45f113092ac9d44ee77c7a038a88ff09a1"' \
   -d '{"role_ids":["0199aa00-0000-7000-8000-0000000000ff"]}' \
-  http://localhost:3080/admin/tenants/fields-demo/subjects/01a0e9e0-b50c-79e0-acf2-6b76955f097c/roles
+  http://localhost:3080/admin/tenants/fields-demo/subjects/01a17aef-6c47-78e0-8a28-5fa8a095319b/roles
 curl -sS -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
   -H 'If-Match: "2e028692eeb04a65ef6a06be482c11d71247d243b5929007716ee0f4eb2324db"' \
   -d '[{"authenticator":"password","requirement":"required"},{"authenticator":"password","requirement":"alternative"}]' \
@@ -282,13 +280,14 @@ tenant `etags-demo` created for it:
 
 ```bash
 curl -sS -D - -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
-  -d '{"name":"billing-viewer"}' http://localhost:3082/admin/tenants/etags-demo/roles
+  -d '{"name":"billing-viewer"}' http://localhost:3082/admin/tenants/etags-demo/roles \
+  | grep -E '^(HTTP/|etag:|\{)'
 curl -sS -D - -o /dev/null -H "Authorization: Bearer $ADMIN_TOKEN" \
-  http://localhost:3082/admin/tenants/etags-demo/roles/01a10bd4-90e5-79e8-92bd-8f9024ae8829
+  http://localhost:3082/admin/tenants/etags-demo/roles/01a10bd4-90e5-79e8-92bd-8f9024ae8829 \
+  | grep -E '^(HTTP/|etag:)'
 ```
 
-The status line, the `etag` header and the body of each, other headers
-left out:
+The status line, the `etag` header and the body of each, as the `grep` keeps them:
 
 ```
 HTTP/1.1 201 Created

@@ -37,8 +37,10 @@ what keeps both small. A longer list is refused with `400` naming the field,
 how many entries it held and how many it may, and nothing is changed; a list
 of exactly 200 is accepted. A web origin that is not a bare origin, and a
 redirect URI the registration validator refuses, are refused with the entry
-named, in the same `errors` shape. Each call sent the `ETag` the `GET` before
-it answered; `over-origins.json` held 201 origins `https://o0.example` to
+named, in the same `errors` shape. In the tenant `client-limits-demo`, `$P` is
+`http://localhost:3000/admin/tenants/client-limits-demo`, `$ID` the client
+`billing` and `$LID` the client `legacy`. Each call sent the `ETag` the `GET`
+before it answered; `over-origins.json` held 201 origins `https://o0.example` to
 `https://o200.example`, and `over-uris.json` 201 redirect URIs
 `https://billing.example/cb/0` to `…/cb/200`:
 
@@ -91,6 +93,7 @@ route does:
 ```bash
 docker compose -p odudu-tx exec -T postgres psql -U odudu -d odudu -tA -c \
   "update client_oidc_config set redirect_uris = (select array_agg('https://legacy.example/cb/' || g) from generate_series(0, 200) g) where client_id = '$LID'"
+ETAG=$(curl -sS -D - -o /dev/null -H "Authorization: Bearer $ADMIN_TOKEN" $P/clients/$LID | tr -d '\r' | sed -n 's/^etag: //p')
 curl -sS -o /dev/null -w '%{http_code}\n' -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" -H "If-Match: $ETAG" \
   -d '{"client_uri":"https://legacy.example/about"}' $P/clients/$LID
@@ -126,6 +129,13 @@ curl -sS -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 
 `odudu seed client` refuses a list over the limit in the same words, before it
 writes anything; given 201 `--redirect-uri` flags it ends with:
+
+```bash
+docker compose exec -T odudu node dist/main.js seed client --tenant client-limits-demo \
+  --client-id too-many --public \
+  $(for i in $(seq 0 200); do printf -- '--redirect-uri https://billing.example/cb/%s ' $i; done) 2>&1 \
+  | grep '^OduduError'
+```
 
 ```
 OduduError: redirect_uris holds 201 entries, at most 200
@@ -220,10 +230,23 @@ column, not `client_id`, so renaming the client does not evade it. An
 disabled even by the caller whose own token runs through it — the built-in
 client is the recovery path that makes that permissible.
 
-On `demo`'s `demo-operator` (`01a0ea51-a1c1-7d69-8096-b390ced5d3ae`), created
+On `demo`'s `demo-operator` (`01a17ae4-19dd-7478-9733-b5ddb166eaa6`), created
 there with `grant_types: ["client_credentials"]` and no `redirect_uris`.
 Amending a list field without `If-Match`, and amending a field the exclusion
 list names — the refusal carries the reason, not just the refusal:
+
+```bash
+curl -sS -X PATCH \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"redirect_uris": ["https://demo-operator.example/callback"]}' \
+  http://localhost:3080/admin/tenants/demo/clients/01a17ae4-19dd-7478-9733-b5ddb166eaa6
+curl -sS -X PATCH \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"client_id": "renamed"}' \
+  http://localhost:3080/admin/tenants/demo/clients/01a17ae4-19dd-7478-9733-b5ddb166eaa6
+```
 
 ```
 {"type":"about:blank","title":"Precondition Required","status":428,"detail":"If-Match is required to amend redirect_uris","instance":"01a0ea53-394d-77b8-8fa9-0ef9dde49b4a"}
@@ -238,9 +261,9 @@ metadata no longer satisfies the rule that excused the empty list:
 curl -sS -X PATCH \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
-  -H 'If-Match: "9a99d753974a797db81c3312be5dfd4561b0ce23d6a745327fcd33eb0cb49dd6"' \
+  -H 'If-Match: "39ee05044e1e14c8c47cbd2c1ef3f4d342c6dddcb1f76383838a8284e6f55788"' \
   -d '{"grant_types": ["client_credentials","refresh_token"]}' \
-  http://localhost:3080/admin/tenants/demo/clients/01a0ea51-a1c1-7d69-8096-b390ced5d3ae
+  http://localhost:3080/admin/tenants/demo/clients/01a17ae4-19dd-7478-9733-b5ddb166eaa6
 ```
 
 ```
@@ -254,9 +277,9 @@ returns — its headers only:
 curl -sS -D - -o /dev/null -X PATCH \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
-  -H 'If-Match: "9a99d753974a797db81c3312be5dfd4561b0ce23d6a745327fcd33eb0cb49dd6"' \
+  -H 'If-Match: "39ee05044e1e14c8c47cbd2c1ef3f4d342c6dddcb1f76383838a8284e6f55788"' \
   -d '{"audiences": ["https://api.demo.example"]}' \
-  http://localhost:3080/admin/tenants/demo/clients/01a0ea51-a1c1-7d69-8096-b390ced5d3ae
+  http://localhost:3080/admin/tenants/demo/clients/01a17ae4-19dd-7478-9733-b5ddb166eaa6
 ```
 
 ```
@@ -265,7 +288,7 @@ x-request-id: 01a0ea53-39ba-7146-928f-85dda6dfb19e
 cache-control: no-store
 etag: "e335431c15716303952cbc244782d48ecc95f6977db109346f1241c3b4d10605"
 content-type: application/json; charset=utf-8
-content-length: 1704
+content-length: 1952
 Date: Mon, 28 Sep 2026 23:21:57 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
@@ -273,6 +296,15 @@ Keep-Alive: timeout=72
 
 Replaying the identical request — same `If-Match`, now one generation
 stale — is refused and changes nothing:
+
+```bash
+curl -sS -X PATCH \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H 'If-Match: "39ee05044e1e14c8c47cbd2c1ef3f4d342c6dddcb1f76383838a8284e6f55788"' \
+  -d '{"audiences": ["https://api.demo.example"]}' \
+  http://localhost:3080/admin/tenants/demo/clients/01a17ae4-19dd-7478-9733-b5ddb166eaa6
+```
 
 ```
 {"type":"about:blank","title":"Precondition Failed","status":412,"detail":"If-Match no longer matches","instance":"01a0ea53-39d7-7d1c-ba87-0816be13e08d"}
@@ -308,7 +340,7 @@ curl -sS -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
 ```
 
 ```
-{"id":"01a109b6-1fa9-7304-8ae5-f714f746785e","client_id":"demo-backend","name":"demo-backend","description":null,"type":"confidential","enabled":false,"full_scope_allowed":false,"registration_origin":"operator","created_at":"2026-10-05T01:38:13.006Z","redirect_uris":[],"grant_types":["client_credentials"],"token_endpoint_auth_method":"client_secret_basic","audiences":[],"access_token_ttl_seconds":null,"id_token_ttl_seconds":null,"refresh_token_ttl_seconds":null,"client_credentials_scopes":[],"web_origins":[],"post_logout_redirect_uris":[],"jwks":null,"jwks_uri":null,"frontchannel_logout_uri":null,"backchannel_logout_uri":null,"frontchannel_logout_session_required":false,"backchannel_logout_session_required":false,"consent_required":false,"token_exchange_impersonation_allowed":false,"userinfo_signed_response_alg":null,"userinfo_encrypted_response_alg":null,"userinfo_encrypted_response_enc":null,"tls_client_auth_subject_dn":null,"client_uri":null,"policy_uri":null,"tos_uri":null,"id_token_signed_response_alg":null,"default_max_age":null,"require_auth_time":false,"previous_secret_expires_at":null,"builtin_admin":false,"service_subject_id":"01a109b6-1f8f-725e-9c2c-53656397b36c","scopes":[{"id":"01a109b6-1dd0-7600-9e14-7816d44df6e6","name":"openid","assignment":"default"},{"id":"01a109b6-1dd0-7600-9e14-7817de7c7d68","name":"profile","assignment":"default"},{"id":"01a109b6-1dd1-715a-b073-4693dd489102","name":"email","assignment":"default"},{"id":"01a109b6-1dd1-715a-b073-4694a189e4be","name":"address","assignment":"default"},{"id":"01a109b6-1dd2-747c-97bd-c431358429af","name":"phone","assignment":"default"},{"id":"01a109b6-1dd2-747c-97bd-c432be4c4a58","name":"roles","assignment":"default"},{"id":"01a109b6-1dd3-7b41-8bf3-e8da34d0a2c0","name":"groups","assignment":"default"},{"id":"01a109b6-1dd3-7b41-8bf3-e8db9126a263","name":"offline_access","assignment":"optional"}]}
+{"id":"01a109b6-1fa9-7304-8ae5-f714f746785e","client_id":"demo-backend","name":"demo-backend","description":null,"type":"confidential","enabled":false,"full_scope_allowed":false,"registration_origin":"operator","created_at":"2026-10-27T01:06:12.931Z","redirect_uris":[],"grant_types":["client_credentials"],"token_endpoint_auth_method":"client_secret_basic","audiences":[],"access_token_ttl_seconds":null,"id_token_ttl_seconds":null,"refresh_token_ttl_seconds":null,"client_credentials_scopes":[],"web_origins":[],"post_logout_redirect_uris":[],"jwks":null,"jwks_uri":null,"frontchannel_logout_uri":null,"backchannel_logout_uri":null,"frontchannel_logout_session_required":false,"backchannel_logout_session_required":false,"consent_required":false,"token_exchange_impersonation_allowed":false,"userinfo_signed_response_alg":null,"userinfo_encrypted_response_alg":null,"userinfo_encrypted_response_enc":null,"tls_client_auth_subject_dn":null,"client_uri":null,"policy_uri":null,"tos_uri":null,"id_token_signed_response_alg":null,"default_max_age":null,"require_auth_time":false,"previous_secret_expires_at":null,"builtin_admin":false,"service_subject_id":"01a109b6-1f8f-725e-9c2c-53656397b36c","scopes":[{"id":"01a109b6-1dd0-7600-9e14-7816d44df6e6","name":"openid","assignment":"default"},{"id":"01a109b6-1dd0-7600-9e14-7817de7c7d68","name":"profile","assignment":"default"},{"id":"01a109b6-1dd1-715a-b073-4693dd489102","name":"email","assignment":"default"},{"id":"01a109b6-1dd1-715a-b073-4694a189e4be","name":"address","assignment":"default"},{"id":"01a109b6-1dd2-747c-97bd-c431358429af","name":"phone","assignment":"default"},{"id":"01a109b6-1dd2-747c-97bd-c432be4c4a58","name":"roles","assignment":"default"},{"id":"01a109b6-1dd3-7b41-8bf3-e8da34d0a2c0","name":"groups","assignment":"default"},{"id":"01a109b6-1dd3-7b41-8bf3-e8db9126a263","name":"offline_access","assignment":"optional"}],"service_account_admin_reach":[]}
 ```
 
 `odudu-admin`, `builtin_admin` true, the same request against the other id
@@ -347,7 +379,7 @@ curl -sS -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 ```
 
 ```
-{"id":"01a10931-8140-71a8-821f-c964f28b806c","client_id":"billing","name":"billing","description":"Invoices and payment runs","type":"confidential","enabled":true,"full_scope_allowed":false,"registration_origin":"operator","created_at":"2026-10-04T23:13:21.637Z","redirect_uris":["https://billing.example/callback"],"grant_types":["authorization_code","client_credentials"],"token_endpoint_auth_method":"client_secret_basic","audiences":[],"access_token_ttl_seconds":null,"id_token_ttl_seconds":null,"refresh_token_ttl_seconds":null,"client_credentials_scopes":[],"web_origins":[],"post_logout_redirect_uris":[],"jwks":null,"jwks_uri":null,"frontchannel_logout_uri":null,"backchannel_logout_uri":null,"frontchannel_logout_session_required":false,"backchannel_logout_session_required":false,"consent_required":false,"token_exchange_impersonation_allowed":false,"userinfo_signed_response_alg":null,"userinfo_encrypted_response_alg":null,"userinfo_encrypted_response_enc":null,"tls_client_auth_subject_dn":null,"client_uri":"https://billing.example/about","policy_uri":"https://billing.example/privacy","tos_uri":"https://billing.example/terms","id_token_signed_response_alg":"ES256","default_max_age":3600,"require_auth_time":true,"previous_secret_expires_at":null,"builtin_admin":false,"service_subject_id":"01a10931-80eb-7dae-b54e-9fa1635b3c01","scopes":[{"id":"01a10931-8088-7f03-b2a1-02e5841d33fb","name":"openid","assignment":"default"},{"id":"01a10931-8089-78fa-af76-02832be0f387","name":"profile","assignment":"default"},{"id":"01a10931-808a-7df9-b8dd-eef4a7ba67b8","name":"email","assignment":"default"},{"id":"01a10931-808a-7df9-b8dd-eef579ac3d13","name":"address","assignment":"default"},{"id":"01a10931-808b-7b6a-aa6a-cb9a3de3321a","name":"phone","assignment":"default"},{"id":"01a10931-808c-7c37-a054-dcb2bb72400b","name":"roles","assignment":"default"},{"id":"01a10931-808c-7c37-a054-dcb33bbe225d","name":"groups","assignment":"default"},{"id":"01a10931-808d-7164-b419-e79b3fa4803a","name":"offline_access","assignment":"optional"}],"client_secret":"0QtbcTY6v9PH8oi75MThTIvTX8f8HOlb1y0EBpx0mjE"}
+{"id":"01a10931-8140-71a8-821f-c964f28b806c","client_id":"billing","name":"billing","description":"Invoices and payment runs","type":"confidential","enabled":true,"full_scope_allowed":false,"registration_origin":"operator","created_at":"2026-10-27T01:08:34.767Z","redirect_uris":["https://billing.example/callback"],"grant_types":["authorization_code","client_credentials"],"token_endpoint_auth_method":"client_secret_basic","audiences":[],"access_token_ttl_seconds":null,"id_token_ttl_seconds":null,"refresh_token_ttl_seconds":null,"client_credentials_scopes":[],"web_origins":[],"post_logout_redirect_uris":[],"jwks":null,"jwks_uri":null,"frontchannel_logout_uri":null,"backchannel_logout_uri":null,"frontchannel_logout_session_required":false,"backchannel_logout_session_required":false,"consent_required":false,"token_exchange_impersonation_allowed":false,"userinfo_signed_response_alg":null,"userinfo_encrypted_response_alg":null,"userinfo_encrypted_response_enc":null,"tls_client_auth_subject_dn":null,"client_uri":"https://billing.example/about","policy_uri":"https://billing.example/privacy","tos_uri":"https://billing.example/terms","id_token_signed_response_alg":"ES256","default_max_age":3600,"require_auth_time":true,"previous_secret_expires_at":null,"builtin_admin":false,"service_subject_id":"01a17ae6-e551-7e89-b37d-9e1645f1c99d","scopes":[{"id":"01a17ae6-e505-708d-866b-0a7d8d8bcf34","name":"openid","assignment":"default"},{"id":"01a17ae6-e506-786c-b049-bc6a88687fb0","name":"profile","assignment":"default"},{"id":"01a17ae6-e508-7227-93a7-aac6995a6b90","name":"email","assignment":"default"},{"id":"01a17ae6-e509-71fa-b4be-709e6bbbf4ed","name":"address","assignment":"default"},{"id":"01a17ae6-e50b-7f15-b5d7-0adfca180e52","name":"phone","assignment":"default"},{"id":"01a17ae6-e50c-72ab-a239-1559d1b3c46b","name":"roles","assignment":"default"},{"id":"01a17ae6-e50d-7f24-89a8-3d342b2a77cf","name":"groups","assignment":"default"},{"id":"01a17ae6-e50e-7614-b4a1-0154668cc276","name":"offline_access","assignment":"optional"}],"service_account_admin_reach":[],"client_secret":"E9KB45eS9c0yWtPMGln7N8WhXRyrwQ3WXGef6Ies_TM"}
 ```
 
 A page that is not https, or an algorithm no key of the tenant produces,

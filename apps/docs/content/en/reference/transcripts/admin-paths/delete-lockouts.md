@@ -32,7 +32,7 @@ curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
 ```
 {"items":[{"id":"01a0ee8a-c748-743d-b60e-9b0ed48221a3","type":"user","username":"linus","email":null,"enabled":true,"created_at":"2026-09-29T19:01:07.522Z"}]}
 {"locked":false,"locked_until":null,"failure_count":2,"last_failure_at":"2026-09-29T19:02:52.059Z"}
-{"cleared":2,"beyond_ceiling":0}
+{"cleared":2,"beyond_ceiling":0,"remaining":0}
 {"items":[]}
 {"locked":false,"locked_until":null,"failure_count":0,"last_failure_at":null}
 ```
@@ -41,10 +41,8 @@ curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
 
 One call clears at most 10,000 subjects, in subject id order, and answers how
 many are left under `remaining` (counted to 10,000 and no further), so a tenant
-with more is cleared by calling again until `remaining` is `0`. The transcript
-above predates the field, so its answer lacks it; the one below is the current
-shape. Against `perf-demo`, with a run of five failures written for `grace` by
-`insert into login_failures`:
+with more is cleared by calling again until `remaining` is `0`. Against `perf-demo`, with a run of five failures
+written for `grace` by `insert into login_failures`:
 
 ```bash
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$P/subjects?locked=true"; echo

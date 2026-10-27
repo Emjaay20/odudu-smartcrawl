@@ -58,7 +58,7 @@ curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
 ```
 {"subjectId":"01a109b9-c365-7216-9064-207c3931f9e0","issuerTenantId":"01a109b9-c288-7ef5-a623-21ab2f266513","capabilities":["manage-users","view-users"],"crossTenant":false}
 {"items":[]}
-{"items":[{"id":"01a109b9-c296-7612-84cf-fd8e6a727672","name":"tenant-admin","client_id":"01a109b9-c28f-78c9-bac7-b8be0801cfd6","client_key":"odudu-admin"}]}
+{"items":[{"id":"01a17afc-b055-741f-801d-cfe280df3b15","name":"tenant-admin","client_id":"01a109b9-c28f-78c9-bac7-b8be0801cfd6","client_key":"odudu-admin","admin_reach":["view-users","manage-users","manage-clients","manage-tenant","manage-keys","manage-sessions","view-audit"]}]}
 ```
 
 The read, then a write with no `If-Match`, then `helpdesk` putting `mei2`

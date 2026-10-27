@@ -41,12 +41,12 @@ x-request-id: 01a0e547-2b15-7670-ae92-02b8e9908ee0
 cache-control: no-store
 etag: "89eee16f2b512c80447670ad49fb70fe65db78a9c41a4fa4bf5e3db6d43ee154"
 content-type: application/json; charset=utf-8
-content-length: 481
+content-length: 459
 Date: Sun, 27 Sep 2026 23:50:41 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"name":null,"given_name":null,"family_name":null,"middle_name":null,"nickname":null,"preferred_username":null,"profile":null,"picture":null,"website":null,"gender":null,"birthdate":null,"zoneinfo":null,"locale":null,"phone_number":null,"phone_number_verified":false,"email_verified":false,"address_formatted":null,"address_street":null,"address_locality":null,"address_region":null,"address_postal_code":null,"address_country":null,"profile_updated_at":"2026-09-27T23:50:36.116Z"}
+{"name":null,"given_name":null,"family_name":null,"middle_name":null,"nickname":null,"preferred_username":null,"profile":null,"picture":null,"website":null,"gender":null,"birthdate":null,"zoneinfo":null,"locale":null,"phone_number":null,"phone_number_verified":false,"email_verified":false,"address_formatted":null,"address_street":null,"address_locality":null,"address_region":null,"address_postal_code":null,"address_country":null,"profile_updated_at":null}
 ```
 
 Amending `given_name` and `family_name` stamps `profile_updated_at`:

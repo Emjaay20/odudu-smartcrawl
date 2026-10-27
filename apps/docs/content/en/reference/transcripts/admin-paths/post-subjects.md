@@ -79,10 +79,22 @@ value may be kept byte-identical, so it can be sent back unchanged with an
 unrelated edit, and it is never rewritten. Editing a legacy value while leaving
 its control in place is refused: take the control out, or leave the field alone.
 A creation is checked by the generated schema, an amendment against the stored
-value by the usecase. These two answers came from the integration suite's own
-app not from a compose stack, because minting an admin token takes the loopback
-flow above; `POST` a username ending in U+202E, then `PATCH` a profile's
-`given_name` to a value ending in U+2066:
+value by the usecase. `POST` a username ending in U+202E, then `PATCH` a
+profile's `given_name` to a value ending in U+2066:
+
+```bash
+curl -sS -X POST \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"username": "ada\u202e"}' \
+  http://localhost:3080/admin/tenants/demo/subjects
+echo
+curl -sS -X PATCH \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"given_name": "Ada\u2066"}' \
+  http://localhost:3080/admin/tenants/demo/subjects/01a0ea54-2519-7513-8bf7-c105e0cfd9dd/profile
+```
 
 ```
 {"type":"about:blank","title":"Error","status":400,"detail":"username: must not contain bidirectional control characters (U+202A to U+202E, U+2066 to U+2069)","errors":[{"path":"username","message":"must not contain bidirectional control characters (U+202A to U+202E, U+2066 to U+2069)","code":"bidi_control_refused"}],"instance":"01a152f1-da3b-718b-88d7-1074c1ec32aa"}
