@@ -166,13 +166,13 @@ for tenant in import-source import-demo2; do
     "http://localhost:3082/admin/tenants/$tenant/keys" | jq -c '[.items[].kid]'
 done
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
-  "http://localhost:3082/admin/tenants/import-demo2/audit?action=tenant.import&resource_type=tenant&resource_id=01a0ee8e-894a-7532-b53c-436e1bf29d84"; echo
+  "http://localhost:3082/admin/tenants/import-demo2/audit?action=tenant.import&resource_type=tenant&resource_id=01a0ea50-3f1f-7f91-b047-452cba78ee10"; echo
 ```
 
 ```
 ["01a0ee8e-88bc-73b0-ac5d-e23cf428d01a"]
 ["01a0ee8e-8967-7770-a633-9779f73c79db"]
-{"items":[{"id":"01a0ee8e-89a2-7a21-9fa1-7624eeea8bb3","occurred_at":"2026-09-29T19:05:13.802Z","event_type":"admin_mutation","action":"tenant.import","outcome":"allowed","actor_tenant_id":"0199aa00-0000-7000-8000-000000000001","actor_subject_id":"01a0ee8a-bfb8-763c-ac22-0c8d97b0fada","actor_client_id":"01a0ee8a-bf72-77c9-a423-f61084924d9f","actor_name":null,"actor_origin":"system","resource_type":"tenant","resource_id":"01a0ee8e-894a-7532-b53c-436e1bf29d84","request_id":"01a0ee8e-8939-7302-ac14-ae4fc690b455","ip":"172.22.0.1","detail":{"counts":{"roles":8,"groups":0,"scopes":8,"clients":1,"subjects":0},"source_version":1}}]}
+{"items":[{"id":"01a17ae2-798f-79fc-a449-e41c2682d80d","occurred_at":"2026-10-27T01:03:44.853Z","event_type":"admin_mutation","action":"tenant.import","outcome":"allowed","actor_tenant_id":"0199aa00-0000-7000-8000-000000000001","actor_subject_id":"01a0ee8a-bfb8-763c-ac22-0c8d97b0fada","actor_client_id":"01a0ee8a-bf72-77c9-a423-f61084924d9f","actor_name":null,"actor_origin":"system","resource_type":"tenant","resource_id":"01a0ea50-3f1f-7f91-b047-452cba78ee10","request_id":"01a17ae2-78b1-7816-a822-924aade28b00","ip":"172.20.0.1","detail":{"counts":{"roles":9,"groups":1,"scopes":8,"clients":1,"subjects":1},"source_version":1}}]}
 ```
 
 A document broken in two places at once — a scope mapping naming a role
