@@ -56,23 +56,27 @@ etag: "7d357b0ef1f85ba71c5ccebb6671b0c34f4b3950f5b21d2af7b4a3d4e9dcd570"
 {"actions":[]}
 ```
 
-The `PUT` owes a set, the sign-in that follows ends on the page that
-issues it (its title printed, by `signin` from that section, and none of
-the codes), and the credentials list then counts ten:
+The `PUT` owes a set, but `ines` holds no TOTP enrolment, so a set would serve
+nothing. The sign-in that follows (its status and `location` printed, by `signin`
+from that section) completes with a code instead of stopping on the page that
+issues one, the owed action is dropped, and the credentials list counts no
+codes:
 
 ```bash
 curl -sS -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
   -H 'if-match: "7d357b0ef1f85ba71c5ccebb6671b0c34f4b3950f5b21d2af7b4a3d4e9dcd570"' \
   -d '{"actions":["generate-recovery-codes"]}' "$INES/required-actions"
 signin 'correct horse battery staple'
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$INES/required-actions"; echo
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$INES/credentials"
 ```
 
 ```
 {"actions":["generate-recovery-codes"]}
-HTTP/1.1 200 OK
-<title>Save your recovery codes</title>
-{"items":[{"id":"01a0ec85-0c6d-75c9-a720-81d3b70c0811","type":"password","created_at":"2026-09-29T09:35:37.542Z","expired":false},{"type":"recovery-code","created_at":"2026-09-29T09:36:10.866Z","recovery_code_count":10}]}
+HTTP/1.1 302 Found
+location: https://app.example/callback?code=HESdIKBxIduiL9PbuAXpDM-sYKuZ8bOL1-1bgg4SnTo&state=xyz&iss=http%3A%2F%2Flocalhost%3A3080%2Ftenants%2Flockout-demo
+{"actions":[]}
+{"items":[{"id":"01a0ec85-0c6d-75c9-a720-81d3b70c0811","type":"password","created_at":"2026-10-27T01:20:59.351Z","expired":false}]}
 ```
 
 The rest is on the tenant the credential section above names (`recovery-life`, a
