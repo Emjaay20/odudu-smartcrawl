@@ -39,4 +39,29 @@ describe('createFallbackReporter', () => {
   it('states a bound of 1,024 entries', () => {
     expect(MAX_REPORTED_FALLBACKS).toBe(1024);
   });
+
+  it('reads only the head of a megabyte reason, and returns at once', () => {
+    const logged: { reason: string }[] = [];
+    const report = createFallbackReporter((entry) => logged.push(entry))('s');
+    const started = Date.now();
+    report('sign-in', 'x'.repeat(1_000_000));
+    expect(Date.now() - started).toBeLessThan(2000);
+    expect(logged[0]?.reason).toHaveLength(200);
+  });
+
+  it('replaces control and bidi characters with a space', () => {
+    const logged: { reason: string }[] = [];
+    const report = createFallbackReporter((entry) => logged.push(entry))('s');
+    report('sign-in', 'a\u0000b\u001bc\u007fd\u0085e\u202ef\u2066g\u200eh');
+    expect(logged[0]?.reason).toBe('a b c d e f g h');
+  });
+
+  it('cuts on a code point, never inside a surrogate pair', () => {
+    const logged: { reason: string }[] = [];
+    const report = createFallbackReporter((entry) => logged.push(entry))('s');
+    report('sign-in', '\u{1F600}'.repeat(300));
+    const reason = logged[0]?.reason ?? '';
+    expect(Array.from(reason)).toHaveLength(200);
+    expect(reason).toBe('\u{1F600}'.repeat(200));
+  });
 });

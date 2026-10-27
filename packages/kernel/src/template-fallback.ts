@@ -3,6 +3,17 @@ import { type PageKind } from '#/page-kinds';
 export const MAX_REPORTED_FALLBACKS = 1024;
 const MAX_REASON_LENGTH = 200;
 
+const UNSAFE_IN_LOG =
+  /[\u0000-\u001f\u007f-\u009f\u061c\u200e\u200f\u2028\u2029\u202a-\u202e\u2066-\u2069\s]+/gu;
+
+// Cut first, on code points, so a huge reason is never scanned in full.
+function oneLine(reason: string): string {
+  const head = Array.from(reason.slice(0, MAX_REASON_LENGTH * 2))
+    .slice(0, MAX_REASON_LENGTH)
+    .join('');
+  return head.replace(UNSAFE_IN_LOG, ' ');
+}
+
 export interface TemplateFallback {
   scope: string;
   kind: PageKind;
@@ -24,6 +35,6 @@ export function createFallbackReporter(
     if (heard.has(key)) return;
     if (heard.size >= bound) heard.clear();
     heard.add(key);
-    log({ scope, kind, reason: reason.replace(/\s+/gu, ' ').slice(0, MAX_REASON_LENGTH) });
+    log({ scope, kind, reason: oneLine(reason) });
   };
 }
