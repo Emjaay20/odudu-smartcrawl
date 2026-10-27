@@ -88,3 +88,49 @@ describe('intro', () => {
     );
   });
 });
+
+describe('page head without and with branding', () => {
+  const STOCK_HEAD =
+    '<link rel="stylesheet" href="/instrument/instrument.css">\n' +
+    '<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">\n' +
+    '<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">\n</head>';
+
+  it('is byte-identical to the stock head without branding', () => {
+    expect(page('x', '').html).toContain(STOCK_HEAD);
+  });
+
+  it('carries the tenant stylesheet link after the Instrument link and escapes it', () => {
+    const { html } = page('x', '', null, [], {
+      tag: 'en',
+      dir: 'ltr',
+      branding: {
+        origin: 'https://idp.example',
+        templates: {},
+        tokensCss: '',
+        stylesheetUrl: '/t/a/abc.css',
+        faviconUrl: '/t/a/fav.png',
+        logo: null,
+        assetUrls: [],
+      },
+    });
+    expect(html).toContain(
+      '<link rel="stylesheet" href="/instrument/instrument.css">\n' +
+        '<link rel="stylesheet" href="/t/a/abc.css">\n' +
+        '<link rel="icon" href="/t/a/fav.png">\n</head>',
+    );
+    expect(html).not.toContain('/instrument/favicon');
+  });
+
+  it('refuses a stylesheet that is not a same-origin path', () => {
+    const branding = {
+      origin: 'https://idp.example',
+      templates: {},
+      tokensCss: '',
+      stylesheetUrl: '"><script>x</script>',
+      faviconUrl: null,
+      logo: null,
+      assetUrls: [],
+    };
+    expect(() => page('x', '', null, [], { tag: 'en', dir: 'ltr', branding })).toThrow();
+  });
+});

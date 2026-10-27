@@ -1,4 +1,5 @@
 import { scriptNonce } from '#/ids';
+import type { PageKind } from '#/page-kinds';
 import { isPageTheme, pageThemeFromCookies, type PageTheme } from '#/page-theme';
 
 // What a rendered page needs allowed, when it needs anything beyond
@@ -26,6 +27,95 @@ export interface PageLocale {
   // The light or dark choice the person made in the console, when they made
   // one; absent means follow the operating system.
   readonly theme?: PageTheme;
+  // The tenant's or client's own look, when one is published.
+  readonly branding?: ResolvedBranding;
+}
+
+// What a resolved theme hands a page. Every URL is a same-origin absolute
+// path, written into a header and an attribute, so each is refused unless it
+// passes `isSameOriginPath`.
+export interface ResolvedBranding {
+  // The origin the paths are served from. CSP cannot name a bare path, so
+  // the header spells each source as this origin plus the path.
+  readonly origin: string;
+  readonly templates: Readonly<Partial<Record<PageKind, string>>>;
+  // Data for the route that serves the hashed stylesheet, which carries it
+  // along with the sanitised rules. Never written into a page: inline style
+  // is refused by `style-src`.
+  readonly tokensCss: string;
+  readonly stylesheetUrl: string | null;
+  readonly faviconUrl: string | null;
+  readonly logo: {
+    readonly url: string;
+    readonly darkUrl: string | null;
+    readonly alt: string;
+  } | null;
+  // Every image the page may load.
+  readonly assetUrls: readonly string[];
+}
+
+export const MAX_BRANDING_URLS = 16;
+const MAX_BRANDING_URL_LENGTH = 256;
+const SAME_ORIGIN_PATH = /^\/(?!\/)[A-Za-z0-9._~!$&()+=:@/-]*$/u;
+
+export function isSameOriginPath(value: unknown): value is string {
+  return (
+    typeof value === 'string' &&
+    value.length <= MAX_BRANDING_URL_LENGTH &&
+    SAME_ORIGIN_PATH.test(value)
+  );
+}
+
+function validBranding(branding: ResolvedBranding): ResolvedBranding {
+  const urls = [
+    branding.stylesheetUrl,
+    branding.faviconUrl,
+    branding.logo?.url ?? null,
+    branding.logo?.darkUrl ?? null,
+    ...branding.assetUrls,
+  ].filter((url) => url !== null);
+  if (
+    !ORIGIN_SOURCE.test(branding.origin) ||
+    urls.length > MAX_BRANDING_URLS ||
+    !urls.every(isSameOriginPath)
+  ) {
+    throw new Error('refusing to send an unvalidated branding');
+  }
+  return branding;
+}
+
+export function withBranding(locale: PageLocale, branding: ResolvedBranding | null): PageLocale {
+  if (branding === null) {
+    return locale.theme === undefined
+      ? { tag: locale.tag, dir: locale.dir }
+      : { tag: locale.tag, dir: locale.dir, theme: locale.theme };
+  }
+  return { ...locale, branding };
+}
+
+const STOCK_FAVICONS = ['/instrument/favicon.svg', '/instrument/favicon.ico'] as const;
+
+function attribute(value: string): string {
+  return value.replace(/&/gu, '&amp;').replace(/"/gu, '&quot;').replace(/</gu, '&lt;');
+}
+
+// The head markup that follows the Instrument stylesheet link: the tenant
+// stylesheet after it so its rules win, and the favicon links.
+export function brandingHead(locale: PageLocale): string {
+  const branding = locale.branding === undefined ? null : validBranding(locale.branding);
+  const lines: string[] = [];
+  if (branding?.stylesheetUrl) {
+    lines.push(`<link rel="stylesheet" href="${attribute(branding.stylesheetUrl)}">`);
+  }
+  if (branding?.faviconUrl) {
+    lines.push(`<link rel="icon" href="${attribute(branding.faviconUrl)}">`);
+  } else {
+    lines.push(
+      '<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">',
+      '<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">',
+    );
+  }
+  return lines.join('\n');
 }
 
 // The longest authorize path an account page is handed as `return_to`. The page
@@ -109,13 +199,31 @@ export const PRODUCT_NAME = 'odudu';
 // X-Frame-Options: DENY rides alongside `frame-ancestors 'none'` for agents
 // with no CSP at all, and may only stay while the two agree. ADR 0018 has
 // the reasoning for each directive and for the pairing.
+function brandedSources(branding: ResolvedBranding): { style: string; img: string } {
+  const at = (url: string): string => `${branding.origin}${url}`;
+  const styles = [INSTRUMENT_STYLESHEET, branding.stylesheetUrl];
+  const stock = branding.faviconUrl === null ? STOCK_FAVICONS : [];
+  const images = [
+    ...branding.assetUrls,
+    branding.faviconUrl,
+    branding.logo?.url ?? null,
+    branding.logo?.darkUrl ?? null,
+    ...stock,
+  ];
+  const list = (urls: readonly (string | null)[]): string =>
+    [...new Set(urls.filter((url) => url !== null))].map(at).join(' ');
+  return { style: list(styles), img: list(images) };
+}
+
 function baseDirectives(page: RenderedPage): string[] {
+  const branded =
+    page.locale.branding === undefined ? null : brandedSources(validBranding(page.locale.branding));
   const source = page.redirectsTo === undefined ? null : formActionSource(page.redirectsTo);
   return [
     "default-src 'none'",
-    "style-src 'self'",
+    branded === null ? "style-src 'self'" : `style-src ${branded.style}`,
     "font-src 'self'",
-    "img-src 'self'",
+    branded === null ? "img-src 'self'" : `img-src ${branded.img}`,
     "frame-ancestors 'none'",
     source === null ? "form-action 'self'" : `form-action 'self' ${source}`,
     "base-uri 'none'",

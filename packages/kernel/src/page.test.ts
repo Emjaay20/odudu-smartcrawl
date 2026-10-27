@@ -1,6 +1,13 @@
 import { runInNewContext } from 'node:vm';
 import { describe, expect, it } from 'vitest';
-import { INSTRUMENT_STYLESHEET, pageHeaders, reloadOnRestore } from '#/page';
+import {
+  INSTRUMENT_STYLESHEET,
+  brandingHead,
+  pageHeaders,
+  reloadOnRestore,
+  withBranding,
+  type ResolvedBranding,
+} from '#/page';
 
 const headerMap = (page: Parameters<typeof pageHeaders>[0]): Record<string, string> =>
   Object.fromEntries(pageHeaders(page).map(([name, value]) => [name, value]));
@@ -318,5 +325,177 @@ describe('the locale a page is sent under', () => {
     for (const tag of ['en\r\nX: y', 'en"><script>', '', 'x'.repeat(36)]) {
       expect(() => pageHeaders({ ...MARKUP_ONLY_PAGE, locale: { tag, dir: 'ltr' } })).toThrow();
     }
+  });
+});
+
+const BASE = [
+  "default-src 'none'",
+  "style-src 'self'",
+  "font-src 'self'",
+  "img-src 'self'",
+  "frame-ancestors 'none'",
+  "form-action 'self'",
+  "base-uri 'none'",
+];
+const FIXED_HEADERS = [
+  ['x-frame-options', 'DENY'],
+  ['referrer-policy', 'no-referrer'],
+  ['cache-control', 'no-store'],
+  ['x-content-type-options', 'nosniff'],
+  ['content-language', 'en'],
+];
+const withCsp = (directives: string[]): (readonly [string, string])[] => [
+  ['content-security-policy', directives.join('; ')],
+  ...(FIXED_HEADERS as [string, string][]),
+];
+
+const ORIGIN = 'https://idp.example';
+const branding = (over: Partial<ResolvedBranding> = {}): ResolvedBranding => ({
+  origin: ORIGIN,
+  templates: {},
+  tokensCss: ':root{--x:1}',
+  stylesheetUrl: '/t/acme/theme/abc123.css',
+  faviconUrl: '/t/acme/theme/fav456.png',
+  logo: { url: '/t/acme/theme/logo789.png', darkUrl: null, alt: 'Acme' },
+  assetUrls: ['/t/acme/theme/logo789.png'],
+  ...over,
+});
+const themed = (b: ResolvedBranding | null, over = {}): Parameters<typeof pageHeaders>[0] => ({
+  ...MARKUP_ONLY_PAGE,
+  ...over,
+  locale: withBranding(MARKUP_ONLY_PAGE.locale, b),
+});
+
+describe('a page without branding', () => {
+  it("has today's headers exactly", () => {
+    expect(pageHeaders(MARKUP_ONLY_PAGE)).toEqual(withCsp(BASE));
+    expect(
+      pageHeaders({ ...MARKUP_ONLY_PAGE, script: { nonce: 'abc', fetchesSameOrigin: true } }),
+    ).toEqual(withCsp([...BASE, "script-src 'nonce-abc'", "connect-src 'self'"]));
+    expect(pageHeaders({ ...MARKUP_ONLY_PAGE, frames: ['https://rp.example'] })).toEqual(
+      withCsp([...BASE, 'frame-src https://rp.example']),
+    );
+    expect(pageHeaders({ ...MARKUP_ONLY_PAGE, redirectsTo: 'https://rp.example/cb' })).toEqual(
+      withCsp([...BASE.slice(0, 5), "form-action 'self' https://rp.example", BASE[6] ?? '']),
+    );
+  });
+
+  it('is what withBranding(null) leaves', () => {
+    expect(withBranding(MARKUP_ONLY_PAGE.locale, null)).toEqual(MARKUP_ONLY_PAGE.locale);
+  });
+});
+
+describe('a themed page', () => {
+  it('lists only its own asset urls in img-src and style-src', () => {
+    const csp = headerMap(themed(branding()))['content-security-policy'] ?? '';
+    expect(csp.split('; ')).toEqual([
+      "default-src 'none'",
+      `style-src ${ORIGIN}${INSTRUMENT_STYLESHEET} ${ORIGIN}/t/acme/theme/abc123.css`,
+      "font-src 'self'",
+      `img-src ${ORIGIN}/t/acme/theme/logo789.png ${ORIGIN}/t/acme/theme/fav456.png`,
+      "frame-ancestors 'none'",
+      "form-action 'self'",
+      "base-uri 'none'",
+    ]);
+  });
+
+  it('keeps the other directives, script-src and the framing defence as they were', () => {
+    const page = themed(branding(), {
+      script: { nonce: 'abc', fetchesSameOrigin: false },
+      frames: ['https://rp.example'],
+    });
+    const csp = headerMap(page)['content-security-policy'] ?? '';
+    expect(csp.split('; ').filter((d) => !/^(style|img)-src /u.test(d))).toEqual([
+      "default-src 'none'",
+      "font-src 'self'",
+      "frame-ancestors 'none'",
+      "form-action 'self'",
+      "base-uri 'none'",
+      "script-src 'nonce-abc'",
+      'frame-src https://rp.example',
+    ]);
+  });
+
+  it('keeps the instrument favicons when the theme brings none', () => {
+    const csp = headerMap(themed(branding({ faviconUrl: null, logo: null, assetUrls: [] })))[
+      'content-security-policy'
+    ];
+    expect(csp).toContain(
+      `img-src ${ORIGIN}/instrument/favicon.svg ${ORIGIN}/instrument/favicon.ico`,
+    );
+  });
+
+  const BAD = [
+    'https://evil/x',
+    '//evil/x',
+    '/a b',
+    '/a;b',
+    '/a,b',
+    "/a'b",
+    '/a"b',
+    '/a*b',
+    '/a\nb',
+    '/a\u0000',
+    `/${'a'.repeat(256)}`,
+    'javascript:alert(1)',
+    'data:image/png;base64,AAAA',
+    'a/relative',
+    '/a?x=1',
+    '/a#f',
+  ];
+  it.each(BAD)('refuses an asset url that is not a same-origin path: %j', (url) => {
+    expect(() => pageHeaders(themed(branding({ assetUrls: [url] })))).toThrow(/branding/u);
+    expect(() => pageHeaders(themed(branding({ stylesheetUrl: url })))).toThrow(/branding/u);
+    expect(() => pageHeaders(themed(branding({ faviconUrl: url })))).toThrow(/branding/u);
+    expect(() => brandingHead(themed(branding({ stylesheetUrl: url })).locale)).toThrow(
+      /branding/u,
+    );
+  });
+
+  it('refuses an origin that is not an origin', () => {
+    for (const origin of ['https://a; script-src *', '/x', 'https://a/b', '']) {
+      expect(() => pageHeaders(themed(branding({ origin })))).toThrow(/branding/u);
+    }
+  });
+
+  it('refuses more than 16 urls', () => {
+    const urls = (n: number): string[] =>
+      Array.from({ length: n }, (_, i) => `/t/a/${String(i)}.png`);
+    expect(() =>
+      pageHeaders(
+        themed(
+          branding({ assetUrls: urls(16), faviconUrl: null, logo: null, stylesheetUrl: null }),
+        ),
+      ),
+    ).not.toThrow();
+    expect(() =>
+      pageHeaders(
+        themed(
+          branding({ assetUrls: urls(17), faviconUrl: null, logo: null, stylesheetUrl: null }),
+        ),
+      ),
+    ).toThrow(/branding/u);
+  });
+});
+
+describe('the head a themed page adds', () => {
+  const STOCK =
+    '<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">\n' +
+    '<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">';
+
+  it('is the stock favicons alone without branding', () => {
+    expect(brandingHead(MARKUP_ONLY_PAGE.locale)).toBe(STOCK);
+  });
+
+  it('puts the tenant stylesheet and favicon in place of the stock favicons', () => {
+    expect(brandingHead(themed(branding()).locale)).toBe(
+      '<link rel="stylesheet" href="/t/acme/theme/abc123.css">\n' +
+        '<link rel="icon" href="/t/acme/theme/fav456.png">',
+    );
+  });
+
+  it('keeps the stock favicons when the theme has none', () => {
+    const head = brandingHead(themed(branding({ faviconUrl: null })).locale);
+    expect(head).toBe('<link rel="stylesheet" href="/t/acme/theme/abc123.css">\n' + STOCK);
   });
 });

@@ -22,8 +22,13 @@ export {
   type PageLocale,
   type PageScript,
   type RenderedPage,
+  type ResolvedBranding,
+  MAX_BRANDING_URLS,
+  brandingHead,
+  isSameOriginPath,
   pageHeaders,
   reloadOnRestore,
+  withBranding,
   withPageTheme,
 } from '#/page';
 export {
