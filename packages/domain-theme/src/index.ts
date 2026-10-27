@@ -42,3 +42,10 @@ export {
   contrastRatio,
   type ContrastFailure,
 } from '#/service/contrast';
+export { CSS_ELEMENTS, CSS_HOOKS, CSS_HOOKS_VERSION, CSS_TOKENS } from '#/service/hooks';
+export {
+  checkStylesheet,
+  type StylesheetIssue,
+  type StylesheetIssueCode,
+  type StylesheetOptions,
+} from '#/service/stylesheet';

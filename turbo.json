@@ -34,6 +34,20 @@
       "outputs": ["trace-report.json"],
       "env": ["ODUDU_TEST_SHARD"]
     },
+    "@odudu/domain-theme#test": {
+      "dependsOn": ["^typecheck"],
+      "inputs": [
+        "src/**",
+        "tests/**",
+        "drizzle/**",
+        "package.json",
+        "tsconfig.json",
+        "$TURBO_ROOT$/packages/*/src/view/*.ts",
+        "$TURBO_ROOT$/packages/instrument/src/pages.css"
+      ],
+      "outputs": ["trace-report.json"],
+      "env": ["ODUDU_TEST_SHARD"]
+    },
     "@odudu/protocol-oidc#test": {
       "dependsOn": ["^typecheck"],
       "inputs": [
