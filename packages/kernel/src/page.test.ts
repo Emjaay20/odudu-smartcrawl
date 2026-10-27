@@ -443,6 +443,13 @@ describe('a themed page', () => {
     'a/relative',
     '/a?x=1',
     '/',
+    '/a//b',
+    '/a/./b',
+    '/a/../b',
+    '/a/.',
+    '/a/..',
+    '/.',
+    '/..',
     '/x/',
     '/a/b/',
     '',
@@ -515,5 +522,141 @@ describe('the head a themed page adds', () => {
   it('keeps the stock favicons when the theme has none', () => {
     const head = brandingHead(themed(branding({ faviconUrl: null })).locale);
     expect(head).toBe('<link rel="stylesheet" href="/t/acme/theme/abc123.css">\n' + STOCK);
+  });
+});
+
+describe('brandingProblems is total and agrees with what is sent', () => {
+  it.each(['/a/b.css', '/.well-known/x', '/a-b_c.d~e', '/~'])('accepts %s', (url) => {
+    expect(brandingProblems(branding({ assetUrls: [url] }))).toEqual([]);
+  });
+
+  it('quotes a bounded part of a huge value', () => {
+    const huge = `/${'a'.repeat(1e7)}`;
+    const started = Date.now();
+    const problems = [
+      ...brandingProblems(branding({ stylesheetUrl: huge })),
+      ...brandingProblems(branding({ origin: huge })),
+      ...brandingProblems(branding({ assetUrls: [huge] })),
+    ];
+    expect(Date.now() - started).toBeLessThan(2000);
+    expect(problems).toHaveLength(3);
+    for (const problem of problems) expect(problem.length).toBeLessThan(140);
+  });
+
+  const good = (): Record<string, unknown> => ({ ...branding() });
+  const throwing = (): unknown => {
+    const o = good();
+    Object.defineProperty(o, 'origin', {
+      get() {
+        throw new Error('boom');
+      },
+    });
+    return o;
+  };
+  const cyclic = (): unknown => {
+    const o: Record<string, unknown> = good();
+    o.assetUrls = [o];
+    return o;
+  };
+  const nullProto = (): unknown => Object.assign(Object.create(null) as object, good());
+  const MALFORMED: [string, unknown][] = [
+    ['null', null],
+    ['undefined', undefined],
+    ['zero', 0],
+    ['a string', 'x'],
+    ['an array', []],
+    ['an empty object', {}],
+    ['assetUrls string', { ...good(), assetUrls: '/a' }],
+    ['assetUrls object', { ...good(), assetUrls: {} }],
+    ['assetUrls numbers', { ...good(), assetUrls: [1, 2] }],
+    ['assetUrls sparse', { ...good(), assetUrls: new Array<string>(2) }],
+    ['assetUrls symbol', { ...good(), assetUrls: [Symbol('x')] }],
+    ['url array', { ...good(), stylesheetUrl: ['/a'] }],
+    ['url symbol', { ...good(), stylesheetUrl: Symbol('x') }],
+    ['url null-prototype', { ...good(), faviconUrl: Object.create(null) as object }],
+    ['origin number', { ...good(), origin: 5 }],
+    ['origin array', { ...good(), origin: [ORIGIN] }],
+    ['logo string', { ...good(), logo: 'x' }],
+    ['logo without alt', { ...good(), logo: { url: '/a', darkUrl: null } }],
+    ['logo url number', { ...good(), logo: { url: 1, darkUrl: null, alt: '' } }],
+    ['templates null', { ...good(), templates: null }],
+    ['tokensCss number', { ...good(), tokensCss: 1 }],
+    ['throwing getter', throwing()],
+    [
+      'throwing proxy',
+      new Proxy(
+        {},
+        {
+          get() {
+            throw new Error('boom');
+          },
+        },
+      ),
+    ],
+    ['cyclic', cyclic()],
+  ];
+
+  it.each(MALFORMED)('reports %s and every consumer refuses it', (name, value) => {
+    const problems = brandingProblems(value);
+    expect(Array.isArray(problems)).toBe(true);
+    expect(problems.length).toBeGreaterThan(0);
+    if (name === 'undefined') return; // an absent branding is no branding
+    const locale = { tag: 'en', dir: 'ltr' as const, branding: value as ResolvedBranding };
+    expect(() => pageHeaders({ ...MARKUP_ONLY_PAGE, locale })).toThrow();
+    expect(() => brandingHead(locale)).toThrow();
+  });
+
+  it('accepts a valid branding with a null prototype', () => {
+    expect(brandingProblems(nullProto())).toEqual([]);
+  });
+
+  it('agrees with pageHeaders and brandingHead over 2,000 random shapes', () => {
+    let seed = 7;
+    const rnd = (n: number): number => {
+      seed = (seed * 1103515245 + 12345) % 2147483648;
+      return seed % n;
+    };
+    const atoms: unknown[] = [
+      null,
+      undefined,
+      0,
+      '',
+      '/a',
+      '/a/',
+      '/a//b',
+      '/a/../b',
+      ['/a'],
+      [],
+      {},
+      ORIGIN,
+      'https://x',
+      Symbol('s'),
+      '/' + 'a'.repeat(300),
+      { url: '/l', darkUrl: null, alt: 'x' },
+    ];
+    const pick = (): unknown => atoms[rnd(atoms.length)];
+    for (let i = 0; i < 2000; i += 1) {
+      const value = {
+        origin: rnd(3) === 0 ? pick() : ORIGIN,
+        templates: rnd(4) === 0 ? pick() : {},
+        tokensCss: rnd(4) === 0 ? pick() : '',
+        stylesheetUrl: pick(),
+        faviconUrl: pick(),
+        logo: rnd(2) === 0 ? null : pick(),
+        assetUrls: rnd(3) === 0 ? pick() : [pick(), pick()],
+      };
+      const locale = { tag: 'en', dir: 'ltr' as const, branding: value as ResolvedBranding };
+      const ok = brandingProblems(value).length === 0;
+      const run = (f: () => unknown): boolean => {
+        try {
+          f();
+          return true;
+        } catch {
+          return false;
+        }
+      };
+      expect(run(() => pageHeaders({ ...MARKUP_ONLY_PAGE, locale }))).toBe(ok);
+      expect(run(() => brandingHead(locale))).toBe(ok);
+    }
   });
 });

@@ -222,7 +222,7 @@ A branded page's CSP lists the theme's own URLs as origin + path. `origin`
 must equal the origin the page is served from (the configured public base
 URL); a mismatch fails closed, the page loading unstyled while forms still
 work. A URL ending in `/` is refused, since a trailing slash is a prefix match
-in a CSP. The resolver checks `brandingProblems` and falls back to the default
+in a CSP, and `//` or a dot segment never matches a request path. The resolver checks `brandingProblems` and falls back to the default
 theme, logging the reason (ADR 0030's amendment).
 
 ## 7. Uploads

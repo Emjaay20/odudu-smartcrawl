@@ -62,37 +62,140 @@ const MAX_BRANDING_URL_LENGTH = 256;
 // Not ending in `/`: a trailing slash is a prefix match in a CSP path source.
 const SAME_ORIGIN_PATH = /^\/(?!\/)(?:[A-Za-z0-9._~!$&()+=:@/-]*[A-Za-z0-9._~!$&()+=:@-])$/u;
 
+// Dot segments and doubled slashes never match a normalised request path, so
+// they would only yield an unstyled page.
 export function isSameOriginPath(value: unknown): value is string {
   return (
     typeof value === 'string' &&
     value.length <= MAX_BRANDING_URL_LENGTH &&
-    SAME_ORIGIN_PATH.test(value)
+    SAME_ORIGIN_PATH.test(value) &&
+    !value.includes('//') &&
+    !value.split('/').some((segment) => segment === '.' || segment === '..')
   );
 }
 
-// Every reason `branding` cannot be sent, empty when it can. A resolver
-// calls this and falls back to the default theme, since `pageHeaders` throws.
-export function brandingProblems(branding: ResolvedBranding): string[] {
-  const urls = [
-    branding.stylesheetUrl,
-    branding.faviconUrl,
-    branding.logo?.url ?? null,
-    branding.logo?.darkUrl ?? null,
-    ...branding.assetUrls,
-  ].filter((url): url is string => url !== null);
-  return [
-    ...(ORIGIN_SOURCE.test(branding.origin) ? [] : ['origin is not an http(s) origin']),
-    ...(urls.length > MAX_BRANDING_URLS ? [`more than ${String(MAX_BRANDING_URLS)} urls`] : []),
-    ...urls
-      .filter((url) => !SAME_ORIGIN_PATH.test(url) || url.length > MAX_BRANDING_URL_LENGTH)
-      .map((url) => `not a same-origin path: ${url}`),
-  ];
+// A problem message quotes tenant input, so it quotes a bounded part of it.
+function quoted(value: string): string {
+  const head = Array.from(value.slice(0, 256)).slice(0, 64).join('');
+  return value.length <= 64 ? value : `${head}… (${String(value.length)} chars)`;
 }
 
-function validBranding(branding: ResolvedBranding): ResolvedBranding {
-  if (brandingProblems(branding).length > 0) {
-    throw new Error('refusing to send an unvalidated branding');
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+interface Checked {
+  readonly branding: ResolvedBranding | null;
+  readonly problems: string[];
+}
+
+function urlProblem(field: string, value: unknown, nullable: boolean): string | null {
+  if (value === null && nullable) return null;
+  if (typeof value !== 'string') return `${field} is not a string`;
+  return isSameOriginPath(value) ? null : `${field} is not a same-origin path: ${quoted(value)}`;
+}
+
+// Each field is read once and the page uses the copy returned here, so a
+// getter answering differently the second time cannot get past the check.
+function readBranding(input: unknown): Checked {
+  if (!isRecord(input) || Array.isArray(input)) {
+    return { branding: null, problems: ['branding is not an object'] };
   }
+  const { origin, templates, tokensCss, stylesheetUrl, faviconUrl, logo, assetUrls } = input;
+  const problems: string[] = [];
+  if (typeof origin !== 'string' || !ORIGIN_SOURCE.test(origin.length > 300 ? '' : origin)) {
+    problems.push(
+      `origin is not an http(s) origin${typeof origin === 'string' ? `: ${quoted(origin)}` : ''}`,
+    );
+  }
+  if (!isRecord(templates) || Array.isArray(templates)) problems.push('templates is not an object');
+  if (typeof tokensCss !== 'string') problems.push('tokensCss is not a string');
+  problems.push(
+    ...[
+      urlProblem('stylesheetUrl', stylesheetUrl, true),
+      urlProblem('faviconUrl', faviconUrl, true),
+    ].filter((problem) => problem !== null),
+  );
+  let logoUrl: unknown = null;
+  let logoDark: unknown = null;
+  let logoAlt: unknown = '';
+  if (logo !== null) {
+    if (!isRecord(logo) || Array.isArray(logo)) {
+      problems.push('logo is not an object');
+    } else {
+      logoUrl = logo.url;
+      logoDark = logo.darkUrl;
+      logoAlt = logo.alt;
+      const logoProblems = [
+        urlProblem('logo.url', logoUrl, false),
+        urlProblem('logo.darkUrl', logoDark, true),
+        typeof logoAlt === 'string' ? null : 'logo.alt is not a string',
+      ];
+      problems.push(...logoProblems.filter((problem) => problem !== null));
+    }
+  }
+  const assets: unknown[] = [];
+  if (!Array.isArray(assetUrls)) {
+    problems.push('assetUrls is not an array');
+  } else if (assetUrls.length > MAX_BRANDING_URLS) {
+    problems.push(`more than ${String(MAX_BRANDING_URLS)} urls`);
+  } else {
+    for (let i = 0; i < assetUrls.length; i += 1) {
+      assets.push(assetUrls[i]);
+      const problem = urlProblem(`assetUrls[${String(i)}]`, assets[i], false);
+      if (problem !== null) problems.push(problem);
+    }
+  }
+  const count = [stylesheetUrl, faviconUrl, logoUrl, logoDark, ...assets].filter(
+    (url) => url !== null,
+  ).length;
+  if (
+    count > MAX_BRANDING_URLS &&
+    Array.isArray(assetUrls) &&
+    assetUrls.length <= MAX_BRANDING_URLS
+  ) {
+    problems.push(`more than ${String(MAX_BRANDING_URLS)} urls`);
+  }
+  if (problems.length > 0) return { branding: null, problems };
+  return {
+    problems,
+    branding: {
+      origin: String(origin),
+      templates: templates as ResolvedBranding['templates'],
+      tokensCss: String(tokensCss),
+      stylesheetUrl: stylesheetUrl as string | null,
+      faviconUrl: faviconUrl as string | null,
+      logo:
+        logo === null
+          ? null
+          : {
+              url: String(logoUrl),
+              darkUrl: logoDark as string | null,
+              alt: String(logoAlt),
+            },
+      assetUrls: assets as string[],
+    },
+  };
+}
+
+function checked(input: unknown): Checked {
+  try {
+    return readBranding(input);
+  } catch {
+    return { branding: null, problems: ['unreadable branding'] };
+  }
+}
+
+// Every reason `branding` cannot be sent, empty when it can; total for any
+// input. A resolver calls this and falls back to the default theme, since
+// `pageHeaders` throws.
+export function brandingProblems(branding: unknown): string[] {
+  return checked(branding).problems;
+}
+
+function validBranding(input: unknown): ResolvedBranding {
+  const { branding } = checked(input);
+  if (branding === null) throw new Error('refusing to send an unvalidated branding');
   return branding;
 }
 
