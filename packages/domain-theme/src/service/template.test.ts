@@ -223,14 +223,18 @@ describe('form pair', () => {
     ]);
   });
 
-  it('refuses one half of an optional pair and an in-form part without the pair', () => {
-    const codesVerification = (template: string): string[] =>
+  it('refuses one half of a form pair and an in-form part without the pair', () => {
+    const issuesVerification = (template: string): string[] =>
+      checkTemplate('verification', template).map((issue) => `${issue.code}:${issue.detail}`);
+    expect(issuesVerification('{{message}}{{form.open}}{{submit}}{{form.close}}')).toEqual([]);
+    expect(issuesVerification('{{message}}')).toEqual(
+      expect.arrayContaining(['missing-part:form.open', 'missing-part:submit']),
+    );
+    const codes = (template: string): string[] =>
       checkTemplate('verification', template).map((issue) => issue.code);
-    expect(codesVerification('{{message}}')).toEqual([]);
-    expect(codesVerification('{{message}}{{form.open}}{{submit}}{{form.close}}')).toEqual([]);
-    expect(codesVerification('{{message}}{{form.open}}{{submit}}')).toContain('form-pair');
-    expect(codesVerification('{{message}}{{form.close}}')).toContain('form-pair');
-    expect(codesVerification('{{message}}{{submit}}')).toContain('form-placement');
+    expect(codes('{{message}}{{form.open}}{{submit}}')).toContain('form-pair');
+    expect(codes('{{message}}{{form.close}}')).toContain('form-pair');
+    expect(codes('{{message}}{{submit}}')).toContain('form-placement');
   });
 });
 

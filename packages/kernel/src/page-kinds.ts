@@ -32,11 +32,10 @@ const FORM_CLOSE = 'form.close';
 // `form.open` carries every hidden field the form posts, the proof included,
 // so a template cannot drop or forge one. `fields` is one slot where the
 // inputs depend on the step. `intro` is the heading with the tenant; on
-// `consent` it names the client, so it is the required `client`. `sign-in`
-// requires `error` so a refusal cannot be hidden. `logged-out` requires
-// `frames` and `script` (empty where a page has none) because the redirecting
-// page needs both. Pages outside any tenant (not-found, server-error,
-// throttled, the console's refusal) have no kind.
+// `consent` it names the client, so it is the required `client`. A form's
+// `error` is required so a refusal cannot be hidden, and a part a page may
+// have nothing for (`error`, `frames`, `script`, a form's parts on a page
+// with none) is placed empty. Pages outside any tenant have no kind.
 export const PAGE_KINDS: Record<PageKind, PageManifest> = {
   'sign-in': {
     required: [FORM_OPEN, 'fields', 'submit', 'error', FORM_CLOSE],
@@ -80,23 +79,23 @@ export const PAGE_KINDS: Record<PageKind, PageManifest> = {
   },
   'required-action': { required: ['message'], optional: ['links'], inForm: [] },
   registration: {
-    required: [FORM_OPEN, 'fields', 'submit', FORM_CLOSE],
-    optional: ['error', 'links'],
+    required: [FORM_OPEN, 'fields', 'submit', 'error', FORM_CLOSE],
+    optional: ['intro', 'links'],
     inForm: ['fields', 'submit'],
   },
   reset: {
-    required: [FORM_OPEN, 'fields', 'submit', FORM_CLOSE],
-    optional: ['error', 'links'],
+    required: [FORM_OPEN, 'fields', 'submit', 'error', FORM_CLOSE],
+    optional: ['intro', 'links'],
     inForm: ['fields', 'submit'],
   },
   verification: {
-    required: ['message'],
-    optional: [FORM_OPEN, 'submit', FORM_CLOSE, 'links'],
+    required: ['message', FORM_OPEN, 'submit', FORM_CLOSE],
+    optional: ['links'],
     inForm: ['submit'],
   },
   'required-actions': {
-    required: [FORM_OPEN, 'fields', 'submit', FORM_CLOSE],
-    optional: ['error'],
+    required: [FORM_OPEN, 'actions', 'fields', 'submit', 'error', FORM_CLOSE],
+    optional: ['intro'],
     inForm: ['fields', 'submit'],
   },
   'authorize-error': { required: ['message'], optional: ['links', 'code'], inForm: [] },
