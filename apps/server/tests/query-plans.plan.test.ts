@@ -215,6 +215,10 @@ describe('a themed page render', () => {
   });
 });
 
+// What the registration form costs with a cached theme and no return_to: a
+// statement added to every registration path moves this number.
+const PLAIN_REGISTRATION_STATEMENTS = 1;
+
 const tenantLookups = (statements: Statement[]): number =>
   statements.filter((statement) => statement.query.includes('"tenants"."name"')).length;
 const clientLookups = (statements: Statement[]): number =>
@@ -230,6 +234,7 @@ describe('the pages a tenant theme reaches without a parked request', () => {
 
   it('checks a return_to client with one indexed lookup, found or not', () => {
     const plain = workOf(BRANDING_PATHS.registrationPlain);
+    expect(plain.length).toBe(PLAIN_REGISTRATION_STATEMENTS);
     const garbage = workOf(BRANDING_PATHS.registrationGarbage);
     const client = workOf(BRANDING_PATHS.registrationClient);
     const miss = workOf(BRANDING_PATHS.registrationClientMiss);
