@@ -22,14 +22,14 @@ docker compose -p odudu-docs-12b logs --since $SINCE odudu 2>&1 \
 
 ```
 HTTP/1.1 302 Found
-x-request-id: 01a1203f-07e2-7fbe-a009-7453e2a8df37
+x-request-id: 01a17b05-62d2-743d-87d3-fcaffdaa26b1
 cache-control: no-store
 set-cookie: odudu-console-login=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
 set-cookie: odudu-console-restart=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
-set-cookie: odudu-console=0199aa00-0000-7000-8000-000000000001.2HS33GTmBoQ1jBz_2vnrBYoDiCG5YsvoCenMz3_RESY; HttpOnly; SameSite=Strict; Path=/
-location: /console/
+set-cookie: odudu-console=0199aa00-0000-7000-8000-000000000001.lim96dI5-tqfEkg7s56b2K_RLh5Z20Unl6h6GBaxlbk; HttpOnly; SameSite=Strict; Path=/
+location: /console/x
 content-length: 0
-Date: Fri, 09 Oct 2026 10:39:24 GMT
+Date: Tue, 27 Oct 2026 01:41:53 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 ```
@@ -38,14 +38,14 @@ The log, filtered to the callback's own request id. The `POST` is the
 exchange, and it was answered `200`:
 
 ```
-["01a1203f-07e2-7fbe-a009-7453e2a8df37","GET","/console/auth/callback"]
-["01a1203f-07e2-7fbe-a009-7453e2a8df37","GET","/tenants/system/.well-known/openid-configuration"]
-["01a1203f-07e2-7fbe-a009-7453e2a8df37",200,null]
-["01a1203f-07e2-7fbe-a009-7453e2a8df37","POST","/tenants/system/protocol/openid-connect/token"]
-["01a1203f-07e2-7fbe-a009-7453e2a8df37",200,null]
-["01a1203f-07e2-7fbe-a009-7453e2a8df37","GET","/tenants/system/protocol/openid-connect/certs"]
-["01a1203f-07e2-7fbe-a009-7453e2a8df37",200,null]
-["01a1203f-07e2-7fbe-a009-7453e2a8df37",302,null]
+["01a17b05-62d2-743d-87d3-fcaffdaa26b1","GET","/console/auth/callback"]
+["01a17b05-62d2-743d-87d3-fcaffdaa26b1","GET","/tenants/system/.well-known/openid-configuration"]
+["01a17b05-62d2-743d-87d3-fcaffdaa26b1",200,null]
+["01a17b05-62d2-743d-87d3-fcaffdaa26b1","POST","/tenants/system/protocol/openid-connect/token"]
+["01a17b05-62d2-743d-87d3-fcaffdaa26b1",200,null]
+["01a17b05-62d2-743d-87d3-fcaffdaa26b1","GET","/tenants/system/protocol/openid-connect/certs"]
+["01a17b05-62d2-743d-87d3-fcaffdaa26b1",200,null]
+["01a17b05-62d2-743d-87d3-fcaffdaa26b1",302,null]
 ```
 
 What the assertion buys is what the same calls are without it. The loopback
@@ -65,14 +65,14 @@ curl -sS -D - --data-urlencode "token=$R1" --data-urlencode token_type_hint=refr
 
 ```
 HTTP/1.1 401 Unauthorized
-x-request-id: 01a1203f-2ea5-71cf-aa0d-fdf882ed4b46
+x-request-id: 01a17b05-ae42-757b-a6bd-f6dfd8af354c
 vary: Origin
 www-authenticate: Basic realm="token"
 cache-control: no-store
 pragma: no-cache
 content-type: application/json; charset=utf-8
 content-length: 78
-Date: Fri, 09 Oct 2026 10:39:34 GMT
+Date: Tue, 27 Oct 2026 01:42:12 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -81,12 +81,12 @@ Keep-Alive: timeout=72
 
 ```
 HTTP/1.1 401 Unauthorized
-x-request-id: 01a1203f-2edf-7f31-a75b-6c9933dc1f23
+x-request-id: 01a17b05-ae58-7fef-abf6-665aa2f715ba
 www-authenticate: Basic realm="token"
 cache-control: no-store
 content-type: application/json; charset=utf-8
 content-length: 78
-Date: Fri, 09 Oct 2026 10:39:34 GMT
+Date: Tue, 27 Oct 2026 01:42:12 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -108,17 +108,17 @@ curl -sS -D - --data-urlencode grant_type=refresh_token --data-urlencode "refres
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a1203f-33b1-7a72-bf9c-227d94e20c5e
+x-request-id: 01a17b05-afd5-7485-83ee-c29dca05fd8d
 vary: Origin
 cache-control: no-store
 pragma: no-cache
 content-type: application/json; charset=utf-8
 content-length: 837
-Date: Fri, 09 Oct 2026 10:39:35 GMT
+Date: Tue, 27 Oct 2026 01:42:12 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"access_token":"eyJhbGciOiJFUzI1NiIsImtp…","refresh_token":"AG63NELqKwsz9hxTTAfClb0a…","token_type":"Bearer","expires_in":300,"scope":"openid"}
+{"access_token":"eyJhbGciOiJFUzI1NiIsImtp…","refresh_token":"t_NGSgxiy3wbZLF1-QrLRZd-…","token_type":"Bearer","expires_in":300,"scope":"openid"}
 ```
 
 (The tokens are cut to their first 24 characters, as in "Getting the token".) A
@@ -140,23 +140,23 @@ curl -sS -D - --data-urlencode grant_type=refresh_token --data-urlencode "refres
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a1203f-4c3f-7fc0-80b1-e201cbf46442
+x-request-id: 01a17b05-b173-73f3-9113-52ed61437e88
 cache-control: no-store
 content-length: 0
-Date: Fri, 09 Oct 2026 10:39:41 GMT
+Date: Tue, 27 Oct 2026 01:42:13 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 ```
 
 ```
 HTTP/1.1 400 Bad Request
-x-request-id: 01a1203f-4e6b-734a-aacc-5d3bbe1072fe
+x-request-id: 01a17b05-b2d8-7f99-89ba-07c3f646a0d7
 vary: Origin
 cache-control: no-store
 pragma: no-cache
 content-type: application/json; charset=utf-8
 content-length: 79
-Date: Fri, 09 Oct 2026 10:39:42 GMT
+Date: Tue, 27 Oct 2026 01:42:13 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 

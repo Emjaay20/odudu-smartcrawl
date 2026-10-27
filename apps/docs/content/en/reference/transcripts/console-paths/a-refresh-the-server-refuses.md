@@ -10,34 +10,34 @@ through the console itself, by ending the SSO session the grant is bound to; a
 write names the session's subject in `X-Odudu-Console-Subject`, as every write
 must, or it is refused as another principal's. `ada` holds two live sessions at
 this point, the first sign-in's loopback one and this run's own,
-`01a1203e-f2ca-…`, the one in its `system-session` cookie:
+`01a17b05-62b9-…`, the one in its `system-session` cookie:
 
 ```bash
-curl -sS -D - -b jar http://localhost:3082/console/api/admin/tenants/system/subjects/01a1203a-f86d-7e8e-a537-e39f5d77b04f/sessions
+curl -sS -D - -b jar http://localhost:3082/console/api/admin/tenants/system/subjects/01a17b04-bdeb-7b73-a5a4-a5674032af15/sessions
 curl -sS -D - -c jar -b jar -X DELETE \
   -H 'Origin: http://localhost:3082' -H 'X-Odudu-Console: 1' \
-  -H 'X-Odudu-Console-Subject: 01a1203a-f86d-7e8e-a537-e39f5d77b04f' \
-  http://localhost:3082/console/api/admin/tenants/system/subjects/01a1203a-f86d-7e8e-a537-e39f5d77b04f/sessions/01a1203e-f2ca-78cb-833c-3ae98a36ca3d
+  -H 'X-Odudu-Console-Subject: 01a17b04-bdeb-7b73-a5a4-a5674032af15' \
+  http://localhost:3082/console/api/admin/tenants/system/subjects/01a17b04-bdeb-7b73-a5a4-a5674032af15/sessions/01a17b05-62b9-7a06-8827-1b50aeec0e5d
 ```
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a1204c-4db5-7d7c-bd3d-83edadb2f3cc
+x-request-id: 01a17b16-2bfe-72f8-b9e7-ac02309d60a3
 content-type: application/json; charset=utf-8
 cache-control: no-store
 content-length: 367
-Date: Fri, 09 Oct 2026 10:53:54 GMT
+Date: Tue, 27 Oct 2026 02:00:13 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"items":[{"id":"01a1203b-5383-79a0-892a-1da6060f57f0","created_at":"2026-10-09T10:35:21.344Z","last_active_at":"2026-10-09T10:39:35.356Z","remembered":false,"client_ids":["odudu-admin"]},{"id":"01a1203e-f2ca-78cb-833c-3ae98a36ca3d","created_at":"2026-10-09T10:39:18.727Z","last_active_at":"2026-10-09T10:53:34.315Z","remembered":false,"client_ids":["odudu-admin"]}]}
+{"items":[{"id":"01a17b05-41f4-7e19-aa04-8d1bb5fb9a7a","created_at":"2026-10-27T01:41:44.563Z","last_active_at":"2026-10-27T01:42:12.701Z","remembered":false,"client_ids":["odudu-admin"]},{"id":"01a17b05-62b9-7a06-8827-1b50aeec0e5d","created_at":"2026-10-27T01:41:52.952Z","last_active_at":"2026-10-27T01:59:32.777Z","remembered":false,"client_ids":["odudu-admin"]}]}
 ```
 
 ```
 HTTP/1.1 204 No Content
-x-request-id: 01a1204c-4de9-7e43-80c8-dbf1b89fd6ae
+x-request-id: 01a17b16-2c20-77c0-b61e-ec889d88a83b
 cache-control: no-store
-Date: Fri, 09 Oct 2026 10:53:54 GMT
+Date: Tue, 27 Oct 2026 02:00:13 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 ```
@@ -48,8 +48,8 @@ whether the grant is revoked. psql's trailing header spaces are trimmed
 below:
 
 ```sql
-select id, access_expires_at, access_expires_at - now() as remaining from console_sessions where tenant_id = '0199aa00-0000-7000-8000-000000000001' and subject_id = '01a1203a-f86d-7e8e-a537-e39f5d77b04f' and id = '01a1203f-0879-7a1c-bfb3-9ede557fa475';
-select g.revoked_at is not null as revoked from token_grants g where g.session_id = '01a1203e-f2ca-78cb-833c-3ae98a36ca3d';
+select id, access_expires_at, access_expires_at - now() as remaining from console_sessions where tenant_id = '0199aa00-0000-7000-8000-000000000001' and subject_id = '01a17b04-bdeb-7b73-a5a4-a5674032af15' and id = '01a17b05-62e9-703b-8cae-7a216ade12de';
+select g.revoked_at is not null as revoked from token_grants g where g.session_id = '01a17b05-62b9-7a06-8827-1b50aeec0e5d';
 ```
 
 Right after the `DELETE`, the grant is revoked and the console session is
@@ -58,7 +58,7 @@ still there, its access token good for four more minutes:
 ```
                   id                  |     access_expires_at      |    remaining
 --------------------------------------+----------------------------+-----------------
- 01a1203f-0879-7a1c-bfb3-9ede557fa475 | 2026-10-09 10:58:34.254+00 | 00:04:40.003913
+ 01a17b05-62e9-703b-8cae-7a216ade12de | 2026-10-27 02:04:32.765+00 | 00:04:19.569486
 (1 row)
 
  revoked
@@ -75,7 +75,7 @@ session read with a copy of the jar taken before the `GET`:
 docker compose -p odudu-docs-12b exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < q-state.sql
 cp jar jar-before-call
 curl -sS -D - -c jar -b jar \
-  http://localhost:3082/console/api/admin/tenants/system/subjects/01a1203a-f86d-7e8e-a537-e39f5d77b04f
+  http://localhost:3082/console/api/admin/tenants/system/subjects/01a17b04-bdeb-7b73-a5a4-a5674032af15
 docker compose -p odudu-docs-12b exec -T postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"' < q-state.sql
 curl -sS -D - -b jar-before-call http://localhost:3082/console/api/session
 ```
@@ -83,7 +83,7 @@ curl -sS -D - -b jar-before-call http://localhost:3082/console/api/session
 ```
                   id                  |     access_expires_at      |    remaining
 --------------------------------------+----------------------------+-----------------
- 01a1203f-0879-7a1c-bfb3-9ede557fa475 | 2026-10-09 10:58:34.254+00 | 00:00:19.181579
+ 01a17b05-62e9-703b-8cae-7a216ade12de | 2026-10-27 02:04:32.765+00 | 00:00:25.426517
 (1 row)
 
  revoked
@@ -96,16 +96,16 @@ The `GET` is the session-ended `401`, and its cookie is cleared:
 
 ```
 HTTP/1.1 401 Unauthorized
-x-request-id: 01a12050-49e1-7823-83b7-70f09b95f1fc
+x-request-id: 01a17b19-bf44-7da3-9cc6-018fc3960c08
 set-cookie: odudu-console=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0
 content-type: application/problem+json; charset=utf-8
 cache-control: no-store
 content-length: 130
-Date: Fri, 09 Oct 2026 10:58:15 GMT
+Date: Tue, 27 Oct 2026 02:04:07 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"status":401,"type":"about:blank#console-session-ended","title":"Unauthorized","instance":"01a12050-49e1-7823-83b7-70f09b95f1fc"}
+{"status":401,"type":"about:blank#console-session-ended","title":"Unauthorized","instance":"01a17b19-bf44-7da3-9cc6-018fc3960c08"}
 ```
 
 The row is gone:
@@ -125,16 +125,16 @@ The cookie from before the `GET` names nothing now:
 
 ```
 HTTP/1.1 401 Unauthorized
-x-request-id: 01a12050-4ab7-7137-83c3-f6d2dc04728c
+x-request-id: 01a17b19-bfbe-7140-92a0-4d4cc6235828
 set-cookie: odudu-console=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0
 content-type: application/problem+json; charset=utf-8
 cache-control: no-store
 content-length: 130
-Date: Fri, 09 Oct 2026 10:58:15 GMT
+Date: Tue, 27 Oct 2026 02:04:07 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"status":401,"type":"about:blank#console-session-ended","title":"Unauthorized","instance":"01a12050-4ab7-7137-83c3-f6d2dc04728c"}
+{"status":401,"type":"about:blank#console-session-ended","title":"Unauthorized","instance":"01a17b19-bfbe-7140-92a0-4d4cc6235828"}
 ```
 
 The server's request log for that second shows which check ended it. The
@@ -148,10 +148,10 @@ docker compose -p odudu-docs-12b logs --since $(cat p3-from.txt) odudu 2>&1 \
 ```
 
 ```
-["01a12050-49e1-7823-83b7-70f09b95f1fc","GET","/console/api/admin/tenants/system/subjects/01a1203a-f86d-7e8e-a537-e39f5d77b04f"]
-["01a12050-49e1-7823-83b7-70f09b95f1fc","POST","/tenants/system/protocol/openid-connect/token"]
-["01a12050-49e1-7823-83b7-70f09b95f1fc",400,null]
-["01a12050-49e1-7823-83b7-70f09b95f1fc",401,null]
-["01a12050-4ab7-7137-83c3-f6d2dc04728c","GET","/console/api/session"]
-["01a12050-4ab7-7137-83c3-f6d2dc04728c",401,null]
+["01a17b19-bf44-7da3-9cc6-018fc3960c08","GET","/console/api/admin/tenants/system/subjects/01a17b04-bdeb-7b73-a5a4-a5674032af15"]
+["01a17b19-bf44-7da3-9cc6-018fc3960c08","POST","/tenants/system/protocol/openid-connect/token"]
+["01a17b19-bf44-7da3-9cc6-018fc3960c08",400,null]
+["01a17b19-bf44-7da3-9cc6-018fc3960c08",401,null]
+["01a17b19-bfbe-7140-92a0-4d4cc6235828","GET","/console/api/session"]
+["01a17b19-bfbe-7140-92a0-4d4cc6235828",401,null]
 ```

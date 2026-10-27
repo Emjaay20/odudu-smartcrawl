@@ -20,16 +20,16 @@ docker compose -p odudu-docs-12b logs --since $SINCE odudu 2>&1 \
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a12040-dabb-7606-a68f-4dd2c7304ac6
+x-request-id: 01a17b06-3817-7f4e-955d-e946468cd377
 cache-control: no-store
 set-cookie: odudu-console=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0
 content-type: application/json; charset=utf-8
 content-length: 713
-Date: Fri, 09 Oct 2026 10:41:23 GMT
+Date: Tue, 27 Oct 2026 01:42:47 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"redirect":"http://localhost:3082/tenants/system/protocol/openid-connect/logout?id_token_hint=eyJhbGciOiJFUzI1NiIsImtpZCI6IjAxYTEyMDNhLWY4NjItN2M0OC1hMWUwLWQxODAyMmE1NjMyYiJ9.eyJzdWIiOiIwMWExMjAzYS1mODZkLTdlOGUtYTUzNy1lMzlmNWQ3N2IwNGYiLCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjMwODIvdGVuYW50cy9zeXN0ZW0iLCJhdWQiOiJvZHVkdS1hZG1pbiIsImlhdCI6MTc5MTU0MjQ3NiwiZXhwIjoxNzkxNTQyNzc2LCJub25jZSI6IkNUZldrOFQ1WUNwX0ppRVVNaC1vZzhkQjkwLU80NE43Rjhya3lteU1ka0EiLCJzaWQiOiIwMWExMjA0MC1jMDRkLTdlOTItOTE3Zi1hZGY3OTZiZDBlOTMiLCJhbXIiOlsicHdkIl0sImFjciI6IjEifQ.ZZbqhRp1FSFfE0hzibzxLSyCkZ1LOCBTr3b3Brq4wh6hMtaGlWQy9I5FCTWeWd8wJZS4B-VwUVl9jUma4g39Kg&post_logout_redirect_uri=http%3A%2F%2Flocalhost%3A3082%2Fconsole%2F&client_id=odudu-admin"}
+{"redirect":"http://localhost:3082/tenants/system/protocol/openid-connect/logout?id_token_hint=eyJhbGciOiJFUzI1NiIsImtpZCI6IjAxYTE3YjA0LWJkZTctNzJhYi05ZTQ1LWMyNTRlOWNiYzg0NiJ9.eyJzdWIiOiIwMWExN2IwNC1iZGViLTdiNzMtYTVhNC1hNTY3NDAzMmFmMTUiLCJpc3MiOiJodHRwOi8vbG9jYWxob3N0OjM3MDEvdGVuYW50cy9zeXN0ZW0iLCJhdWQiOiJvZHVkdS1hZG1pbiIsImlhdCI6MTc5MzA2NTM2NywiZXhwIjoxNzkzMDY1NjY3LCJub25jZSI6InpYVkNtWlIyTWQwU1QyYjE2aExFdHlZYl9lWTJZcFVWcUFPcnVIdW0zZ1kiLCJzaWQiOiIwMWExN2IwNi0zNmM3LTczMGMtYTMwYS04Zjg1MWM1YzRlNzAiLCJhbXIiOlsicHdkIl0sImFjciI6IjEifQ.GZH4qYu-hmJjig8XLuwgNOVtLB7bfkbsDJraVTEikI-SOcek61wpMMQ_uToiN-H80KCttAm35-WXvDyKY_T44w&post_logout_redirect_uri=http%3A%2F%2Flocalhost%3A3082%2Fconsole%2F&client_id=odudu-admin"}
 ```
 
 The log, with the stack's own health probes left out. The gateway revoked the
@@ -39,12 +39,12 @@ have been refused and the token left alive; [the section above](./the-gateway-is
 shows that refusal:
 
 ```
-["01a12040-dabb-7606-a68f-4dd2c7304ac6","POST","/console/auth/logout"]
-["01a12040-dabb-7606-a68f-4dd2c7304ac6","POST","/tenants/system/protocol/openid-connect/revoke"]
-["01a12040-dabb-7606-a68f-4dd2c7304ac6",200,null]
-["01a12040-dabb-7606-a68f-4dd2c7304ac6","GET","/tenants/system/.well-known/openid-configuration"]
-["01a12040-dabb-7606-a68f-4dd2c7304ac6",200,null]
-["01a12040-dabb-7606-a68f-4dd2c7304ac6",200,null]
+["01a17b06-3817-7f4e-955d-e946468cd377","POST","/console/auth/logout"]
+["01a17b06-3817-7f4e-955d-e946468cd377","POST","/tenants/system/protocol/openid-connect/revoke"]
+["01a17b06-3817-7f4e-955d-e946468cd377",200,null]
+["01a17b06-3817-7f4e-955d-e946468cd377","GET","/tenants/system/.well-known/openid-configuration"]
+["01a17b06-3817-7f4e-955d-e946468cd377",200,null]
+["01a17b06-3817-7f4e-955d-e946468cd377",200,null]
 ```
 
 By the time this answered, the gateway had revoked the session's refresh
