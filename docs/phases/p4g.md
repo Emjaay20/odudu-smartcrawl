@@ -2,8 +2,8 @@
 
 What the phase found while building it, in the shape `docs/phases/p4e.md`
 follows. The phase's argument is in
-[its design](../superpowers/specs/2026-10-15-p4g-public-release-design.md)
-and [its plan](../superpowers/plans/2026-10-15-p4g-public-release.md).
+[its design](../archive/specs/2026-10-15-p4g-public-release-design.md)
+and [its plan](../archive/plans/2026-10-15-p4g-public-release.md).
 
 ## Spikes
 
