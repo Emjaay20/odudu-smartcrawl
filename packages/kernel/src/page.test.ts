@@ -660,3 +660,70 @@ describe('brandingProblems is total and agrees with what is sent', () => {
     }
   });
 });
+
+describe('brandingProblems reads assetUrls.length once', () => {
+  const urls = (n: number): string[] =>
+    Array.from({ length: n }, (_, i) => `/t/a/${String(i)}.png`);
+  const lying = (lengths: number[], items: string[] = urls(100)): unknown => {
+    let reads = 0;
+    return new Proxy(items, {
+      get(target, key) {
+        if (key === 'length') {
+          const at = Math.min(reads, lengths.length - 1);
+          reads += 1;
+          return lengths[at];
+        }
+        return Reflect.get(target, key) as unknown;
+      },
+    });
+  };
+  const sources = (value: unknown): number => {
+    const csp =
+      headerMap(themed(branding({ assetUrls: value as string[], faviconUrl: null, logo: null })))[
+        'content-security-policy'
+      ] ?? '';
+    return (csp.split('; ').find((d) => d.startsWith('img-src ')) ?? '').split(' ').length - 1;
+  };
+
+  it.each([
+    ['1 then 100', [1, 100]],
+    ['1 then 1e9', [1, 1e9]],
+    ['16, 16, 17', [16, 16, 17]],
+  ])('holds the cap and returns promptly for length %s', (_name, lengths) => {
+    const started = Date.now();
+    const value = lying(lengths);
+    const problems = brandingProblems(branding({ assetUrls: value as string[] }));
+    let emitted = 0;
+    try {
+      emitted = sources(lying(lengths));
+    } catch {
+      emitted = 0;
+    }
+    expect(Date.now() - started).toBeLessThan(2000);
+    expect(emitted).toBeLessThanOrEqual(16 + 2);
+    expect(Array.isArray(problems)).toBe(true);
+  });
+
+  it('copies at most the length it read when an element getter grows the array', () => {
+    const grower = (): string[] => {
+      const items = urls(4);
+      Object.defineProperty(items, 0, {
+        get() {
+          for (let i = 0; i < 50; i += 1) items.push('/t/a/extra.png');
+          return '/t/a/zero.png';
+        },
+      });
+      return items;
+    };
+    expect(brandingProblems(branding({ assetUrls: grower() }))).toEqual([]);
+    expect(sources(grower())).toBeLessThanOrEqual(16);
+  });
+});
+
+describe('a problem message is one clean line', () => {
+  it.each(['\n', '\r', '\u001b', '\u2028', '\u2029'])('escapes %j in a url', (ch) => {
+    const [problem] = brandingProblems(branding({ stylesheetUrl: `/a${ch}b` }));
+    expect(problem).toBeDefined();
+    expect(problem).not.toMatch(/[\u0000-\u001f\u2028\u2029]/u);
+  });
+});

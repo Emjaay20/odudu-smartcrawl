@@ -58,6 +58,8 @@ export interface ResolvedBranding {
 }
 
 export const MAX_BRANDING_URLS = 16;
+// A valid DNS origin is about 267 characters at most.
+const MAX_ORIGIN_LENGTH = 300;
 const MAX_BRANDING_URL_LENGTH = 256;
 // Not ending in `/`: a trailing slash is a prefix match in a CSP path source.
 const SAME_ORIGIN_PATH = /^\/(?!\/)(?:[A-Za-z0-9._~!$&()+=:@/-]*[A-Za-z0-9._~!$&()+=:@-])$/u;
@@ -74,10 +76,14 @@ export function isSameOriginPath(value: unknown): value is string {
   );
 }
 
-// A problem message quotes tenant input, so it quotes a bounded part of it.
+// A problem message quotes tenant input, so it quotes a bounded part of it,
+// escaped to stay on one line.
 function quoted(value: string): string {
   const head = Array.from(value.slice(0, 256)).slice(0, 64).join('');
-  return value.length <= 64 ? value : `${head}… (${String(value.length)} chars)`;
+  const json = JSON.stringify(head).replace(/[\u2028\u2029]/gu, (c) =>
+    c === '\u2028' ? '\\u2028' : '\\u2029',
+  );
+  return value.length <= 64 ? json : `${json}… (${String(value.length)} chars)`;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -103,7 +109,10 @@ function readBranding(input: unknown): Checked {
   }
   const { origin, templates, tokensCss, stylesheetUrl, faviconUrl, logo, assetUrls } = input;
   const problems: string[] = [];
-  if (typeof origin !== 'string' || !ORIGIN_SOURCE.test(origin.length > 300 ? '' : origin)) {
+  if (
+    typeof origin !== 'string' ||
+    !ORIGIN_SOURCE.test(origin.length > MAX_ORIGIN_LENGTH ? '' : origin)
+  ) {
     problems.push(
       `origin is not an http(s) origin${typeof origin === 'string' ? `: ${quoted(origin)}` : ''}`,
     );
@@ -135,12 +144,13 @@ function readBranding(input: unknown): Checked {
     }
   }
   const assets: unknown[] = [];
+  let length = 0;
   if (!Array.isArray(assetUrls)) {
     problems.push('assetUrls is not an array');
-  } else if (assetUrls.length > MAX_BRANDING_URLS) {
+  } else if ((length = assetUrls.length) > MAX_BRANDING_URLS) {
     problems.push(`more than ${String(MAX_BRANDING_URLS)} urls`);
   } else {
-    for (let i = 0; i < assetUrls.length; i += 1) {
+    for (let i = 0; i < length; i += 1) {
       assets.push(assetUrls[i]);
       const problem = urlProblem(`assetUrls[${String(i)}]`, assets[i], false);
       if (problem !== null) problems.push(problem);
@@ -149,11 +159,7 @@ function readBranding(input: unknown): Checked {
   const count = [stylesheetUrl, faviconUrl, logoUrl, logoDark, ...assets].filter(
     (url) => url !== null,
   ).length;
-  if (
-    count > MAX_BRANDING_URLS &&
-    Array.isArray(assetUrls) &&
-    assetUrls.length <= MAX_BRANDING_URLS
-  ) {
+  if (count > MAX_BRANDING_URLS) {
     problems.push(`more than ${String(MAX_BRANDING_URLS)} urls`);
   }
   if (problems.length > 0) return { branding: null, problems };

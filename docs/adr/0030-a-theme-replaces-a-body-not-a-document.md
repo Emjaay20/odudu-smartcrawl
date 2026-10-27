@@ -84,7 +84,7 @@ stylesheet and image URLs in `style-src` and `img-src` as `origin + path`,
 in place of `'self'`. `origin` must equal the origin the page is served from
 (the configured public base URL); a mismatch fails closed, the page loading
 unstyled while its forms still work. A URL ending in `/` is refused, because
-a trailing slash is a prefix match in a CSP. A URL with `//` or a dot segment is refused too, as it never matches a request path. `pageHeaders` throws on an
+a trailing slash is a prefix match in a CSP. A URL with `//` or a dot segment is refused too, as it never matches a request path. An origin over 300 characters is refused. `pageHeaders` throws on an
 invalid branding, so a resolver calls `brandingProblems` first and, on any
 reason, logs it and falls back to the default theme.
 
