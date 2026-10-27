@@ -93,7 +93,7 @@ Placed on a phase, in order, and not started. Each line names the phase that wil
 - **per-step authenticator configuration**: P4f.
 - **a breached-password check**: P4f.
 - **translated pages and mail**: P4b, which ships the locales on the catalogue mechanism the server already has; the console's catalogue is P4h's (ADR 0043).
-- **a public address of its own for each tenant (a custom domain)**: P4j, straight after P4b, because it changes how a tenant is found, its issuer, its cookies and its passkeys, and none of that changes how a page looks. Today one `ODUDU_PUBLIC_BASE_URL` serves every tenant as `/tenants/<name>`, and a tenant's issuer is that base plus its name.
+- **a public address of its own for each tenant (a custom domain)**: P4j, after P4b, because it changes how a tenant is found rather than how a page looks. Today one `ODUDU_PUBLIC_BASE_URL` serves every tenant as `/tenants/<name>`, and a tenant's issuer is that base plus its name.
 - **custom subject attributes and a declarative user profile**: P7.
 - **fine-grained admin permissions**: P9.
 - **per-client dedicated mappers**: P10.
