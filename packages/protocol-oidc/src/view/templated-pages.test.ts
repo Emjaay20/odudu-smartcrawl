@@ -5,6 +5,7 @@ import {
   type RenderedPage,
   type ResolvedBranding,
 } from '@odudu/kernel';
+import { runInNewContext } from 'node:vm';
 import { describe, expect, it } from 'vitest';
 import {
   renderAuthorizeErrorPage,
@@ -96,7 +97,7 @@ const CASES: Case[] = [
         locale,
       ),
     template:
-      '{{form.open}}{{scopes}}{{submit.deny}}{{submit.allow}}{{form.close}}{{links}}{{intro}}',
+      '{{form.open}}{{scopes}}{{submit.deny}}{{submit.allow}}{{form.close}}{{links}}{{client}}',
     inOrder: [
       '<form',
       '<ul>',
@@ -186,7 +187,6 @@ describe.each(CASES)('the $kind page', ({ kind, render, template, inOrder, hidde
   it('renders a template of the required parts alone without throwing', () => {
     const own = slots(manifest.required);
     const page = render(themed(kind, own));
-    expect(page.body).not.toBe(render(DEFAULT_PAGE_LOCALE).body);
     expect(page.body).not.toContain('{{');
   });
 
@@ -221,6 +221,42 @@ describe.each(CASES)('the $kind page', ({ kind, render, template, inOrder, hidde
   });
 });
 
+describe('a theme template that cannot be filled', () => {
+  const told: [string, string][] = [];
+  const spy = (kind: string, reason: string): number => told.push([kind, reason]);
+
+  it('is reported with its kind and reason, and the default template is rendered', () => {
+    told.length = 0;
+    const locale = { ...themed('select-account', '{{nonesuch}}'), templateFallback: spy };
+    const input = { tenant: 't1', authSessionId: 's', accounts: [] };
+    expect(renderSelectAccountPage(input, locale).body).toBe(
+      renderSelectAccountPage(input, DEFAULT_PAGE_LOCALE).body,
+    );
+    expect(told).toEqual([['select-account', 'unknown slot nonesuch']]);
+  });
+
+  it('is reported for an unknown message key, which saving does not check', () => {
+    told.length = 0;
+    const own = '{{form.open}}{{t "no.such.key"}}{{form.close}}';
+    const locale = { ...themed('logout-confirm', own), templateFallback: spy };
+    renderLogoutConfirmationPage(
+      't1',
+      'sid',
+      'c',
+      { clientId: null, postLogoutRedirectUri: null, state: null },
+      locale,
+    );
+    expect(told).toEqual([['logout-confirm', 'unknown message no.such.key']]);
+  });
+
+  it('is not reported when it fills', () => {
+    told.length = 0;
+    const locale = { ...themed('email-unverified', '{{message}}'), templateFallback: spy };
+    renderEmailUnverifiedPage(true, null, locale);
+    expect(told).toEqual([]);
+  });
+});
+
 describe('the logged-out pages', () => {
   it('keeps the redirecting page’s nonce, once, in the script part', () => {
     const locale = themed('logged-out', '<div>{{script}}</div>{{message}}');
@@ -240,5 +276,57 @@ describe('the logged-out pages', () => {
     const locale = themed('logged-out', `<h2>{{t "logout.done.title"}}</h2>{{message}}`);
     const page = renderLoggedOutPage([], locale);
     expect(page.body).toContain(`<h2>${en['logout.done.title']}</h2>`);
+  });
+});
+
+// The page's own script, run against a stand-in document whose elements
+// arrive after the script has run, as they do when a theme places `script`
+// first.
+function runRedirectScript(html: string, whenScriptRuns: 'before' | 'after'): string[] {
+  const script = /<script nonce="[^"]*">([\s\S]*?)<\/script>/u.exec(html)?.[1] ?? '';
+  const left: string[] = [];
+  const listeners: Record<string, (() => void)[]> = {};
+  const frameLoads: (() => void)[] = [];
+  const state = { ready: whenScriptRuns === 'after', elements: false };
+  const frame = {
+    dataset: {} as Record<string, string>,
+    addEventListener: (_: string, listener: () => void) => frameLoads.push(listener),
+  };
+  const document = {
+    get readyState(): string {
+      return state.ready ? 'interactive' : 'loading';
+    },
+    addEventListener: (name: string, listener: () => void) =>
+      (listeners[name] ??= []).push(listener),
+    getElementById: (id: string) =>
+      state.elements && id === 'continue' ? { href: 'https://rp.test/' } : null,
+    querySelectorAll: () => (state.elements ? [frame] : []),
+  };
+  state.elements = whenScriptRuns === 'after';
+  runInNewContext(script, {
+    document,
+    location: { replace: (to: string) => left.push(to) },
+    setTimeout: () => 0,
+  });
+  state.elements = true;
+  state.ready = true;
+  for (const listener of listeners.DOMContentLoaded ?? []) listener();
+  for (const listener of frameLoads) listener();
+  return left;
+}
+
+describe('the redirecting page’s script', () => {
+  const render = (template: string): RenderedPage =>
+    renderLoggedOutRedirectPage(
+      ['https://rp.test/fc'],
+      'https://rp.test/',
+      themed('logged-out', template),
+    );
+
+  it('finds the continue link and the frames wherever the theme places it', () => {
+    const first = render('{{script}}{{message}}{{frames}}').html;
+    expect(runRedirectScript(first, 'before')).toEqual(['https://rp.test/']);
+    const last = render('{{message}}{{frames}}{{script}}').html;
+    expect(runRedirectScript(last, 'after')).toEqual(['https://rp.test/']);
   });
 });

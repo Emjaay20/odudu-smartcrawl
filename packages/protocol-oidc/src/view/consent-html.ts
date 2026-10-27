@@ -91,7 +91,7 @@ export function renderConsentPage(input: ConsentPageInput, locale: PageLocale): 
     fillPage(
       'consent',
       {
-        intro: intro(
+        client: intro(
           tHtml(locale, 'consent.heading', {}, { client: input.clientName }),
           input.tenant,
         ),

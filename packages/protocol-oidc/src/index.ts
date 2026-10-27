@@ -1081,3 +1081,4 @@ export {
   type EvaluateClaimsInput,
   type EvaluateClaimsOutcome,
 } from '#/usecase/evaluate-claims';
+export { DEFAULT_TEMPLATES } from '#/view/templates/index';

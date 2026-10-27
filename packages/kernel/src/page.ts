@@ -29,6 +29,9 @@ export interface PageLocale {
   readonly theme?: PageTheme;
   // The tenant's or client's own look, when one is published.
   readonly branding?: ResolvedBranding;
+  // Told when a template of the branding could not be filled and the default
+  // was used instead; whoever resolved the branding knows its scope to log.
+  readonly templateFallback?: (kind: PageKind, reason: string) => void;
 }
 
 // What a resolved theme hands a page. Every URL is a same-origin absolute

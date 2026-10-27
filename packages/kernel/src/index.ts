@@ -12,6 +12,11 @@ export {
   type PasswordHintText,
   type PasswordRules,
 } from '#/password-hints';
+export {
+  createFallbackReporter,
+  MAX_REPORTED_FALLBACKS,
+  type TemplateFallback,
+} from '#/template-fallback';
 export { type Clock, systemClock, FakeClock } from '#/clock';
 export { isUuid, newId, scriptNonce } from '#/ids';
 export {

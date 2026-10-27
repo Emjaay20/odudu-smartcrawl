@@ -9,7 +9,8 @@ function isMessageId(key: string): key is MessageId {
 // `parts` holds every name the page kind's manifest lists, an empty string
 // for one this render has nothing for, so a template may place any of them.
 // A theme's template that no longer fills (it was saved against an older
-// manifest or catalogue) gives way to the default rather than a failed page.
+// manifest or catalogue) gives way to the default rather than a failed page,
+// and the locale's `templateFallback` is told why.
 export function fillPage(
   kind: TemplatedKind,
   parts: Readonly<Record<string, string>>,
@@ -23,8 +24,8 @@ export function fillPage(
   if (own !== undefined) {
     try {
       return fillTemplate(own, parts, text);
-    } catch {
-      // Falls through to the default template below.
+    } catch (error) {
+      locale.templateFallback?.(kind, error instanceof Error ? error.message : 'unfillable');
     }
   }
   return fillTemplate(DEFAULT_TEMPLATES[kind], parts, text);

@@ -29,22 +29,23 @@ export interface PageManifest {
 const FORM_OPEN = 'form.open';
 const FORM_CLOSE = 'form.close';
 
-// `form.open` carries every hidden field the form posts, the proof
-// included, so a template cannot drop or forge one. `fields` is one slot
-// where the inputs depend on the step. `intro` is the heading with the tenant
-// and client it is for, which only the server knows. `logged-out` stands for the four
-// pages that end a session or refuse a logout, none with a form. Pages
-// outside any tenant's scope (not-found, server-error, throttled, the
-// console's refusal) have no kind.
+// `form.open` carries every hidden field the form posts, the proof included,
+// so a template cannot drop or forge one. `fields` is one slot where the
+// inputs depend on the step. `intro` is the heading with the tenant; on
+// `consent` it names the client, so it is the required `client`. `sign-in`
+// requires `error` so a refusal cannot be hidden. `logged-out` requires
+// `frames` and `script` (empty where a page has none) because the redirecting
+// page needs both. Pages outside any tenant (not-found, server-error,
+// throttled, the console's refusal) have no kind.
 export const PAGE_KINDS: Record<PageKind, PageManifest> = {
   'sign-in': {
-    required: [FORM_OPEN, 'fields', 'submit', FORM_CLOSE],
-    optional: ['intro', 'error', 'links', 'passkey'],
+    required: [FORM_OPEN, 'fields', 'submit', 'error', FORM_CLOSE],
+    optional: ['intro', 'links', 'passkey'],
     inForm: ['fields', 'submit'],
   },
   consent: {
-    required: [FORM_OPEN, 'scopes', 'submit.allow', 'submit.deny', FORM_CLOSE],
-    optional: ['intro', 'error', 'links'],
+    required: [FORM_OPEN, 'client', 'scopes', 'submit.allow', 'submit.deny', FORM_CLOSE],
+    optional: ['error', 'links'],
     inForm: ['scopes', 'submit.allow', 'submit.deny'],
   },
   'select-account': {
@@ -101,8 +102,8 @@ export const PAGE_KINDS: Record<PageKind, PageManifest> = {
   'authorize-error': { required: ['message'], optional: ['links', 'code'], inForm: [] },
   'email-unverified': { required: ['message'], optional: ['links'], inForm: [] },
   'logged-out': {
-    required: ['message'],
-    optional: ['links', 'frames', 'script'],
+    required: ['message', 'frames', 'script'],
+    optional: ['links'],
     inForm: [],
   },
 };

@@ -7,7 +7,7 @@ import { checkTemplate } from '#/service/template';
 const CATASTROPHIC_MS = 2000;
 
 const SIGN_IN =
-  '<div class="card"><h1>{{t "login.title"}}</h1>{{form.open}}{{fields}}{{submit}}{{form.close}}</div>';
+  '<div class="card"><h1>{{t "login.title"}}</h1>{{error}}{{form.open}}{{fields}}{{submit}}{{form.close}}</div>';
 
 const codes = (template: string, options?: Parameters<typeof checkTemplate>[2]): string[] =>
   checkTemplate('sign-in', template, options).map((issue) => issue.code);
@@ -24,7 +24,7 @@ describe('checkTemplate', () => {
 
   it('accepts optional parts once and the allowed attributes', () => {
     const template = withFragment(
-      '<p lang="en" dir="ltr" role="note" aria-label="x" class="a">{{error}}</p>' +
+      '<p lang="en" dir="ltr" role="note" aria-label="x" class="a">{{links}}</p>' +
         '<a href="https://example.com/help" rel="noopener noreferrer" class="l">Help</a>',
     );
     expect(checkTemplate('sign-in', template)).toEqual([]);
@@ -76,9 +76,9 @@ describe('checkTemplate', () => {
   });
 
   it('refuses a slot in any attribute value, name or comment', () => {
-    expect(codes(withFragment('<p class="a {{error}}">x</p>'))).toContain('slot-in-attribute');
-    expect(codes(withFragment('<p data-{{error}}="1">x</p>'))).toContain('slot-in-attribute');
-    expect(codes(withFragment('<!-- {{error}} -->'))).toContain('comment');
+    expect(codes(withFragment('<p class="a {{links}}">x</p>'))).toContain('slot-in-attribute');
+    expect(codes(withFragment('<p data-{{links}}="1">x</p>'))).toContain('slot-in-attribute');
+    expect(codes(withFragment('<!-- {{links}} -->'))).toContain('comment');
   });
 
   it('refuses on* and style attributes', () => {
@@ -132,28 +132,29 @@ describe('checkTemplate', () => {
       'missing-part',
       'missing-part',
       'missing-part',
+      'missing-part',
     ]);
     expect(codes(withFragment('{{submit}}'))).toEqual(['form-placement', 'repeated-part']);
-    expect(codes(withFragment('{{error}}{{error}}'))).toEqual(['repeated-part']);
+    expect(codes(withFragment('{{links}}{{links}}'))).toEqual(['repeated-part']);
   });
 
   it('refuses an unknown slot, a slot of another kind and a malformed one', () => {
     expect(codes(withFragment('{{nope}}'))).toEqual(['unknown-slot']);
     expect(codes(withFragment('{{submit.allow}}'))).toEqual(['unknown-slot']);
-    expect(codes(withFragment('{{ error }}'))).toContain('malformed-slot');
+    expect(codes(withFragment('{{ links }}'))).toContain('malformed-slot');
     expect(codes(withFragment('{{t foo}}'))).toContain('malformed-slot');
     expect(codes(withFragment('}}'))).toContain('malformed-slot');
   });
 
   it('refuses a slot inside a raw-text element', () => {
     for (const tag of ['title', 'textarea', 'style', 'script', 'noscript', 'xmp', 'iframe']) {
-      expect(codes(withFragment(`<${tag}>{{error}}</${tag}>`)), tag).toContain('slot-in-raw-text');
+      expect(codes(withFragment(`<${tag}>{{links}}</${tag}>`)), tag).toContain('slot-in-raw-text');
     }
   });
 
   it('refuses a slot inside a raw-text element of the svg namespace', () => {
     for (const tag of ['style', 'script', 'title']) {
-      expect(codes(withFragment(`<svg><${tag}>{{error}}</${tag}></svg>`)), tag).toContain(
+      expect(codes(withFragment(`<svg><${tag}>{{links}}</${tag}></svg>`)), tag).toContain(
         'slot-in-raw-text',
       );
     }
@@ -179,7 +180,8 @@ describe('checkTemplate', () => {
   });
 
   it('checks the manifest of the kind it is given', () => {
-    const consent = '{{form.open}}{{scopes}}{{submit.allow}}{{submit.deny}}{{form.close}}{{error}}';
+    const consent =
+      '{{form.open}}{{client}}{{scopes}}{{submit.allow}}{{submit.deny}}{{form.close}}{{error}}';
     expect(checkTemplate('consent', consent)).toEqual([]);
     expect(checkTemplate('sign-in', consent).map((issue) => issue.code)).toContain('unknown-slot');
   });
@@ -209,12 +211,16 @@ describe('form pair', () => {
   });
 
   it('refuses a missing close, a doubled open and a required part outside the pair', () => {
-    expect(codesFor('{{form.open}}{{fields}}{{submit}}')).toContain('missing-part');
+    expect(codesFor('{{error}}{{form.open}}{{fields}}{{submit}}')).toContain('missing-part');
     expect(codesFor('{{form.open}}{{form.open}}{{fields}}{{submit}}{{form.close}}')).toContain(
       'form-pair',
     );
-    expect(codesFor('{{fields}}{{form.open}}{{submit}}{{form.close}}')).toEqual(['form-placement']);
-    expect(codesFor('{{form.open}}{{fields}}{{form.close}}{{submit}}')).toEqual(['form-placement']);
+    expect(codesFor('{{error}}{{fields}}{{form.open}}{{submit}}{{form.close}}')).toEqual([
+      'form-placement',
+    ]);
+    expect(codesFor('{{error}}{{form.open}}{{fields}}{{form.close}}{{submit}}')).toEqual([
+      'form-placement',
+    ]);
   });
 
   it('refuses one half of an optional pair and an in-form part without the pair', () => {
@@ -416,7 +422,7 @@ const payloads: string[] = [
   '<div id="x" class="y">clobber</div>',
   '<img src="https://evil.example/pixel.gif" alt="">',
   '<p>{{script}}</p>',
-  '<p class="{{error}}">x</p>',
+  '<p class="{{links}}">x</p>',
   '<p>&#60;script&#62;</p><script>x</script>',
 ];
 
@@ -447,7 +453,7 @@ describe('issue positions', () => {
   });
 
   it('points at the second occurrence of a repeated part', () => {
-    const template = `{{form.open}}{{fields}}\n{{submit}}\n  {{submit}}{{form.close}}`;
+    const template = `{{error}}{{form.open}}{{fields}}\n{{submit}}\n  {{submit}}{{form.close}}`;
     expect(at(template)).toEqual([{ code: 'repeated-part', line: 3, column: 3 }]);
   });
 
@@ -462,7 +468,7 @@ describe('issue positions', () => {
 
   it('has no position where there is no single place', () => {
     expect(at('a'.repeat(70_000))).toEqual([{ code: 'too-large', line: null, column: null }]);
-    expect(at('<p>x</p>').map(({ line }) => line)).toEqual([null, null, null, null]);
+    expect(at('<p>x</p>').map(({ line }) => line)).toEqual([null, null, null, null, null]);
   });
 
   it('keeps every position in the corpus inside the template', () => {

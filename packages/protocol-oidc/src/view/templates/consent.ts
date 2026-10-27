@@ -1,4 +1,4 @@
-export const CONSENT_TEMPLATE = `{{intro}}{{links}}
+export const CONSENT_TEMPLATE = `{{client}}{{links}}
 {{form.open}}
   {{scopes}}
   {{submit.allow}}
