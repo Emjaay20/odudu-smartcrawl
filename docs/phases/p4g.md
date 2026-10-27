@@ -4031,3 +4031,176 @@ required-actions` does not stop on a page (Recovery codes); `odudu console asser
   bulk, password reset and verification, the group roles and default pages, the audit export, the
   username policy and `DELETE /keys/:id`.
 - **No commands, not run:** the index, What to do next and `DELETE /subjects/:id`.
+
+## Closing the phase
+
+What the phase measured, what its whole-phase review found, and what the close decided. The
+closing pass is on 2026-10-27; the phase ran from the design on 2026-10-15 to the last transcript
+replay on 2026-10-27.
+
+### Each increment, measured
+
+Commits and files changed come from the ranges the ledger recorded for each increment (`git rev-list
+--count --no-merges` and `git diff --shortstat` over the range). The ledger holds no range for
+increments 5, 6, 10, 16, 19, 31j to 31r, 34 and 35, which landed in the same pull request, so they
+have no row; the whole pull request (#64) was 375 commits.
+
+| Increment  | What it delivered                                                  | Commits | Files changed |
+| ---------- | ------------------------------------------------------------------ | ------- | ------------- |
+| 1 and 2    | Spikes: the site, the stack and the pages                          | 2       | 1             |
+| 3          | Roadmap row, licence, LICENSING                                    | 2       | 29            |
+| 4          | Pinned bases, the `odudu` command, Dependabot                      | 4       | 16            |
+| 7          | CLI help registry                                                  | 2       | 13            |
+| 8          | `odudu init`                                                       | 4       | 13            |
+| 9          | The prompt, the compose file, the `setup` service                  | 4       | 16            |
+| 11         | Instrument stylesheet, the CSP amendment                           | 5       | 35            |
+| 12         | The shared page shell and the reach check                          | 4       | 40            |
+| 13         | Catalogue runtime, negotiation, discovery                          | 4       | 101           |
+| 14         | protocol-oidc pages in a catalogue                                 | 13      | 32            |
+| 15         | authn-flows pages in a catalogue                                   | 8       | 43            |
+| 17a, 17b   | Mail catalogues, bidi refusal                                      | 8       | 80            |
+| 17c        | The server-literal lint                                            | 2       | 23            |
+| 18         | The documentation app                                              | 7       | 70            |
+| 20         | The documentation inside the image                                 | 14      | 42            |
+| 21         | The docs command runner                                            | 1       | 13            |
+| 22         | The path documents move into the site                              | 3       | 154           |
+| 22b        | The documentation as a story                                       | 2       | 183           |
+| 23         | Roadmap page, citations, retirement                                | 5       | 156           |
+| 24         | Introduction, quick start, guides                                  | 4       | 35            |
+| 24b        | The quick start through the console                                | 5       | 75            |
+| 25         | The seven concepts                                                 | 2       | 45            |
+| 26 and 26b | Console tour, `console-shots` job, roadmap for adopters            | 4       | 149           |
+| 27         | Operating, security, contributing                                  | 4       | 28            |
+| 28         | Examples: web app, API, machine to machine                         | 6       | 47            |
+| 29         | Example: single-page app; logout resolves the client from the hint | 3       | 30            |
+| 30 and 30c | The mark, wired across console, docs and server pages              | 6       | 183           |
+| 30b        | Kickoff step, owner list, roadmap and section 11 test              | 5       | 14            |
+| 31 to 31f  | Landing page and the Core Web Vitals round                         | 9       | 247           |
+| 31d        | Documentation under `/docs/`, landing at the root                  | 2       | 67            |
+| 31e        | Standard 404 and 500 pages                                         | 3       | 62            |
+| 31h        | Console failure screens                                            | 3       | 72            |
+| 31i        | A smoother sign-in scene                                           | 6       | 37            |
+| 31g        | Links between pages and refusals in place                          | 15      | 124           |
+| 32 and 33  | README front door, community files                                 | 5       | 76            |
+
+After the first candidate each piece went in its own pull request, counted the same way:
+
+| Pull request     | What it delivered                                                         | Commits     | Files changed |
+| ---------------- | ------------------------------------------------------------------------- | ----------- | ------------- |
+| #110 (31c)       | Front-channel logout frames before a matched redirect                     | 3           | 22            |
+| #111 (31b)       | Core Web Vitals and Lighthouse budgets in CI                              | 10          | 38            |
+| #112, #114       | Landing additions, then the redone pages strip, branding and agents bands | 3 and 2     | 54 and 49     |
+| #113             | Whole-phase review: server findings                                       | 7           | 44            |
+| #115             | Whole-phase review: documentation and release findings                    | 16          | 63            |
+| #123             | Whole-phase review: console and admin API findings                        | 5           | 79            |
+| #124, #126, #127 | Transcripts replayed on the final image                                   | 7, 4 and 44 | 17, 20 and 51 |
+| #125             | Seed: mail the configured base URL, name repeats                          | 3           | 6             |
+
+Tests that pin the work are in each increment's section above. Increments 14, 15, 16, 21 and 22b
+were reviewed once, and their fix round was accepted without a second review.
+
+### The whole-phase review
+
+Four reviewers read `main` at `4160e26a` with `v0.1.0-rc.3` tagged, each from one angle: server and
+security code, the console and admin API, the documentation and community files, and release and
+supply chain. They found 48 points: no critical, 18 important (6 server, 8 documentation, 4
+release) and 30 minor (6 server, 6 console, 12 documentation, 6 release). Every finding was checked
+against the repository before it changed anything.
+
+- **Fixed or done:** 16 of the 18 important findings, in #113, #115 and #123, and by the owner's own
+  settings: a stable tag must be on `main`, `latest` moves only to the newest release, every action is
+  pinned, a reset or an actions link ends sessions and grants and clears factors an earlier holder
+  enrolled on an address nobody verified, a reset matches an address case-insensitively, and a 500
+  logs its stack. The console's minors that were bugs were fixed in #123 as well.
+- **Placed:** a visitor can spend an address's mail budget, and a confirm click can create an account
+  its sender chose (ADR 0037's amendment; P11 and P4f); case-variant accounts and their unique index
+  (P4f); the failure screen's error ID and the console's literals (P4h).
+- **Left, by decision:** the README tagline and planned-feature sentences (an owner ruling, the one
+  important finding not acted on), and the Lighthouse flake (the budget was set above the runner's
+  spread, and a re-run is the remedy).
+
+### What the phase added to CI
+
+On the last full run on `main` (run 40433485640, 2026-10-27), 33 jobs took 133 runner minutes and the
+run took 14 minutes of wall clock. The CI restructure cut the `verify` run from about 27 minutes to
+about 10 on its first full run, and the later jobs brought it back up. The jobs
+this phase added to `verify.yml`: `docs` 6 minutes, `lighthouse` 8, `console-shots` 5, `quickstart`
+3 and `examples` 3 each for three of its four legs, about 31 runner minutes together. `e2e` runs in
+three shards of 12 to 13 minutes. `changes` skips the image-building jobs for a prose-only change
+(ADR 0044), and `gate` waits for every job. Separate workflows: `release.yml`, `pages.yml`,
+`docs-commands.yml`, `links.yml` and `cla.yml`.
+
+### The owner's replies at the gates
+
+- 2026-10-19: Docusaurus in place of Rspress, for adoption over a Vue-like look.
+- 2026-10-21: the landing page at the root and the docs under `/docs/`; standard 404 pages, not
+  themed; front-channel logout is protocol and belongs to this phase.
+- 2026-10-22: console error screens, a smoother landing scene, the console favicon matching the docs,
+  a neutral answer for a taken email address when verification is on.
+- 2026-10-23: the README as the full vision with a true-today safeguard in its status section, and no
+  planned-feature block; the merge of #64 and the tag `v0.1.0-rc.1` made on the owner's behalf.
+- 2026-10-24: standing permission to cut the next release candidate once `main` is clean; the stable
+  `v0.1.0` stays the owner's.
+- Settings made by the owner and read back with `gh api`: the package is public, `gate` is required
+  on `main`, the `release tags` ruleset covers `v*`, and the `github-pages` environment allows `v*`.
+
+### The image at release
+
+Read from the registry on 2026-10-27 with `docker buildx imagetools inspect ghcr.io/wizzywit/odudu:<tag>`;
+each tag is an index of `linux/amd64` and `linux/arm64`.
+
+| Tag          | Commit     | Index digest                                                              |
+| ------------ | ---------- | ------------------------------------------------------------------------- |
+| `0.1.0-rc.1` | `a8e9f609` | `sha256:9760e2eab06c85fb36bc432cd3553ca4d52b31892efc9f990bcaf60b97ec718e` |
+| `0.1.0-rc.2` | `404268fd` | `sha256:2b51647dd7557c5e9d167cf3321c294206d13958f1f17b4cdd3f9c0c7b3a5b87` |
+| `0.1.0-rc.3` | `146634f2` | `sha256:1186bed3c9d5c791206bfd559aa1400b7e3707ef28e10b29b30640cfda9d2c59` |
+
+The `v0.1.0-rc.3` release assets are `compose.yaml` (`sha256:34bc715466926c9a8a0776598f001ecd2cece1fb257c54d4c9fba9e4c0bcd674`),
+`odudu-sbom.json` (`sha256:36a7aa258b9bdb1f2d44d4ef1f56f15fd1d574ecc98acabc971ff0249b23017c`) and
+`SHA256SUMS` (`sha256:8a45ff31da83a7ba357fbed71ca51e716eb79c90c88857730e36bfe9dcda81a4`).
+
+### What was decided against
+
+- Rspress for the site: it was evaluated and dropped for Docusaurus (the first spike above).
+- A planned-feature list in the README, whether written or generated from the roadmap: the roadmap
+  is the one place, so there is nothing to keep in step.
+- Theming the 404 and 500 pages by tenant: they are standard pages.
+- Making `cla` a required check before it has been tested from a second account.
+- Fixing the required-action password gap and the append-only audit trail inside this phase: each is
+  outside what the phase builds, and each names its phase (P4f and P12).
+- For the long-heading transcript pages, the long heading as the page's title: a title is capped at 70
+  characters and the heading is as long as 100. The rule instead: a page's `title` is a short name in
+  words, the page's one heading repeats it, and the routes it covers open the page in a sentence that
+  starts "This page covers". `tests/docs/admin-paths.test.ts` reads the routes from that sentence.
+
+### The closing pass
+
+- **Not implemented, placed and true.** The roadmap page no longer has a "What is not implemented"
+  section; its Next, Later and Decided against parts are the list, held by
+  `not-implemented-placement.test.ts`. Read item by item: the claims that the server publishes no MCP
+  metadata (no `oauth-protected-resource` route), has no `Idempotency-Key` header (none in the code), no
+  metrics route, no migration lock (`runMigrations` calls `migrate` and nothing else), ignores
+  `acr_values`, refuses request objects (`request_not_supported`), exports at most 10,000 subjects
+  (`EXPORT_SUBJECT_CAP`), and takes front-channel and `prompt=create` as shipped, all hold. Its
+  reference to the SDKs (P4i, P14) and the hosted service are placed.
+- **Phase numbers moved.** `git grep -P` over the README, the site, `docs/NEXT.md`, the umbrella spec
+  and the ADRs found no citation of P10 for theming and none of P12 for the image. Reader pages carry
+  no phase number outside the roadmap: the eight prose citations left on the transcript pages now name
+  the roadmap instead.
+- **`docs/NEXT.md`.** "What P4g, P4b and P4f inherit" is now "What P4b, P4f and P4h inherit", with
+  the deployment paragraph moved under "What P11 and P12 inherit". The unscoped recovery-code count
+  it asked P4f to re-scope was re-scoped in the replay, so the row and its spec clause are gone.
+- **Section 11 and the roadmap, both ways.** The P4g row says what shipped, the SDK rows have their
+  reasons, the totals are recomputed (1947–2854 and 1099–1549), and the error ID is on P4h only.
+  `roadmap-section-11.test.ts` still maps every roadmap sentence for P4b to P14 to words in its
+  criterion; the mapping for P12 gained the Node major.
+- **The Node major.** Placed on P12, in the roadmap, as a row in `docs/NEXT.md` and as ADR 0001's
+  amendment; Dependabot's ignore and its comment say the same.
+- **Wording.** About 25 long sentences on the introduction, concepts, quick start and operating
+  pages were cut or split. Twenty claims were read against the code: the eight built-in scopes, the
+  30-minute and 10-hour session limits, the 300-second access token and 14-day refresh token, the
+  90-day audit window, the 20 refusal rows per client per minute, the 16 MiB import body, the
+  role check in `reap`, `send-mail` and `send-logouts`, the three ports, `ODUDU_ADMIN_EMAIL`, the
+  optional `ODUDU_APP_DATABASE_URL`, `odudu seed restore-scopes`, `at+jwt`, an anonymous client
+  requiring consent, the 114 admin operations, the 10,000-subject export cap, and the three missing
+  server features above.
