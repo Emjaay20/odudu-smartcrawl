@@ -157,6 +157,7 @@ describe('the roadmap page', () => {
     ['per-step authenticator configuration', 'P4f'],
     ['a breached-password check', 'P4f'],
     ['translated pages and mail', 'P4b'],
+    ['a public address of its own', 'P4j'],
     ['custom subject attributes', 'P7'],
     ['fine-grained admin permissions', 'P9'],
     ['per-client dedicated mappers', 'P10'],
@@ -165,6 +166,7 @@ describe('the roadmap page', () => {
     ['client registration policies', 'P13'],
     ['admin impersonation', 'P13'],
     ['hosted layer', 'ADR 0042'],
+    ['Liquid-style template logic', 'a user asks'],
   ];
 
   it.each(PLACED)(
