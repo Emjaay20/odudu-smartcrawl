@@ -35,8 +35,9 @@ const FORM_CLOSE = 'form.close';
 // inputs depend on the step. `intro` is the heading with the tenant; on
 // `consent` it names the client, so it is the required `client`. A form's
 // `error` is required so a refusal cannot be hidden, and a part a page may
-// have nothing for (`error`, `frames`, `script`) is placed empty. Pages
-// outside any tenant have no kind.
+// have nothing for (`error`, `frames`, `script`, `notice`) is placed empty.
+// A script travels with the elements it reads, in the one `script` part.
+// Pages outside any tenant have no kind.
 export const PAGE_KINDS: Record<PageKind, PageManifest> = {
   'sign-in': {
     required: [FORM_OPEN, 'fields', 'submit', 'error', FORM_CLOSE],
@@ -59,23 +60,23 @@ export const PAGE_KINDS: Record<PageKind, PageManifest> = {
     inForm: ['submit'],
   },
   'totp-enrolment': {
-    required: [FORM_OPEN, 'offer', 'fields', 'submit', FORM_CLOSE],
-    optional: ['error'],
+    required: [FORM_OPEN, 'offer', 'fields', 'submit', 'error', FORM_CLOSE],
+    optional: ['intro'],
     inForm: ['fields', 'submit'],
   },
   'passkey-enrolment': {
-    required: [FORM_OPEN, 'fields', 'submit', 'script', FORM_CLOSE],
-    optional: ['error'],
+    required: [FORM_OPEN, 'fields', 'submit', 'error', 'script', FORM_CLOSE],
+    optional: ['intro'],
     inForm: ['fields', 'submit'],
   },
   'recovery-codes': {
-    required: ['codes', FORM_OPEN, 'submit', FORM_CLOSE],
-    optional: ['notice'],
+    required: ['instructions', 'codes', 'notice', FORM_OPEN, 'submit', 'error', FORM_CLOSE],
+    optional: ['intro'],
     inForm: ['submit'],
   },
   'update-password': {
-    required: [FORM_OPEN, 'fields', 'submit', FORM_CLOSE],
-    optional: ['error'],
+    required: [FORM_OPEN, 'fields', 'submit', 'error', FORM_CLOSE],
+    optional: ['intro'],
     inForm: ['fields', 'submit'],
   },
   'required-action': { required: ['message'], optional: ['links'], inForm: [] },
