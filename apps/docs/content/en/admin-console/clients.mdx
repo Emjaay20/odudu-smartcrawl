@@ -46,6 +46,8 @@ Open the client and choose its **Redirects & origins** tab. A sign-in request mu
 
 Where a sign-out may send the browser is set on the **Logout** tab, as **Post-logout redirect URIs**.
 
+The same tab holds **Skip the sign-out confirmation**, which is off for every new client. Off, a person who is sent to sign out is always asked to confirm. On, a link carrying an ID token this client received signs that person out at once, with no question. The tab says so beside the switch: when this is on, anyone who holds an ID token the application received, even an expired one, can sign its users out by opening a link while their session lasts. Turn it on only for an application you run yourself whose ID tokens never reach a browser or a log. The console's own client has it on and shows it as fixed, because the console signs you out without asking.
+
 ## 3. Choose what the client may do
 
 The other tabs set how the client behaves.
@@ -53,7 +55,7 @@ The other tabs set how the client behaves.
 - **General** names the client and holds its **Availability** and **Consent** settings. **Enabled** switches the client on or off. **Consent required** makes each person approve what the client asks for, on a consent screen, before it gets tokens. **Consent screen links** are the **Home page**, **Privacy policy** and **Terms of service** the consent screen links to. Leave one empty to show none.
 - **Tokens** sets how long its tokens last and which grant types it may use. **Client credentials scopes** are the scope names a service may ask for when it signs in as itself, such as `reports:read`. They are the names a resource server checks, not the OpenID scopes under **Scopes**. **Include all roles in tokens** decides whether the `roles` scope carries all of a person's roles or only those mapped to the granted scopes. The client must still ask for the `roles` scope. It is off by default. The [Scopes concept](../concepts/scopes.mdx) has the rule.
 - **Scopes** assigns the [scopes](./scopes.mdx) it may ask for. **Evaluate claims** shows what one person's sign-in would get, without issuing anything. It lists the **ID token claims**, the **Access token claims** and the **UserInfo claims**.
-- **Logout** holds the **Back-channel logout address**, where the server posts a logout token when a session ends, and the **Front-channel logout address**, a page of the client that the browser loads to tell it the person signed out. Use the back channel when you can: it needs no browser.
+- **Logout** holds **Skip the sign-out confirmation** (off unless you turn it on), the **Back-channel logout address**, where the server posts a logout token when a session ends, and the **Front-channel logout address**, a page of the client that the browser loads to tell it the person signed out. Use the back channel when you can: it needs no browser.
 - **Advanced** is described below.
 - **Roles** lists the client's own [roles](./roles.mdx); **Service account** holds the roles a service acts with.
 - **Sessions** shows who is signed in through the client, and **Activity** every change to it.

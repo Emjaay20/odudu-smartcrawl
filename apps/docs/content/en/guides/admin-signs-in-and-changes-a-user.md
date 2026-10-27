@@ -161,6 +161,9 @@ cache-control: no-store
 set-cookie: odudu-console=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0
 ```
 
+The earlier commands of this guide ran on a stack on port `3185`; this one was run again on a throwaway stack on port
+`3194`, which is why its command names that port. On your own stack all of them use the port you started it on.
+
 Full transcript: [POST /console/auth/logout](../reference/transcripts/console-paths/post-consoleauthlogout.md).
 
 ## Where to go next

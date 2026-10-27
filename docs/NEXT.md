@@ -278,7 +278,8 @@ a phase note.
 - `/logout` has two hardening gaps that predate P4g's change to it. One is
   closed: a verified hint whose `sid` was the cookie's own session ended it by
   `GET` with no confirmation, so a leaked ID token forced that sign-out, and
-  logout now always asks when a session is present. The other remains: the confirmation form's `client_id` and `post_logout_redirect_uri`
+  logout now asks by default when a session is present (a client may opt out
+  for its own hint, ADR 0047). The other remains: the confirmation form's `client_id` and `post_logout_redirect_uri`
   fields are not covered by the anti-forgery HMAC (reaching nothing new
   today, since only a registered address is ever honoured). **P4b** closes it
   by binding the form's fields into the token.
