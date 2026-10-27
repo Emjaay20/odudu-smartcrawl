@@ -70,35 +70,35 @@ carries the client's new `ETag`, the one that read answers;
 
 ```bash
 curl -sS -D - -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
-  http://localhost:3082/admin/tenants/scope-unassign-demo/scopes/01a109b7-d4cb-7d70-8819-84944ef99955/clients/01a109b7-d4ff-72db-90a3-044efab12332
+  http://localhost:3082/admin/tenants/scope-unassign-demo/scopes/01a17d32-2945-7104-a213-46f605d08cb0/clients/01a17d32-2989-7ddc-9a2f-aebf624f2357
 
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
-  http://localhost:3082/admin/tenants/scope-unassign-demo/clients/01a109b7-d4ff-72db-90a3-044efab12332
-
+  http://localhost:3082/admin/tenants/scope-unassign-demo/clients/01a17d32-2989-7ddc-9a2f-aebf624f2357
+echo
 curl -sS -D - -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
-  http://localhost:3082/admin/tenants/scope-unassign-demo/scopes/01a109b7-d4cb-7d70-8819-84944ef99955/clients/01a109b7-d4ff-72db-90a3-044efab12332
+  http://localhost:3082/admin/tenants/scope-unassign-demo/scopes/01a17d32-2945-7104-a213-46f605d08cb0/clients/01a17d32-2989-7ddc-9a2f-aebf624f2357
 ```
 
 ```
 HTTP/1.1 204 No Content
-x-request-id: 01a109b7-d53a-7f8b-b6c6-8d2bc91ea83e
+x-request-id: 01a17d32-720c-7574-83dc-6b10dd18469d
 cache-control: no-store
-etag: "d577711acc23b187327a97d02ab5f7abee1ff3a14aac707bd4d8a96d73b7766c"
-Date: Mon, 05 Oct 2026 01:40:05 GMT
+etag: "664eafd49644b80654740cf72ef9c0bd8ecf2aef4acb772badba2086f7a96523"
+Date: Tue, 27 Oct 2026 11:50:20 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"id":"01a109b7-d4ff-72db-90a3-044efab12332","client_id":"scope-unassign-app","name":"scope-unassign-app","description":null,"type":"public","enabled":true,"full_scope_allowed":false,"skip_logout_confirmation":false,"registration_origin":"operator","created_at":"2026-10-27T01:41:26.621Z","redirect_uris":["https://app.example/callback"],"grant_types":["authorization_code"],"token_endpoint_auth_method":"none","audiences":[],"access_token_ttl_seconds":null,"id_token_ttl_seconds":null,"refresh_token_ttl_seconds":null,"client_credentials_scopes":[],"web_origins":[],"post_logout_redirect_uris":[],"jwks":null,"jwks_uri":null,"frontchannel_logout_uri":null,"backchannel_logout_uri":null,"frontchannel_logout_session_required":false,"backchannel_logout_session_required":false,"consent_required":false,"token_exchange_impersonation_allowed":false,"userinfo_signed_response_alg":null,"userinfo_encrypted_response_alg":null,"userinfo_encrypted_response_enc":null,"tls_client_auth_subject_dn":null,"client_uri":null,"policy_uri":null,"tos_uri":null,"id_token_signed_response_alg":null,"default_max_age":null,"require_auth_time":false,"previous_secret_expires_at":null,"builtin_admin":false,"service_subject_id":null,"scopes":[{"id":"01a17b04-fb9c-7fbd-a3c6-b4a9f6cd56c6","name":"profile","assignment":"default"},{"id":"01a17b04-fb9d-735d-b3b5-0379058196e4","name":"email","assignment":"default"},{"id":"01a17b04-fb9e-7c3e-bdbe-1caff8d839ee","name":"address","assignment":"default"},{"id":"01a17b04-fb9f-76e2-bf4a-b481c6cce7ad","name":"phone","assignment":"default"},{"id":"01a17b04-fba0-791c-80a5-d9ba4882f7af","name":"roles","assignment":"default"},{"id":"01a17b04-fba1-7d0b-874a-ceb6f0cbdef8","name":"groups","assignment":"default"},{"id":"01a17b04-fba2-778a-949e-6c21176c06a3","name":"offline_access","assignment":"optional"}],"service_account_admin_reach":[]}
+{"id":"01a17d32-2989-7ddc-9a2f-aebf624f2357","client_id":"scope-unassign-app","name":"scope-unassign-app","description":null,"type":"public","enabled":true,"full_scope_allowed":false,"skip_logout_confirmation":false,"registration_origin":"operator","created_at":"2026-10-27T11:50:01.864Z","redirect_uris":["https://app.example/callback"],"grant_types":["authorization_code"],"token_endpoint_auth_method":"none","audiences":[],"access_token_ttl_seconds":null,"id_token_ttl_seconds":null,"refresh_token_ttl_seconds":null,"client_credentials_scopes":[],"web_origins":[],"post_logout_redirect_uris":[],"jwks":null,"jwks_uri":null,"frontchannel_logout_uri":null,"backchannel_logout_uri":null,"frontchannel_logout_session_required":false,"backchannel_logout_session_required":false,"consent_required":false,"token_exchange_impersonation_allowed":false,"userinfo_signed_response_alg":null,"userinfo_encrypted_response_alg":null,"userinfo_encrypted_response_enc":null,"tls_client_auth_subject_dn":null,"client_uri":null,"policy_uri":null,"tos_uri":null,"id_token_signed_response_alg":null,"default_max_age":null,"require_auth_time":false,"previous_secret_expires_at":null,"builtin_admin":false,"service_subject_id":null,"scopes":[{"id":"01a17d32-2946-7090-86aa-3c0b71bacfd6","name":"profile","assignment":"default"},{"id":"01a17d32-2947-7d59-ab26-1983ad1f0837","name":"email","assignment":"default"},{"id":"01a17d32-2949-7a5d-b550-030d471f919d","name":"address","assignment":"default"},{"id":"01a17d32-294a-7445-881b-4977dcd7d600","name":"phone","assignment":"default"},{"id":"01a17d32-294c-794c-86b1-38822e1dd1a7","name":"roles","assignment":"default"},{"id":"01a17d32-294d-7331-aeca-0b34dbd897d2","name":"groups","assignment":"default"},{"id":"01a17d32-294e-764f-97da-ad452b023473","name":"offline_access","assignment":"optional"}],"service_account_admin_reach":[]}
 HTTP/1.1 404 Not Found
-x-request-id: 01a109b7-d565-7932-821a-445eb045285c
+x-request-id: 01a17d32-7247-7b57-a3c2-c02bc75cc35c
 cache-control: no-store
 content-type: application/problem+json; charset=utf-8
 content-length: 222
-Date: Mon, 05 Oct 2026 01:40:05 GMT
+Date: Tue, 27 Oct 2026 11:50:20 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"type":"about:blank","title":"Not Found","status":404,"detail":"scope 01a109b7-d4cb-7d70-8819-84944ef99955 is not assigned to client 01a109b7-d4ff-72db-90a3-044efab12332","instance":"01a109b7-d565-7932-821a-445eb045285c"}
+{"type":"about:blank","title":"Not Found","status":404,"detail":"scope 01a17d32-2945-7104-a213-46f605d08cb0 is not assigned to client 01a17d32-2989-7ddc-9a2f-aebf624f2357","instance":"01a17d32-7247-7b57-a3c2-c02bc75cc35c"}
 ```
 
 `/authorize`, asked for `openid` again, now refuses it the same way an
@@ -107,15 +107,15 @@ as any other redirect-side refusal:
 
 ```bash
 curl -sS -D - -o /dev/null \
-  'http://localhost:3082/tenants/scope-unassign-demo/protocol/openid-connect/auth?response_type=code&client_id=scope-unassign-app&redirect_uri=https%3A%2F%2Fapp.example%2Fcallback&scope=openid&state=xyz&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256'
+  'http://localhost:3194/tenants/scope-unassign-demo/protocol/openid-connect/auth?response_type=code&client_id=scope-unassign-app&redirect_uri=https%3A%2F%2Fapp.example%2Fcallback&scope=openid&state=xyz&code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256'
 ```
 
 ```
 HTTP/1.1 302 Found
-x-request-id: 01a109b7-d579-793d-91fe-ea746b588ac8
-location: https://app.example/callback?error=invalid_scope&error_description=A+requested+scope+is+not+available+to+this+client.&state=xyz&iss=http%3A%2F%2Flocalhost%3A3082%2Ftenants%2Fscope-unassign-demo
+x-request-id: 01a17d32-8c9a-7fcb-8a71-2642be0d0ae6
+location: https://app.example/callback?error=invalid_scope&error_description=A+requested+scope+is+not+available+to+this+client.&state=xyz&iss=http%3A%2F%2Flocalhost%3A3194%2Ftenants%2Fscope-unassign-demo
 content-length: 0
-Date: Mon, 05 Oct 2026 01:40:05 GMT
+Date: Tue, 27 Oct 2026 11:50:27 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 ```

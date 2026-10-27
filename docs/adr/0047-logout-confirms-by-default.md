@@ -35,7 +35,7 @@ verified.
 
 The residual risk of the opt-out is the one the confirmation closes: anyone
 holding an ID token for such a client can force that sign-out. An expired token
-counts, as it does for every logout hint, so "still-valid" understates it. The
+counts, as it does for every logout hint, which the warning beside the setting says. The
 console says so beside the setting.
 
 ## Consequences

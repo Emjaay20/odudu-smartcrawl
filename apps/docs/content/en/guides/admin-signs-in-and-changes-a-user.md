@@ -146,17 +146,17 @@ Full transcript: [PATCH …/subjects/{id}](../reference/transcripts/console-path
 
 ## 8. Sign out
 
-Signing out revokes the session's refresh token, deletes the console session and clears the cookie. The answer tells the browser where to go to end the tenant's own session too, where the person is asked to confirm.
+Signing out revokes the session's refresh token, deletes the console session and clears the cookie. The answer tells the browser where to go to end the tenant's own session too. The console's client has opted out of the confirmation, so that address signs the person out at once and sends the browser back to the console.
 
 ```bash
 curl -sS -D - -c jar -b jar -X POST \
-  -H 'Origin: http://localhost:3082' -H 'X-Odudu-Console: 1' \
-  http://localhost:3082/console/auth/logout
+  -H 'Origin: http://localhost:3194' -H 'X-Odudu-Console: 1' \
+  http://localhost:3194/console/auth/logout
 ```
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a17b06-3817-7f4e-955d-e946468cd377
+x-request-id: 01a17d35-5aaf-72f8-9e0f-8b8afabdb050
 cache-control: no-store
 set-cookie: odudu-console=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0
 ```

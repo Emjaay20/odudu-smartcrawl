@@ -332,18 +332,30 @@ its output shows the full headers of a live response. Other blocks on those page
 
 A client then gained `skip_logout_confirmation` (ADR 0047). The new sections were captured live: [a client may skip
 the page](../reference/transcripts/request-paths/rp-initiated-logout.md#a-client-may-skip-the-page) and [turning the
-logout confirmation off for one client](../reference/transcripts/admin-paths/patch-clientsid.md#turning-the-logout-confirmation-off-for-one-client).
-They ran on a third `odudu-tx`-style throwaway, the compose project `odudu-skip` on port `3193` (removed afterwards),
-a fresh stack built from `p4b/b-logout` at `1770d1c7` plus the working tree that the commit after it records, with
-the tenant `demo`, the user `ada` and the public clients `demo-spa`, `demo-post` and `reports` seeded and the
-system administrator `ada` made by `seed admin`. The member also appears in every recorded client body
-on the admin pages `GET`/`POST /clients`, `PATCH /clients/{id}`, `POST /clients/{id}/secret`, the scope-unassign
-read, the client list in "Getting the token", the client in the tenant export document and the audit rows of a client's creation. Those blocks were **not
-replayed**: the member was added by a script over the recorded bodies (`false`, and `true` for `odudu-admin`, right
-after `full_scope_allowed`), each `content-length` raised by its length, and every `etag` line in them is the hash of
-the shape without it, so it differs from what a replay prints. The `content-length` in [the OpenAPI
-block](../reference/transcripts/admin-paths/get-adminopenapijson.md) (`435304`) was read again from the try stack
-rebuilt with the change; the rest of that block is the earlier run's.
+logout confirmation off for one client](../reference/transcripts/admin-paths/patch-clientsid.md#turning-the-logout-confirmation-off-for-one-client),
+on a throwaway compose project, `odudu-skip` on port `3193` (removed afterwards). Every block that shows a client's
+representation or its `ETag` was then **run again**, so none of them is edited: on a second throwaway project,
+`odudu-skip2` on port `3194` with `ODUDU_THROTTLE_LIMIT=1000 ODUDU_LOGIN_THROTTLE_LIMIT=1000`, a fresh stack built from
+`p4b/b-logout` at `b68568f9` plus the working tree that the commit after it records, removed when the capture
+finished. The system administrator `ada` made by `seed admin` supplied `$ADMIN_TOKEN`. The state each block needs was
+made by the admin API (`POST /admin/tenants`, `POST /clients`, `PUT /groups/{id}/roles`, `PUT /smtp`, the key
+rotation), and the ids the blocks name are that run's: on `GET`/`POST /clients` the tenants `demo` and
+`client-facts-demo`, the listing, the search and its cursor; on `PATCH /clients/{id}` the `billing` blocks of
+`client-limits-demo` and `client-pages-demo`, `demo-operator`'s `ETag` chain and the disable pair in
+`client-facts-demo`; the rotation of `demo-backend` on `POST /clients/{id}/secret`; the scope removal on `DELETE
+/scopes/{id}/clients/{clientId}` (its second `/authorize` command names port `3194`, so the `iss` in its output
+matches it, and an `echo` between the read and the second removal keeps the status line off the end of the body); the
+three `client.create` listings, the signing-key and refused listings and the id lookup on `GET /audit`, in a tenant
+`audit-demo` holding `demo-backend` with a `jwks`, `demo-app`, the refused `odudu-admin` and one key rotation, and a
+tenant `resource-audit`; the export of `export-demo`; the `odudu-admin` read in "Getting the token"; and the three
+blocks of the OpenAPI page, whose `content-length` is that build's. Where a block's command named an older
+id, tenant or `ETag`, the command was rewritten to this run's, and the text around it was left. The other blocks of those
+pages stand as their earlier runs left them. The two console pages, [`POST
+/console/auth/logout`](../reference/transcripts/console-paths/post-consoleauthlogout.md) and [following the logout
+redirect](../reference/transcripts/console-paths/following-the-logout-redirect.md), ran on the same stack with `grace`
+seeded in the `system` tenant and signed in to the console, and the second now shows the console's client signed out at
+once, with no confirmation page; the log filter on the first selects the request's own `reqId`, so the stack's health
+probes do not appear.
 
 ## Admin path transcripts
 

@@ -18,11 +18,11 @@ jq '.paths | length' openapi.json
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a17a67-7def-705f-8152-6f83b8eaf326
+x-request-id: 01a17d3a-0eac-7866-a52b-cbe602ff1565
 access-control-allow-origin: *
 content-type: application/json; charset=utf-8
-content-length: 435304
-Date: Mon, 26 Oct 2026 22:49:25 GMT
+content-length: 435400
+Date: Tue, 27 Oct 2026 11:58:39 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 

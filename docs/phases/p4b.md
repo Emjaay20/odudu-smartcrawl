@@ -43,23 +43,32 @@ That client is guarded on the admin API like every field outside
   contact both call `endAndAnswer`, so the redirect rule, the frames, the
   back-channel enqueue and the cleared cookies are the same code. `handleLogoutRequest`
   therefore takes the request context an end needs for its audit row.
-- **Statements.** The flag rides on the `clients` row the route already read, so a
-  logout that asks makes the same five statements it did (tenant, session, signing
-  keys, client, redirect list). One that skips adds the end's own seven (session
-  update, audit-type read, audit insert, grant revoke, back-channel and front-channel
-  client reads, delivery insert) and one frame-client read: thirteen in all, the
-  confirmation `POST`'s set plus the keys read. Measured with `log_statement = 'all'`
-  on a Testcontainers database; no new index, and `pnpm test:plans` still passes.
+- **Statements.** The flag rides on the `clients` row the route already read, so
+  the cost of a logout that asks did not change. Asking about a hint is five data
+  statements (the tenant row, the browser's sessions, the signing keys the hint is
+  verified against, the client row and its redirect list); with no hint the keys are
+  not read, so four. A skip that ends adds the end's seven (session update, audit
+  event-type read, audit insert, grant revoke, back-channel client read, signing-key
+  read for the logout token, delivery insert) and one front-channel client read:
+  thirteen. `logout.int.test.ts` asserts five and thirteen through the driver's
+  query hook. `pnpm test:plans` still passes, but its end-session drive posts the
+  confirmation form and does not reach a skip, so the plan check does not cover
+  the skipping path; no new index is needed, since no new predicate is read.
 - **Expired hints skip too.** Every logout hint is read with `exp` unjudged (the spec
   accepts an expired hint to identify a session), and the skip reuses that reading, so
   a lapsed ID token for a live session of a skipping client still signs it out. The
   console's own ID tokens last five minutes and its sign-out can come later, which is
-  why `exp` is not required. The warning beside the setting says "still-valid"; the
-  `exp` question is whether to require it for the skip and exempt the console, and is
-  open for the owner.
+  why `exp` is not required. The spec's warning beside the setting names expired
+  tokens, so the text and the behaviour agree; whether to require `exp` for the skip
+  and exempt the console stays open for the owner.
 - **Dynamic Client Registration** refuses the member by name
   (`invalid_client_metadata`) rather than dropping it. There is no registration
   update path, so registration is the only door.
 - **The tenant document carries it.** Export writes it and import reads it
   (`manage-tenants`, the broadest capability); a document exported before the
   setting existed has no member and imports with it off.
+- **Import turns the flag on with count-level audit.** An import that sets
+  `skip_logout_confirmation` on a client is audited as `tenant.import` with counts
+  only, not as the per-field `client.create` diff the admin API writes, so the
+  setting appearing through an import is visible in the new tenant's clients and
+  not in its trail.
