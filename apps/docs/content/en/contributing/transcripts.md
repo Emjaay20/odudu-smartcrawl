@@ -330,6 +330,21 @@ request, built from the branch `p4b/b-logout` at `0d739434` plus the working tre
 records. The opening section ran through a local TCP forward from port `3000` to `3191`, as before, which is why
 its output shows the full headers of a live response. Other blocks on those pages keep the output they had.
 
+A client then gained `skip_logout_confirmation` (ADR 0047). The new sections were captured live: [a client may skip
+the page](../reference/transcripts/request-paths/rp-initiated-logout.md#a-client-may-skip-the-page) and [turning the
+logout confirmation off for one client](../reference/transcripts/admin-paths/patch-clientsid.md#turning-the-logout-confirmation-off-for-one-client).
+They ran on a third `odudu-tx`-style throwaway, the compose project `odudu-skip` on port `3193` (removed afterwards),
+a fresh stack built from `p4b/b-logout` at `1770d1c7` plus the working tree that the commit after it records, with
+the tenant `demo`, the user `ada` and the public clients `demo-spa`, `demo-post` and `reports` seeded and the
+system administrator `ada` made by `seed admin`. The member also appears in every recorded client body
+on the admin pages `GET`/`POST /clients`, `PATCH /clients/{id}`, `POST /clients/{id}/secret`, the scope-unassign
+read, the client list in "Getting the token", the client in the tenant export document and the audit rows of a client's creation. Those blocks were **not
+replayed**: the member was added by a script over the recorded bodies (`false`, and `true` for `odudu-admin`, right
+after `full_scope_allowed`), each `content-length` raised by its length, and every `etag` line in them is the hash of
+the shape without it, so it differs from what a replay prints. The `content-length` in [the OpenAPI
+block](../reference/transcripts/admin-paths/get-adminopenapijson.md) (`435304`) was read again from the try stack
+rebuilt with the change; the rest of that block is the earlier run's.
+
 ## Admin path transcripts
 
 The admin API: the endpoints under `/admin/tenants/{tenant}/` that let an

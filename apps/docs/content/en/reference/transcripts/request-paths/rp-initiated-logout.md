@@ -972,6 +972,173 @@ and ends nothing; the unedited one ends the session and redirects as before.
 (`x-request-id`, `Date` and the keep-alive headers are omitted from the filtered
 output by the `grep`.)
 
+## A client may skip the page
+
+A client's operator can turn the confirmation off for that client alone,
+with `skip_logout_confirmation` ([`PATCH /clients/{id}`](../admin-paths/patch-clientsid.md#turning-the-logout-confirmation-off-for-one-client)
+shows the write and its audit row; ADR 0047 has the reasoning). It applies to
+one request only: an `id_token_hint` that verifies, whose audience is that
+client and whose `sid` is the session the browser holds. This section ran on
+**port 3193**, a new
+stack with the tenant `demo`, the user `ada` and the public clients `demo-spa`
+and `demo-post` seeded, each with the redirect `http://localhost:8080/callback`
+and the post-logout redirect `http://localhost:8080/logged-out`. Before
+anything below, `demo-spa` had been given `skip_logout_confirmation: true` and a
+back-channel logout URI, `https://rp.example/backchannel`, through the admin API,
+and `demo-post` was left as seeded. `psql` is a function for that stack's
+database, and `live` asks whether a session is still live:
+
+```bash
+psql() { docker compose -f infra/docker/compose.yaml exec -T postgres psql -U odudu -d odudu "$@"; }
+live() { psql -c "select id, expires_at > now() as live from sessions where id = '$1';"; }
+psql -c "select c.client_id, c.skip_logout_confirmation from clients c join tenants t on t.id = c.tenant_id where t.name = 'demo' and not c.builtin_admin and c.client_id in ('demo-spa','demo-post') order by 1;"
+```
+
+```
+ client_id | skip_logout_confirmation
+-----------+--------------------------
+ demo-post | f
+ demo-spa  | t
+(2 rows)
+```
+
+`ada` signed in with a new `cookies.txt` jar and `demo-spa`'s `id_token` was
+obtained as the opening section does, so `ID_TOKEN` is a hint for `demo-spa`
+whose `sid` is `$SID`, the session in the jar. The request is the same one the
+opening section sent, and this time it is the whole exchange: no page, the
+session ended, both cookies cleared and the browser sent on with its `state`:
+
+```bash
+BASE=http://localhost:3193/tenants/demo/protocol/openid-connect
+live $SID
+curl -sS -b cookies.txt -D - -o /dev/null --get \
+  --data-urlencode "id_token_hint=$ID_TOKEN" \
+  --data-urlencode 'client_id=demo-spa' \
+  --data-urlencode 'post_logout_redirect_uri=http://localhost:8080/logged-out' \
+  --data-urlencode 'state=skip-1' \
+  "$BASE/logout" | grep -iE '^HTTP|^location|^set-cookie|<title>'
+live $SID
+```
+
+```
+                  id                  | live
+--------------------------------------+------
+ 01a17d0b-c1ad-7a65-8577-9596d23850d9 | t
+(1 row)
+
+HTTP/1.1 302 Found
+set-cookie: demo-session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
+set-cookie: demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
+location: http://localhost:8080/logged-out?state=skip-1
+                  id                  | live
+--------------------------------------+------
+ 01a17d0b-c1ad-7a65-8577-9596d23850d9 | f
+(1 row)
+```
+
+(The `grep` leaves out `x-request-id`, `Date` and the keep-alive headers.) The
+session ended the way the confirmation `POST` ends one, so the grant `demo-spa`
+held under it was revoked and its back-channel logout was queued for the
+sender:
+
+```bash
+psql -c "select c.client_id, d.session_id, d.endpoint from backchannel_logout_deliveries d join clients c on c.id = d.client_id join tenants t on t.id = d.tenant_id where t.name = 'demo' and d.session_id = '$SID';"
+```
+
+```
+ client_id |              session_id              |            endpoint
+-----------+--------------------------------------+--------------------------------
+ demo-spa  | 01a17d0b-c1ad-7a65-8577-9596d23850d9 | https://rp.example/backchannel
+(1 row)
+```
+
+Every other request still asks. A second sign-in as `ada` gave a new session,
+which `$SID` now names, and two hints, `ID_POST` for `demo-post` and `ID_SPA` for
+`demo-spa`. `demo-post` kept the default, so its own hint, which is valid and
+names this very session, gets the page. `demo-spa` skips, but a `client_id` with
+no hint gets the page, and so does the hint `demo-post` was issued, whether or
+not `client_id` names the client that skips. Each answer leaves the session live:
+
+```bash
+ask() { curl -sS -b cookies.txt -D - --get "$@" "$BASE/logout" | grep -iE '^HTTP|^location|^set-cookie|<title>'; live $SID; }
+echo '# demo-post, which keeps the page, with its own hint'
+ask --data-urlencode "id_token_hint=$ID_POST" --data-urlencode client_id=demo-post \
+  --data-urlencode post_logout_redirect_uri=http://localhost:8080/logged-out --data-urlencode state=skip-2
+echo '# demo-spa, which skips, with a client_id and no hint'
+ask --data-urlencode client_id=demo-spa \
+  --data-urlencode post_logout_redirect_uri=http://localhost:8080/logged-out --data-urlencode state=skip-3
+echo '# demo-spa, which skips, with the hint demo-post was issued'
+ask --data-urlencode "id_token_hint=$ID_POST" --data-urlencode client_id=demo-spa \
+  --data-urlencode post_logout_redirect_uri=http://localhost:8080/logged-out --data-urlencode state=skip-4
+```
+
+```
+# demo-post, which keeps the page, with its own hint
+HTTP/1.1 200 OK
+<title>Sign out?</title>
+                  id                  | live
+--------------------------------------+------
+ 01a17d0c-3525-78aa-b009-331bc781acd2 | t
+(1 row)
+
+# demo-spa, which skips, with a client_id and no hint
+HTTP/1.1 200 OK
+<title>Sign out?</title>
+                  id                  | live
+--------------------------------------+------
+ 01a17d0c-3525-78aa-b009-331bc781acd2 | t
+(1 row)
+
+# demo-spa, which skips, with the hint demo-post was issued
+HTTP/1.1 200 OK
+<title>Sign out?</title>
+                  id                  | live
+--------------------------------------+------
+ 01a17d0c-3525-78aa-b009-331bc781acd2 | t
+(1 row)
+```
+
+Dynamic Client Registration never takes the field, so an anonymous
+registration cannot opt itself out. `demo` had its registration policy set to
+`open` (`odudu seed tenant --name demo --set client_registration_policy=open`)
+for this and nothing else. The first request names the field and is refused;
+the second registers the same client without it, and the row it made has the
+setting off:
+
+```bash
+curl -sS -D - -H 'Content-Type: application/json' \
+  -d '{"redirect_uris":["https://rp.example/cb"],"skip_logout_confirmation":true}' \
+  http://localhost:3193/tenants/demo/clients-registrations/openid-connect | grep -iE '^HTTP|^\{'
+CID=$(curl -sS -H 'Content-Type: application/json' -d '{"redirect_uris":["https://rp.example/cb"]}' \
+  http://localhost:3193/tenants/demo/clients-registrations/openid-connect | python3 -c "import json,sys; print(json.load(sys.stdin)['client_id'])")
+psql -c "select client_id, registration_origin, skip_logout_confirmation from clients where client_id = '$CID';"
+```
+
+```
+HTTP/1.1 400 Bad Request
+{"error":"invalid_client_metadata","error_description":"skip_logout_confirmation is not accepted at registration: an administrator sets it"}
+              client_id               | registration_origin | skip_logout_confirmation
+--------------------------------------+---------------------+--------------------------
+ 01a17d0b-8aab-72db-92ad-1138b5f69c1f | anonymous           | f
+(1 row)
+```
+
+The console's own client is the one client that has it on from the start, in
+every tenant. The query below ran on this stack, whose tenants `odudu seed
+admin` and `odudu seed tenant` had provisioned:
+
+```bash
+psql -c "select t.name, c.client_id, c.builtin_admin, c.skip_logout_confirmation from clients c join tenants t on t.id = c.tenant_id where c.builtin_admin order by t.name;"
+```
+
+```
+  name  |  client_id  | builtin_admin | skip_logout_confirmation
+--------+-------------+---------------+--------------------------
+ demo   | odudu-admin | t             | t
+ system | odudu-admin | t             | t
+(2 rows)
+```
+
 ## A `client_id` that disagrees with the hint
 
 §2 requires the OP to verify a `client_id` sent alongside an

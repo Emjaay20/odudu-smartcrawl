@@ -29,11 +29,13 @@ verified.
   Dynamic Client Registration never accepts the field. It is set only through
   the admin API with `manage-clients`, audited. The console's own client has it
   on, because its ID token is held server side and its sign-out is a click in
-  an authenticated page. This decision is built in the same phase, in the step
-  after the one that makes the confirmation the default.
+  an authenticated page. Built in P4b: `clients.skip_logout_confirmation`, the
+  tenant document carrying it, and the console's own client set by the migration
+  and by `provisionAdminClient`.
 
 The residual risk of the opt-out is the one the confirmation closes: anyone
-holding a still-valid ID token for such a client can force that sign-out. The
+holding an ID token for such a client can force that sign-out. An expired token
+counts, as it does for every logout hint, so "still-valid" understates it. The
 console says so beside the setting.
 
 ## Consequences
