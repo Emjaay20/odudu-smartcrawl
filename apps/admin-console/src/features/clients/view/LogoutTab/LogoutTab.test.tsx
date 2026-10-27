@@ -148,6 +148,25 @@ it("reads the hint and the warning as the switch's description, off and on", asy
   expect(toggle).toHaveAccessibleDescription(expect.stringContaining(WARNING));
 });
 
+it('changes the hint with the switch and keeps the warning described, off and on', async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(AT, clientRoutes());
+  const section = await screen.findByRole('region', { name: 'Sign-out confirmation' });
+  const toggle = await within(section).findByRole('switch', { name: SKIP });
+  const off = 'Off: the person is always asked to confirm sign-out.';
+  const on = "On: signing out with this application's ID token ends the session without asking.";
+  expect(within(section).getByText(off)).toBeVisible();
+  expect(within(section).queryByText(on)).toBeNull();
+  await user.click(toggle);
+  expect(within(section).getByText(on)).toBeVisible();
+  expect(within(section).queryByText(off)).toBeNull();
+  expect(toggle).toHaveAccessibleDescription(expect.stringContaining(on));
+  expect(toggle).toHaveAccessibleDescription(expect.stringContaining(WARNING));
+  expect(within(section).getByText(WARNING)).toBeVisible();
+  await user.click(toggle);
+  expect(within(section).getByText(off)).toBeVisible();
+});
+
 it('sets the warning apart once the toggle is on, and saves it with the ETag it read', async () => {
   const user = userEvent.setup();
   const { sent } = renderConsoleAt(
