@@ -98,7 +98,7 @@ describe('an account form template that loses what the server must show', () => 
 
 describe('a notice template', () => {
   it('is refused without its message', () => {
-    const without = ACCOUNT.notice?.replace('{{message}}', '') ?? '';
+    const without = ACCOUNT.notice.replace('{{message}}', '');
     expect(checkTemplate('notice', without).map((issue) => issue.detail)).toContain('message');
   });
 

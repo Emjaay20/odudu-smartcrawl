@@ -6,11 +6,33 @@ import {
   type ResolvedBranding,
 } from '@odudu/kernel';
 import { describe, expect, it } from 'vitest';
-import { renderRegistrationForm } from '#/view/registration-html';
-import { renderRequiredActionsForm } from '#/view/required-actions-html';
-import { renderResetPasswordForm, renderResetRequestForm } from '#/view/reset-html';
+import {
+  renderRegistrationFailedPage,
+  renderRegistrationForm,
+  renderRegistrationReadyPage,
+  renderRegistrationSucceededPage,
+  renderRegistrationUsernameGonePage,
+} from '#/view/registration-html';
+import {
+  renderRequiredActionsFactorsRemovedPage,
+  renderRequiredActionsForm,
+  renderRequiredActionsSucceededPage,
+} from '#/view/required-actions-html';
+import {
+  renderResetLinkFailedPage,
+  renderResetPasswordFactorsRemovedPage,
+  renderResetPasswordForm,
+  renderResetPasswordSucceededPage,
+  renderResetRequestFailedPage,
+  renderResetRequestForm,
+  renderResetRequestedPage,
+} from '#/view/reset-html';
 import { DEFAULT_TEMPLATES, type TemplatedKind } from '#/view/templates/index';
-import { renderEmailConfirmPage, renderVerificationSucceededPage } from '#/view/verification-html';
+import {
+  renderEmailConfirmPage,
+  renderVerificationFailedPage,
+  renderVerificationSucceededPage,
+} from '#/view/verification-html';
 
 function themed(kind: TemplatedKind, template: string): PageLocale {
   const branding: ResolvedBranding = {
@@ -100,9 +122,9 @@ const CASES: Case[] = [
     hidden: ['key'],
   },
   {
-    name: 'verification, succeeded',
+    name: 'verification, failed',
     kind: 'verification',
-    render: (locale) => renderVerificationSucceededPage(SIGN_IN, locale),
+    render: (locale) => renderVerificationFailedPage(SIGN_IN, locale),
     template: '{{links}}{{form.open}}{{submit}}{{form.close}}{{message}}',
     inOrder: ['class="links"', '<h1>'],
     hidden: [],
@@ -265,5 +287,109 @@ describe('a theme template that cannot be filled', () => {
     };
     renderVerificationSucceededPage(null, locale);
     expect(told).toEqual([]);
+  });
+});
+
+interface NoticeCase {
+  name: string;
+  render: (locale: PageLocale) => RenderedPage;
+  // Whether the page has a way on that a theme must not be able to drop: it
+  // is in `message`, so a template of `{{message}}` alone still shows it.
+  wayOn: boolean;
+}
+
+const RESET = '/tenants/t1/login-actions/reset-password';
+
+const NOTICES: NoticeCase[] = [
+  {
+    name: 'registration failed',
+    render: (l) => renderRegistrationFailedPage('t1', SIGN_IN, l),
+    wayOn: true,
+  },
+  {
+    name: 'registration succeeded',
+    render: (l) => renderRegistrationSucceededPage(false, SIGN_IN, l),
+    wayOn: false,
+  },
+  {
+    name: 'registration username gone',
+    render: (l) => renderRegistrationUsernameGonePage('t1', l),
+    wayOn: true,
+  },
+  {
+    name: 'registration ready',
+    render: (l) => renderRegistrationReadyPage(SIGN_IN, l),
+    wayOn: true,
+  },
+  { name: 'reset requested', render: (l) => renderResetRequestedPage(SIGN_IN, l), wayOn: false },
+  {
+    name: 'reset request failed',
+    render: (l) => renderResetRequestFailedPage('t1', SIGN_IN, l),
+    wayOn: true,
+  },
+  {
+    name: 'reset succeeded',
+    render: (l) => renderResetPasswordSucceededPage(SIGN_IN, l),
+    wayOn: true,
+  },
+  {
+    name: 'reset factors removed',
+    render: (l) => renderResetPasswordFactorsRemovedPage(SIGN_IN, l),
+    wayOn: true,
+  },
+  {
+    name: 'reset link failed',
+    render: (l) => renderResetLinkFailedPage(RESET, SIGN_IN, l),
+    wayOn: true,
+  },
+  {
+    name: 'required actions succeeded',
+    render: (l) => renderRequiredActionsSucceededPage([], SIGN_IN, l),
+    wayOn: true,
+  },
+  {
+    name: 'required actions factors removed',
+    render: (l) => renderRequiredActionsFactorsRemovedPage([], SIGN_IN, l),
+    wayOn: true,
+  },
+];
+
+describe.each(NOTICES)('the $name notice', ({ render, wayOn }) => {
+  const manifest = PAGE_KINDS.notice;
+
+  it('renders a theme template with its parts in the theme’s own order', () => {
+    const body = render(themed('notice', '<div>{{links}}</div><p>{{intro}}</p>{{message}}')).body;
+    expect(body.indexOf('<h1>')).toBeGreaterThan(body.indexOf('</div>'));
+  });
+
+  it('shows its way on to a template of the message alone', () => {
+    const body = render(themed('notice', slots(manifest.required))).body;
+    expect(body.includes('href=')).toBe(wayOn);
+  });
+
+  it('supplies every part the manifest lists', () => {
+    const own = slots([...manifest.required, ...manifest.optional]);
+    expect(render(themed('notice', own)).body).not.toContain('{{');
+  });
+
+  it('falls back to the default when the theme’s template names an unknown part', () => {
+    const own = themed('notice', `${slots(manifest.required)}{{nonesuch}}`);
+    expect(render(own).body).toBe(render(DEFAULT_PAGE_LOCALE).body);
+  });
+
+  it('has no form, token or script of its own', () => {
+    const page = render(DEFAULT_PAGE_LOCALE);
+    expect(page.body).not.toMatch(/<(?:form|input|script)/u);
+    expect(page.script).toBeNull();
+  });
+});
+
+describe('the verification confirmation notice', () => {
+  it('keeps the continue link when a theme places the message alone', () => {
+    const body = renderVerificationSucceededPage(
+      SIGN_IN,
+      themed('verification', '{{message}}{{form.open}}{{submit}}{{form.close}}'),
+    ).body;
+    expect(body).toContain(`href="${SIGN_IN.replace(/&/gu, '&amp;')}"`);
   });
 });

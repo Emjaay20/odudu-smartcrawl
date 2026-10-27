@@ -42,12 +42,12 @@ export function renderVerificationSucceededPage(
     t(locale, 'verification.succeeded.title'),
     fillPage(
       'verification',
-      signInPath === null
-        ? noForm(`${heading}\n<p>${tHtml(locale, 'verification.succeeded.next')}</p>`, '')
-        : noForm(
-            heading,
-            links([{ href: signInPath, text: tHtml(locale, 'link.continueToSignIn') }]),
-          ),
+      noForm(
+        signInPath === null
+          ? `${heading}\n<p>${tHtml(locale, 'verification.succeeded.next')}</p>`
+          : `${heading}${links([{ href: signInPath, text: tHtml(locale, 'link.continueToSignIn') }])}`,
+        '',
+      ),
       locale,
     ),
     null,
