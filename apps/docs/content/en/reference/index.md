@@ -30,7 +30,7 @@ The [roadmap](../roadmap.md) lists every gap, the phase that brings it, and the 
 
 ## Admin API
 
-The operations of the admin API, one page for each area. The same description is published as an
+The operations of the admin API, grouped by area, with one page for each operation. The same description is published as an
 [OpenAPI document](pathname:///openapi/admin.json) that a client generator can read.
 
 - [Admin API overview](./generated/admin-api/index.md): authentication, the tenant in the path and
