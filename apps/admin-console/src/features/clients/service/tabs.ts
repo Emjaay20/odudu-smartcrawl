@@ -49,7 +49,7 @@ export const TAB_SECTIONS: Readonly<Record<ClientTab, readonly string[]>> = {
   redirects: ['redirects', 'origins'],
   tokens: ['lifetimes', 'grants', 'credentials', 'fullScope', 'idToken'],
   scopes: [],
-  logout: ['postLogout', 'backchannel', 'frontchannel'],
+  logout: ['postLogout', 'confirmation', 'backchannel', 'frontchannel'],
   advanced: ['auth', 'keys', 'userinfo', 'audiences', 'exchange'],
   roles: [],
   service: [],

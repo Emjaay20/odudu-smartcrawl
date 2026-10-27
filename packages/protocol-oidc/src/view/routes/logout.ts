@@ -78,10 +78,10 @@ async function respondToOutcome(
   }
 
   // Both remaining outcomes end here having already ended a session — the
-  // `render` outcome always does (decideLogout only refuses a redirect on
-  // the branch that first confirmed a session), and `end` only when its own
-  // `sessionEnded` says so (decideLogout can also honour a matched redirect
-  // with no session to end at all).
+  // `render` outcome always does (a redirect is refused only after the
+  // session ended), and `end` only when its own `sessionEnded` says so
+  // (decideLogout can also honour a matched redirect with no session to end
+  // at all).
   const sessionEnded = outcome.kind === 'render' || outcome.sessionEnded;
   if (sessionEnded) {
     for (const cookie of clearedSessionCookies(tenant, tls)) {

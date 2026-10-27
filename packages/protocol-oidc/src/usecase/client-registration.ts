@@ -191,7 +191,10 @@ export async function registerClient(
     return { kind: 'unauthorized' };
   }
 
-  const parsed = parseClientMetadata(body, { tlsClientAuthEnabled: deps.tlsClientAuthEnabled });
+  const parsed = parseClientMetadata(body, {
+    tlsClientAuthEnabled: deps.tlsClientAuthEnabled,
+    refuseOperatorFields: true,
+  });
   if (parsed.kind === 'invalid') {
     return { kind: 'invalid_metadata', error: parsed.error, description: parsed.description };
   }

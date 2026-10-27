@@ -743,6 +743,13 @@
       "when": 1789827281736,
       "tag": "0105_users_self_registered",
       "breakpoints": true
+    },
+    {
+      "idx": 106,
+      "version": "7",
+      "when": 1789913681736,
+      "tag": "0106_clients_skip_logout_confirmation",
+      "breakpoints": true
     }
   ]
 }

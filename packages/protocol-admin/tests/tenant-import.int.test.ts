@@ -116,6 +116,7 @@ async function seededSource(): Promise<{ id: string; name: string; confidentialI
       token_endpoint_auth_method: 'none',
       redirect_uris: ['https://spa.example/callback'],
       web_origins: ['+'],
+      skip_logout_confirmation: true,
     },
   });
   expect(spa.statusCode, spa.payload).toBe(201);
@@ -268,6 +269,9 @@ describe('POST /admin/tenant-imports', () => {
       'public',
     ]);
     expect(original.smtp).not.toBeNull();
+    expect(
+      original.clients.map((client) => [client.client_id, client.skip_logout_confirmation]),
+    ).toEqual(expect.arrayContaining([['spa', true]]));
     const name = `import-${newId()}`;
 
     const res = await postImport(token, { name, display_name: 'Imported', document: original });

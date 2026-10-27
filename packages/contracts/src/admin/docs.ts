@@ -240,6 +240,8 @@ describeFields(clientFieldsSchema, {
     'A disabled client cannot start a sign-in or obtain tokens, and tokens already issued to it stop being accepted.',
   full_scope_allowed:
     "When true the client's tokens carry every role the user holds. When false, a role reaches a token only through a scope the client is assigned.",
+  skip_logout_confirmation:
+    "When true, `/logout` signs a user out of this client without the confirmation page, but only for a request carrying an ID token this client was issued, for the session that is current, even an expired one. Anyone holding such a token can then sign that user out by opening a link. Off for every client but the console's own, and never settable through dynamic registration.",
   registration_origin:
     'How the client came to exist: `seeded` by `odudu seed` or `odudu init`, `anonymous` or `token` through dynamic registration, or `operator` through the admin API.',
   created_at: 'When the client was created, as an ISO 8601 date and time.',
@@ -707,6 +709,8 @@ describeFields(exportedClientSchema, {
     'A disabled client cannot start a sign-in or obtain tokens, and tokens already issued to it stop being accepted.',
   full_scope_allowed:
     "When true the client's tokens carry every role the user holds. When false, a role reaches a token only through a scope the client is assigned.",
+  skip_logout_confirmation:
+    'When true, `/logout` signs a user out of this client without the confirmation page, for a request carrying an ID token this client was issued for the session that is current, even an expired one. Absent in a document exported before the setting existed, which imports with it off.',
   registration_origin:
     'How the client came to exist: `seeded` by `odudu seed` or `odudu init`, `anonymous` or `token` through dynamic registration, or `operator` through the admin API.',
   redirect_uris:

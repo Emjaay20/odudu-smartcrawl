@@ -44,6 +44,7 @@ export interface ClientAnswer {
   require_auth_time: boolean;
   previous_secret_expires_at: string | null;
   builtin_admin: boolean;
+  skip_logout_confirmation: boolean;
   service_subject_id: string | null;
   service_account_admin_reach: readonly string[];
   scopes: readonly { id: string; name: string; assignment: 'default' | 'optional' }[];
@@ -100,6 +101,7 @@ export function client(
     require_auth_time: false,
     previous_secret_expires_at: null,
     builtin_admin: false,
+    skip_logout_confirmation: false,
     service_subject_id: serviceAccountOf(id),
     service_account_admin_reach: [],
     scopes: [],
@@ -120,6 +122,7 @@ export const PORTAL = client('c-portal', 'portal', {
 });
 export const ADMIN = client('c-admin', 'odudu-admin', {
   builtin_admin: true,
+  skip_logout_confirmation: true,
   service_subject_id: null,
   name: 'Odudu admin',
 });

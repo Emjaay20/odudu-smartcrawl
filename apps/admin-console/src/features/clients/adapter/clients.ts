@@ -97,6 +97,7 @@ export interface ClientChanges {
   backchannel_logout_uri?: string;
   frontchannel_logout_session_required?: boolean;
   backchannel_logout_session_required?: boolean;
+  skip_logout_confirmation?: boolean;
   token_endpoint_auth_method?: string;
   tls_client_auth_subject_dn?: string;
   jwks?: unknown;

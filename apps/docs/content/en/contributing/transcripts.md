@@ -308,6 +308,55 @@ on purpose: `tests/docs/discovery.test.ts` compares the recorded document, membe
 one the server builds for `http://localhost:3000`, and a block showing `3331` in its issuer would fail
 it. Every other line of that document was confirmed identical.
 
+Logout always asks, and the transcripts that showed a `GET` with an ID token hint ending a session were run
+again for it: [RP-initiated logout](../reference/transcripts/request-paths/rp-initiated-logout.md) (the opening
+section, the expired-hint section, introspection and revocation, the same request over `POST`, the `client_id` that
+disagrees with the hint, the front-channel frames and the matched redirect after them) and
+[Following the logout redirect](../reference/transcripts/console-paths/following-the-logout-redirect.md). They ran on
+the compose project `odudu-tx`, a fresh stack with `demo`, `demo-spa`, `demo-post`, `ada` and, for the console page,
+`grace` seeded, published on port `3191`, built from the branch `p4b/b-logout` at `fa7f01b3` plus the working tree
+that the commit after it records. The opening section ran with a local TCP forward from port `3000` to `3191`, so its
+commands read against `3000` as the guide that excerpts them does; every other re-run block names `3191`. Blocks
+elsewhere on those pages, such as the deliveries queue after the front-channel logout and the offline-access
+section, keep the output they had: the deliveries queue was queried again on this stack and answered as recorded.
+
+The logout form's token then began to cover its `client_id`, `post_logout_redirect_uri` and `state` (ADR 0047). The
+section on [a form edited after it was issued](../reference/transcripts/request-paths/rp-initiated-logout.md#a-form-edited-after-it-was-issued)
+was captured for it, the opening section's two requests and the front-channel section's confirming `POST` were run
+again, and the guide [Refresh and end a session](../guides/refresh-and-end-a-session.md) now carries the opening
+section's output. They ran on a second `odudu-tx` compose project on port `3191` (the first was removed), a fresh
+stack with `demo`, `demo-spa`, `demo-post` and `ada` seeded and `reports-widget` added for the front-channel
+request, built from the branch `p4b/b-logout` at `0d739434` plus the working tree that the commit after it
+records. The opening section ran through a local TCP forward from port `3000` to `3191`, as before, which is why
+its output shows the full headers of a live response. Other blocks on those pages keep the output they had.
+
+A client then gained `skip_logout_confirmation` (ADR 0047). The new sections were captured live: [a client may skip
+the page](../reference/transcripts/request-paths/rp-initiated-logout.md#a-client-may-skip-the-page) and [turning the
+logout confirmation off for one client](../reference/transcripts/admin-paths/patch-clientsid.md#turning-the-logout-confirmation-off-for-one-client),
+on a throwaway compose project, `odudu-skip` on port `3193` (removed afterwards). Every block that shows a client's
+representation or its `ETag` was then **run again**, so none of them is edited: on a second throwaway project,
+`odudu-skip2` on port `3194` with `ODUDU_THROTTLE_LIMIT=1000 ODUDU_LOGIN_THROTTLE_LIMIT=1000`, a fresh stack built from
+`p4b/b-logout` at `b68568f9` plus the working tree that the commit after it records, removed when the capture
+finished. The system administrator `ada` made by `seed admin` supplied `$ADMIN_TOKEN`. The state each block needs was
+made by the admin API (`POST /admin/tenants`, `POST /clients`, `PUT /groups/{id}/roles`, `PUT /smtp`, the key
+rotation), and the ids the blocks name are that run's: on `GET`/`POST /clients` the tenants `demo` and
+`client-facts-demo`, the listing, the search and its cursor; on `PATCH /clients/{id}` the `billing` blocks of
+`client-limits-demo` and `client-pages-demo`, `demo-operator`'s `ETag` chain and the disable pair in
+`client-facts-demo`; the rotation of `demo-backend` on `POST /clients/{id}/secret`; the scope removal on `DELETE
+/scopes/{id}/clients/{clientId}` (its second `/authorize` command names port `3194`, so the `iss` in its output
+matches it, and an `echo` between the read and the second removal keeps the status line off the end of the body); the
+three `client.create` listings, the signing-key and refused listings and the id lookup on `GET /audit`, in a tenant
+`audit-demo` holding `demo-backend` with a `jwks`, `demo-app`, the refused `odudu-admin` and one key rotation, and a
+tenant `resource-audit`; the export of `export-demo`; the `odudu-admin` read in "Getting the token"; and the three
+blocks of the OpenAPI page, whose `content-length` is that build's. Where a block's command named an older
+id, tenant or `ETag`, the command was rewritten to this run's, and the text around it was left. The other blocks of those
+pages stand as their earlier runs left them. The two console pages, [`POST
+/console/auth/logout`](../reference/transcripts/console-paths/post-consoleauthlogout.md) and [following the logout
+redirect](../reference/transcripts/console-paths/following-the-logout-redirect.md), ran on the same stack with `grace`
+seeded in the `system` tenant and signed in to the console, and the second now shows the console's client signed out at
+once, with no confirmation page; the log filter on the first selects the request's own `reqId`, so the stack's health
+probes do not appear.
+
 ## Admin path transcripts
 
 The admin API: the endpoints under `/admin/tenants/{tenant}/` that let an

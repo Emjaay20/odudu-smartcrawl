@@ -162,6 +162,7 @@ async function writeClient(
     enabled: client.enabled,
     serviceSubjectId,
     fullScopeAllowed: client.full_scope_allowed,
+    skipLogoutConfirmation: client.skip_logout_confirmation,
     registrationOrigin: client.registration_origin,
   });
   await clientOidcConfigRepository(tx).create({

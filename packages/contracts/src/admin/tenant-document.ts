@@ -128,6 +128,9 @@ export const exportedClientSchema = z.strictObject({
   type: clientTypeSchema,
   enabled: z.boolean(),
   full_scope_allowed: z.boolean(),
+  // Absent from a document exported before the setting existed, which
+  // imports with it off.
+  skip_logout_confirmation: z.boolean().default(false),
   registration_origin: registrationOriginSchema,
   redirect_uris: clientList(),
   grant_types: z.array(z.string()),

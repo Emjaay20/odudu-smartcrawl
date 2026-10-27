@@ -1,4 +1,3 @@
-import { randomBytes } from 'node:crypto';
 import {
   psql,
   publish,
@@ -10,11 +9,12 @@ import {
   sqlText,
   UNBROKEN,
 } from './stack';
+import { randomPassword } from './password';
 
 const TENANT_ADMIN = 'odudu-admin:tenant-admin';
 
 function password(): string {
-  return randomBytes(18).toString('base64url');
+  return randomPassword();
 }
 
 function subject(account: Account, ...extra: string[]): void {

@@ -74,6 +74,7 @@ const CLIENT_VIEW_COLUMNS = {
   type: clients.type,
   createdAt: clients.createdAt,
   fullScopeAllowed: clients.fullScopeAllowed,
+  skipLogoutConfirmation: clients.skipLogoutConfirmation,
   registrationOrigin: clients.registrationOrigin,
   builtinAdmin: clients.builtinAdmin,
   serviceSubjectId: clients.serviceSubjectId,
@@ -120,6 +121,7 @@ export interface ClientView {
   readonly type: ClientRecord['type'];
   readonly createdAt: Date;
   readonly fullScopeAllowed: boolean;
+  readonly skipLogoutConfirmation: boolean;
   readonly registrationOrigin: ClientRecord['registrationOrigin'];
   readonly builtinAdmin: boolean;
   readonly serviceSubjectId: string | null;
@@ -504,6 +506,7 @@ function toClientView(client: ClientRecord, config: ClientOidcConfig): StoredVie
     type: client.type,
     createdAt: client.createdAt,
     fullScopeAllowed: client.fullScopeAllowed,
+    skipLogoutConfirmation: client.skipLogoutConfirmation,
     registrationOrigin: client.registrationOrigin,
     builtinAdmin: client.builtinAdmin,
     serviceSubjectId: client.serviceSubjectId,
@@ -675,6 +678,9 @@ export async function createClient(
     ...(admin.client.fullScopeAllowed === undefined
       ? {}
       : { fullScopeAllowed: admin.client.fullScopeAllowed }),
+    ...(admin.client.skipLogoutConfirmation === undefined
+      ? {}
+      : { skipLogoutConfirmation: admin.client.skipLogoutConfirmation }),
     // Distinct from the CLI's 'seeded' and dynamic registration's
     // 'anonymous'/'token': an operator naming a client_id through this
     // door is a provenance this record can state honestly, rather than
@@ -742,6 +748,7 @@ export function clientWireShape(view: ClientView): ClientFields {
     type: view.type,
     enabled: view.enabled,
     full_scope_allowed: view.fullScopeAllowed,
+    skip_logout_confirmation: view.skipLogoutConfirmation,
     registration_origin: view.registrationOrigin,
     created_at: view.createdAt.toISOString(),
     redirect_uris: view.redirectUris,
@@ -918,6 +925,7 @@ const ADMIN_FIELDS = new Set<string>([
   'description',
   'enabled',
   'full_scope_allowed',
+  'skip_logout_confirmation',
   'audiences',
   'web_origins',
   'post_logout_redirect_uris',
@@ -935,6 +943,7 @@ interface AdminFieldPatches {
     description?: string | null;
     enabled?: boolean;
     fullScopeAllowed?: boolean;
+    skipLogoutConfirmation?: boolean;
   };
   readonly config: {
     audiences?: string[];
@@ -984,6 +993,11 @@ function checkedAdminFields(
     const checked = checkedBoolean('full_scope_allowed', values.full_scope_allowed);
     if (isFieldError(checked)) return checked;
     client.fullScopeAllowed = checked;
+  }
+  if ('skip_logout_confirmation' in values) {
+    const checked = checkedBoolean('skip_logout_confirmation', values.skip_logout_confirmation);
+    if (isFieldError(checked)) return checked;
+    client.skipLogoutConfirmation = checked;
   }
 
   for (const field of [

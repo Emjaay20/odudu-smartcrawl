@@ -881,15 +881,21 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
       listPublishableKeys,
       now: () => clock.now(),
       // Resolved from the OAuth client_id to that client's own registered
-      // list — an unknown, disabled or unspecified client yields none,
-      // refusing any redirect rather than resolving one with no client (or
-      // no longer-trusted client) to trust it against (RP-Initiated Logout
-      // 1.0 §3).
-      postLogoutRedirectUris: (tenantId, oauthClientId) =>
+      // list and its skip setting, from the one `clients` row and the one
+      // config row — an unknown or disabled client yields none, refusing
+      // any redirect rather than resolving one with no longer-trusted client
+      // to trust it against (RP-Initiated Logout 1.0 §3), and never skipping.
+      logoutClient: (tenantId, oauthClientId) =>
         withTenant(deps.database.db, tenantId, async (tx) => {
           const client = await clientRepository(tx).byClientId(oauthClientId);
-          if (!client?.enabled) return [];
-          return clientOidcConfigRepository(tx).postLogoutRedirectUris(client.id);
+          if (!client?.enabled) return null;
+          return {
+            id: client.clientId,
+            skipsConfirmation: client.skipLogoutConfirmation,
+            postLogoutRedirectUris: await clientOidcConfigRepository(tx).postLogoutRedirectUris(
+              client.id,
+            ),
+          };
         }),
       resolveSessions,
       // Two concurrent logouts on the same session both reach this and both

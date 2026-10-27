@@ -207,6 +207,12 @@ export async function signIn(page: Page, account: Account): Promise<void> {
   await expect(page.getByRole('heading', { level: 1, name: 'Overview' })).toBeVisible();
 }
 
+// The console's own client skips the confirmation, so signing out ends the
+// session at once and the person lands on the sign-in page.
+export async function expectSignedOut(page: Page): Promise<void> {
+  await expect(page.getByRole('heading', { level: 1, name: 'Sign in' })).toBeVisible();
+}
+
 export async function sessionTenant(page: Page): Promise<string | null> {
   const response = await page.request.get('/console/api/session');
   if (response.status() !== 200) return null;

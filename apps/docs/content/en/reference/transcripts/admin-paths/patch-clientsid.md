@@ -162,10 +162,10 @@ jq -c '{client_id, service_account_admin_reach}' body.json
 ```
 
 ```
-etag: "eb96ee27db9b6e3b447636ee42e52ac5ab2208a2e784d63c9a404845e2a02039"
+etag: "92cb2109800a50799741d1bde585405d61d78ffdeac1f41b4147fd4367bc7f41"
 {"client_id":"billing","service_account_admin_reach":[]}
 INSERT 0 1
-etag: "eb96ee27db9b6e3b447636ee42e52ac5ab2208a2e784d63c9a404845e2a02039"
+etag: "92cb2109800a50799741d1bde585405d61d78ffdeac1f41b4147fd4367bc7f41"
 {"client_id":"billing","service_account_admin_reach":["view-users","manage-users"]}
 ```
 
@@ -230,7 +230,7 @@ column, not `client_id`, so renaming the client does not evade it. An
 disabled even by the caller whose own token runs through it — the built-in
 client is the recovery path that makes that permissible.
 
-On `demo`'s `demo-operator` (`01a17ae4-19dd-7478-9733-b5ddb166eaa6`), created
+On `demo`'s `demo-operator` (`01a17d30-f50b-7f08-b8e4-8545f45df544`), created
 there with `grant_types: ["client_credentials"]` and no `redirect_uris`.
 Amending a list field without `If-Match`, and amending a field the exclusion
 list names — the refusal carries the reason, not just the refusal:
@@ -240,17 +240,16 @@ curl -sS -X PATCH \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"redirect_uris": ["https://demo-operator.example/callback"]}' \
-  http://localhost:3080/admin/tenants/demo/clients/01a17ae4-19dd-7478-9733-b5ddb166eaa6
+  http://localhost:3080/admin/tenants/demo/clients/01a17d30-f50b-7f08-b8e4-8545f45df544
 curl -sS -X PATCH \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"client_id": "renamed"}' \
-  http://localhost:3080/admin/tenants/demo/clients/01a17ae4-19dd-7478-9733-b5ddb166eaa6
+  http://localhost:3080/admin/tenants/demo/clients/01a17d30-f50b-7f08-b8e4-8545f45df544
 ```
 
 ```
-{"type":"about:blank","title":"Precondition Required","status":428,"detail":"If-Match is required to amend redirect_uris","instance":"01a0ea53-394d-77b8-8fa9-0ef9dde49b4a"}
-{"type":"about:blank","title":"Bad Request","status":400,"detail":"client_id: identity: changing it breaks every relying party and orphans the azp of every issued token","errors":[{"path":"client_id","message":"identity: changing it breaks every relying party and orphans the azp of every issued token"}],"instance":"01a0ea53-3967-791d-a6f7-72e8aa69cc7b"}
+{"type":"about:blank","title":"Precondition Required","status":428,"detail":"If-Match is required to amend redirect_uris","instance":"01a17d31-b2ec-7761-a65c-8acf5a90c9ab"}{"type":"about:blank","title":"Bad Request","status":400,"detail":"client_id: identity: changing it breaks every relying party and orphans the azp of every issued token","errors":[{"path":"client_id","message":"identity: changing it breaks every relying party and orphans the azp of every issued token"}],"instance":"01a17d31-b306-7679-bd69-142b132f001d"}
 ```
 
 The revalidation is not a formality. Widening `demo-operator`'s grants
@@ -261,13 +260,13 @@ metadata no longer satisfies the rule that excused the empty list:
 curl -sS -X PATCH \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
-  -H 'If-Match: "39ee05044e1e14c8c47cbd2c1ef3f4d342c6dddcb1f76383838a8284e6f55788"' \
+  -H 'If-Match: "ffa8393b3f1632eef3c3f9b790fa5d7baea818ed783af26863272b91ecd1b733"' \
   -d '{"grant_types": ["client_credentials","refresh_token"]}' \
-  http://localhost:3080/admin/tenants/demo/clients/01a17ae4-19dd-7478-9733-b5ddb166eaa6
+  http://localhost:3080/admin/tenants/demo/clients/01a17d30-f50b-7f08-b8e4-8545f45df544
 ```
 
 ```
-{"type":"about:blank","title":"Bad Request","status":400,"detail":"redirect_uris is required unless grant_types is exactly [\"client_credentials\"]","errors":[{"path":"redirect_uris","message":"redirect_uris is required unless grant_types is exactly [\"client_credentials\"]"}],"instance":"01a0ea53-3999-799e-9952-cf9f15f5e76d"}
+{"type":"about:blank","title":"Bad Request","status":400,"detail":"redirect_uris is required unless grant_types is exactly [\"client_credentials\"]","errors":[{"path":"redirect_uris","message":"redirect_uris is required unless grant_types is exactly [\"client_credentials\"]"}],"instance":"01a17d31-b322-7e29-bd66-c820ad083216"}
 ```
 
 An amendment that does pass, with that same `ETag`, and the fresh one it
@@ -277,19 +276,19 @@ returns — its headers only:
 curl -sS -D - -o /dev/null -X PATCH \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
-  -H 'If-Match: "39ee05044e1e14c8c47cbd2c1ef3f4d342c6dddcb1f76383838a8284e6f55788"' \
+  -H 'If-Match: "ffa8393b3f1632eef3c3f9b790fa5d7baea818ed783af26863272b91ecd1b733"' \
   -d '{"audiences": ["https://api.demo.example"]}' \
-  http://localhost:3080/admin/tenants/demo/clients/01a17ae4-19dd-7478-9733-b5ddb166eaa6
+  http://localhost:3080/admin/tenants/demo/clients/01a17d30-f50b-7f08-b8e4-8545f45df544
 ```
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a0ea53-39ba-7146-928f-85dda6dfb19e
+x-request-id: 01a17d31-b340-77af-a466-e11856c87e27
 cache-control: no-store
-etag: "e335431c15716303952cbc244782d48ecc95f6977db109346f1241c3b4d10605"
+etag: "67d85f9af89196d74b7d2f93efecdc5b16bc997b4c53899e38560c427473463c"
 content-type: application/json; charset=utf-8
-content-length: 1952
-Date: Mon, 28 Sep 2026 23:21:57 GMT
+content-length: 1985
+Date: Tue, 27 Oct 2026 11:49:31 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 ```
@@ -301,13 +300,13 @@ stale — is refused and changes nothing:
 curl -sS -X PATCH \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
-  -H 'If-Match: "39ee05044e1e14c8c47cbd2c1ef3f4d342c6dddcb1f76383838a8284e6f55788"' \
+  -H 'If-Match: "ffa8393b3f1632eef3c3f9b790fa5d7baea818ed783af26863272b91ecd1b733"' \
   -d '{"audiences": ["https://api.demo.example"]}' \
-  http://localhost:3080/admin/tenants/demo/clients/01a17ae4-19dd-7478-9733-b5ddb166eaa6
+  http://localhost:3080/admin/tenants/demo/clients/01a17d30-f50b-7f08-b8e4-8545f45df544
 ```
 
 ```
-{"type":"about:blank","title":"Precondition Failed","status":412,"detail":"If-Match no longer matches","instance":"01a0ea53-39d7-7d1c-ba87-0816be13e08d"}
+{"type":"about:blank","title":"Precondition Failed","status":412,"detail":"If-Match no longer matches","instance":"01a17d31-b37d-78a4-95c8-f7c5bfd15dfb"}
 ```
 
 **The two `409`s that disabling produces are told apart by one column, and
@@ -318,7 +317,7 @@ guard needs: its own built-in one, and `demo-backend` above:
 ```bash
 docker compose exec -T postgres psql -U odudu -d odudu -c \
   "select client_id, builtin_admin, enabled from clients
-     where tenant_id = '01a109b6-1dce-7bad-9a5c-7e40b43faa4c' order by client_id;"
+     where tenant_id = '01a17d30-9dc2-7184-8573-c44eb3f5220e' order by client_id;"
 ```
 
 ```
@@ -336,11 +335,11 @@ whole client, so `enabled` can be read back from it, alongside
 ```bash
 curl -sS -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" -d '{"enabled": false}' \
-  http://localhost:3082/admin/tenants/client-facts-demo/clients/01a109b6-1fa9-7304-8ae5-f714f746785e
+  http://localhost:3082/admin/tenants/client-facts-demo/clients/01a17d30-f6bf-7f10-b111-f613b93105fb
 ```
 
 ```
-{"id":"01a109b6-1fa9-7304-8ae5-f714f746785e","client_id":"demo-backend","name":"demo-backend","description":null,"type":"confidential","enabled":false,"full_scope_allowed":false,"registration_origin":"operator","created_at":"2026-10-27T01:06:12.931Z","redirect_uris":[],"grant_types":["client_credentials"],"token_endpoint_auth_method":"client_secret_basic","audiences":[],"access_token_ttl_seconds":null,"id_token_ttl_seconds":null,"refresh_token_ttl_seconds":null,"client_credentials_scopes":[],"web_origins":[],"post_logout_redirect_uris":[],"jwks":null,"jwks_uri":null,"frontchannel_logout_uri":null,"backchannel_logout_uri":null,"frontchannel_logout_session_required":false,"backchannel_logout_session_required":false,"consent_required":false,"token_exchange_impersonation_allowed":false,"userinfo_signed_response_alg":null,"userinfo_encrypted_response_alg":null,"userinfo_encrypted_response_enc":null,"tls_client_auth_subject_dn":null,"client_uri":null,"policy_uri":null,"tos_uri":null,"id_token_signed_response_alg":null,"default_max_age":null,"require_auth_time":false,"previous_secret_expires_at":null,"builtin_admin":false,"service_subject_id":"01a109b6-1f8f-725e-9c2c-53656397b36c","scopes":[{"id":"01a109b6-1dd0-7600-9e14-7816d44df6e6","name":"openid","assignment":"default"},{"id":"01a109b6-1dd0-7600-9e14-7817de7c7d68","name":"profile","assignment":"default"},{"id":"01a109b6-1dd1-715a-b073-4693dd489102","name":"email","assignment":"default"},{"id":"01a109b6-1dd1-715a-b073-4694a189e4be","name":"address","assignment":"default"},{"id":"01a109b6-1dd2-747c-97bd-c431358429af","name":"phone","assignment":"default"},{"id":"01a109b6-1dd2-747c-97bd-c432be4c4a58","name":"roles","assignment":"default"},{"id":"01a109b6-1dd3-7b41-8bf3-e8da34d0a2c0","name":"groups","assignment":"default"},{"id":"01a109b6-1dd3-7b41-8bf3-e8db9126a263","name":"offline_access","assignment":"optional"}],"service_account_admin_reach":[]}
+{"id":"01a17d30-f6bf-7f10-b111-f613b93105fb","client_id":"demo-backend","name":"demo-backend","description":null,"type":"confidential","enabled":false,"full_scope_allowed":false,"skip_logout_confirmation":false,"registration_origin":"operator","created_at":"2026-10-27T11:48:43.287Z","redirect_uris":[],"grant_types":["client_credentials"],"token_endpoint_auth_method":"client_secret_basic","audiences":[],"access_token_ttl_seconds":null,"id_token_ttl_seconds":null,"refresh_token_ttl_seconds":null,"client_credentials_scopes":[],"web_origins":[],"post_logout_redirect_uris":[],"jwks":null,"jwks_uri":null,"frontchannel_logout_uri":null,"backchannel_logout_uri":null,"frontchannel_logout_session_required":false,"backchannel_logout_session_required":false,"consent_required":false,"token_exchange_impersonation_allowed":false,"userinfo_signed_response_alg":null,"userinfo_encrypted_response_alg":null,"userinfo_encrypted_response_enc":null,"tls_client_auth_subject_dn":null,"client_uri":null,"policy_uri":null,"tos_uri":null,"id_token_signed_response_alg":null,"default_max_age":null,"require_auth_time":false,"previous_secret_expires_at":null,"builtin_admin":false,"service_subject_id":"01a17d30-f699-79b5-b8eb-264c767951f2","scopes":[{"id":"01a17d30-9dc4-71ad-9969-bb32fb3553f5","name":"openid","assignment":"default"},{"id":"01a17d30-9dc6-7064-9cd5-efdb8efceac3","name":"profile","assignment":"default"},{"id":"01a17d30-9dc7-7f33-9c63-df1bcfcb3a93","name":"email","assignment":"default"},{"id":"01a17d30-9dc9-7b65-907c-edf2cbb4d8f9","name":"address","assignment":"default"},{"id":"01a17d30-9dca-7bfe-bbd4-499683f46766","name":"phone","assignment":"default"},{"id":"01a17d30-9dcc-792c-97ce-9ceb98881273","name":"roles","assignment":"default"},{"id":"01a17d30-9dcd-7d5d-8406-2953bbfc060b","name":"groups","assignment":"default"},{"id":"01a17d30-9dce-725d-82b3-d9f031b0d9c2","name":"offline_access","assignment":"optional"}],"service_account_admin_reach":[]}
 ```
 
 `odudu-admin`, `builtin_admin` true, the same request against the other id
@@ -349,11 +348,11 @@ in that listing, does not:
 ```bash
 curl -sS -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" -d '{"enabled": false}' \
-  http://localhost:3082/admin/tenants/client-facts-demo/clients/01a109b6-1dd6-7fb7-834f-b09b02db9a21
+  http://localhost:3082/admin/tenants/client-facts-demo/clients/01a17d30-9dd1-7976-b67f-4cdb22c88e0d
 ```
 
 ```
-{"type":"about:blank","title":"Conflict","status":409,"detail":"odudu-admin is this tenant's built-in admin client and cannot be disabled","instance":"01a109b7-36b0-7956-84af-4f859db85838"}
+{"type":"about:blank","title":"Conflict","status":409,"detail":"odudu-admin is this tenant's built-in admin client and cannot be disabled","instance":"01a17d31-b539-7ced-9e93-fe47caae291e"}
 ```
 
 ## A client's pages and its ID token settings
@@ -379,7 +378,7 @@ curl -sS -X POST -H "Authorization: Bearer $ADMIN_TOKEN" \
 ```
 
 ```
-{"id":"01a10931-8140-71a8-821f-c964f28b806c","client_id":"billing","name":"billing","description":"Invoices and payment runs","type":"confidential","enabled":true,"full_scope_allowed":false,"registration_origin":"operator","created_at":"2026-10-27T01:08:34.767Z","redirect_uris":["https://billing.example/callback"],"grant_types":["authorization_code","client_credentials"],"token_endpoint_auth_method":"client_secret_basic","audiences":[],"access_token_ttl_seconds":null,"id_token_ttl_seconds":null,"refresh_token_ttl_seconds":null,"client_credentials_scopes":[],"web_origins":[],"post_logout_redirect_uris":[],"jwks":null,"jwks_uri":null,"frontchannel_logout_uri":null,"backchannel_logout_uri":null,"frontchannel_logout_session_required":false,"backchannel_logout_session_required":false,"consent_required":false,"token_exchange_impersonation_allowed":false,"userinfo_signed_response_alg":null,"userinfo_encrypted_response_alg":null,"userinfo_encrypted_response_enc":null,"tls_client_auth_subject_dn":null,"client_uri":"https://billing.example/about","policy_uri":"https://billing.example/privacy","tos_uri":"https://billing.example/terms","id_token_signed_response_alg":"ES256","default_max_age":3600,"require_auth_time":true,"previous_secret_expires_at":null,"builtin_admin":false,"service_subject_id":"01a17ae6-e551-7e89-b37d-9e1645f1c99d","scopes":[{"id":"01a17ae6-e505-708d-866b-0a7d8d8bcf34","name":"openid","assignment":"default"},{"id":"01a17ae6-e506-786c-b049-bc6a88687fb0","name":"profile","assignment":"default"},{"id":"01a17ae6-e508-7227-93a7-aac6995a6b90","name":"email","assignment":"default"},{"id":"01a17ae6-e509-71fa-b4be-709e6bbbf4ed","name":"address","assignment":"default"},{"id":"01a17ae6-e50b-7f15-b5d7-0adfca180e52","name":"phone","assignment":"default"},{"id":"01a17ae6-e50c-72ab-a239-1559d1b3c46b","name":"roles","assignment":"default"},{"id":"01a17ae6-e50d-7f24-89a8-3d342b2a77cf","name":"groups","assignment":"default"},{"id":"01a17ae6-e50e-7614-b4a1-0154668cc276","name":"offline_access","assignment":"optional"}],"service_account_admin_reach":[],"client_secret":"E9KB45eS9c0yWtPMGln7N8WhXRyrwQ3WXGef6Ies_TM"}
+{"id":"01a17d31-b5fd-7096-a520-8f02e1759627","client_id":"billing","name":"billing","description":"Invoices and payment runs","type":"confidential","enabled":true,"full_scope_allowed":false,"skip_logout_confirmation":false,"registration_origin":"operator","created_at":"2026-10-27T11:49:32.193Z","redirect_uris":["https://billing.example/callback"],"grant_types":["authorization_code","client_credentials"],"token_endpoint_auth_method":"client_secret_basic","audiences":[],"access_token_ttl_seconds":null,"id_token_ttl_seconds":null,"refresh_token_ttl_seconds":null,"client_credentials_scopes":[],"web_origins":[],"post_logout_redirect_uris":[],"jwks":null,"jwks_uri":null,"frontchannel_logout_uri":null,"backchannel_logout_uri":null,"frontchannel_logout_session_required":false,"backchannel_logout_session_required":false,"consent_required":false,"token_exchange_impersonation_allowed":false,"userinfo_signed_response_alg":null,"userinfo_encrypted_response_alg":null,"userinfo_encrypted_response_enc":null,"tls_client_auth_subject_dn":null,"client_uri":"https://billing.example/about","policy_uri":"https://billing.example/privacy","tos_uri":"https://billing.example/terms","id_token_signed_response_alg":"ES256","default_max_age":3600,"require_auth_time":true,"previous_secret_expires_at":null,"builtin_admin":false,"service_subject_id":"01a17d31-b5a3-71ed-81a3-c4fb50d9490a","scopes":[{"id":"01a17d31-b55e-755c-9d44-396095286272","name":"openid","assignment":"default"},{"id":"01a17d31-b560-7446-9ce6-f1f0acb366ee","name":"profile","assignment":"default"},{"id":"01a17d31-b561-7acd-b321-267ca24150d3","name":"email","assignment":"default"},{"id":"01a17d31-b562-7943-aae3-8ad298691eb7","name":"address","assignment":"default"},{"id":"01a17d31-b564-7064-9a89-28da536104a7","name":"phone","assignment":"default"},{"id":"01a17d31-b565-7ec0-b498-b24c1bfd1a57","name":"roles","assignment":"default"},{"id":"01a17d31-b566-73ff-8e93-6b95c631f6de","name":"groups","assignment":"default"},{"id":"01a17d31-b568-7636-8916-30b4cb87aa04","name":"offline_access","assignment":"optional"}],"service_account_admin_reach":[],"client_secret":"AbQAxG3bPxG35qhODysepHyXkaCbVztpQqNaD9Mx1Dc"}
 ```
 
 A page that is not https, or an algorithm no key of the tenant produces,
@@ -389,13 +388,85 @@ with:
 ```bash
 curl -sS -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" -d '{"policy_uri": "http://billing.example/privacy"}' \
-  http://localhost:3082/admin/tenants/client-pages-demo/clients/01a10931-8140-71a8-821f-c964f28b806c
+  http://localhost:3082/admin/tenants/client-pages-demo/clients/01a17d31-b5fd-7096-a520-8f02e1759627
 curl -sS -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" -d '{"id_token_signed_response_alg": "RS256"}' \
-  http://localhost:3082/admin/tenants/client-pages-demo/clients/01a10931-8140-71a8-821f-c964f28b806c
+  http://localhost:3082/admin/tenants/client-pages-demo/clients/01a17d31-b5fd-7096-a520-8f02e1759627
 ```
 
 ```
-{"type":"about:blank","title":"Bad Request","status":400,"detail":"policy_uri must be an absolute https URI, or http on a loopback host, with no fragment","errors":[{"path":"policy_uri","message":"policy_uri must be an absolute https URI, or http on a loopback host, with no fragment"}],"instance":"01a10931-8168-7b92-ab09-89bf0be6bfba"}
-{"type":"about:blank","title":"Bad Request","status":400,"detail":"id_token_signed_response_alg: id_token_signed_response_alg RS256 is not produced by any of this tenant's signing keys (ES256)","errors":[{"path":"id_token_signed_response_alg","message":"id_token_signed_response_alg RS256 is not produced by any of this tenant's signing keys (ES256)"}],"instance":"01a10931-8181-7d3b-b46c-a81077826a7c"}
+{"type":"about:blank","title":"Bad Request","status":400,"detail":"policy_uri must be an absolute https URI, or http on a loopback host, with no fragment","errors":[{"path":"policy_uri","message":"policy_uri must be an absolute https URI, or http on a loopback host, with no fragment"}],"instance":"01a17d31-b625-7c59-b343-32c6048d4212"}{"type":"about:blank","title":"Bad Request","status":400,"detail":"id_token_signed_response_alg: id_token_signed_response_alg RS256 is not produced by any of this tenant's signing keys (ES256)","errors":[{"path":"id_token_signed_response_alg","message":"id_token_signed_response_alg RS256 is not produced by any of this tenant's signing keys (ES256)"}],"instance":"01a17d31-b63d-738f-b575-05d073a34d22"}
+```
+
+## Turning the logout confirmation off for one client
+
+`skip_logout_confirmation` is a boolean on the client, `false` for every client
+but the console's own, and amended here like any other field. `/logout` asks
+the End-User before it signs anyone out; a client with this on is signed out
+without the page, but only for an ID token it was issued that names the live
+session ([RP-initiated logout](../request-paths/rp-initiated-logout.md#a-client-may-skip-the-page)
+shows both answers). Anyone holding such a token can then sign that user out by
+opening a link, which is why only `manage-clients` may change it, why it is
+audited as every amendment is, and why Dynamic Client Registration refuses it.
+The field is not a list, so `If-Match` is optional, and a stale one is `412`.
+It is guarded on the built-in `odudu-admin` client like every field outside the
+short list that client may be amended through.
+
+This ran on a new stack's port `3193`. In
+the tenant `demo`, `$P` is `http://localhost:3193/admin/tenants/demo` and `$ID`
+the client `reports`, seeded public a moment before with `odudu seed client`
+and not touched since, so it holds the default. `$ADMIN_TOKEN` is the system
+administrator's, got the way [Getting the token](./getting-the-token.md) shows.
+The first request is the read, the second a stale `If-Match`, the third a value
+that is not a boolean, and the last sends the `ETag` the read before it answered:
+
+```bash
+curl -sS -D - -H "Authorization: Bearer $ADMIN_TOKEN" $P/clients/$ID | grep -iE '^HTTP|^etag|^content-length'
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" $P/clients/$ID | grep -o '"skip_logout_confirmation":[a-z]*'
+echo '# a stale If-Match'
+curl -sS -D - -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+  -H 'If-Match: "stale"' -d '{"skip_logout_confirmation":true}' $P/clients/$ID | grep -iE '^HTTP|^\{'
+echo '# not a boolean'
+curl -sS -D - -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+  -d '{"skip_logout_confirmation":"yes"}' $P/clients/$ID | grep -iE '^HTTP|^\{'
+echo '# the current If-Match'
+ETAG=$(curl -sS -D - -o /dev/null -H "Authorization: Bearer $ADMIN_TOKEN" $P/clients/$ID | sed -n 's/^etag: //p' | tr -d '\r')
+echo "$ETAG"
+curl -sS -D - -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+  -H "If-Match: $ETAG" -d '{"skip_logout_confirmation":true}' $P/clients/$ID > patch.txt
+grep -iE '^HTTP|^etag' patch.txt; grep -o '"skip_logout_confirmation":[a-z]*' patch.txt
+```
+
+```
+HTTP/1.1 200 OK
+etag: "a516278ba1bcc32a45502d26cdb50c8638328d689e9ca675bce979fa0740315f"
+content-length: 1938
+"skip_logout_confirmation":false
+# a stale If-Match
+HTTP/1.1 412 Precondition Failed
+{"type":"about:blank","title":"Precondition Failed","status":412,"detail":"If-Match no longer matches","instance":"01a17d0d-b8d6-753e-b964-a27d04b5add0"}
+# not a boolean
+HTTP/1.1 400 Bad Request
+{"type":"about:blank","title":"Bad Request","status":400,"detail":"skip_logout_confirmation: skip_logout_confirmation must be a boolean","errors":[{"path":"skip_logout_confirmation","message":"skip_logout_confirmation must be a boolean"}],"instance":"01a17d0d-b8f0-768e-8389-a897bbdff1d0"}
+# the current If-Match
+"a516278ba1bcc32a45502d26cdb50c8638328d689e9ca675bce979fa0740315f"
+HTTP/1.1 200 OK
+etag: "50b8f305e7848e8b1f5af400f2d4a32cd674b39f721d04fcc3edfe0118e5d180"
+"skip_logout_confirmation":true
+```
+
+The amendment is one audit row, `client.amend`, whose detail names only the
+field that changed. The query ran as the database owner against the same
+stack, with `psql` the function the logout transcript defines, scoped to this
+client:
+
+```bash
+psql -c "select a.action, a.outcome, a.detail from audit_events a join tenants t on t.id = a.tenant_id where t.name = 'demo' and a.resource_id = '$ID' and a.action = 'client.amend' order by a.occurred_at;"
+```
+
+```
+    action    | outcome |                             detail
+--------------+---------+----------------------------------------------------------------
+ client.amend | allowed | {"skip_logout_confirmation": {"after": true, "before": false}}
+(1 row)
 ```

@@ -69,9 +69,7 @@ describe('the roadmap page', () => {
     expect(logout).not.toMatch(
       /decision\.redirectTo === null\s*\?\s*await frontChannelLogoutUrls/u,
     );
-    expect(logout).toMatch(
-      /await frontChannelLogoutUrls\(deps, tenant\.id, issuer, session\.id\)/u,
-    );
+    expect(logout).toMatch(/await frontChannelLogoutUrls\(deps, tenantId, issuer, session\.id\)/u);
     const roadmap = prose();
     expect(roadmap).toMatch(/frames are shown on every logout/u);
     expect(roadmap).toMatch(/sent there once the frames have loaded/u);
