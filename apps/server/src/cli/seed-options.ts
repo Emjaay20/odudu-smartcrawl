@@ -184,7 +184,7 @@ export const SEED_BOOTSTRAP_OPTIONS = {
   password: text('The password of that user.'),
   email: text('The email address of that user.'),
   'send-verification-email': flag('Queue a verification email for that user.'),
-  'issuer-base': text('Base URL to print the issuer under, in place of the default.'),
+  'issuer-base': text('Base URL of the verification link. Defaults to ODUDU_PUBLIC_BASE_URL.'),
 } as const;
 
 export const SEED_BOOTSTRAP_HELP = cliOptions(SEED_BOOTSTRAP_OPTIONS);

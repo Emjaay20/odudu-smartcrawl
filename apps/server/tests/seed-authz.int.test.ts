@@ -381,6 +381,241 @@ describe('the seed CLI, provisioning the identity model it now has', () => {
     ).rejects.toThrow(/no role named/);
   });
 
+  async function seedUserAndRole(tenantName: string): Promise<void> {
+    await seed(['tenant', '--name', tenantName]);
+    await seed([
+      'user',
+      '--tenant',
+      tenantName,
+      '--username',
+      'ada',
+      '--password',
+      'correct horse battery',
+    ]);
+    await seed(['role', '--tenant', tenantName, '--name', 'reviewer']);
+  }
+
+  it('names a repeated grant-role instead of printing the database error', async () => {
+    const tenantName = `demo-${newId()}`;
+    await seedUserAndRole(tenantName);
+    const grant = ['grant-role', '--tenant', tenantName, '--username', 'ada', '--role', 'reviewer'];
+    await seed(grant);
+
+    const failure: unknown = await seed(grant).catch((error: unknown) => error);
+
+    expect(failure).toMatchObject({
+      name: 'OduduError',
+      code: 'seed_conflict',
+      message: 'user "ada" already has the role "reviewer"',
+    });
+  });
+
+  it('names a repeated map-role instead of printing the database error', async () => {
+    const tenantName = `demo-${newId()}`;
+    await seedUserAndRole(tenantName);
+    await seed(['scope', '--tenant', tenantName, '--name', 'app-roles']);
+    const map = ['map-role', '--tenant', tenantName, '--scope', 'app-roles', '--role', 'reviewer'];
+    await seed(map);
+
+    const failure: unknown = await seed(map).catch((error: unknown) => error);
+
+    expect(failure).toMatchObject({
+      name: 'OduduError',
+      code: 'seed_conflict',
+      message: 'scope "app-roles" already carries the role "reviewer"',
+    });
+  });
+
+  it('names a repeated map-group-role and join-group', async () => {
+    const tenantName = `demo-${newId()}`;
+    await seedUserAndRole(tenantName);
+    await seed(['group', '--tenant', tenantName, '--name', 'engineering']);
+    const mapRole = [
+      'map-group-role',
+      '--tenant',
+      tenantName,
+      '--group',
+      '/engineering',
+      '--role',
+      'reviewer',
+    ];
+    const join = [
+      'join-group',
+      '--tenant',
+      tenantName,
+      '--username',
+      'ada',
+      '--group',
+      '/engineering',
+    ];
+    await seed(mapRole);
+    await seed(join);
+
+    await expect(seed(mapRole)).rejects.toMatchObject({
+      code: 'seed_conflict',
+      message: 'group "/engineering" already has the role "reviewer"',
+    });
+    await expect(seed(join)).rejects.toMatchObject({
+      code: 'seed_conflict',
+      message: 'user "ada" is already in the group "/engineering"',
+    });
+  });
+
+  it('names a repeated role and group', async () => {
+    const tenantName = `demo-${newId()}`;
+    await seedUserAndRole(tenantName);
+    await seed(['group', '--tenant', tenantName, '--name', 'engineering']);
+    await seed(['group', '--tenant', tenantName, '--name', 'backend', '--parent', '/engineering']);
+
+    await expect(
+      seed(['role', '--tenant', tenantName, '--name', 'reviewer']),
+    ).rejects.toMatchObject({
+      code: 'seed_conflict',
+      message: `role "reviewer" already exists in tenant "${tenantName}"`,
+    });
+    await expect(
+      seed(['group', '--tenant', tenantName, '--name', 'backend', '--parent', '/engineering']),
+    ).rejects.toMatchObject({
+      code: 'seed_conflict',
+      message: `group "/engineering/backend" already exists in tenant "${tenantName}"`,
+    });
+  });
+
+  it('lets one of two simultaneous grants win and names the other', async () => {
+    const tenantName = `demo-${newId()}`;
+    await seedUserAndRole(tenantName);
+    const grant = ['grant-role', '--tenant', tenantName, '--username', 'ada', '--role', 'reviewer'];
+
+    const outcomes = await Promise.allSettled([seed(grant), seed(grant)]);
+
+    expect(outcomes.filter((outcome) => outcome.status === 'fulfilled')).toHaveLength(1);
+    const refused = outcomes.filter((outcome) => outcome.status === 'rejected');
+    expect(refused).toHaveLength(1);
+    expect(refused[0]?.reason).toMatchObject({
+      code: 'seed_conflict',
+      message: 'user "ada" already has the role "reviewer"',
+    });
+  });
+
+  it('names the loser of two simultaneous creates of the same user, client and scope', async () => {
+    const tenantName = `demo-${newId()}`;
+    await seed(['tenant', '--name', tenantName]);
+    const commands = [
+      ['user', '--tenant', tenantName, '--username', 'bob', '--password', 'correct horse battery'],
+      [
+        'client',
+        '--tenant',
+        tenantName,
+        '--client-id',
+        'svc',
+        '--public',
+        '--redirect-uri',
+        REDIRECT_URI,
+      ],
+      ['scope', '--tenant', tenantName, '--name', 'reports'],
+    ];
+
+    for (const command of commands) {
+      const outcomes = await Promise.allSettled([seed(command), seed(command)]);
+      const refused = outcomes.filter((outcome) => outcome.status === 'rejected');
+      expect(outcomes.filter((outcome) => outcome.status === 'fulfilled')).toHaveLength(1);
+      expect(refused[0]?.reason).toMatchObject({ code: 'seed_conflict' });
+    }
+  });
+
+  it('does not map or join through another tenant’s role, scope or group', async () => {
+    const tenantName = `demo-${newId()}`;
+    const foreignTenant = `demo-${newId()}`;
+    await seedUserAndRole(tenantName);
+    await seed(['tenant', '--name', foreignTenant]);
+    await seed(['role', '--tenant', foreignTenant, '--name', 'foreign-only']);
+    await seed(['scope', '--tenant', foreignTenant, '--name', 'foreign-scope']);
+    await seed(['group', '--tenant', foreignTenant, '--name', 'foreign-group']);
+    await seed(['scope', '--tenant', tenantName, '--name', 'own-scope']);
+    await seed(['group', '--tenant', tenantName, '--name', 'own-group']);
+
+    await expect(
+      seed(['map-role', '--tenant', tenantName, '--scope', 'own-scope', '--role', 'foreign-only']),
+    ).rejects.toMatchObject({ code: 'seed_not_found', message: 'no role named "foreign-only"' });
+    await expect(
+      seed(['map-role', '--tenant', tenantName, '--scope', 'foreign-scope', '--role', 'reviewer']),
+    ).rejects.toMatchObject({ code: 'seed_not_found' });
+    await expect(
+      seed([
+        'map-group-role',
+        '--tenant',
+        tenantName,
+        '--group',
+        '/own-group',
+        '--role',
+        'foreign-only',
+      ]),
+    ).rejects.toMatchObject({ code: 'seed_not_found', message: 'no role named "foreign-only"' });
+    await expect(
+      seed([
+        'map-group-role',
+        '--tenant',
+        tenantName,
+        '--group',
+        '/foreign-group',
+        '--role',
+        'reviewer',
+      ]),
+    ).rejects.toMatchObject({ code: 'seed_not_found' });
+    await expect(
+      seed([
+        'join-group',
+        '--tenant',
+        tenantName,
+        '--username',
+        'ada',
+        '--group',
+        '/foreign-group',
+      ]),
+    ).rejects.toMatchObject({
+      code: 'seed_not_found',
+      message: 'no group at path "/foreign-group"',
+    });
+  });
+
+  it('says which of username and email a repeated user collides on', async () => {
+    const tenantName = `demo-${newId()}`;
+    await seed(['tenant', '--name', tenantName]);
+    const user = (username: string, email: string) => [
+      'user',
+      '--tenant',
+      tenantName,
+      '--username',
+      username,
+      '--password',
+      'correct horse battery',
+      '--email',
+      email,
+    ];
+    await seed(user('ada', 'ada@example.com'));
+
+    await expect(seed(user('ada', 'other@example.com'))).rejects.toMatchObject({
+      code: 'seed_conflict',
+      message: `user "ada" already exists in tenant "${tenantName}"`,
+    });
+    await expect(seed(user('grace', 'ada@example.com'))).rejects.toMatchObject({
+      code: 'seed_conflict',
+      message: `email "ada@example.com" is already used by another user in tenant "${tenantName}"`,
+    });
+  });
+
+  it('does not grant another tenant’s role', async () => {
+    const tenantName = `demo-${newId()}`;
+    const foreignTenant = `demo-${newId()}`;
+    await seedUserAndRole(tenantName);
+    await seed(['tenant', '--name', foreignTenant]);
+    await seed(['role', '--tenant', foreignTenant, '--name', 'foreign-only']);
+
+    await expect(
+      seed(['grant-role', '--tenant', tenantName, '--username', 'ada', '--role', 'foreign-only']),
+    ).rejects.toMatchObject({ code: 'seed_not_found', message: 'no role named "foreign-only"' });
+  });
+
   it('refuses an ambiguous qualified role name rather than guessing a split', async () => {
     const tenantName = `demo-${newId()}`;
     await seed(['tenant', '--name', tenantName]);
