@@ -86,3 +86,4 @@ export {
   orderedActions,
   type LinkedRequiredAction,
 } from '#/service/required-actions';
+export { DEFAULT_TEMPLATES } from '#/view/templates/index';

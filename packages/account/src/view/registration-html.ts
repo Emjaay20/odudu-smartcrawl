@@ -17,6 +17,7 @@ import {
 import { returnToField } from '#/view/return-to';
 import { t, tHtml, type MessageId } from '#/view/messages';
 import { passwordField } from '#/view/password-field';
+import { fillPage } from '#/view/template';
 import { ruleHtml, type PasswordViolation } from '#/view/password-rules';
 
 export type RegistrationField = 'username' | 'email' | 'password' | 'passwordConfirm';
@@ -132,14 +133,22 @@ export function renderRegistrationForm(
   };
   return page(
     t(locale, 'registration.title'),
-    `${intro(tHtml(locale, 'registration.title'), tenant)}
-${problemSummary(problems)}<form method="post" action="${action}">${returnToField(form.signInPath)}
-  <label>${tHtml(locale, 'registration.username')} <input type="text" name="username" autocomplete="username"${value(form.username)}${attributes('username')}></label>
+    fillPage(
+      'registration',
+      {
+        intro: intro(tHtml(locale, 'registration.title'), tenant),
+        error: problemSummary(problems),
+        'form.open': `<form method="post" action="${action}">${returnToField(form.signInPath)}`,
+        fields: `<label>${tHtml(locale, 'registration.username')} <input type="text" name="username" autocomplete="username"${value(form.username)}${attributes('username')}></label>
   <label>${tHtml(locale, 'registration.email')} <input type="email" name="email" autocomplete="email"${value(form.email)}${attributes('email')}></label>
   ${password.html}
-  <label>${tHtml(locale, 'registration.passwordConfirm')} <input type="password" name="password_confirm" id="${PASSWORD_CONFIRM_FIELD_ID}" autocomplete="new-password" spellcheck="false" autocapitalize="off" autocorrect="off"${attributes('passwordConfirm')}></label>\n  ${passwordConfirmToggle(password.script)}
-  <button type="submit">${tHtml(locale, 'registration.submit')}</button>
-</form>${links([backToSignIn(form.signInPath, locale)])}`,
+  <label>${tHtml(locale, 'registration.passwordConfirm')} <input type="password" name="password_confirm" id="${PASSWORD_CONFIRM_FIELD_ID}" autocomplete="new-password" spellcheck="false" autocapitalize="off" autocorrect="off"${attributes('passwordConfirm')}></label>\n  ${passwordConfirmToggle(password.script)}`,
+        submit: `<button type="submit">${tHtml(locale, 'registration.submit')}</button>`,
+        'form.close': '</form>',
+        links: links([backToSignIn(form.signInPath, locale)]),
+      },
+      locale,
+    ),
     password.script,
     [],
     locale,

@@ -1,3 +1,4 @@
+import { DEFAULT_TEMPLATES as ACCOUNT } from '@odudu/account';
 import { checkTemplate } from '@odudu/domain-theme';
 import { PAGE_KINDS, type PageKind } from '@odudu/kernel';
 import { DEFAULT_TEMPLATES as PROTOCOL_OIDC } from '@odudu/protocol-oidc';
@@ -9,7 +10,10 @@ interface Owner {
 }
 
 // One entry per package that renders pages through a default template.
-const OWNERS: Owner[] = [{ name: 'protocol-oidc', templates: PROTOCOL_OIDC }];
+const OWNERS: Owner[] = [
+  { name: 'protocol-oidc', templates: PROTOCOL_OIDC },
+  { name: 'account', templates: ACCOUNT },
+];
 
 // Kinds whose renderers have not been converted yet; a kind leaves this list
 // when its package's table joins OWNERS.
@@ -19,10 +23,6 @@ const NOT_CONVERTED: PageKind[] = [
   'recovery-codes',
   'update-password',
   'required-action',
-  'registration',
-  'reset',
-  'verification',
-  'required-actions',
 ];
 
 const kindsOf = (templates: Partial<Record<PageKind, string>>): PageKind[] =>
@@ -67,5 +67,31 @@ describe('a theme template that loses what the server must show', () => {
   it('is refused for a sign-in page that omits the error', () => {
     const own = '{{form.open}}{{fields}}{{submit}}{{form.close}}';
     expect(checkTemplate('sign-in', own).map((issue) => issue.detail)).toContain('error');
+  });
+});
+
+describe('an account form template that loses what the server must show', () => {
+  const details = (kind: 'registration' | 'reset' | 'required-actions', own: string): string[] =>
+    checkTemplate(kind, own).map((issue) => issue.detail);
+
+  it.each(['registration', 'reset'] as const)('is refused for %s without the error', (kind) => {
+    const own = '{{form.open}}{{fields}}{{submit}}{{form.close}}';
+    expect(details(kind, own)).toContain('error');
+  });
+
+  it('is refused for required actions that omit the list of actions or the error', () => {
+    const own = '{{form.open}}{{fields}}{{submit}}{{form.close}}';
+    expect(details('required-actions', own)).toEqual(expect.arrayContaining(['actions', 'error']));
+  });
+
+  it('is refused for a verification page that omits the form it may need', () => {
+    expect(checkTemplate('verification', '{{message}}').map((issue) => issue.detail)).toEqual(
+      expect.arrayContaining(['form.open', 'submit', 'form.close']),
+    );
+  });
+
+  it('is refused for a registration form without its submit or its fields', () => {
+    const own = '{{form.open}}{{error}}{{form.close}}';
+    expect(details('registration', own)).toEqual(expect.arrayContaining(['fields', 'submit']));
   });
 });
