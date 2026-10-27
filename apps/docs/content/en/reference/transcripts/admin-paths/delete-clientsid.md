@@ -25,9 +25,11 @@ disabled and rotated. A `404` carries no `detail` at all, only the status
 and the request id:
 
 ```bash
-curl -sS -D - -X DELETE \
-  -H "Authorization: Bearer $ADMIN_TOKEN" \
-  http://localhost:3082/admin/tenants/client-facts-demo/clients/01a109b6-1dd6-7fb7-834f-b09b02db9a21
+A="Authorization: Bearer $ADMIN_TOKEN"
+C=http://localhost:3082/admin/tenants/client-facts-demo/clients
+curl -sS -X DELETE -H "$A" $C/01a17ae3-dfb4-75bb-bf4c-2de4841c9677; echo
+curl -sS -X DELETE -H "$A" $C/01a109b6-ffff-7000-8000-000000000000; echo; echo
+curl -sS -D - -X DELETE -H "$A" $C/01a17ae4-bb60-7411-8daa-d854b65a9d14
 ```
 
 ```
