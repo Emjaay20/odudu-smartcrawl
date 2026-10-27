@@ -1,9 +1,11 @@
 ---
-title: 'GET /scopes, POST /scopes, GET /scopes/:id, PATCH…'
+title: 'Scopes: list, create, read, update, delete'
 description: "All five require manage-tenant. include_in_id_token and include_in_access_token (both default true) decide which token a scope's claims land in…"
 ---
 
-## `GET /scopes`, `POST /scopes`, `GET /scopes/:id`, `PATCH /scopes/:id` and `DELETE /scopes/:id`
+# Scopes: list, create, read, update, delete
+
+This page covers `GET /scopes`, `POST /scopes`, `GET /scopes/:id`, `PATCH /scopes/:id` and `DELETE /scopes/:id`.
 
 All five require `manage-tenant`. `include_in_id_token` and
 `include_in_access_token` (both default `true`) decide which token a
@@ -222,7 +224,7 @@ curl -sS \
 {"type":"about:blank","title":"Bad Request","status":400,"detail":"cursor is invalid or expired","errors":[{"path":"cursor","message":"is invalid or expired"}],"instance":"01a0ea5d-4b5b-7152-932f-b01589f6914d"}
 ```
 
-### How many a tenant defines
+## How many a tenant defines
 
 A tenant defines at most 1000 scopes: discovery and `/authorize` read the set,
 so it is bounded by the model rather than paged. On `perf-demo`, after `scope-1`
@@ -246,7 +248,7 @@ Keep-Alive: timeout=72
 {"type":"about:blank","title":"Conflict","status":409,"detail":"a tenant defines at most 1000 scopes","instance":"01a10f80-e222-7bae-bfa8-615be1af2feb"}
 ```
 
-### The most scopes marked for every new client
+## The most scopes marked for every new client
 
 A new client is assigned every scope marked with a `default_client_assignment`,
 by an administrator, dynamic registration or `odudu seed`, so the marks are held

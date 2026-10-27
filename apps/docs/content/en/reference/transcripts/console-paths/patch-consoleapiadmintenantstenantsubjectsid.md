@@ -8,7 +8,7 @@ description: "A write through the console proxy carries If-Match and names the s
 On `grace`'s session. `If-Match` is one of the four request headers the proxy
 forwards, and every write names the session's subject in
 `X-Odudu-Console-Subject`
-([below](./post-consoleapiadmintenantstenantsubjects-refused-for-another-principal.md#post-consoleapiadmintenantstenantsubjects-refused-for-another-principal)).
+([below](./post-consoleapiadmintenantstenantsubjects-refused-for-another-principal.md)).
 The `ETag` comes from a read of `hopper`:
 
 ```bash

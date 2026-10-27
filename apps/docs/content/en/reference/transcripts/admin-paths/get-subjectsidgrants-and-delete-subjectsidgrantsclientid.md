@@ -1,9 +1,11 @@
 ---
-title: 'GET /subjects/:id/grants and DELETE…'
+title: "A subject's grants: list and revoke"
 description: "Requires manage-sessions: a grant is what a token is presented under, so it is a session's concern, and ending one is the same capability's."
 ---
 
-## `GET /subjects/:id/grants` and `DELETE /subjects/:id/grants/:clientId`
+# A subject's grants: list and revoke
+
+This page covers `GET /subjects/:id/grants` and `DELETE /subjects/:id/grants/:clientId`.
 
 Requires `manage-sessions`: a grant is what a token is presented under, so it
 is a session's concern, and ending one is the same capability's. `GET` lists

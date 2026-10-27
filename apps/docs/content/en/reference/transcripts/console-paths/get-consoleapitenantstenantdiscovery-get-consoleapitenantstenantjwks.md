@@ -1,9 +1,11 @@
 ---
-title: 'GET /console/api/tenants/{tenant}/discovery, GET…'
+title: "The console's discovery and JWKS routes"
 description: "Read-only mirrors of the tenant's own public discovery document and JWKS (the request paths' GET…"
 ---
 
-## `GET /console/api/tenants/{tenant}/discovery`, `GET /console/api/tenants/{tenant}/jwks`
+# The console's discovery and JWKS routes
+
+This page covers `GET /console/api/tenants/{tenant}/discovery`, `GET /console/api/tenants/{tenant}/jwks`.
 
 Read-only mirrors of the tenant's own public discovery document and JWKS
 (the request paths document `GET /tenants/{tenant}/.well-known/openid-configuration`

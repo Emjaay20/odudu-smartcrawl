@@ -1,9 +1,11 @@
 ---
-title: 'GET /scopes/:id/impact, GET /scopes/builtins and POST…'
+title: 'Scope impact, built-in scopes and restore'
 description: 'All three require manage-tenant. They support deleting a built-in scope: what it takes, which built-ins are missing, and how to restore them…'
 ---
 
-## `GET /scopes/:id/impact`, `GET /scopes/builtins` and `POST /scopes/restore-builtins`
+# Scope impact, built-in scopes and restore
+
+This page covers `GET /scopes/:id/impact`, `GET /scopes/builtins` and `POST /scopes/restore-builtins`.
 
 All three require `manage-tenant`. They are what deleting a built-in scope needs
 around it: what the delete would take, which built-ins a tenant is missing, and
@@ -21,7 +23,7 @@ token](./getting-the-token.md), then the tenant `builtins-demo`, a public client
 `portal`, and the role `auditor` mapped to the `roles` scope with `odudu seed`.
 The stack published port `3192`.
 
-### What a delete would take
+## What a delete would take
 
 `GET /scopes/:id/impact` says whether the scope is built in and how many clients
 carry it and roles map it, the two things its deletion takes with it. Each count
@@ -37,7 +39,7 @@ curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:3192/admin/ten
 {"builtin":true,"client_assignments":{"count":2,"capped":false},"role_mappings":{"count":1,"capped":false}}
 ```
 
-### Deleting a built-in scope asks for its name
+## Deleting a built-in scope asks for its name
 
 Without `confirm` the delete is refused with `422` and the type
 `builtin-scope-confirmation`; `detail` names the scope, what would go with it and
@@ -97,7 +99,7 @@ Keep-Alive: timeout=72
 
 ```
 
-### Which are missing, and getting them back
+## Which are missing, and getting them back
 
 `GET /scopes/builtins` lists every built-in in the order a new tenant is given
 them, with whether this tenant has it; narrowed with `jq` to the missing ones:
@@ -141,7 +143,7 @@ curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:3192/admin/ten
 {"builtin":true,"client_assignments":{"count":0,"capped":false},"role_mappings":{"count":0,"capped":false}}
 ```
 
-### The trail
+## The trail
 
 A delete writes one `scope.delete` row, `allowed` or `refused`, whose detail
 carries `builtin` and how many client assignments and role mappings it took or
@@ -162,7 +164,7 @@ curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "http://localhost:3192/admin/te
 {"action":"scope.restore_builtins","outcome":"allowed","detail":{"created":["roles"]}}
 ```
 
-### From the command line
+## From the command line
 
 `odudu seed restore-scopes --tenant <name>` does the same through the same
 function, for an installation with no admin token to hand. It prints the names

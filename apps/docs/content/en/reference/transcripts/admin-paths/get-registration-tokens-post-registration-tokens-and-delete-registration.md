@@ -1,9 +1,11 @@
 ---
-title: 'GET /registration-tokens, POST /registration-tokens and…'
+title: 'Registration tokens: list, create, delete'
 description: 'All three require manage-clients, the same capability the client routes above need — an initial access token is configuration for dynamic…'
 ---
 
-## `GET /registration-tokens`, `POST /registration-tokens` and `DELETE /registration-tokens/:id`
+# Registration tokens: list, create, delete
+
+This page covers `GET /registration-tokens`, `POST /registration-tokens` and `DELETE /registration-tokens/:id`.
 
 All three require `manage-clients`, the same capability the client routes
 above need — an initial access token is configuration for dynamic

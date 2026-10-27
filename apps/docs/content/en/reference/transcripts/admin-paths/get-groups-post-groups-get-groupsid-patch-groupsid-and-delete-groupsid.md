@@ -1,9 +1,11 @@
 ---
-title: 'GET /groups, POST /groups, GET /groups/:id, PATCH…'
+title: 'Groups: list, create, read, update, delete'
 description: 'All five require manage-tenant; the list, GET /groups, is also readable with view-users (below).'
 ---
 
-## `GET /groups`, `POST /groups`, `GET /groups/:id`, `PATCH /groups/:id` and `DELETE /groups/:id`
+# Groups: list, create, read, update, delete
+
+This page covers `GET /groups`, `POST /groups`, `GET /groups/:id`, `PATCH /groups/:id` and `DELETE /groups/:id`.
 
 All five require `manage-tenant`; the list, `GET /groups`, is also readable with
 `view-users` (below). `path` is derived, never accepted: a root group's is
@@ -125,13 +127,13 @@ curl -sS \
 {"type":"about:blank","title":"Bad Request","status":400,"detail":"cursor is invalid or expired","errors":[{"path":"cursor","message":"is invalid or expired"}],"instance":"01a10bd5-de07-741a-aa7c-320313479de0"}
 ```
 
-### The list a user manager picks from
+## The list a user manager picks from
 
 `GET /groups` alone is also readable with `view-users`, and so with
 `manage-users`, for the reason and within the limits the same subsection under
 `GET /roles` gives, where it is shown.
 
-### One level of the tree
+## One level of the tree
 
 `?parent=<id>` lists a group's children and `?parent=root` the groups with no
 parent, so a tree is drawn a level at a time rather than from every page of
@@ -154,7 +156,7 @@ curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$P/groups?parent=top"; echo
 {"type":"about:blank","title":"Error","status":400,"detail":"querystring/parent must match pattern \"^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$\", querystring/parent must be equal to constant, querystring/parent must match a schema in anyOf","errors":[{"path":"parent","message":"must match pattern \"^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$\""},{"path":"parent","message":"must be equal to constant"},{"path":"parent","message":"must match a schema in anyOf"}],"instance":"01a10bd5-e081-7442-a6c4-d5cc8676e0dd"}
 ```
 
-### What a group hands out: `admin_reach`, `subtree_admin_reach` and `holds_default_group`
+## What a group hands out: `admin_reach`, `subtree_admin_reach` and `holds_default_group`
 
 Every group answer carries `admin_reach`: what membership of the group hands
 out — the roles it and every group above it map, expanded through
@@ -185,7 +187,7 @@ curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$P/groups?parent=01a10bd6-2d3d
 {"items":[{"id":"01a10bd6-2d5b-707e-9610-8bb4deb9a2d8","name":"oncall","description":null,"parent_id":"01a10bd6-2d3d-743c-bcd6-7b868d510375","default_for_new_subjects":false,"path":"/ops/oncall","created_at":"2026-10-05T11:32:28.121Z","admin_reach":["view-audit"]}]}
 ```
 
-### A reparent onto a name already taken
+## A reparent onto a name already taken
 
 A move rewrites the group's `path`, so a parent already holding a group of the
 same name refuses it with `409`, before anything is written — the same refusal

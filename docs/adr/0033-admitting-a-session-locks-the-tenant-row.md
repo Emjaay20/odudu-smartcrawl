@@ -233,7 +233,7 @@ and so does an operator's `odudu reap`.
 
 The session-list surface the consequences above wait on exists:
 `GET`/`DELETE /admin/tenants/{tenant}/subjects/{id}/sessions`
-([the admin paths](../../apps/docs/content/en/reference/transcripts/admin-paths/get-subjectsidsessions-and-delete-subjectsidsessionssid.md#get-subjectsidsessions-and-delete-subjectsidsessionssid))
+([the admin paths](../../apps/docs/content/en/reference/transcripts/admin-paths/get-subjectsidsessions-and-delete-subjectsidsessionssid.md))
 reads live sessions by subject and ends one. An operator can therefore
 reach an orphan, and the trigger condition for a stable browser identifier
 — an orphan's absence being visible rather than theoretical — is now

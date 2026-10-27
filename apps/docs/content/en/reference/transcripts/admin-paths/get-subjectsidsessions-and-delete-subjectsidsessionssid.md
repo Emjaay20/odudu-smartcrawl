@@ -1,9 +1,11 @@
 ---
-title: 'GET /subjects/:id/sessions and DELETE…'
+title: "A subject's sessions: list and end one"
 description: 'Both require manage-sessions; there is no view-sessions, the same reasoning that leaves clients with no view-clients — a session is reached only by…'
 ---
 
-## `GET /subjects/:id/sessions` and `DELETE /subjects/:id/sessions/:sid`
+# A subject's sessions: list and end one
+
+This page covers `GET /subjects/:id/sessions` and `DELETE /subjects/:id/sessions/:sid`.
 
 Both require `manage-sessions`; there is no `view-sessions`, the same
 reasoning that leaves clients with no `view-clients` — a session is reached

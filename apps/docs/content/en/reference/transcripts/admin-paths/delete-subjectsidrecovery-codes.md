@@ -18,7 +18,7 @@ subject still holds a TOTP enrolment, the
 request adds the `generate-recovery-codes` required action in the same
 transaction, so their next sign-in ends on the page that issues a fresh set;
 `?require_new_set=false` leaves them with none until
-[`PUT /subjects/:id/required-actions`](./get-subjectsidrequired-actions-and-put-subjectsidrequired-actions.md#get-subjectsidrequired-actions-and-put-subjectsidrequired-actions)
+[`PUT /subjects/:id/required-actions`](./get-subjectsidrequired-actions-and-put-subjectsidrequired-actions.md)
 or the next sign-in asks (below). A subject with no TOTP is never
 asked, since a set would serve nothing. The audit row's
 `detail.new_set_required` says which it was. Any value of `require_new_set`

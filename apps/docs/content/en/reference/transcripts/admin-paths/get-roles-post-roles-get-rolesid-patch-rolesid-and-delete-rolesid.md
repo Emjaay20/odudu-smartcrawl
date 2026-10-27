@@ -1,9 +1,11 @@
 ---
-title: 'GET /roles, POST /roles, GET /roles/:id, PATCH /roles/:id…'
+title: 'Roles: list, create, read, update, delete'
 description: 'All five require manage-tenant; the list, GET /roles, is also readable with view-users (below).'
 ---
 
-## `GET /roles`, `POST /roles`, `GET /roles/:id`, `PATCH /roles/:id` and `DELETE /roles/:id`
+# Roles: list, create, read, update, delete
+
+This page covers `GET /roles`, `POST /roles`, `GET /roles/:id`, `PATCH /roles/:id` and `DELETE /roles/:id`.
 
 All five require `manage-tenant`; the list, `GET /roles`, is also readable with
 `view-users` (below). A role is either a tenant role (`client_id` is `null`) or
@@ -203,7 +205,7 @@ curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
 {"action":"role.delete","outcome":"refused","actor_subject_id":"01a0e0a7-0ead-703a-ab34-22bcf5167d46","detail":{"reason":"tenant-admin is a capability of odudu-admin, this tenant's built-in admin client, and deleting it would strip it from every administrator holding it"}}
 ```
 
-### The owning client, by name
+## The owning client, by name
 
 A role names its owning client twice: `client_id`, the client's row id, and
 `client_key`, that client's own `client_id` — the name a person tells it apart
@@ -234,7 +236,7 @@ curl -sS -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: applic
 {"items":[{"id":"01a10bd4-90e5-79e8-92bd-8f9024ae8829","name":"billing-viewer","client_id":null,"client_key":null},{"id":"01a10bd4-9120-7c99-a4b7-9b35a2219dc8","name":"reader","client_id":"01a10bd4-903e-716d-b038-29c8d3ee53ec","client_key":"etags-app"}]}
 ```
 
-### What a role reaches: `admin_reach`
+## What a role reaches: `admin_reach`
 
 Every role answer — the list, a role's own read and every write that answers it,
 and a role's composites — carries `admin_reach`: the admin capabilities the role
@@ -272,7 +274,7 @@ etag: "7ecd0c326f94377e60c254866472c0d0b033d159f60df4629dc6ffd41ef7ecde"
 {"type":"about:blank","title":"Forbidden","status":403,"detail":"a role handed to every new subject may reach no admin capability, and this one would reach: view-audit","instance":"01a10bd6-2e73-7649-a48f-c17b297dca44"}
 ```
 
-### The list a user manager picks from
+## The list a user manager picks from
 
 `GET /roles` alone is also readable with `view-users`, and so with
 `manage-users`, which composes it: a user manager assigns roles to a subject and

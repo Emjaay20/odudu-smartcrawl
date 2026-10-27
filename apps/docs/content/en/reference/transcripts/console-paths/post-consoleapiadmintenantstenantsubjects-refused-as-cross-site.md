@@ -1,9 +1,11 @@
 ---
-title: 'POST …/subjects, refused as cross-site'
+title: 'Subject create, refused as cross-site'
 description: "A write to /console/api/ or /console/auth/ is refused with a 403 unless it carries the base's own Origin and the X-Odudu-Console: 1 header."
 ---
 
-## `POST /console/api/admin/tenants/{tenant}/subjects`, refused as cross-site
+# Subject create, refused as cross-site
+
+This page covers `POST /console/api/admin/tenants/{tenant}/subjects`, refused as cross-site.
 
 A request to `/console/api/` or `/console/auth/` other than `GET`, `HEAD` or
 `OPTIONS` is refused `403` before anything else runs, unless it carries `Origin`

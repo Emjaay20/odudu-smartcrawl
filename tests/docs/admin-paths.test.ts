@@ -65,8 +65,13 @@ function normalise(path: string): string {
 
 const ENDPOINT_IN_HEADING = /^(?<method>GET|POST|PUT|PATCH|DELETE) (?<path>\/\S*)$/u;
 
+// A page that covers several routes names them in its opening sentence, because
+// its heading is a short title.
+const COVERS = /^This page covers (?<routes>.+)\.$/mu;
+
 function endpointsNamedBy(section: Section): { method: string; path: string }[] {
-  return backticked(section.heading).flatMap((item) => {
+  const covered = COVERS.exec(section.body)?.groups?.routes ?? '';
+  return backticked(`${section.heading} ${covered}`).flatMap((item) => {
     const match = ENDPOINT_IN_HEADING.exec(item.trim());
     if (match === null) return [];
     return [{ method: match.groups?.method ?? '', path: normalise(match.groups?.path ?? '') }];

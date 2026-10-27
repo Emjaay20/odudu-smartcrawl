@@ -1,9 +1,11 @@
 ---
-title: 'GET /admin/tenants/{tenant} and PATCH…'
+title: 'Read and amend a tenant'
 description: 'Both require manage-tenant on the tenant named in the path — the tenant itself, not the collection, so a tenant-local admin reaches its own and a…'
 ---
 
-## `GET /admin/tenants/{tenant}` and `PATCH /admin/tenants/{tenant}`
+# Read and amend a tenant
+
+This page covers `GET /admin/tenants/{tenant}` and `PATCH /admin/tenants/{tenant}`.
 
 Both require `manage-tenant` on the tenant named in the path — the tenant
 itself, not the collection, so a tenant-local admin reaches its own and a
