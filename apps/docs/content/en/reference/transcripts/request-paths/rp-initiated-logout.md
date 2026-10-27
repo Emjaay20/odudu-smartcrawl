@@ -63,13 +63,52 @@ TOKEN_RESPONSE=$(curl -sS \
 
 ID_TOKEN=$(python3 -c "import json,sys; print(json.load(sys.stdin)['id_token'])" <<< "$TOKEN_RESPONSE")
 REFRESH_TOKEN=$(python3 -c "import json,sys; print(json.load(sys.stdin)['refresh_token'])" <<< "$TOKEN_RESPONSE")
+```
 
-curl -sS -b cookies.txt -D - -o /dev/null \
-  --get \
+The browser then arrives at the logout endpoint with that hint and a registered
+redirect. The blocks of this section ran against a fresh stack seeded with `demo`, `demo-spa`, `demo-post` and `ada` as
+[Bootstrap](./bootstrap.md) does. It publishes **port 3191**, and a local TCP
+forward from port 3000 to it let these commands read as they always have;
+the sections below name 3191, which is the port they were run on. The pipe prints the
+status line, the `content-security-policy` and `<title>`, and the form's hidden
+fields except `csrf`:
+
+```bash
+curl -sS -b cookies.txt -D - --get \
   --data-urlencode "id_token_hint=$ID_TOKEN" \
   --data-urlencode 'client_id=demo-spa' \
   --data-urlencode 'post_logout_redirect_uri=http://localhost:8080/logged-out' \
   --data-urlencode 'state=xyz-bye' \
+  "http://localhost:3000/tenants/demo/protocol/openid-connect/logout" | tee page.txt \
+  | grep -iE '^HTTP|^location|^set-cookie|<title>|name="(session_id|client_id|post_logout_redirect_uri|state)"|^content-security-policy'
+```
+
+```
+HTTP/1.1 200 OK
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'
+<title>Sign out?</title>
+  <input type="hidden" name="session_id" value="01a17cd9-27cb-78b0-9ea1-0e63df9357c7">
+  <input type="hidden" name="client_id" value="demo-spa">
+  <input type="hidden" name="post_logout_redirect_uri" value="http://localhost:8080/logged-out">
+  <input type="hidden" name="state" value="xyz-bye">
+```
+
+The hint matches the session in the cookie, a registered redirect is
+requested, and still nothing is ended and no cookie is touched: the answer is
+the confirmation page, because a `GET` that names a valid ID token proves
+that somebody holds the token, and nothing about the End-User's intent (§2).
+`form-action` lists the registered redirect's origin because the form's
+`POST` will redirect there. The browser posts the form back, which is the
+request that ends the session. `field` reads one hidden field out of the page
+saved above:
+
+```bash
+field() { sed -n "s/.*name=.$1. value=.\([^>]*\).>.*/\1/p" page.txt; }
+curl -sS -b cookies.txt -D - -o /dev/null -X POST \
+  --data-urlencode "session_id=$(field session_id)" --data-urlencode "csrf=$(field csrf)" \
+  --data-urlencode "client_id=$(field client_id)" \
+  --data-urlencode "post_logout_redirect_uri=$(field post_logout_redirect_uri)" \
+  --data-urlencode "state=$(field state)" \
   "http://localhost:3000/tenants/demo/protocol/openid-connect/logout"
 ```
 
@@ -82,21 +121,23 @@ location: http://localhost:8080/logged-out?state=xyz-bye
 content-length: 0
 ```
 
-Both cookies are cleared, not just the one this login set: logout ends the
+(`x-request-id`, `Date` and the keep-alive headers are omitted, as elsewhere
+in this document.) Both cookies are cleared, not just the one this login set: logout ends the
 whole SSO session, and a browser could hold a live persistent cookie from a
 different, remembered login even though this walkthrough's own login did
 not set one.
 
-The hint names the session the cookie itself belongs to (OIDC Core §3.1.2.2
-validates it — this tenant's own keys, this tenant's issuer, an access token
-refused by `typ`), so §2's confirmation is skipped and the exact-match
-`post_logout_redirect_uri` is honoured. A `sid` naming a session outside
-this browser's own resolved set — stale, or another browser's — is treated
-as a hint that names nothing usable: confirmation falls back to whichever
-of this browser's own sessions was most recently active, and the
-confirmation page names that session, not the one the `sid` asked for, so
-nobody is misled about which session confirming will end. A hint past its
-`exp` is read the same way ([below](#an-id-token-past-its-exp-sent-as-the-hint)).
+The hint is validated (OIDC Core §3.1.2.2 — this tenant's own keys, this
+tenant's issuer, an access token refused by `typ`), and what it does is
+identify the session: the page asks about the one the hint's `sid` names. The
+confirmation is asked for whatever the hint is, so the exact-match
+`post_logout_redirect_uri` is honoured only by the `POST` that follows it. A
+`sid` naming a session outside this browser's own resolved set — stale, or
+another browser's — is treated as a hint that names nothing usable: the page
+falls back to whichever of this browser's own sessions was most recently
+active and names that session, not the one the `sid` asked for, so nobody is
+misled about which session confirming will end. A hint past its `exp` is read
+the same way ([below](#an-id-token-past-its-exp-sent-as-the-hint)).
 The refresh
 token this session's grant issued is now refused:
 
@@ -119,12 +160,15 @@ the console's own sign-out sends the ID token it stored at sign-in — so
 RP-Initiated Logout §2 and OIDC Core §3.1.2.2 both ask the OP to accept one
 "even when the `exp` time has passed". At the logout endpoint what bounds
 that is the session the hint's `sid` names, not the clock: the `sid` has to
-equal a session still live in this browser's own cookies. At `/authorize`
-the hint only constrains the request; it authenticates nobody.
+equal a session still live in this browser's own cookies, and all it then
+does is choose which session the confirmation page asks about. Nothing is
+ended by the request. At `/authorize` the hint only constrains the request;
+it authenticates nobody.
 
-This section ran against a fresh stack of its own (`ODUDU_REAP_ENABLED=false`)
-published on **port 3172**, so every URL below is the port it ran on, seeded
-only with `demo`, `demo-spa` and `ada` as [Bootstrap](./bootstrap.md) does. The
+This section ran against a fresh stack of its own,
+published on **port 3191**, so every URL below is the port it ran
+on, seeded only with `demo`, `demo-spa`, `demo-post` and `ada` as
+[Bootstrap](./bootstrap.md) does. The
 redirect list from the section above is in place, and `demo-spa`'s ID token
 lifetime is lowered to its minimum of five seconds, so a hint can be shown past
 its `exp` in the time it takes to run the next block. `psql` is a function for
@@ -132,8 +176,8 @@ the compose stack's database, the way `odudu` is for its CLI:
 
 ```bash
 psql() { docker compose -f infra/docker/compose.yaml exec -T postgres psql -U odudu -d odudu "$@"; }
-BASE=http://localhost:3172/tenants/demo/protocol/openid-connect
-LOGIN=http://localhost:3172/tenants/demo/login-actions/authenticate
+BASE=http://localhost:3191/tenants/demo/protocol/openid-connect
+LOGIN=http://localhost:3191/tenants/demo/login-actions/authenticate
 psql -c "UPDATE client_oidc_config SET id_token_ttl_seconds = 5
   FROM clients WHERE clients.id = client_oidc_config.client_id AND clients.client_id = 'demo-spa';"
 ```
@@ -180,11 +224,11 @@ echo "SID_A=$SID_A"; echo "SID_B=$SID_B"
 ```
 
 ```
-{"iat": 1792007015, "exp": 1792007020, "sid": "01a13bf1-0b5a-735c-befe-804b753cb023"}
-{"iat": 1792007015, "exp": 1792007020, "sid": "01a13bf1-0c1c-7870-b1df-00462a5f5400"}
-1792007022
-SID_A=01a13bf1-0b5a-735c-befe-804b753cb023
-SID_B=01a13bf1-0c1c-7870-b1df-00462a5f5400
+{"iat": 1793095190, "exp": 1793095195, "sid": "01a17ccd-4887-7db7-8ea3-802d7ad7fc07"}
+{"iat": 1793095190, "exp": 1793095195, "sid": "01a17ccd-4942-736c-85df-cbc451c237e6"}
+1793095197
+SID_A=01a17ccd-4887-7db7-8ea3-802d7ad7fc07
+SID_B=01a17ccd-4942-736c-85df-cbc451c237e6
 ```
 
 The precondition that makes the next calls safe is the session, not the
@@ -201,8 +245,8 @@ psql -c "select c.client_id, o.post_logout_redirect_uris, o.id_token_ttl_seconds
 ```
                   id                  | live
 --------------------------------------+------
- 01a13bf1-0b5a-735c-befe-804b753cb023 | t
- 01a13bf1-0c1c-7870-b1df-00462a5f5400 | t
+ 01a17ccd-4887-7db7-8ea3-802d7ad7fc07 | t
+ 01a17ccd-4942-736c-85df-cbc451c237e6 | t
 (2 rows)
 
  client_id |     post_logout_redirect_uris      | id_token_ttl_seconds
@@ -212,11 +256,11 @@ psql -c "select c.client_id, o.post_logout_redirect_uris, o.id_token_ttl_seconds
 ```
 
 First the cases that still ask. Browser B presents the hint of session A:
-that `sid` names a session B's cookie does not hold, so the token does not
-belong to the current session and §2's confirmation fires. A hint with the
+that `sid` names a session B's cookie does not hold, so the page asks about
+B's own session instead. A hint with the
 last character of its signature changed (`$FORGED`) is no hint at all,
-however its `exp` reads. And a request with no session cookie has no
-session to end, so it gets the no-session page. The pipe prints each
+however its `exp` reads, and asks the same way. And a request with no session
+cookie has no session to ask about, so it gets the no-session page. The pipe prints each
 answer's status line, any `location` or `set-cookie`, and the page's
 `<title>`:
 
@@ -255,8 +299,8 @@ psql -c "$LIVE"
 ```
                   id                  | live
 --------------------------------------+------
- 01a13bf1-0b5a-735c-befe-804b753cb023 | t
- 01a13bf1-0c1c-7870-b1df-00462a5f5400 | t
+ 01a17ccd-4887-7db7-8ea3-802d7ad7fc07 | t
+ 01a17ccd-4942-736c-85df-cbc451c237e6 | t
 (2 rows)
 ```
 
@@ -287,34 +331,60 @@ curl -sS -b jarB.txt -D - -o /dev/null "${AUTH[@]}" \
 ```
 # lapsed hint, live session of its subject
 HTTP/1.1 302 Found
-location: http://localhost:8080/callback?code=…&state=xyz-auth&iss=http%3A%2F%2Flocalhost%3A3172%2Ftenants%2Fdemo
+location: http://localhost:8080/callback?code=…&state=xyz-auth&iss=http%3A%2F%2Flocalhost%3A3191%2Ftenants%2Fdemo
 # lapsed hint, prompt=none, no session cookie
 HTTP/1.1 302 Found
-location: http://localhost:8080/callback?error=login_required&error_description=The+user+is+not+signed+in.&state=xyz-auth&iss=http%3A%2F%2Flocalhost%3A3172%2Ftenants%2Fdemo
+location: http://localhost:8080/callback?error=login_required&error_description=The+user+is+not+signed+in.&state=xyz-auth&iss=http%3A%2F%2Flocalhost%3A3191%2Ftenants%2Fdemo
 # forged lapsed hint, live session
 HTTP/1.1 302 Found
-location: http://localhost:8080/callback?error=invalid_request&error_description=id_token_hint+is+not+valid&state=xyz-auth&iss=http%3A%2F%2Flocalhost%3A3172%2Ftenants%2Fdemo
+location: http://localhost:8080/callback?error=invalid_request&error_description=id_token_hint+is+not+valid&state=xyz-auth&iss=http%3A%2F%2Flocalhost%3A3191%2Ftenants%2Fdemo
 ```
 
 Now browser A presents the hint of its own session at the logout
 endpoint, more than five seconds past its `exp`. The `sid` equals a live
-session in this browser, so the OP asks nothing and redirects:
+session in this browser, so the page asks about that session, the one the
+hint names, and carries the registered redirect. A `GET` ends nothing, however
+well the hint matches. The pipe prints the status line, the `<title>` and the
+form's hidden fields except `csrf`:
 
 ```bash
-curl -sS -b jarA.txt -D - -o /dev/null --get --data-urlencode "id_token_hint=$TOKEN_A" \
+curl -sS -b jarA.txt -D - --get --data-urlencode "id_token_hint=$TOKEN_A" \
   --data-urlencode 'client_id=demo-spa' --data-urlencode 'post_logout_redirect_uri=http://localhost:8080/logged-out' \
-  --data-urlencode 'state=xyz-bye' "$BASE/logout"
+  --data-urlencode 'state=xyz-bye' "$BASE/logout" | tee pageA.txt \
+  | grep -iE '^HTTP|^location|^set-cookie|<title>|name="(session_id|client_id|post_logout_redirect_uri|state)"'
+```
+
+```
+HTTP/1.1 200 OK
+<title>Sign out?</title>
+  <input type="hidden" name="session_id" value="01a17ccd-4887-7db7-8ea3-802d7ad7fc07">
+  <input type="hidden" name="client_id" value="demo-spa">
+  <input type="hidden" name="post_logout_redirect_uri" value="http://localhost:8080/logged-out">
+  <input type="hidden" name="state" value="xyz-bye">
+```
+
+The `session_id` is session A's, not B's. The browser posts the form back,
+and that `POST` is what ends the session and redirects. `field` reads one
+hidden field out of the page saved above, `pageA.txt`:
+
+```bash
+field() { sed -n "s/.*name=.$1. value=.\([^>]*\).>.*/\1/p" pageA.txt; }
+curl -sS -b jarA.txt -D - -o /dev/null -X POST \
+  --data-urlencode "session_id=$(field session_id)" --data-urlencode "csrf=$(field csrf)" \
+  --data-urlencode "client_id=$(field client_id)" \
+  --data-urlencode "post_logout_redirect_uri=$(field post_logout_redirect_uri)" \
+  --data-urlencode "state=$(field state)" "$BASE/logout"
 ```
 
 ```
 HTTP/1.1 302 Found
-x-request-id: 01a13bf1-29e7-7950-b253-0b1614d3b01f
+x-request-id: 01a17ccd-6706-758b-ae98-2e961a23b710
 set-cookie: demo-session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
 set-cookie: demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
 cache-control: no-store
 location: http://localhost:8080/logged-out?state=xyz-bye
 content-length: 0
-Date: Wed, 14 Oct 2026 19:43:43 GMT
+Date: Tue, 27 Oct 2026 09:59:58 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 ```
@@ -331,8 +401,8 @@ psql -c "select action, outcome, detail from audit_events where resource_id = '$
 ```
                   id                  | live
 --------------------------------------+------
- 01a13bf1-0b5a-735c-befe-804b753cb023 | f
- 01a13bf1-0c1c-7870-b1df-00462a5f5400 | t
+ 01a17ccd-4887-7db7-8ea3-802d7ad7fc07 | f
+ 01a17ccd-4942-736c-85df-cbc451c237e6 | t
 (2 rows)
 
      action      | outcome |      detail
@@ -342,12 +412,12 @@ psql -c "select action, outcome, detail from audit_events where resource_id = '$
 (2 rows)
 ```
 
-That is the bound at the logout endpoint: a lapsed hint is good for as long
-as the session it names is live and in the presenting browser's cookies,
-and for nothing else. What it widens is the exposure of a leaked ID token:
-it used to be usable for a logout for the token's lifetime and now is for
-the session's, and what it can do in that time is end the one session it
-names. `OIDC-RPINITIATED-2-05` holds the rest of the matrix to the same
+That is the bound at the logout endpoint: a lapsed hint identifies a session
+for as long as that session is live and in the presenting browser's cookies,
+and for nothing else. It ends nothing by itself: what ends the session is
+the form posted back, whose `csrf` is derived from the cookie's own secret, so
+a leaked ID token cannot force a sign-out. The token's exposure is that it
+can reach logs and history and name a session to ask about. `OIDC-RPINITIATED-2-05` holds the rest of the matrix to the same
 answer. At `/authorize` the equivalent is `OIDC-CORE-3.1.2.2-08`: a lapsed
 hint with a live session of another subject is still `login_required`
 under `prompt=none` and still gets the login form otherwise. Token
@@ -391,7 +461,7 @@ session is still live:
 
 ```bash
 curl -sS -u revoke-doc-client:revoke-doc-secret \
-  -X POST "http://localhost:3000/tenants/revokedoc/protocol/openid-connect/token/introspect" \
+  -X POST "http://localhost:3191/tenants/revokedoc/protocol/openid-connect/token/introspect" \
   --data-urlencode "token=$ACCESS_TOKEN"
 ```
 
@@ -400,36 +470,66 @@ curl -sS -u revoke-doc-client:revoke-doc-secret \
   "active": true,
   "scope": "openid",
   "client_id": "revoke-doc-client",
-  "sub": "01a0cb1f-5551-…",
-  "aud": ["revoke-doc-client", "http://localhost:3000/tenants/revokedoc"],
+  "sub": "01a17ccf-f3f1-…",
+  "aud": ["revoke-doc-client", "http://localhost:3191/tenants/revokedoc"],
   "token_type": "Bearer",
-  "exp": 1790114523,
-  "iat": 1790114223
+  "exp": 1793095665,
+  "iat": 1793095365
 }
 ```
 
-Ending that session — the same `id_token_hint` logout as above — and
-introspecting the identical, still-unexpired access token again:
+(This run, and every block of this section after it, is on the stack at port
+3191, with the tenant `revokedoc` seeded fresh alongside `demo`.) The
+`id_token_hint` logout asks first, as everywhere above: the `GET` answers the
+confirmation page and the token is still active after it.
 
 ```bash
-curl -sS -b cookies.txt --get \
+curl -sS -b cookies-rd.txt -D - --get \
   --data-urlencode "id_token_hint=$ID_TOKEN" \
   --data-urlencode "client_id=revoke-doc-client" \
   --data-urlencode "state=bye-1" \
-  "http://localhost:3000/tenants/revokedoc/protocol/openid-connect/logout"
+  "http://localhost:3191/tenants/revokedoc/protocol/openid-connect/logout" | tee page-rd.txt \
+  | grep -iE '^HTTP|^set-cookie|<title>|name="(session_id|client_id|post_logout_redirect_uri|state)"'
 
 curl -sS -u revoke-doc-client:revoke-doc-secret \
-  -X POST "http://localhost:3000/tenants/revokedoc/protocol/openid-connect/token/introspect" \
+  -X POST "http://localhost:3191/tenants/revokedoc/protocol/openid-connect/token/introspect" \
   --data-urlencode "token=$ACCESS_TOKEN"
 ```
 
-```json
-{ "active": false }
+```
+HTTP/1.1 200 OK
+<title>Sign out?</title>
+  <input type="hidden" name="session_id" value="01a17ccf-f522-7100-ad40-6cfc23463025">
+  <input type="hidden" name="client_id" value="revoke-doc-client">
+  <input type="hidden" name="state" value="bye-1">
+{"active":true,"scope":"openid","client_id":"revoke-doc-client","sub":"01a17ccf-f3f1-7d48-903d-f7e95d50873a","aud":["revoke-doc-client","http://localhost:3191/tenants/revokedoc"],"token_type":"Bearer","exp":1793095665,"iat":1793095365}
 ```
 
-(The logout request itself answers with the signed-out page, `200`, which this
-block leaves out.) `exp` above is `1790114523`; this second call landed at `1790114223` — 300
-seconds still on the clock, and every one of them made no difference, because
+Posting the form back ends the session. Introspecting the identical,
+still-unexpired access token again:
+
+```bash
+curl -sS -b cookies-rd.txt -D - -o /dev/null -X POST \
+  --data-urlencode "session_id=$(field session_id)" --data-urlencode "csrf=$(field csrf)" \
+  --data-urlencode "client_id=$(field client_id)" --data-urlencode "state=$(field state)" \
+  "http://localhost:3191/tenants/revokedoc/protocol/openid-connect/logout" | head -3
+
+curl -sS -u revoke-doc-client:revoke-doc-secret \
+  -X POST "http://localhost:3191/tenants/revokedoc/protocol/openid-connect/token/introspect" \
+  --data-urlencode "token=$ACCESS_TOKEN"
+```
+
+```
+HTTP/1.1 200 OK
+x-request-id: 01a17ccf-f722-7223-88c2-422a74a2aeba
+set-cookie: revokedoc-session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
+{"active":false}
+```
+
+(`field` is the function from the first section, reading `page-rd.txt` here. The
+logout answers the signed-out page, `200`, which `head -3` cuts short.) `exp`
+above is `1793095665`; this second call landed seconds after `iat` — nearly all
+300 seconds still on the clock, and none of them made any difference, because
 logout revoked the grant this token names along with the session
 (`tokenGrantRepository(tx).revokeForSession`, called by `endSession`), and
 introspection checks that `revoked_at` before it ever looks at the session (RFC
@@ -699,40 +799,66 @@ writes no second row.
 
 §2 requires both methods at this endpoint, so an RP may serialize the
 request parameters into a form body instead of a query string. It is the
-same request and gets the same answer. The `GET` above ended the session
+same request and gets the same answer: the confirmation page, and nothing
+ended until the form is posted back. The `GET` above ended the session
 `cookies.txt` held, so this needs a session of its own: run the sign-in and
 the code-for-`id_token` exchange again into a second jar — the same two
 blocks, with `-c cookies-post.txt` on the login and `-b cookies-post.txt`
-on the authorize — and then:
+on the authorize — and then, on the same stack at port 3191:
 
 ```bash
-curl -sS -b cookies-post.txt -D - -o /dev/null -X POST \
+curl -sS -b cookies-post.txt -D - -X POST \
   --data-urlencode "id_token_hint=$ID_TOKEN" \
   --data-urlencode 'client_id=demo-spa' \
   --data-urlencode 'post_logout_redirect_uri=http://localhost:8080/logged-out' \
   --data-urlencode 'state=xyz-bye' \
-  "http://localhost:3000/tenants/demo/protocol/openid-connect/logout"
+  "http://localhost:3191/tenants/demo/protocol/openid-connect/logout" | tee page-post.txt \
+  | grep -iE '^HTTP|^location|^set-cookie|<title>|name="(session_id|client_id|post_logout_redirect_uri|state)"'
+```
+
+```
+HTTP/1.1 200 OK
+<title>Sign out?</title>
+  <input type="hidden" name="session_id" value="01a17cce-ce03-7f60-af97-12e40d3f06a3">
+  <input type="hidden" name="client_id" value="demo-spa">
+  <input type="hidden" name="post_logout_redirect_uri" value="http://localhost:8080/logged-out">
+  <input type="hidden" name="state" value="xyz-bye">
+```
+
+Posting that form back, with `field` as above reading `page-post.txt`, ends
+the session:
+
+```bash
+curl -sS -b cookies-post.txt -D - -o /dev/null -X POST \
+  --data-urlencode "session_id=$(field session_id)" --data-urlencode "csrf=$(field csrf)" \
+  --data-urlencode "client_id=$(field client_id)" \
+  --data-urlencode "post_logout_redirect_uri=$(field post_logout_redirect_uri)" \
+  --data-urlencode "state=$(field state)" \
+  "http://localhost:3191/tenants/demo/protocol/openid-connect/logout"
 ```
 
 ```
 HTTP/1.1 302 Found
+x-request-id: 01a17cce-ceb0-7766-8434-eb5d79453ebe
 set-cookie: demo-session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
 set-cookie: demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
 cache-control: no-store
 location: http://localhost:8080/logged-out?state=xyz-bye
 content-length: 0
+Date: Tue, 27 Oct 2026 10:01:30 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 ```
 
-(`x-request-id`, `Date` and the keep-alive headers are omitted, as
-elsewhere in this document.) The session is gone, so the refresh token its
-grant issued is refused exactly as after the `GET`:
+The session is gone, so the refresh token its grant issued is refused exactly
+as after the `GET`:
 
 ```bash
 curl -sS \
   --data-urlencode 'grant_type=refresh_token' \
   --data-urlencode "refresh_token=$REFRESH_TOKEN" \
   --data-urlencode 'client_id=demo-spa' \
-  "http://localhost:3000/tenants/demo/protocol/openid-connect/token"
+  "http://localhost:3191/tenants/demo/protocol/openid-connect/token"
 ```
 
 ```json
@@ -744,8 +870,8 @@ confirmation form above submitting back. The form's hidden `session_id` is
 what tells them apart, so a body carrying it is a confirmation and a body
 without it is a logout request. A confirmation is honoured only with the
 `csrf` token the cookie's secret derives; a body without `session_id` is
-read as a request — which, with no hint, is answered by the confirmation
-page and ends nothing.
+read as a request — which, whatever hint it carries, is answered by the
+confirmation page and ends nothing.
 
 ## A `client_id` that disagrees with the hint
 
@@ -839,25 +965,47 @@ curl -sS -b cookies-aud.txt -X POST \
 `post_logout_redirect_uri` at all: §4 says information that failed to
 validate is not used, so the hint and the redirect it would have
 authorised are dropped together. The identical request with
-`client_id=demo-spa` — the client the hint names — ends the session and
-redirects:
+`client_id=demo-spa` — the client the hint names — asks too, but its form
+carries the redirect, and posting that form ends the session and
+redirects. Both requests ran on the stack at port 3191, the first of them
+the one recorded above:
 
 ```bash
-curl -sS -b cookies-aud.txt -D - -o /dev/null -X POST \
+curl -sS -b cookies-aud.txt -D - -X POST \
   --data-urlencode "id_token_hint=$ID_TOKEN" \
   --data-urlencode 'client_id=demo-spa' \
   --data-urlencode 'post_logout_redirect_uri=http://localhost:8080/logged-out' \
-  "http://localhost:3000/tenants/demo/protocol/openid-connect/logout"
+  "http://localhost:3191/tenants/demo/protocol/openid-connect/logout" | tee page-aud2.txt \
+  | grep -iE '^HTTP|^location|^set-cookie|<title>|name="(session_id|client_id|post_logout_redirect_uri|state)"'
+
+curl -sS -b cookies-aud.txt -D - -o /dev/null -X POST \
+  --data-urlencode "session_id=$(field session_id)" --data-urlencode "csrf=$(field csrf)" \
+  --data-urlencode "client_id=$(field client_id)" \
+  --data-urlencode "post_logout_redirect_uri=$(field post_logout_redirect_uri)" \
+  "http://localhost:3191/tenants/demo/protocol/openid-connect/logout"
 ```
 
 ```
+HTTP/1.1 200 OK
+<title>Sign out?</title>
+  <input type="hidden" name="session_id" value="01a17cce-cf3d-7052-b595-f9a435dd3677">
+  <input type="hidden" name="client_id" value="demo-spa">
+  <input type="hidden" name="post_logout_redirect_uri" value="http://localhost:8080/logged-out">
 HTTP/1.1 302 Found
+x-request-id: 01a17cce-cfbe-7e72-8e9b-cc4a606a24a1
 set-cookie: demo-session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
 set-cookie: demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
 cache-control: no-store
 location: http://localhost:8080/logged-out
 content-length: 0
+Date: Tue, 27 Oct 2026 10:01:30 GMT
+Connection: keep-alive
+Keep-Alive: timeout=72
 ```
+
+(`field` is defined as above, reading `page-aud2.txt` here. The `session_id` is the one the `demo-post` request's form
+carried too: the disagreeing hint was dropped, and the page asked about the
+browser's own session.)
 
 ## Front-channel and back-channel logout
 
@@ -928,12 +1076,29 @@ curl -sS \
 
 Ending that session with no `post_logout_redirect_uri` at all — the branch
 that renders the signed-out page rather than redirecting away from it —
-now frames `reports-widget`:
+takes the two steps every logout takes here. The `GET` asks, on the stack at
+port 3191, and the page it answers carries no redirect:
 
 ```bash
-curl -sS -b cookies.txt --get \
+curl -sS -b cookies.txt -D - --get \
   --data-urlencode "id_token_hint=$ID_TOKEN" \
-  "http://localhost:3094/tenants/demo/protocol/openid-connect/logout"
+  "http://localhost:3191/tenants/demo/protocol/openid-connect/logout" | tee page.txt \
+  | grep -iE '^HTTP|^set-cookie|<title>|name="(session_id|client_id|post_logout_redirect_uri|state)"'
+```
+
+```
+HTTP/1.1 200 OK
+<title>Sign out?</title>
+  <input type="hidden" name="session_id" value="01a17cd0-9f73-7788-a6b9-a95e2d893146">
+  <input type="hidden" name="client_id" value="demo-spa">
+```
+
+The form posted back ends the session and now frames `reports-widget`:
+
+```bash
+curl -sS -b cookies.txt -i -X POST \
+  --data-urlencode "session_id=$(field session_id)" --data-urlencode "csrf=$(field csrf)" \
+  "http://localhost:3191/tenants/demo/protocol/openid-connect/logout"
 ```
 
 ```
@@ -967,15 +1132,16 @@ content-length: 974
 <p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
 <h1>Signed out</h1>
 <p>You have been signed out.</p>
-<iframe src="http://localhost:9100/logout?iss=http%3A%2F%2Flocalhost%3A3094%2Ftenants%2Fdemo&amp;sid=01a137d7-eae6-…"></iframe>
+<iframe src="http://localhost:9100/logout?iss=http%3A%2F%2Flocalhost%3A3191%2Ftenants%2Fdemo&amp;sid=01a17cd0-9f73-…"></iframe>
 </main>
 </body>
 </html>
 ```
 
 (`sid` shortened; it is the id half of the session cookie's entry, and `iss` is
-this tenant's issuer. From the same stack at `http://localhost:3094`, with the
-two commands above run against it and `x-request-id`, `Date` and the keep-alive
+this tenant's issuer. `field` is the function from the first section, reading
+`page.txt` here. From the same stack at `http://localhost:3191`, with the two
+commands above run against it and `x-request-id`, `Date` and the keep-alive
 headers omitted.) `sid` is present because `reports-widget` registered
 `frontchannel_logout_session_required`; a client that had not would be framed
 with `iss` alone. `demo-spa` itself is not framed here — it registered no
@@ -1000,7 +1166,7 @@ that registered either. This sub-section's own commands were re-run against a
 fresh session on the same compose stack (per [Bootstrap](./bootstrap.md)),
 started with `ODUDU_LOGOUT_SENDER_ENABLED=false` on the environment so the
 one-shot command below is what claims the row, not the server's own schedule.
-Queried straight after that same `GET .../logout` call:
+Queried straight after that same logout:
 
 ```bash
 docker compose -f infra/docker/compose.yaml exec -T postgres \
@@ -1167,13 +1333,13 @@ client keeps its own session. The server then answers `200` with the frames
 and sends the browser on afterwards.
 
 This section ran on a freshly built stack of its own, published on **port
-3180**, seeded only with `demo`, `demo-spa` and `ada` as
+3191**, seeded only with `demo`, `demo-spa`, `demo-post` and `ada` as
 [Bootstrap](./bootstrap.md) does, and with `reports-widget` set up as in the
 section above (a front-channel address of `http://localhost:9100/logout`
 asking for `sid`). `demo-spa`'s redirect list is the one set at the top of this
 document. A session was then signed in as [Path A](./path-a-authorization-code-with-pkce.md)
 does, with a grant under each client, exactly as in the section above. The
-same request as at the top of this document:
+same request as at the top of this document asks first:
 
 ```bash
 curl -sS -i -b cookies.txt --get \
@@ -1181,7 +1347,30 @@ curl -sS -i -b cookies.txt --get \
   --data-urlencode 'client_id=demo-spa' \
   --data-urlencode 'post_logout_redirect_uri=http://localhost:8080/logged-out' \
   --data-urlencode 'state=xyz-bye' \
-  "http://localhost:3180/tenants/demo/protocol/openid-connect/logout"
+  "http://localhost:3191/tenants/demo/protocol/openid-connect/logout" | tee page.txt \
+  | grep -iE '^HTTP|^set-cookie|<title>|name="(session_id|client_id|post_logout_redirect_uri|state)"|^content-security'
+```
+
+```
+HTTP/1.1 200 OK
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self' http://localhost:8080; base-uri 'none'
+<title>Sign out?</title>
+  <input type="hidden" name="session_id" value="01a17cd1-0fcb-798e-a7ae-1f0ea14a9755">
+  <input type="hidden" name="client_id" value="demo-spa">
+  <input type="hidden" name="post_logout_redirect_uri" value="http://localhost:8080/logged-out">
+  <input type="hidden" name="state" value="xyz-bye">
+```
+
+The form posted back, with `field` as in the first section reading `page.txt`,
+ends the session:
+
+```bash
+curl -sS -i -b cookies.txt -X POST \
+  --data-urlencode "session_id=$(field session_id)" --data-urlencode "csrf=$(field csrf)" \
+  --data-urlencode "client_id=$(field client_id)" \
+  --data-urlencode "post_logout_redirect_uri=$(field post_logout_redirect_uri)" \
+  --data-urlencode "state=$(field state)" \
+  "http://localhost:3191/tenants/demo/protocol/openid-connect/logout"
 ```
 
 ```
@@ -1189,7 +1378,7 @@ HTTP/1.1 200 OK
 set-cookie: demo-session=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
 set-cookie: demo-session-persistent=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0
 content-type: text/html
-content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'; script-src 'nonce-tW40DdCrVfzNY1Xy6D9Wow=='; frame-src http://localhost:9100
+content-security-policy: default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'none'; script-src 'nonce-tBoid3qMPsW180DrfC603Q=='; frame-src http://localhost:9100
 x-frame-options: DENY
 referrer-policy: no-referrer
 cache-control: no-store
@@ -1215,8 +1404,8 @@ content-length: 1740
 <h1>Signed out</h1>
 <p>You have been signed out. Taking you back to the app.</p>
 <p><a id="continue" href="http://localhost:8080/logged-out?state=xyz-bye">Continue</a></p>
-<iframe src="http://localhost:9100/logout?iss=http%3A%2F%2Flocalhost%3A3180%2Ftenants%2Fdemo&amp;sid=01a177ef-bcdd-791d…"></iframe>
-<script nonce="tW40DdCrVfzNY1Xy6D9Wow==">
+<iframe src="http://localhost:9100/logout?iss=http%3A%2F%2Flocalhost%3A3191%2Ftenants%2Fdemo&amp;sid=01a17cd1-0fcb-…"></iframe>
+<script nonce="tBoid3qMPsW180DrfC603Q==">
 (function () {
   var next = document.getElementById('continue').href;
   var frames = document.querySelectorAll('iframe');
@@ -1248,9 +1437,18 @@ which is the registered address with `state` added. A browser that does not run
 script follows the `refresh` element after five seconds. A frame that never
 answers, or a client that is down, costs those two seconds and no more.
 
-Sending the same request again finds no session to end. The address still
-matches, so the answer is the plain redirect, with no frames and nothing ended
-twice:
+Sending the first request again, the `GET` with the hint, finds no session to
+end. The address still matches, so the answer is the plain redirect, with no
+frames and nothing ended twice:
+
+```bash
+curl -sS -i --get -b cookies.txt \
+  --data-urlencode "id_token_hint=$ID_TOKEN" \
+  --data-urlencode 'client_id=demo-spa' \
+  --data-urlencode 'post_logout_redirect_uri=http://localhost:8080/logged-out' \
+  --data-urlencode 'state=xyz-bye' \
+  "http://localhost:3191/tenants/demo/protocol/openid-connect/logout"
+```
 
 ```
 HTTP/1.1 302 Found

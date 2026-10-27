@@ -50,4 +50,8 @@ shows that refusal:
 By the time this answered, the gateway had revoked the session's refresh
 token, deleted its `console_sessions` row and cleared its cookie. The
 tenant's SSO session is still live. Only the browser's own navigation to
-`redirect` carries the SSO cookie, so the SPA follows it itself.
+`redirect` carries the SSO cookie, so the SPA follows it itself, and the tenant's
+logout endpoint then asks the person to confirm before it ends that session
+([next](./following-the-logout-redirect.md)). This request was run again on a
+fresh stack at `http://localhost:3191` after that change and
+answered the same `200` with a `redirect` of the same shape (`content-length: 713`).

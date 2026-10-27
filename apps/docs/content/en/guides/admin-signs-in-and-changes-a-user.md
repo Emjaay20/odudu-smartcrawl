@@ -146,7 +146,7 @@ Full transcript: [PATCH …/subjects/{id}](../reference/transcripts/console-path
 
 ## 8. Sign out
 
-Signing out revokes the session's refresh token, deletes the console session and clears the cookie. The answer tells the browser where to go to end the tenant's own session too.
+Signing out revokes the session's refresh token, deletes the console session and clears the cookie. The answer tells the browser where to go to end the tenant's own session too, where the person is asked to confirm.
 
 ```bash
 curl -sS -D - -c jar -b jar -X POST \

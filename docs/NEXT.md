@@ -275,14 +275,13 @@ a phase note.
   Each phase's §11 criterion names its items, and
   [the roadmap page](../apps/docs/content/en/roadmap.md) lists
   them under a test that holds the two together.
-- `/logout` has two hardening gaps that predate P4g's change to it. The
-  confirmation form's `client_id` and `post_logout_redirect_uri` fields are
-  not covered by the anti-forgery HMAC (reaching nothing new today, since only a
-  registered address is ever honoured). And a verified hint whose `sid` is the
-  cookie's own session ends it by `GET` with no confirmation and no bound on
-  the hint's age, so a leaked ID token forces that sign-out, limited by the
-  session's lifetime and the victim's cookie. **P4b** closes both: logout
-  always asks for confirmation, with the form's fields bound into the token.
+- `/logout` has two hardening gaps that predate P4g's change to it. One is
+  closed: a verified hint whose `sid` was the cookie's own session ended it by
+  `GET` with no confirmation, so a leaked ID token forced that sign-out, and
+  logout now always asks when a session is present. The other remains: the confirmation form's `client_id` and `post_logout_redirect_uri`
+  fields are not covered by the anti-forgery HMAC (reaching nothing new
+  today, since only a registered address is ever honoured). **P4b** closes it
+  by binding the form's fields into the token.
 - `tests/lint/production-guard-order.test.ts` compares source offsets and
   breaks on a rename or a helper extraction. A reasonable stopgap for the
   still-positional server-boot path, but its narrowness should be visible to

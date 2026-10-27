@@ -308,6 +308,18 @@ on purpose: `tests/docs/discovery.test.ts` compares the recorded document, membe
 one the server builds for `http://localhost:3000`, and a block showing `3331` in its issuer would fail
 it. Every other line of that document was confirmed identical.
 
+Logout always asks, and the transcripts that showed a `GET` with an ID token hint ending a session were run
+again for it: [RP-initiated logout](../reference/transcripts/request-paths/rp-initiated-logout.md) (the opening
+section, the expired-hint section, introspection and revocation, the same request over `POST`, the `client_id` that
+disagrees with the hint, the front-channel frames and the matched redirect after them) and
+[Following the logout redirect](../reference/transcripts/console-paths/following-the-logout-redirect.md). They ran on
+the compose project `odudu-tx`, a fresh stack with `demo`, `demo-spa`, `demo-post`, `ada` and, for the console page,
+`grace` seeded, published on port `3191`, built from the branch `p4b/b-logout` at `fa7f01b3` plus the working tree
+that the commit after it records. The opening section ran with a local TCP forward from port `3000` to `3191`, so its
+commands read against `3000` as the guide that excerpts them does; every other re-run block names `3191`. Blocks
+elsewhere on those pages, such as the deliveries queue after the front-channel logout and the offline-access
+section, keep the output they had: the deliveries queue was queried again on this stack and answered as recorded.
+
 ## Admin path transcripts
 
 The admin API: the endpoints under `/admin/tenants/{tenant}/` that let an

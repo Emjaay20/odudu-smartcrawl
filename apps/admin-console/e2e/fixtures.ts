@@ -207,6 +207,14 @@ export async function signIn(page: Page, account: Account): Promise<void> {
   await expect(page.getByRole('heading', { level: 1, name: 'Overview' })).toBeVisible();
 }
 
+// The console's sign-out lands on the server's confirmation page, whatever
+// the age of the ID token it carries; the End-User then confirms there.
+export async function confirmSignOut(page: Page): Promise<void> {
+  await expect(page.getByRole('heading', { level: 1, name: 'Sign out?' })).toBeVisible();
+  await page.getByRole('button', { name: 'Sign out' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Sign in' })).toBeVisible();
+}
+
 export async function sessionTenant(page: Page): Promise<string | null> {
   const response = await page.request.get('/console/api/session');
   if (response.status() !== 200) return null;
