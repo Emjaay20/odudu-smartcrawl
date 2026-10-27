@@ -5,7 +5,7 @@
         "http://127.0.0.1:4291/odudu/",
         "http://127.0.0.1:4291/odudu/docs/quick-start/",
         "http://127.0.0.1:4291/odudu/docs/guides/sign-a-user-in/",
-        "http://127.0.0.1:4291/odudu/docs/reference/generated/admin-api/clients/post-clients/",
+        "http://127.0.0.1:4291/odudu/docs/reference/generated/admin-api/audit/part-1/",
         "http://127.0.0.1:4291/odudu/docs/concepts/tokens/"
       ],
       "numberOfRuns": 3,

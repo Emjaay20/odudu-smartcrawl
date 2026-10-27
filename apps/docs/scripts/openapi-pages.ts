@@ -336,6 +336,7 @@ interface Context {
   readonly unknown: string[];
   readonly slug: string;
   readonly parts: Part[];
+  readonly level: number;
 }
 
 function topLevel(row: Row): string {
@@ -417,7 +418,7 @@ function responseBlocks(operation: Json, ctx: Context): string[] {
   for (const [status, response] of Object.entries(record(operation.responses) ?? {})) {
     const found = record(response) ?? {};
     const description = str(found.description) ?? '';
-    lines.push(`### ${status} ${escapeProse(description)}`.trimEnd(), '');
+    lines.push(`${'#'.repeat(ctx.level + 1)} ${status} ${escapeProse(description)}`.trimEnd(), '');
     const content = Object.entries(record(found.content) ?? {});
     if (content.length === 0) lines.push('No body.', '');
     for (const [mediaType, media] of content) {
@@ -441,6 +442,7 @@ function patternBlock(patterns: readonly string[]): string {
 }
 
 function operationBody(operation: Json, ctx: Context): string {
+  const heading = '#'.repeat(ctx.level);
   const lines: string[] = [];
   const summary = str(operation.summary);
   if (summary !== undefined) lines.push(escapeProse(summary), '');
@@ -454,19 +456,19 @@ function operationBody(operation: Json, ctx: Context): string {
   ] as const) {
     const ofPlace = parameters.filter((parameter) => parameter.in === place);
     if (ofPlace.length > 0) {
-      lines.push(`## ${label}`, '', parameterTable(ofPlace, ctx.unknown), '');
+      lines.push(`${heading} ${label}`, '', parameterTable(ofPlace, ctx.unknown), '');
     }
   }
 
   const body = record(operation.requestBody);
   if (body !== undefined) {
-    lines.push('## Request body', '');
+    lines.push(`${heading} Request body`, '');
     for (const [mediaType, media] of Object.entries(record(body.content) ?? {})) {
       lines.push(...mediaBlock(ctx, 'request', 'Request body', mediaType, record(media) ?? {}), '');
     }
   }
 
-  lines.push('## Responses', '', ...responseBlocks(operation, ctx));
+  lines.push(`${heading} Responses`, '', ...responseBlocks(operation, ctx));
   if (ctx.unknown.length > 0) lines.push(patternBlock(ctx.unknown));
   return lines.join('\n').replace(/\n+$/u, '\n');
 }
@@ -636,102 +638,172 @@ function capabilityOf(operation: Json): string {
   return str(operation.summary) ?? 'Requires an authenticated admin caller.';
 }
 
-function areaIndexPage(
-  area: string,
-  operations: readonly Operation[],
-  doc: OpenApiDocument,
-): string {
-  const label = titleOf(area);
-  const noun = operations.length === 1 ? 'operation' : 'operations';
-  const subject = AREA_SUBJECTS[area] ?? area.replaceAll('-', ' ');
-  const description =
-    `${String(operations.length)} ${noun} of the Odudu admin API on ${subject}, ` +
-    'each with its method, path, required capability, parameters, request body and responses.';
-  const intro =
-    `Operations on ${subject} in the ${doc.info.title}, one page each. ` +
-    'Every request carries a bearer token; the [admin API overview](../index.md) says which audience it needs ' +
-    'and how a refusal is shaped.';
-  const items = operations.map(
-    ({ method, path, operation }) =>
-      `- [${code(`${method.toUpperCase()} ${path}`)}](./${operationSlug(method, path)}.md): ${escapeProse(capabilityOf(operation))}`,
-  );
-  const footer = coverageLine(coverageOfArea(operations, doc));
-  return [
-    frontMatter(`Admin API: ${label}`, description),
-    `# Admin API: ${label}`,
-    '',
-    intro,
-    '',
-    '## Operations',
-    '',
-    ...items,
-    '',
-    `${footer}\n`,
-  ].join('\n');
+// A page holds operations up to this many table rows; an operation larger
+// than that has a page to itself.
+const MAX_PAGE_ROWS = 60;
+
+interface Section {
+  readonly operation: Operation;
+  readonly text: string;
+  readonly rows: number;
+  readonly parts: readonly Part[];
 }
 
-function operationPages(
-  area: string,
-  { method, path, operation }: Operation,
-  position: number,
-  doc: OpenApiDocument,
-): ReadonlyMap<string, string> {
-  const slug = operationSlug(method, path);
-  const short = operationShort(method, path);
-  const label = `Admin API: ${short}`;
-  const full = code(`${method.toUpperCase()} ${path}`);
-  const areaName = titleOf(area);
+function sectionOf(operation: Operation, doc: OpenApiDocument): Section {
+  const { method, path } = operation;
   const ctx: Context = {
     root: doc,
     problemLink: '../index.md#problem-details',
     unknown: [],
-    slug,
+    slug: operationSlug(method, path),
     parts: [],
+    level: 3,
   };
-  const body = operationBody(operation, ctx);
-  const where = `in the [${areaName}](./index.md) area of the [admin API](../index.md)`;
-  const intro =
-    `${full}, ${where}, which says which audience the bearer token needs ` +
-    'and how a refusal is shaped.';
-  const pages = new Map<string, string>([
-    [
-      slug,
-      [
-        frontMatter(
-          label,
-          `${short} in the Odudu admin API (${areaName}): its capability, parameters, bodies and responses.`,
-          { sidebar_position: position },
-        ),
-        `# ${label}`,
-        '',
-        intro,
-        '',
-        body,
-      ].join('\n'),
-    ],
-  ]);
-  ctx.parts.forEach((part, index) => {
-    const heading = `${label}: ${part.heading}`;
+  const text = `## ${method.toUpperCase()} ${path}\n\n${operationBody(operation.operation, ctx)}`;
+  const rows = text.split('\n').filter((line) => line.startsWith('| ')).length;
+  return { operation, text, rows, parts: ctx.parts };
+}
+
+function pack(sections: readonly Section[]): Section[][] {
+  const groups: Section[][] = [];
+  for (const section of sections) {
+    const last = groups.at(-1);
+    const used = last?.reduce((sum, found) => sum + found.rows, 0) ?? 0;
+    if (last !== undefined && used + section.rows <= MAX_PAGE_ROWS) last.push(section);
+    else groups.push([section]);
+  }
+  return groups;
+}
+
+// The id the site gives a heading: lower case, punctuation dropped, spaces dashed.
+function anchorOf({ method, path }: Operation): string {
+  return `${method.toUpperCase()} ${path}`
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s_-]/gu, '')
+    .replaceAll(' ', '-');
+}
+
+function describeArea(area: string, operations: readonly Operation[]): string {
+  const noun = operations.length === 1 ? 'operation' : 'operations';
+  const subject = AREA_SUBJECTS[area] ?? area.replaceAll('-', ' ');
+  return (
+    `${String(operations.length)} ${noun} of the Odudu admin API on ${subject}, ` +
+    'each with its method, path, required capability, parameters, request body and responses.'
+  );
+}
+
+const BEARER =
+  'Every request carries a bearer token; the [admin API overview](../index.md) says which audience it needs and how a refusal is shaped.';
+
+function addParts(
+  pages: Map<string, string>,
+  group: readonly Section[],
+  target: string,
+  position: number,
+  label: string,
+): void {
+  const where = `in the [${label}](./index.md) area of the [admin API](../index.md)`;
+  for (const section of group) {
+    for (const [number, part] of section.parts.entries()) {
+      const { method, path } = section.operation;
+      const short = operationShort(method, path);
+      const heading = `${short}: ${part.heading}`;
+      pages.set(
+        part.slug,
+        [
+          frontMatter(
+            `Admin API: ${heading}`,
+            `One page of the fields of ${short} in the Odudu admin API (${label}): its ${part.heading}.`,
+            { sidebar_position: position + (number + 1) / 100 },
+          ),
+          `# Admin API: ${heading}`,
+          '',
+          `The fields of one body of [${code(`${method.toUpperCase()} ${path}`)}](./${target}.md#${anchorOf(section.operation)}), ${where}.`,
+          '',
+          `Body: ${code(part.mediaType)}`,
+          '',
+          rowsTable(part.rows),
+          '',
+          ...(part.patterns.length > 0 ? [patternBlock(part.patterns)] : []),
+        ].join('\n'),
+      );
+    }
+  }
+}
+
+function areaPages(
+  area: string,
+  operations: readonly Operation[],
+  doc: OpenApiDocument,
+): Map<string, string> {
+  const label = titleOf(area);
+  const subject = AREA_SUBJECTS[area] ?? area.replaceAll('-', ' ');
+  const sections = operations.map((operation) => sectionOf(operation, doc));
+  const groups = pack(sections);
+  const footer = `${coverageLine(coverageOfArea(operations, doc))}\n`;
+  const pages = new Map<string, string>();
+  if (groups.length === 1) {
     pages.set(
-      part.slug,
+      'index',
       [
-        frontMatter(
-          heading,
-          `One page of the fields of ${short} in the Odudu admin API (${areaName}): its ${part.heading}.`,
-          { sidebar_position: position + (index + 1) / 100 },
-        ),
-        `# ${heading}`,
+        frontMatter(`Admin API: ${label}`, describeArea(area, operations)),
+        `# Admin API: ${label}`,
         '',
-        `The fields of one body of [${full}](./${slug}.md), ${where}.`,
+        `Operations on ${subject} in the ${doc.info.title}, one section each. ${BEARER}`,
         '',
-        `Body: ${code(part.mediaType)}`,
-        '',
-        rowsTable(part.rows),
-        '',
-        ...(part.patterns.length > 0 ? [patternBlock(part.patterns)] : []),
+        sections.map((section) => section.text).join('\n'),
+        footer,
       ].join('\n'),
     );
-  });
+    addParts(pages, sections, 'index', 0, label);
+    return pages;
+  }
+  const where = `in the [${label}](./index.md) area of the [admin API](../index.md)`;
+  const items: string[] = [];
+  for (const [index, group] of groups.entries()) {
+    const name = `part-${String(index + 1)}`;
+    const title = `Admin API: ${label} (${String(index + 1)} of ${String(groups.length)})`;
+    const first = group[0]?.operation;
+    const last = group.at(-1)?.operation;
+    if (first === undefined || last === undefined) continue;
+    for (const { operation } of group) {
+      const { method, path } = operation;
+      items.push(
+        `- [${code(`${method.toUpperCase()} ${path}`)}](./${name}.md#${anchorOf(operation)}): ${escapeProse(capabilityOf(operation.operation))}`,
+      );
+    }
+    pages.set(
+      name,
+      [
+        frontMatter(
+          title,
+          `Part ${String(index + 1)} of ${String(groups.length)} of the Odudu admin API on ${subject}: ${String(group.length)} ${group.length === 1 ? 'operation' : 'operations'} with parameters, bodies and responses.`,
+          { sidebar_position: index + 1 },
+        ),
+        `# ${title}`,
+        '',
+        `Operations on ${subject}, ${where}. ${BEARER}`,
+        '',
+        group.map((section) => section.text).join('\n'),
+      ].join('\n'),
+    );
+    addParts(pages, group, name, index + 1, label);
+  }
+  pages.set(
+    'index',
+    [
+      frontMatter(`Admin API: ${label}`, describeArea(area, operations)),
+      `# Admin API: ${label}`,
+      '',
+      `Operations on ${subject} in the ${doc.info.title}, listed here and described on ${String(groups.length)} pages. ${BEARER}`,
+      '',
+      '## Operations',
+      '',
+      ...items,
+      '',
+      footer,
+    ].join('\n'),
+  );
   return pages;
 }
 
@@ -787,22 +859,16 @@ export function adminApiAreas(
   );
 }
 
-// An index, an index per area and one page per operation, as Markdown by path
-// relative to the generated reference directory.
+// An index, then per area either one page or an index and pages that hold
+// operations up to a table size, as Markdown by path relative to the generated
+// reference directory.
 export function renderOpenApiPages(doc: OpenApiDocument): ReadonlyMap<string, string> {
   const areas = operationsOf(doc);
   const pages = new Map<string, string>([[`${PAGE_DIR}/index.md`, indexPage(areas, doc)]]);
   for (const [area, operations] of areas) {
-    pages.set(`${PAGE_DIR}/${area}/index.md`, areaIndexPage(area, operations, doc));
-    operations.forEach((found, position) => {
-      for (const [slug, page] of operationPages(area, found, position + 1, doc)) {
-        const name = `${PAGE_DIR}/${area}/${slug}.md`;
-        if (pages.has(name)) {
-          throw new Error(`${found.method} ${found.path} has the same page as another: ${name}`);
-        }
-        pages.set(name, page);
-      }
-    });
+    for (const [name, page] of areaPages(area, operations, doc)) {
+      pages.set(`${PAGE_DIR}/${area}/${name}.md`, page);
+    }
   }
   return new Map([...pages].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
 }

@@ -42,7 +42,7 @@ const PAGES = [
   '',
   `${DOCS_DIRECTORY}quick-start/`,
   `${DOCS_DIRECTORY}guides/sign-a-user-in/`,
-  `${DOCS_DIRECTORY}reference/generated/admin-api/clients/post-clients/`,
+  `${DOCS_DIRECTORY}reference/generated/admin-api/audit/part-1/`,
   `${DOCS_DIRECTORY}concepts/tokens/`,
 ];
 

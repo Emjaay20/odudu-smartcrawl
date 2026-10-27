@@ -13,8 +13,20 @@ import {
 const document = buildAdminOpenApiDocument();
 const pages = renderOpenApiPages(document);
 
-function operationIntro(method: string, pattern: string): string {
-  return `\`${method} ${pattern.replace(/:(\w+)/gu, '{$1}')}\`, in the `;
+function operationHeading(method: string, pattern: string): string {
+  return `## ${method} ${pattern.replace(/:(\w+)/gu, '{$1}')}`;
+}
+
+// The text of an operation's section, wherever the area put it.
+function sectionText(area: string, method: string, path: string): string {
+  const heading = `\n${operationHeading(method.toUpperCase(), path)}\n`;
+  for (const [name, page] of pages) {
+    const start = page.indexOf(heading);
+    if (!name.startsWith(`admin-api/${area}/`) || start === -1) continue;
+    const next = page.indexOf('\n## ', start + heading.length);
+    return page.slice(start, next === -1 ? undefined : next);
+  }
+  return '';
 }
 
 function allText(): string {
@@ -161,29 +173,27 @@ function htmlNodes(markdown: string): string[] {
 }
 
 describe('the admin API reference pages', () => {
-  it('writes one page per operation with its method, path, capability and request and response schemas', () => {
+  it('writes one section per operation with its method, path, capability and request and response schemas', () => {
     const text = allText();
     for (const route of ADMIN_ROUTES) {
       expect(text, `${route.method} ${route.pattern}`).toContain(
-        operationIntro(route.method, route.pattern),
+        `${operationHeading(route.method, route.pattern)}\n`,
       );
     }
-    const section = pages.get('admin-api/clients/post-clients.md') ?? '';
+    const section = sectionText('clients', 'POST', '/admin/tenants/{tenant}/clients');
     expect(section).toContain('Requires the "manage-clients" capability.');
-    expect(section).toContain('\n## Path parameters\n');
+    expect(section).toContain('\n### Path parameters\n');
     expect(section).toContain('| `tenant` |');
-    expect(section).toContain('\n## Request body\n');
+    expect(section).toContain('\n### Request body\n');
     expect(section).toContain('| `client_id` | string | yes |');
-    expect(section).toContain('\n## Responses\n');
-    expect(section).toContain('\n### 201 Created\n');
+    expect(section).toContain('\n### Responses\n');
+    expect(section).toContain('\n#### 201 Created\n');
     expect(section).toContain('| `token_endpoint_auth_method` |');
-    expect(section).toContain('\n### 401');
+    expect(section).toContain('\n#### 401');
   });
 
   it('names every route ADMIN_ROUTES lists', () => {
-    const headings = [...allText().matchAll(/^`([A-Z]+ \/\S+)`, in the /gmu)].map(
-      (match) => match[1],
-    );
+    const headings = [...allText().matchAll(/^## ([A-Z]+ \/\S+)$/gmu)].map((match) => match[1]);
     const listed = ADMIN_ROUTES.map(
       (route) => `${route.method} ${route.pattern.replace(/:(\w+)/gu, '{$1}')}`,
     );
@@ -192,16 +202,21 @@ describe('the admin API reference pages', () => {
     expect(headings).toHaveLength(listed.length);
   });
 
-  it('groups the routes into one folder per area, an index that links each and an area index that links its operations', () => {
+  it('groups the routes into one folder per area, an index that links each and, where an area has several pages, an area index that links each operation', () => {
     const index = pages.get('admin-api/index.md') ?? '';
     const areas = [...operationsOf(document).keys()];
     expect(areas.length).toBeGreaterThan(10);
     for (const area of areas) {
       expect(index, area).toContain(`](./${area}/index.md)`);
       const areaIndex = pages.get(`admin-api/${area}/index.md`) ?? '';
+      if (!areaIndex.includes('\n## Operations\n')) continue;
       for (const { method, path } of operationsOf(document).get(area) ?? []) {
-        expect(areaIndex, `${method} ${path}`).toContain(`](./${operationSlug(method, path)}.md)`);
-        expect(pages.has(`admin-api/${area}/${operationSlug(method, path)}.md`)).toBe(true);
+        const link = new RegExp(
+          `\\[\`${method.toUpperCase()} ${path.replace(/[{}]/gu, '\\$&')}\`\\]\\(\\./(part-\\d+)\\.md#`,
+          'u',
+        ).exec(areaIndex);
+        expect(link, `${method} ${path}`).not.toBeNull();
+        expect(sectionText(area, method, path), `${method} ${path}`).not.toBe('');
       }
     }
   });
@@ -213,23 +228,26 @@ describe('the admin API reference pages', () => {
     expect(largest).toBeLessThanOrEqual(70);
   });
 
-  it('keeps every parameter, response status and nested body field of the OpenAPI document on its operation page, in order across the pages of a split body', () => {
+  it('keeps every parameter, response status and nested body field of the OpenAPI document in the section of its operation, in order across the pages of a split body', () => {
     const missing: string[] = [];
     for (const [area, operations] of operationsOf(document)) {
       for (const { method, path, operation } of operations) {
         const slug = operationSlug(method, path);
-        const name = `admin-api/${area}/${slug}.md`;
+        const name = `${area} ${method} ${path}`;
         const parts = [...pages.keys()].filter((key) =>
           new RegExp(`^admin-api/${area}/${slug}-(request|\\d+)-part-\\d+\\.md$`, 'u').test(key),
         );
-        const page = [name, ...parts].map((key) => pages.get(key) ?? '').join('\n');
+        const page = [
+          sectionText(area, method, path),
+          ...parts.map((key) => pages.get(key) ?? ''),
+        ].join('\n');
         for (const parameter of parametersOf(operation, document)) {
           if (!page.includes(`| \`${parameter.name}\` |`))
             missing.push(`${name}: ${parameter.name}`);
         }
         const responses = operation.responses as Record<string, unknown>;
         for (const status of Object.keys(responses)) {
-          if (!page.includes(`\n### ${status} `)) missing.push(`${name}: ${status}`);
+          if (!page.includes(`\n#### ${status} `)) missing.push(`${name}: ${status}`);
         }
         for (const { section, paths } of bodyPaths(operation)) {
           const here = firstCells(page);
@@ -318,7 +336,7 @@ describe('the admin API reference pages', () => {
     const rendered = renderOpenApiPages(hostileWith({ type: 'object', properties, required: [] }));
     const first = rendered.get('admin-api/whoami/get-whoami-200-part-1.md') ?? '';
     const second = rendered.get('admin-api/whoami/get-whoami-200-part-2.md') ?? '';
-    const main = rendered.get('admin-api/whoami/get-whoami.md') ?? '';
+    const main = rendered.get('admin-api/whoami/index.md') ?? '';
     expect(second).toContain('<code>^[a-z]{3}-\\d+$</code>');
     expect(first).not.toContain('<details>');
     expect(main).not.toContain('<details>');

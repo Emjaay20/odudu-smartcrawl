@@ -111,9 +111,10 @@ describe('the generated reference on disk', () => {
       const file = path.posix.basename(page);
       return ![...text].some(
         ([other, content]) =>
-          other !== page &&
-          path.posix.dirname(other) === folder &&
-          content.includes(`](./${file})`),
+          (other !== page &&
+            path.posix.dirname(other) === folder &&
+            content.includes(`](./${file})`)) ||
+          content.includes(`](./${file}#`),
       );
     });
     expect(missing).toEqual([]);
