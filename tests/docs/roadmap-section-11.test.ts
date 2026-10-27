@@ -180,6 +180,7 @@ const CLAIMS: readonly (readonly [phase: string, sentence: string, ...criterion:
     'restoring into an empty database',
     'neither a superuser nor able to bypass row-level security',
   ],
+  ['P12', 'Odudu also moves to the next even-numbered Node', 'node runtime moved by hand'],
   [
     'P13',
     'Pushed authorization requests',
@@ -271,7 +272,6 @@ describe('the roadmap and section 11 of the design spec agree', () => {
       'carried by the gap-audit capability check above',
     ],
     ['`/logout` has two hardening gaps', ['P4b'], ['anti-forgery token', 'leaked id token']],
-    ['The `codes`/`spent` count', ['P4f'], 'a transcript re-capture, no product behaviour'],
     [
       '`tests/lint/production-guard-order.test.ts`',
       ['P12'],
@@ -300,6 +300,7 @@ describe('the roadmap and section 11 of the design spec agree', () => {
     ['An address can be spent by anyone', ['P11'], ['per-address mail limit']],
     ['A person who confirms a "finish registration"', ['P4f'], ['more than one click']],
     ['Accounts that differ only by the case', ['P4f'], ['differ only by case']],
+    ['The Node major moves by hand', ['P12'], ['even-numbered node lts']],
   ];
 
   function nextPlacements(): { start: string; phases: string[] }[] {
