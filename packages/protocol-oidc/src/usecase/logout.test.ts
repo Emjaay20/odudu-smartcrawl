@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { MAX_FRONT_CHANNEL_FRAMES } from '#/service/frontchannel-logout';
-import { decideLogout, decideRedirect, frontChannelLogoutUrls } from '#/usecase/logout';
+import {
+  decideLogout,
+  decideRedirect,
+  frontChannelLogoutUrls,
+  registeredRedirectOf,
+  toValidHint,
+} from '#/usecase/logout';
 
 const registered = ['https://app.example/after-logout'];
 const live = { id: 's1' };
@@ -89,6 +95,38 @@ describe('decideLogout', () => {
         decideLogout({ session: null, hint: ownHint, client: skipping, redirect: null }),
       ).toEqual({ kind: 'confirm' });
     });
+  });
+});
+
+describe('toValidHint', () => {
+  it('names the one audience and the sid of a hint that verified', () => {
+    expect(toValidHint({ audiences: ['rp'], sid: 's1' })).toEqual({ clientId: 'rp', sid: 's1' });
+  });
+
+  it('is no hint when it names several audiences', () => {
+    expect(toValidHint({ audiences: ['rp', 'other'], sid: 's1' })).toBeNull();
+  });
+
+  it('is no hint when it names no audience', () => {
+    expect(toValidHint({ audiences: [], sid: 's1' })).toBeNull();
+  });
+
+  it('is no hint when it carries no sid', () => {
+    expect(toValidHint({ audiences: ['rp'], sid: null })).toBeNull();
+  });
+
+  it('is no hint when the reader rejected it, another issuer’s or one with a bad signature', () => {
+    expect(toValidHint(null)).toBeNull();
+  });
+});
+
+describe('registeredRedirectOf', () => {
+  it('matches a registered address exactly and nothing else', () => {
+    expect(registeredRedirectOf('https://app.example/after-logout', registered)).toEqual({
+      uri: 'https://app.example/after-logout',
+    });
+    expect(registeredRedirectOf('https://app.example/after-logout/', registered)).toBeNull();
+    expect(registeredRedirectOf(null, registered)).toBeNull();
   });
 });
 

@@ -64,6 +64,22 @@ const GENEROUS_LIFESPANS: SessionLifespans = {
 
 const signingKeyOf = new Map<string, SigningKeyRecord>();
 
+// The statements the app role sends while a test has it set, so a request's
+// cost is asserted rather than described.
+let counted: string[] | null = null;
+async function dataStatementsOf(request: () => Promise<unknown>): Promise<number> {
+  counted = [];
+  try {
+    await request();
+    return counted.filter(
+      (query) =>
+        /^\s*(select|insert|update|delete)\b/iu.test(query) && !query.includes('set_config'),
+    ).length;
+  } finally {
+    counted = null;
+  }
+}
+
 async function setupTenant(name: string): Promise<{ tenantId: string; clientDbId: string }> {
   const tenantId = newId();
   const clientDbId = newId();
@@ -356,12 +372,21 @@ beforeAll(async () => {
   containerHandle = await startTestDatabase();
   container = containerHandle;
 
-  ownerHandle = createDatabase(container.adminUrl);
+  ownerHandle = createDatabase(container.adminUrl, {
+    onQueryForTests: (query) => {
+      if (counted !== null) counted.push(query);
+    },
+  });
   owner = ownerHandle;
   await runMigrations(owner.db, MIGRATIONS_DIR);
 
   const appUrl = await createAppRole(container.adminUrl);
-  appHandle = createDatabase(appUrl, { max: 5 });
+  appHandle = createDatabase(appUrl, {
+    max: 5,
+    onQueryForTests: (query) => {
+      if (counted !== null) counted.push(query);
+    },
+  });
   app = appHandle;
 
   http = Fastify();
@@ -1631,6 +1656,120 @@ describe('[ODUDU-LOGOUT-SKIP-01] a client that skips the confirmation', () => {
       expectAskedAbout(res, sessionId);
       expect(await isLive(tenantId, sessionId)).toBe(true);
     });
+  });
+
+  it('costs five data statements to ask about a hint and thirteen to end at once', async () => {
+    const { tenantName, tenantId, clientDbId } = await skippingTenant('logout-skip-count', true);
+    const asked = await signedInWithGrant(tenantName, tenantId, clientDbId);
+
+    const stale = await mintIdToken(tenantName, await subjectIdOf(tenantId, USERNAME), newId());
+    const asking = await dataStatementsOf(() =>
+      http.inject({
+        url: logoutUrl(tenantName, redirectParams(stale)),
+        headers: { cookie: asked.cookie },
+      }),
+    );
+    const ending = await dataStatementsOf(() =>
+      http.inject({
+        url: logoutUrl(tenantName, redirectParams(asked.hint)),
+        headers: { cookie: asked.cookie },
+      }),
+    );
+
+    expect(asking).toBe(5);
+    expect(ending).toBe(13);
+  });
+
+  it('asks for a hint naming several audiences, even when one of them skips', async () => {
+    const { tenantName, tenantId, clientDbId } = await skippingTenant('logout-skip-multi', true);
+    const { cookie, sessionId } = await signedInWithGrant(tenantName, tenantId, clientDbId);
+    const key = signingKeyOf.get(tenantName);
+    if (key === undefined) throw new Error('no signing key');
+    const now = Math.floor(Date.now() / 1000);
+    const several = await signJwt(
+      {
+        iss: await issuerFor(tenantName),
+        aud: [CLIENT_ID, 'another-client'],
+        sub: await subjectIdOf(tenantId, USERNAME),
+        sid: sessionId,
+        iat: now,
+        exp: now + 300,
+      },
+      { key, kek: KEK },
+    );
+
+    const res = await http.inject({
+      url: logoutUrl(tenantName, redirectParams(several)),
+      headers: { cookie },
+    });
+
+    expectAskedAbout(res, sessionId);
+    expect(await isLive(tenantId, sessionId)).toBe(true);
+  });
+
+  it('asks for a disabled client, which is no logout target whatever its setting', async () => {
+    const { tenantName, tenantId, clientDbId } = await skippingTenant('logout-skip-disabled', true);
+    const { cookie, sessionId, hint } = await signedInWithGrant(tenantName, tenantId, clientDbId);
+    await owner.db.update(clients).set({ enabled: false }).where(eq(clients.id, clientDbId));
+
+    const res = await http.inject({
+      url: logoutUrl(tenantName, redirectParams(hint)),
+      headers: { cookie },
+    });
+
+    expectAskedAbout(res, sessionId);
+    expect(await isLive(tenantId, sessionId)).toBe(true);
+  });
+
+  it.each([
+    [
+      'unsigned',
+      async (tenantName: string, sub: string, sid: string) => {
+        const part = (value: object) => Buffer.from(JSON.stringify(value)).toString('base64url');
+        const now = Math.floor(Date.now() / 1000);
+        return `${part({ alg: 'none', typ: 'JWT' })}.${part({
+          iss: await issuerFor(tenantName),
+          aud: CLIENT_ID,
+          sub,
+          sid,
+          iat: now,
+          exp: now + 300,
+        })}.`;
+      },
+    ],
+    [
+      'signed by another tenant’s key',
+      async (tenantName: string, sub: string, sid: string) => {
+        const otherName = `logout-skip-forger-${newId()}`;
+        await setupTenant(otherName);
+        const key = signingKeyOf.get(otherName);
+        if (key === undefined) throw new Error('no signing key');
+        const now = Math.floor(Date.now() / 1000);
+        return signJwt(
+          {
+            iss: await issuerFor(tenantName),
+            aud: CLIENT_ID,
+            sub,
+            sid,
+            iat: now,
+            exp: now + 300,
+          },
+          { key, kek: KEK },
+        );
+      },
+    ],
+  ])('asks for a forged hint, %s, through the real route', async (_label, forge) => {
+    const { tenantName, tenantId, clientDbId } = await skippingTenant('logout-skip-forged', true);
+    const { cookie, sessionId } = await signedInWithGrant(tenantName, tenantId, clientDbId);
+    const forged = await forge(tenantName, await subjectIdOf(tenantId, USERNAME), sessionId);
+
+    const res = await http.inject({
+      url: logoutUrl(tenantName, redirectParams(forged)),
+      headers: { cookie },
+    });
+
+    expectAskedAbout(res, sessionId);
+    expect(await isLive(tenantId, sessionId)).toBe(true);
   });
 
   it('a hint whose exp has passed still counts, as it does for every logout hint', async () => {

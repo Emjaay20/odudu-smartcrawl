@@ -41,6 +41,14 @@ describe('skip_logout_confirmation on the admin API', () => {
       false,
     );
     expect(on.json<{ skip_logout_confirmation: boolean }>().skip_logout_confirmation).toBe(true);
+    const rows = await withTenant(fixture.app.db, t.id, (tx) => tx.select().from(auditEvents));
+    const creates = rows.filter((row) => row.action === 'client.create');
+    expect(creates).toHaveLength(2);
+    const onRow = creates.find((row) => row.resourceId === on.json<{ id: string }>().id);
+    expect(onRow?.outcome).toBe('allowed');
+    expect(onRow?.detail).toMatchObject({ skip_logout_confirmation: { after: true } });
+    const plainRow = creates.find((row) => row.resourceId === plain.json<{ id: string }>().id);
+    expect(plainRow?.detail).toMatchObject({ skip_logout_confirmation: { after: false } });
     const read = await fixture.http.inject({
       method: 'GET',
       url: `/admin/tenants/${t.name}/clients/${on.json<{ id: string }>().id}`,
@@ -109,7 +117,9 @@ describe('skip_logout_confirmation on the admin API', () => {
     const rows = await withTenant(fixture.app.db, t.id, (tx) => tx.select().from(auditEvents));
     const amends = rows.filter((row) => row.action === 'client.amend');
     expect(amends).toHaveLength(1);
-    expect(JSON.stringify(amends[0]?.detail)).toContain('skip_logout_confirmation');
+    expect(amends[0]?.outcome).toBe('allowed');
+    expect(amends[0]?.resourceId).toBe(created.id);
+    expect(amends[0]?.detail).toEqual({ skip_logout_confirmation: { before: false, after: true } });
   });
 
   it('is held to the built-in admin guard like any field that is not listed as safe', async () => {
