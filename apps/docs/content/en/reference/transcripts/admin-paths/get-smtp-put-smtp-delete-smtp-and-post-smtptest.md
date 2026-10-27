@@ -58,15 +58,18 @@ which had no SMTP row — the `GET`, a `PUT` with an `If-Match` that matches
 nothing, and the same `PUT` under the `GET`'s own:
 
 ```bash
-curl -sS -D - -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:3080/admin/tenants/etags-demo/smtp
+curl -sS -D - -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:3080/admin/tenants/etags-demo/smtp \
+  | grep -E '^(HTTP/|etag:|\{)'
 curl -sS -D - -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
   -H 'If-Match: "0000"' \
   -d '{"host":"smtp.example.test","port":587,"from_address":"noreply@etags.example"}' \
-  http://localhost:3080/admin/tenants/etags-demo/smtp
+  http://localhost:3080/admin/tenants/etags-demo/smtp \
+  | grep -E '^(HTTP/|etag:|\{)'
 curl -sS -D - -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H 'content-type: application/json' \
   -H 'If-Match: "eb513a27e14a9d51bb5c40764b9054c6c4b4ff6de3ce14b3eb4cf4745589d891"' \
   -d '{"host":"smtp.example.test","port":587,"from_address":"noreply@etags.example"}' \
-  http://localhost:3080/admin/tenants/etags-demo/smtp
+  http://localhost:3080/admin/tenants/etags-demo/smtp \
+  | grep -E '^(HTTP/|etag:|\{)'
 ```
 
 ```
@@ -88,6 +91,8 @@ is a credential the deployment itself never holds.
 In the transcripts below `demo` has no SMTP row until this section's `PUT`s.
 
 ```bash
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:3080/admin/tenants/demo/smtp
+echo
 curl -sS -X PUT \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
@@ -105,6 +110,16 @@ it carries a password and does not ask for TLS:
 ```
 
 The same body with `"starttls": true`, then `GET` again:
+
+```bash
+curl -sS -X PUT \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"host": "smtp.example.test", "port": 587, "from_address": "noreply@demo.example", "password": "hunter2", "starttls": true}' \
+  http://localhost:3080/admin/tenants/demo/smtp
+echo
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:3080/admin/tenants/demo/smtp
+```
 
 ```
 {"configured":true,"host":"smtp.example.test","port":587,"from_address":"noreply@demo.example","username":null,"password_set":true,"starttls":true,"effective":"tenant"}
@@ -167,13 +182,30 @@ curl -sS -X POST \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"to": "ops@demo.example"}' \
+  http://localhost:3080/admin/tenants/smtp-test-demo/smtp/test
+echo
+curl -sS -X POST \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"to": "ops@demo.example"}' \
+  http://localhost:3080/admin/tenants/demo/smtp/test
+echo
+curl -sS -X PUT \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"host": "127.0.0.1", "port": 587, "from_address": "noreply@demo.example", "password": "hunter2", "starttls": true}' \
+  http://localhost:3080/admin/tenants/demo/smtp > /dev/null
+curl -sS -X POST \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"to": "ops@demo.example"}' \
   http://localhost:3080/admin/tenants/demo/smtp/test
 ```
 
-Against `demo` before it had a row, then against the `smtp.example.test`
-row the `PUT` above stored, then after its `host` was re-`PUT` as
-`127.0.0.1`, with the password sent again as a changed host requires — the
-probe this endpoint would otherwise be:
+Against `smtp-test-demo`, a tenant with no row, then against `demo` and the
+`smtp.example.test` row the `PUT` above stored, then after its `host` was
+re-`PUT` as `127.0.0.1`, with the password sent again as a changed host requires
+— the probe this endpoint would otherwise be:
 
 ```
 {"type":"about:blank","title":"Bad Request","status":400,"detail":"this tenant has no SMTP configuration","instance":"01a0ea60-0a74-7100-90b4-6e49dcb91251"}
