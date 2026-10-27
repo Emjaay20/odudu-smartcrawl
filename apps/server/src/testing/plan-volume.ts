@@ -140,6 +140,17 @@ create temp table vol_clients as
    where tenant_id = ${t} and client_id like 'app-%';
 create unique index on vol_clients (n);
 analyze vol_clients;
+insert into theme_versions (id, tenant_id, client_id, state, version, body, published_at)
+select gen_random_uuid(), ${t}, id, 'published', 1, '{"tokens":{},"stylesheet":null,"templates":{},"assets":{}}', now()
+  from vol_clients;
+insert into theme_versions (id, tenant_id, client_id, state, version, body, published_at)
+select gen_random_uuid(), ${t}, null, 'published', 21, '{"tokens":{},"stylesheet":null,"templates":{},"assets":{}}', now();
+insert into theme_versions (id, tenant_id, client_id, state, version, body, published_at)
+select gen_random_uuid(), ${t}, null, 'archived', g, '{"tokens":{},"stylesheet":null,"templates":{},"assets":{}}', now()
+  from generate_series(1, 20) g;
+insert into theme_assets (id, tenant_id, sha256, mime, width, height, bytes)
+select gen_random_uuid(), ${t}, md5(g::text) || md5('a' || g), 'image/png', 4, 3, decode('00', 'hex')
+  from generate_series(1, 20) g;
 insert into client_oidc_config (client_id, tenant_id, redirect_uris, grant_types, token_endpoint_auth_method, web_origins)
 select id, ${t}, array['https://app' || (n % 5000) || '.example/cb'], '{authorization_code}', 'none', '{+}'
   from vol_clients;
