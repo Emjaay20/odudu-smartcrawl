@@ -8,7 +8,7 @@
         "http://127.0.0.1:4291/odudu/docs/reference/generated/admin-api/audit/part-1/",
         "http://127.0.0.1:4291/odudu/docs/concepts/tokens/"
       ],
-      "numberOfRuns": 3,
+      "numberOfRuns": 5,
       "startServerCommand": "node scripts/serve.mjs dist/pages --base /odudu/ --port 4291",
       "startServerReadyPattern": "Serving",
       "settings": {
