@@ -35,9 +35,12 @@ export interface PageLocale {
 // path, written into a header and an attribute, so each is refused unless it
 // passes `isSameOriginPath`.
 export interface ResolvedBranding {
-  // The origin the paths are served from. CSP cannot name a bare path, so
-  // the header spells each source as this origin plus the path.
+  // The origin the page is served from (the configured public base URL); a
+  // mismatch leaves the page unstyled. CSP cannot name a bare path, so each
+  // source is this origin plus the path. IPv6 literals are refused.
   readonly origin: string;
+  // `logo.alt` must be escaped by the renderer; `templates` are checked when
+  // saved and not validated here.
   readonly templates: Readonly<Partial<Record<PageKind, string>>>;
   // Data for the route that serves the hashed stylesheet, which carries it
   // along with the sanitised rules. Never written into a page: inline style
@@ -56,7 +59,8 @@ export interface ResolvedBranding {
 
 export const MAX_BRANDING_URLS = 16;
 const MAX_BRANDING_URL_LENGTH = 256;
-const SAME_ORIGIN_PATH = /^\/(?!\/)[A-Za-z0-9._~!$&()+=:@/-]*$/u;
+// Not ending in `/`: a trailing slash is a prefix match in a CSP path source.
+const SAME_ORIGIN_PATH = /^\/(?!\/)(?:[A-Za-z0-9._~!$&()+=:@/-]*[A-Za-z0-9._~!$&()+=:@-])$/u;
 
 export function isSameOriginPath(value: unknown): value is string {
   return (
@@ -66,19 +70,27 @@ export function isSameOriginPath(value: unknown): value is string {
   );
 }
 
-function validBranding(branding: ResolvedBranding): ResolvedBranding {
+// Every reason `branding` cannot be sent, empty when it can. A resolver
+// calls this and falls back to the default theme, since `pageHeaders` throws.
+export function brandingProblems(branding: ResolvedBranding): string[] {
   const urls = [
     branding.stylesheetUrl,
     branding.faviconUrl,
     branding.logo?.url ?? null,
     branding.logo?.darkUrl ?? null,
     ...branding.assetUrls,
-  ].filter((url) => url !== null);
-  if (
-    !ORIGIN_SOURCE.test(branding.origin) ||
-    urls.length > MAX_BRANDING_URLS ||
-    !urls.every(isSameOriginPath)
-  ) {
+  ].filter((url): url is string => url !== null);
+  return [
+    ...(ORIGIN_SOURCE.test(branding.origin) ? [] : ['origin is not an http(s) origin']),
+    ...(urls.length > MAX_BRANDING_URLS ? [`more than ${String(MAX_BRANDING_URLS)} urls`] : []),
+    ...urls
+      .filter((url) => !SAME_ORIGIN_PATH.test(url) || url.length > MAX_BRANDING_URL_LENGTH)
+      .map((url) => `not a same-origin path: ${url}`),
+  ];
+}
+
+function validBranding(branding: ResolvedBranding): ResolvedBranding {
+  if (brandingProblems(branding).length > 0) {
     throw new Error('refusing to send an unvalidated branding');
   }
   return branding;
@@ -191,14 +203,6 @@ export const INSTRUMENT_STYLESHEET = '/instrument/instrument.css';
 // The product's name as the pages' brand line spells it.
 export const PRODUCT_NAME = 'odudu';
 
-// RFC 6749 §10.13's framing defence for the pages rendered to an end-user.
-// Almost all of these pages are markup only — no script or frame of their
-// own — and take a style, font and image only from their own origin, so
-// `default-src 'none'` plus three same-origin directives describes them
-// exactly. Nothing inline, nothing remote (ADR 0029's amendment).
-// X-Frame-Options: DENY rides alongside `frame-ancestors 'none'` for agents
-// with no CSP at all, and may only stay while the two agree. ADR 0018 has
-// the reasoning for each directive and for the pairing.
 function brandedSources(branding: ResolvedBranding): { style: string; img: string } {
   const at = (url: string): string => `${branding.origin}${url}`;
   const styles = [INSTRUMENT_STYLESHEET, branding.stylesheetUrl];
@@ -215,6 +219,14 @@ function brandedSources(branding: ResolvedBranding): { style: string; img: strin
   return { style: list(styles), img: list(images) };
 }
 
+// RFC 6749 §10.13's framing defence for the pages rendered to an end-user.
+// Almost all of these pages are markup only — no script or frame of their
+// own — and take a style, font and image only from their own origin, so
+// `default-src 'none'` plus three same-origin directives describes them
+// exactly. Nothing inline, nothing remote (ADR 0029's amendment).
+// X-Frame-Options: DENY rides alongside `frame-ancestors 'none'` for agents
+// with no CSP at all, and may only stay while the two agree. ADR 0018 has
+// the reasoning for each directive and for the pairing.
 function baseDirectives(page: RenderedPage): string[] {
   const branded =
     page.locale.branding === undefined ? null : brandedSources(validBranding(page.locale.branding));

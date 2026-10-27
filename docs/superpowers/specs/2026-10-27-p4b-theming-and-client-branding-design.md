@@ -218,6 +218,13 @@ only what its own theme owns. `pageHeaders` takes the list from the
 `RenderedPage` the way it takes a script nonce, and a page with no theme is
 unchanged.
 
+A branded page's CSP lists the theme's own URLs as origin + path. `origin`
+must equal the origin the page is served from (the configured public base
+URL); a mismatch fails closed, the page loading unstyled while forms still
+work. A URL ending in `/` is refused, since a trailing slash is a prefix match
+in a CSP. The resolver checks `brandingProblems` and falls back to the default
+theme, logging the reason (ADR 0030's amendment).
+
 ## 7. Uploads
 
 - PNG, JPEG, WebP only. Type decided by the file's leading bytes, never the

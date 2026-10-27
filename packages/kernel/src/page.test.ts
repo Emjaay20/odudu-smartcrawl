@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   INSTRUMENT_STYLESHEET,
   brandingHead,
+  brandingProblems,
   pageHeaders,
   reloadOnRestore,
   withBranding,
@@ -441,6 +442,10 @@ describe('a themed page', () => {
     'data:image/png;base64,AAAA',
     'a/relative',
     '/a?x=1',
+    '/',
+    '/x/',
+    '/a/b/',
+    '',
     '/a#f',
   ];
   it.each(BAD)('refuses an asset url that is not a same-origin path: %j', (url) => {
@@ -450,6 +455,19 @@ describe('a themed page', () => {
     expect(() => brandingHead(themed(branding({ stylesheetUrl: url })).locale)).toThrow(
       /branding/u,
     );
+  });
+
+  it.each(BAD)('reports, without throwing, an asset url that is not a path: %j', (url) => {
+    expect(brandingProblems(branding({ assetUrls: [url] })).length).toBeGreaterThan(0);
+    expect(brandingProblems(branding({ stylesheetUrl: url })).length).toBeGreaterThan(0);
+    expect(brandingProblems(branding({ faviconUrl: url })).length).toBeGreaterThan(0);
+  });
+
+  it('reports nothing for a valid branding, and an origin or count problem by name', () => {
+    expect(brandingProblems(branding())).toEqual([]);
+    expect(brandingProblems(branding({ origin: 'https://a; x' }))).toHaveLength(1);
+    const many = Array.from({ length: 17 }, (_, i) => `/t/a/${String(i)}.png`);
+    expect(brandingProblems(branding({ assetUrls: many }))).toEqual(['more than 16 urls']);
   });
 
   it('refuses an origin that is not an origin', () => {

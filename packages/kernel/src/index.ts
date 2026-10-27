@@ -25,6 +25,7 @@ export {
   type ResolvedBranding,
   MAX_BRANDING_URLS,
   brandingHead,
+  brandingProblems,
   isSameOriginPath,
   pageHeaders,
   reloadOnRestore,
