@@ -1,15 +1,21 @@
-import { withTenant, type DatabaseHandle } from '@odudu/db';
+import { withTenant, type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
 import {
   createBrandingCache,
   publishedThemeRepository,
   resolveBranding,
+  resolveMailBranding,
+  type ResolveBrandingDeps,
 } from '@odudu/domain-theme';
+import { type MailBrandingResolver } from '@odudu/email';
 import { clientRepository } from '@odudu/domain-tenant';
 import { systemClock, type BrandingResolver, type PageBranding } from '@odudu/kernel';
 import { type Logger as PinoLogger } from 'pino';
 
 export interface Branding {
   resolveBranding: BrandingResolver;
+  // The tenant's theme as its mail wears it, read in the transaction the mail
+  // is queued in; the page resolver's cache answers it when it can.
+  resolveMailBranding: MailBrandingResolver;
   // Whether a client_id is a registered client of the tenant, for the one
   // `return_to` an account page reads a client from.
   isClientOfTenant: (tenantId: string, clientId: string) => Promise<boolean>;
@@ -32,25 +38,29 @@ export function createBranding(deps: {
     now: () => systemClock.now().getTime(),
   });
   const origin = deps.publicBaseUrl === undefined ? undefined : new URL(deps.publicBaseUrl).origin;
+  const themeDeps: ResolveBrandingDeps = {
+    readPublished: (tenantId, clientId) =>
+      withTenant(deps.database.db, tenantId, (tx) =>
+        publishedThemeRepository(tx).forRender(tenantId, clientId),
+      ),
+    origin,
+    now: () => systemClock.now().getTime(),
+    cache,
+    log: ({ scope, reason }) => {
+      deps.logger.warn({ scope, reason }, 'a theme was not applied, the default page is shown');
+    },
+    reportFallback: ({ scope, kind, reason }) => {
+      deps.logger.warn(
+        { scope, kind, reason },
+        'a theme template could not be filled, the default is used',
+      );
+    },
+  };
   return {
-    resolveBranding: resolveBranding({
-      readPublished: (tenantId, clientId) =>
-        withTenant(deps.database.db, tenantId, (tx) =>
-          publishedThemeRepository(tx).forRender(tenantId, clientId),
-        ),
-      origin,
-      now: () => systemClock.now().getTime(),
-      cache,
-      log: ({ scope, reason }) => {
-        deps.logger.warn({ scope, reason }, 'a theme was not applied, the default page is shown');
-      },
-      reportFallback: ({ scope, kind, reason }) => {
-        deps.logger.warn(
-          { scope, kind, reason },
-          'a theme template could not be filled, the default is used',
-        );
-      },
-    }),
+    resolveBranding: resolveBranding(themeDeps),
+    resolveMailBranding: resolveMailBranding(themeDeps, (tx: TenantScopedDatabase, tenantId) =>
+      publishedThemeRepository(tx).forRender(tenantId, null),
+    ),
     isClientOfTenant: (tenantId, clientId) =>
       withTenant(
         deps.database.db,

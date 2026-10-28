@@ -30,3 +30,9 @@ export {
   type SendPendingOptions,
   type SendPendingOutcome,
 } from '#/usecase/send-pending';
+export {
+  mailContext,
+  type MailBrandingResolver,
+  type MailContext,
+  type MailTenantScope,
+} from '#/usecase/mail-context';

@@ -300,6 +300,7 @@ export async function startAdminFixture(options: AdminFixtureOptions = {}): Prom
         claimMappers,
         deploymentSmtp: options.deploymentSmtp ?? false,
         outboxMaxAttempts: DEFAULT_OUTBOX_MAX_ATTEMPTS,
+        resolveMailBranding: () => Promise.resolve(null),
         invalidateTheme: (tenantId) => {
           invalidatedThemes.push(tenantId);
         },

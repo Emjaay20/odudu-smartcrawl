@@ -1,3 +1,4 @@
+import { type MailBrandingResolver } from '@odudu/email';
 import { sessionRepository } from '@odudu/authn-flows';
 import { signingKeyRepository } from '@odudu/crypto';
 import { type DatabaseHandle, type TenantScopedDatabase, withTenant } from '@odudu/db';
@@ -298,6 +299,9 @@ export interface AdminRoutesDeps {
   // its mail, the write @odudu/account's own doors make; wired at the
   // composition root with the public base URL a link is addressed under.
   sendAccountLink: SendAccountLink;
+  // The tenant's theme as its mail wears it, for the notices this package
+  // queues itself; wired at the composition root beside the page resolver.
+  resolveMailBranding: MailBrandingResolver;
   // `ODUDU_OUTBOX_MAX_ATTEMPTS`, the attempts the mail sender makes before it
   // stops offering a message: what `GET …/mail` reports as `failed`.
   outboxMaxAttempts: number;
@@ -434,6 +438,7 @@ function buildAdminRoutes(
       cursorKey: deps.cursorKey,
       audit: subjectAudit,
       now: () => clock.now(),
+      resolveMailBranding: deps.resolveMailBranding,
       callerCapabilities,
     };
     const rolesDeps: RolesRouteDeps = {
@@ -621,6 +626,7 @@ function buildAdminRoutes(
       audit: accountRecoveryAudit,
       callerCapabilities,
       retireResetLinks: deps.retireResetLinks,
+      resolveMailBranding: deps.resolveMailBranding,
       now: () => clock.now(),
     };
     const auditDeps: AuditRouteDeps = {

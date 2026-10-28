@@ -1,4 +1,5 @@
 import { type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
+import { type MailBrandingResolver } from '@odudu/email';
 import { requestContextFrom } from '@odudu/domain-audit';
 import { PASSWORD_TOO_LONG, readPasswordField } from '@odudu/kernel';
 import { type FastifyInstance, type FastifyReply } from 'fastify';
@@ -54,6 +55,10 @@ export interface RegistrationRouteDeps extends BrandedLocaleDeps {
   readonly findHeldSignIn: FindHeldSignIn;
   // The clock a mail's send time comes from.
   readonly now: () => Date;
+  // Reads the tenant's theme for the mail this route queues, as it does for
+  // the page. The composition root passes it and its wiring test asks every
+  // route that queues mail; absent, the mail is unthemed.
+  readonly resolveMailBranding?: MailBrandingResolver | undefined;
   readonly createAccount: (
     tx: TenantScopedDatabase,
     tenantId: string,
@@ -200,6 +205,7 @@ export function registerRegistrationRoute(app: FastifyInstance, deps: Registrati
         resetPasswordAllowed: tenant.resetPasswordAllowed,
         authenticationSessionId: referenceToResume(held, returnTo),
         now: deps.now,
+        resolveMailBranding: deps.resolveMailBranding,
         createAccount: deps.createAccount,
         lockAddress: deps.lockAddress,
         findTaken: deps.findTaken,

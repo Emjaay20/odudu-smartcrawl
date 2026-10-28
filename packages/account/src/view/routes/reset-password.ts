@@ -1,4 +1,5 @@
 import { type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
+import { type MailBrandingResolver } from '@odudu/email';
 import { type FastifyInstance } from 'fastify';
 import { signInPath } from '#/service/sign-in-path';
 import { referenceToResume, type FindHeldSignIn } from '#/service/sign-in-resume';
@@ -35,6 +36,10 @@ export interface ResetPasswordRouteDeps extends BrandedLocaleDeps {
   readonly findHeldSignIn: FindHeldSignIn;
   // The clock a mail's send time comes from.
   readonly now: () => Date;
+  // Reads the tenant's theme for the mail this route queues, as it does for
+  // the page. The composition root passes it and its wiring test asks every
+  // route that queues mail; absent, the mail is unthemed.
+  readonly resolveMailBranding?: MailBrandingResolver | undefined;
   readonly findByEmail: (
     tx: TenantScopedDatabase,
     email: string,
@@ -122,6 +127,7 @@ export function registerResetPasswordRoute(
         tenantDisplayName: tenant.displayName ?? tenant.name,
         issuerBase: deps.publicBaseUrl,
         now: deps.now,
+        resolveMailBranding: deps.resolveMailBranding,
         authenticationSessionId: referenceToResume(held, returnTo),
         findByEmail: deps.findByEmail,
         mailGate: deps.mailGate,
