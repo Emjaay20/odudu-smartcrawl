@@ -120,6 +120,23 @@ describe('buildInstrument', () => {
     return current === '' ? parts : [...parts, current];
   };
 
+  // Corners run top-left, top-right, bottom-right, bottom-left; only a start
+  // that differs from its end changes when the page is mirrored.
+  const cornersMirror = (parts: string[]): boolean => {
+    const [tl = '0', tr = tl, br = tl, bl = tr] = parts;
+    return tl === tr && br === bl;
+  };
+
+  it('reads a border-radius as mirrored only when each side has equal corners', () => {
+    expect(cornersMirror(['8px'])).toBe(true);
+    expect(cornersMirror(['8px', '8px', '0', '0'])).toBe(true);
+    expect(cornersMirror(['0', '0', '8px', '8px'])).toBe(true);
+    expect(cornersMirror(['8px', '0'])).toBe(false);
+    expect(cornersMirror(['8px', '8px', '0'])).toBe(false);
+    expect(cornersMirror(['8px', '0', '0', '0'])).toBe(false);
+    expect(cornersMirror(['0', '0', '0', '8px'])).toBe(false);
+  });
+
   it('gives a shorthand the same start and end, so it reads the same mirrored', () => {
     const sided = /^(margin|padding|inset|border-width|border-color|border-style)$/u;
     for (const { selector, declarations } of rulesOutsideArt()) {
@@ -129,8 +146,9 @@ describe('buildInstrument', () => {
           expect(parts[1], `${selector} ${name}`).toBe(parts[3]);
         }
         if (name === 'border-radius' && !value.includes('/')) {
-          const corners = parts.length === 1 ? 0 : new Set(parts).size - 1;
-          expect(corners, `${selector} border-radius has unequal corners`).toBe(0);
+          expect(cornersMirror(parts), `${selector} border-radius has unequal start and end`).toBe(
+            true,
+          );
         }
       }
     }

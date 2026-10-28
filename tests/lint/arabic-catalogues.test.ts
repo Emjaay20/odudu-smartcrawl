@@ -137,7 +137,8 @@ describe('Arabic is shipped and complete', () => {
         }
         if (english.pound !== arabic.pound) problems.push(`${file} ${id}: # used differently`);
         if (ar[id]?.includes("'")) problems.push(`${file} ${id}: literal apostrophe`);
-        for (const token of source.match(BRAND) ?? []) {
+        for (const match of source.match(BRAND) ?? []) {
+          const token = match.replace(/[.,;:)}]+$/u, '');
           if (!ar[id]?.includes(token)) problems.push(`${file} ${id}: ${token} not kept`);
         }
         for (const [name, englishArms] of english.arms) {
