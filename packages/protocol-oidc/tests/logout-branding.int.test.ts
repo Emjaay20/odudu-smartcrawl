@@ -379,7 +379,14 @@ describe('a hint or a token that proves nothing wears no client', () => {
     await setupTenant(name);
     const { cookie, sessionId } = await signIn(name);
     const hint = await mintIdToken(name, sessionId);
-    const flipped = hint.endsWith('A') ? `${hint.slice(0, -1)}B` : `${hint.slice(0, -1)}A`;
+    // The last base64url character of a signature carries padding bits that
+    // decode to the same bytes, so a byte is changed and the change checked.
+    const [header, claims, signature = ''] = hint.split('.');
+    const bytes = Buffer.from(signature, 'base64url');
+    const altered = Buffer.from(bytes);
+    altered[0] = (altered[0] ?? 0) ^ 0xff;
+    expect(altered.equals(bytes)).toBe(false);
+    const flipped = `${header ?? ''}.${claims ?? ''}.${altered.toString('base64url')}`;
     expect((await asGet(name, cookie, flipped)).clients).toEqual([null]);
   });
 
