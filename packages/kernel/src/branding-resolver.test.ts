@@ -35,7 +35,7 @@ describe('brandLocale', () => {
     const templateFallback = vi.fn();
     const locale = await brandLocale(
       { ...DEFAULT_PAGE_LOCALE, theme: 'dark' },
-      () => Promise.resolve({ branding: BRANDING, templateFallback }),
+      () => Promise.resolve({ branding: BRANDING, templateFallback, mail: null }),
       SCOPE,
     );
     expect(locale.branding).toBe(BRANDING);
@@ -50,7 +50,7 @@ describe('brandLocale with a tenant’s message overrides', () => {
     const overrides = vi.fn<OverridesResolver>(() => Promise.resolve({ 'login.title': 'Hi' }));
     const locale = await brandLocale(
       { tag: 'fr', dir: 'ltr' },
-      () => Promise.resolve({ branding: BRANDING, templateFallback: vi.fn() }),
+      () => Promise.resolve({ branding: BRANDING, templateFallback: vi.fn(), mail: null }),
       SCOPE,
       overrides,
     );

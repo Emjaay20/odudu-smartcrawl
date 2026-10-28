@@ -28,7 +28,7 @@ export function publishedThemeRepository(tx: TenantScopedDatabase) {
   // column of a single-table select, which would bind to the inner tables.
   async function read(tenantId: string, ownClient: SQL | undefined): Promise<PublishedLayers> {
     const assets = sql<PublishedAsset[]>`(
-        select coalesce(jsonb_agg(jsonb_build_object('id', a.id, 'sha256', a.sha256, 'mime', a.mime)), '[]'::jsonb)
+        select coalesce(jsonb_agg(jsonb_build_object('id', a.id, 'sha256', a.sha256, 'mime', a.mime, 'width', a.width, 'height', a.height)), '[]'::jsonb)
           from theme_version_assets va
           join theme_assets a on a.id = va.asset_id and a.tenant_id = va.tenant_id
          where va.version_id = theme_versions.id and va.tenant_id = ${tenantId})`;

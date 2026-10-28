@@ -59,6 +59,7 @@ function themed(who: string): PageBranding {
       assetUrls: [],
     },
     templateFallback: () => undefined,
+    mail: null,
   };
 }
 

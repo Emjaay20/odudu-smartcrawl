@@ -1,3 +1,4 @@
+import { type MailBranding } from '#/mail-branding';
 import { type PageKind } from '#/page-kinds';
 import {
   MAX_SIGN_IN_PATH_LENGTH,
@@ -24,6 +25,8 @@ export interface BrandingScope {
 export interface PageBranding {
   branding: ResolvedBranding;
   templateFallback: (kind: PageKind, reason: string) => void;
+  // The same theme as a mail wears it, from the tenant's own layer.
+  mail: MailBranding | null;
 }
 
 // Injected where pages are served: the packages that render them cannot

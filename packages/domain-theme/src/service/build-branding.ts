@@ -1,7 +1,9 @@
 import { brandingProblems, PAGE_KINDS, type PageKind, type ResolvedBranding } from '@odudu/kernel';
+import { type MailBranding } from '@odudu/kernel';
 import { type PublishedAsset, type PublishedLayer } from '#/service/theme-body';
 import { assetIdsOf, parseThemeBody, type ThemeBody } from '#/service/body';
 import { brandingCss, tokensCss } from '#/service/branding-css';
+import { buildMailBranding, type LogoSize } from '#/service/mail-branding';
 import { assetPath, stylesheetPath } from '#/service/branding-urls';
 import { resolvePieces } from '#/service/resolve';
 import { checkStylesheet } from '#/service/stylesheet';
@@ -34,6 +36,8 @@ export interface BuildOutcome {
   // What the hashed stylesheet holds, and the one the page links; empty when
   // the theme sets no css or is not used.
   css: string;
+  // The theme as a mail wears it; null with the default theme.
+  mail: MailBranding | null;
 }
 
 interface Kept {
@@ -41,6 +45,7 @@ interface Kept {
   clientId: string | null;
   body: ThemeBody;
   urls: Map<string, string>;
+  sizes: Map<string, LogoSize>;
 }
 
 // A layer is used whole or not at all: a body that does not parse, an image
@@ -62,6 +67,7 @@ function keepLayer(
   const { body } = parsed;
   const held = new Map<string, PublishedAsset>(layer.assets.map((asset) => [asset.id, asset]));
   const urls = new Map<string, string>();
+  const sizes = new Map<string, LogoSize>();
   for (const id of assetIdsOf(body.assets)) {
     const asset = held.get(id);
     const path = asset === undefined ? null : assetPath(tenantName, asset.sha256, asset.mime);
@@ -70,6 +76,7 @@ function keepLayer(
       return null;
     }
     urls.set(id, path);
+    if (asset !== undefined) sizes.set(id, { width: asset.width, height: asset.height });
   }
   const own = new Set(urls.values());
   const isAssetUrl = (url: string): boolean => own.has(url);
@@ -86,7 +93,7 @@ function keepLayer(
     body.stylesheet = null;
     problems.push(`${name} theme version ${String(layer.version)} has a stylesheet that fails`);
   }
-  return { clientId: layer.clientId, body, urls };
+  return { clientId: layer.clientId, body, urls, sizes };
 }
 
 function logoOf(body: ThemeBody, urls: Map<string, string>): ResolvedBranding['logo'] {
@@ -105,12 +112,17 @@ export function buildBranding(input: BuildInput): BuildOutcome {
   const refused: TemplateRefused[] = [];
   const version = (name: string): string =>
     String(input.layers.find((entry) => entry.name === name)?.layer.version ?? 0);
-  const outcome = (branding: ResolvedBranding | null, css = ''): BuildOutcome => ({
+  const outcome = (
+    branding: ResolvedBranding | null,
+    css = '',
+    mail: MailBranding | null = null,
+  ): BuildOutcome => ({
     branding,
     version: `${version('tenant')}.${version('client')}`,
     problems,
     refused,
     css: branding === null ? '' : css,
+    mail: branding === null ? null : mail,
   });
   const kept = input.layers.flatMap((entry) => {
     const layer = keepLayer(entry.name, input.tenantName, entry.layer, problems, refused);
@@ -120,6 +132,7 @@ export function buildBranding(input: BuildInput): BuildOutcome {
 
   const body = resolvePieces(kept.map((layer) => layer.body));
   const urls = new Map(kept.flatMap((layer) => [...layer.urls]));
+  const sizes = new Map(kept.flatMap((layer) => [...layer.sizes]));
   const clientRowId = kept.find((layer) => layer.clientId !== null)?.clientId ?? null;
   const tokens = tokensCss(body.tokens);
   const css = brandingCss(tokens, body.stylesheet);
@@ -153,5 +166,6 @@ export function buildBranding(input: BuildInput): BuildOutcome {
     problems.push(...wrong);
     return outcome(null);
   }
-  return outcome(branding, css);
+  const mail = buildMailBranding({ body, origin: input.origin, urls, sizes, problems });
+  return outcome(branding, css, mail);
 }

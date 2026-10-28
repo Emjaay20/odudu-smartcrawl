@@ -48,6 +48,8 @@ export interface PublishedAsset {
   id: string;
   sha256: string;
   mime: string;
+  width: number;
+  height: number;
 }
 
 // A published version as stored. `body` is whatever the row holds and is not

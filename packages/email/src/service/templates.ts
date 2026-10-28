@@ -1,19 +1,28 @@
 import { stripBidiControls } from '@odudu/contracts';
 import { negotiateLocale, type PageLocale } from '@odudu/i18n';
+import { type MailBranding } from '@odudu/kernel';
 import { bdi, catalogue, en, t, tHtml, type MessageId } from '#/service/messages';
 import { renderShell, safeHref, sendYear, type Block } from '#/service/shell';
 import { type EmailMessage } from '#/service/sender';
 
-interface MailInput {
+// What every mail takes beyond its own content.
+interface MailContext {
+  // The recipient's own `locale` where the sender knows it, else the tenant's
+  // default, else none: the mail is then English. A tag this build holds no
+  // catalogue for is reduced to the nearest one it does, as a page's is.
+  readonly locale?: string | null | undefined;
+  readonly tenantDefaultLocale?: string | null | undefined;
+  // The tenant's theme as resolved when the mail is queued; absent, the mail
+  // is drawn in Odudu's own colours.
+  readonly branding?: MailBranding | null | undefined;
+}
+
+interface MailInput extends MailContext {
   readonly to: string;
   readonly link: string;
   readonly tenantDisplayName: string;
   // The send time, from the caller's clock: the footer's year is its UTC year.
   readonly now: Date;
-  // The recipient's own `locale` where the sender knows it, else the tenant's
-  // default, else none: the mail is then English. A tag this build holds no
-  // catalogue for is reduced to the nearest one it does, as a page's is.
-  readonly locale?: string | null | undefined;
 }
 
 export type VerifyEmailInput = MailInput;
@@ -32,12 +41,12 @@ const PDI = '\u2069';
 // paragraph separators.
 const LINE_CONTROLS = /[\u0000-\u001F\u007F-\u009F\u2028\u2029]+/gu;
 
-function mailLocale(requested: string | null | undefined): PageLocale {
+function mailLocale({ locale, tenantDefaultLocale }: MailContext): PageLocale {
   return negotiateLocale({
     uiLocales: [],
-    subjectLocale: requested ?? null,
+    subjectLocale: locale ?? null,
     authenticated: true,
-    tenantDefault: null,
+    tenantDefault: tenantDefaultLocale ?? null,
     acceptLanguage: null,
     supported: catalogue.locales,
   });
@@ -103,13 +112,14 @@ interface Page {
   readonly heading: MessageId;
   readonly preheader: MessageId;
   readonly reason: MessageId;
+  readonly branding: MailBranding | null | undefined;
 }
 
 function page(
   spec: Page,
 ): Pick<
   Parameters<typeof renderShell>[0],
-  'locale' | 'tenant' | 'now' | 'heading' | 'preheader' | 'reason'
+  'locale' | 'tenant' | 'now' | 'heading' | 'preheader' | 'reason' | 'branding'
 > {
   return {
     locale: spec.locale,
@@ -118,6 +128,7 @@ function page(
     heading: t(spec.locale, spec.heading),
     preheader: t(spec.locale, spec.preheader),
     reason: tHtml(spec.locale, spec.reason, {}, { tenant: stripBidiControls(spec.tenant) }),
+    branding: spec.branding,
   };
 }
 
@@ -127,7 +138,7 @@ interface Linked {
 }
 
 function renderLinked({ kind, input }: Linked): EmailMessage {
-  const locale = mailLocale(input.locale);
+  const locale = mailLocale(input);
   const tenant = clipName(input.tenantDisplayName);
   const link = safeHref(input.link);
   return {
@@ -142,6 +153,7 @@ function renderLinked({ kind, input }: Linked): EmailMessage {
         heading: `${kind}.heading`,
         preheader: `${kind}.preheader`,
         reason: `${kind}.reason`,
+        branding: input.branding,
       }),
       blocks: [paragraph(tHtml(locale, `${kind}.body`, {}, { tenant: stripBidiControls(tenant) }))],
       action: { label: t(locale, `${kind}.button`), href: link },
@@ -164,7 +176,7 @@ export function renderResetPassword(input: ResetPasswordInput): EmailMessage {
   return renderLinked({ kind: 'reset', input });
 }
 
-export interface RegistrationDuplicateInput {
+export interface RegistrationDuplicateInput extends MailContext {
   readonly to: string;
   /** Where a forgotten password is reset; null where the tenant has no reset. */
   readonly resetLink: string | null;
@@ -176,7 +188,7 @@ export interface RegistrationDuplicateInput {
 // Said to an address somebody tried to register again. It tells the holder
 // what happened and names nothing about the attempt: no username, no token.
 export function renderRegistrationDuplicate(input: RegistrationDuplicateInput): EmailMessage {
-  const locale = mailLocale(input.locale);
+  const locale = mailLocale(input);
   const tenant = clipName(input.tenantDisplayName);
   const link = input.resetLink === null ? null : safeHref(input.resetLink);
   const next: MessageId = link === null ? 'duplicate.nextSignIn' : 'duplicate.next';
@@ -198,6 +210,7 @@ export function renderRegistrationDuplicate(input: RegistrationDuplicateInput): 
         heading: 'duplicate.heading',
         preheader: 'duplicate.preheader',
         reason: 'duplicate.reason',
+        branding: input.branding,
       }),
       blocks: [
         paragraph(tHtml(locale, 'duplicate.text', {}, { tenant: stripBidiControls(tenant) })),
@@ -210,7 +223,7 @@ export function renderRegistrationDuplicate(input: RegistrationDuplicateInput): 
 }
 
 export function renderRequiredActions(input: RequiredActionsInput): EmailMessage {
-  const locale = mailLocale(input.locale);
+  const locale = mailLocale(input);
   const tenant = clipName(input.tenantDisplayName);
   const link = safeHref(input.link);
   const listed = input.actions.map((code) => `- ${actionText(locale, code)}`).join('\n');
@@ -226,6 +239,7 @@ export function renderRequiredActions(input: RequiredActionsInput): EmailMessage
         heading: 'actions.heading',
         preheader: 'actions.preheader',
         reason: 'actions.reason',
+        branding: input.branding,
       }),
       blocks: [
         paragraph(tHtml(locale, 'actions.text', {}, { tenant: stripBidiControls(tenant) })),
@@ -237,7 +251,7 @@ export function renderRequiredActions(input: RequiredActionsInput): EmailMessage
   };
 }
 
-interface NoticeInput {
+interface NoticeInput extends MailContext {
   readonly to: string;
   readonly tenantDisplayName: string;
   readonly now: Date;
@@ -269,7 +283,7 @@ interface Notice {
 // subject recovers or proves who they are. Never a link, a code or a secret:
 // whoever reads it may not be the subject, and nothing in it helps them.
 function renderNotice({ input, subject, heading, preheader, reason, lines }: Notice): EmailMessage {
-  const locale = mailLocale(input.locale);
+  const locale = mailLocale(input);
   const tenant = clipName(input.tenantDisplayName);
   const sentences = lines.map((id) => ({
     text: t(locale, id, { tenant: inText(tenant) }),
@@ -284,7 +298,15 @@ function renderNotice({ input, subject, heading, preheader, reason, lines }: Not
       textFooter(locale, reason, tenant, input.now),
     ].join('\n\n'),
     html: renderShell({
-      ...page({ locale, tenant, now: input.now, heading, preheader, reason }),
+      ...page({
+        locale,
+        tenant,
+        now: input.now,
+        heading,
+        preheader,
+        reason,
+        branding: input.branding,
+      }),
       blocks: sentences.map((line) => paragraph(line.html)),
       closing: [tHtml(locale, 'notice.contact')],
     }),
@@ -316,7 +338,7 @@ export function renderRecoveryCodesRevoked(input: RecoveryCodesRevokedInput): Em
   });
 }
 
-export interface SmtpTestInput {
+export interface SmtpTestInput extends MailContext {
   readonly to: string;
   readonly tenantDisplayName: string;
   readonly now: Date;
@@ -324,7 +346,7 @@ export interface SmtpTestInput {
 }
 
 export function renderSmtpTest(input: SmtpTestInput): EmailMessage {
-  const locale = mailLocale(input.locale);
+  const locale = mailLocale(input);
   const tenant = clipName(input.tenantDisplayName);
   return {
     to: input.to,
@@ -338,6 +360,7 @@ export function renderSmtpTest(input: SmtpTestInput): EmailMessage {
         heading: 'smtpTest.heading',
         preheader: 'smtpTest.preheader',
         reason: 'smtpTest.reason',
+        branding: input.branding,
       }),
       blocks: [paragraph(tHtml(locale, 'smtpTest.text'))],
     }),

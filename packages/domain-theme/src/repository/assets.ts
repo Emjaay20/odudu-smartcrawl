@@ -166,13 +166,17 @@ export function assetRepository(tx: TenantScopedDatabase) {
     async sizes(
       tenantId: string,
       ids: string[],
-    ): Promise<{ id: string; sha256: string; mime: string; size: number }[]> {
+    ): Promise<
+      { id: string; sha256: string; mime: string; width: number; height: number; size: number }[]
+    > {
       if (ids.length === 0) return [];
       return tx
         .select({
           id: themeAssets.id,
           sha256: themeAssets.sha256,
           mime: themeAssets.mime,
+          width: themeAssets.width,
+          height: themeAssets.height,
           size: sql<number>`octet_length(${themeAssets.bytes})::int`,
         })
         .from(themeAssets)

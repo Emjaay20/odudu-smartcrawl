@@ -4,6 +4,8 @@ export interface WeighedImage {
   readonly id: string;
   readonly sha256: string;
   readonly mime: string;
+  readonly width: number;
+  readonly height: number;
   readonly size: number;
 }
 
@@ -24,7 +26,7 @@ export function layerOf(record: ThemeRecord, images: readonly WeighedImage[]): P
     body: record.body,
     assets: images
       .filter((image) => named.has(image.id))
-      .map(({ id, sha256, mime }) => ({ id, sha256, mime })),
+      .map(({ id, sha256, mime, width, height }) => ({ id, sha256, mime, width, height })),
   };
 }
 

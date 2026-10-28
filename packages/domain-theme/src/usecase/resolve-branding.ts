@@ -3,6 +3,7 @@ import {
   MAX_CLIENT_ID_LENGTH,
   type BrandingResolver,
   type BrandingScope,
+  type MailBranding,
   type PageBranding,
   type TemplateFallback,
 } from '@odudu/kernel';
@@ -62,6 +63,38 @@ function describe(error: unknown): string {
 // statement on a miss and none on a hit. It never rejects: whatever goes
 // wrong, the page gets the default theme and the log one line.
 export function resolveBranding(deps: ResolveBrandingDeps): BrandingResolver {
+  return createResolvers(deps).page;
+}
+
+export interface MailScope {
+  tenantId: string;
+  tenantName: string;
+}
+
+// How a tenant's published layer is read inside the caller's transaction.
+export type ReadTenantLayer<Tx> = (tx: Tx, tenantId: string) => Promise<PublishedLayers>;
+
+// The tenant's theme as its mail wears it, read through the transaction the
+// mail is queued in rather than a second connection, so a burst of mail
+// cannot hold every pooled connection while each waits for another. A hit in
+// the page cache costs nothing; a miss is one statement and fills the cache
+// for the pages too. A failed read propagates: it has already aborted the
+// transaction it ran in.
+export function resolveMailBranding<Tx>(
+  deps: ResolveBrandingDeps,
+  read: ReadTenantLayer<Tx>,
+): (tx: Tx, scope: MailScope) => Promise<MailBranding | null> {
+  const { mail } = createResolvers(deps);
+  return (tx, scope) => mail((tenantId) => read(tx, tenantId), scope);
+}
+
+function createResolvers(deps: ResolveBrandingDeps): {
+  page: BrandingResolver;
+  mail: (
+    read: (tenantId: string) => Promise<PublishedLayers>,
+    scope: MailScope,
+  ) => Promise<MailBranding | null>;
+} {
   const report = createFallbackReporter((entry) => {
     deps.reportFallback(entry);
   });
@@ -102,14 +135,24 @@ export function resolveBranding(deps: ResolveBrandingDeps): BrandingResolver {
         ...(layers.tenant === null ? [] : [{ name: 'tenant' as const, layer: layers.tenant }]),
       ],
     });
+    const value = settle(built, key, scope.tenantId, generation);
+    return value;
+  }
+
+  function settle(
+    built: ReturnType<typeof buildBranding>,
+    key: string,
+    tenantId: string,
+    generation: number,
+  ): PageBranding | null {
     const label = `${key}:${built.version}`;
     for (const reason of built.problems) note(label, reason);
     for (const { kind, reason } of built.refused) report(label)(kind, reason);
     const value =
       built.branding === null
         ? null
-        : { branding: built.branding, templateFallback: report(label) };
-    deps.cache.set(key, scope.tenantId, value, weigh(value), generation);
+        : { branding: built.branding, templateFallback: report(label), mail: built.mail };
+    deps.cache.set(key, tenantId, value, weigh(value), generation);
     return value;
   }
 
@@ -126,7 +169,28 @@ export function resolveBranding(deps: ResolveBrandingDeps): BrandingResolver {
     }
   }
 
-  return (input) => {
+  async function mail(
+    read: (tenantId: string) => Promise<PublishedLayers>,
+    scope: MailScope,
+  ): Promise<MailBranding | null> {
+    if (deps.origin === undefined) {
+      note('config', 'ODUDU_PUBLIC_BASE_URL is not set, so pages are not themed');
+      return null;
+    }
+    const key = `${scope.tenantId}:`;
+    const held = deps.cache.get(key);
+    if (held !== undefined) return held.value?.mail ?? null;
+    const generation = deps.cache.generation(scope.tenantId);
+    const layers = await read(scope.tenantId);
+    const built = buildBranding({
+      tenantName: scope.tenantName,
+      origin: deps.origin,
+      layers: layers.tenant === null ? [] : [{ name: 'tenant', layer: layers.tenant }],
+    });
+    return settle(built, key, scope.tenantId, generation)?.mail ?? null;
+  }
+
+  const page: BrandingResolver = (input) => {
     if (deps.origin === undefined) {
       note('config', 'ODUDU_PUBLIC_BASE_URL is not set, so pages are not themed');
       return Promise.resolve(null);
@@ -163,4 +227,6 @@ export function resolveBranding(deps: ResolveBrandingDeps): BrandingResolver {
     if (inflight.size < MAX_BRANDING_READS_IN_FLIGHT) inflight.set(flight, started);
     return started;
   };
+
+  return { page, mail };
 }
