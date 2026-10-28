@@ -178,7 +178,7 @@ describe('serveBrand stylesheets', () => {
     const url = pageStylesheet(layers);
     const request = requestFor(url);
     const answer = await serveBrand(deps({ layers }), request);
-    expect(answer?.contentType).toBe('text/css; charset=utf-8');
+    expect(answer).toMatchObject({ contentType: 'text/css; charset=utf-8' });
     expect(sha256Hex(bytesOf(answer))).toBe(parseBrandFile(request.file)?.sha256);
     expect(bytesOf(answer).toString()).toContain('.logo{display:none}');
   });
