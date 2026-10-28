@@ -401,9 +401,12 @@ describe('the target ceiling holds on every route that mutates a subject', () =>
 // A confidential client authenticates as its service account, so every
 // route that mutates one client is held to that subject's ceiling: read
 // from the route table, so a new client mutation without it fails here.
+// A client's theme is how its pages look and reaches nothing the service
+// account may do, so its routes are outside the ceiling.
 const CLIENT_MUTATIONS = ADMIN_ROUTES.filter(
   (route) =>
     route.method !== 'GET' &&
+    !route.pattern.includes('/theme') &&
     (route.pattern.startsWith('/admin/tenants/:tenant/clients/:id') ||
       route.pattern === '/admin/tenants/:tenant/scopes/:id/clients/:clientId'),
 ).map((route) => `${route.method} ${route.pattern}`);
