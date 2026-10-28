@@ -80,6 +80,25 @@ describe('buildInstrument', () => {
     for (const pattern of physical) expect(pagesCss).not.toMatch(pattern);
   });
 
+  it('names no physical left or right anywhere in the page rules', () => {
+    const code = pagesCss.replace(/\/\*[\s\S]*?\*\//gu, '');
+    expect(code).not.toMatch(/\b(left|right)\b/iu);
+    expect(code).not.toMatch(/\b(translateX|translate3d|scaleX|skewX)\b/u);
+    expect(code).not.toMatch(/\bbackground-position(-x)?\s*:/u);
+  });
+
+  it('keeps every direction-sensitive rule to the two that are neutral', () => {
+    const code = pagesCss.replace(/\/\*[\s\S]*?\*\//gu, '');
+    const rules = [...code.matchAll(/([^{}]+)\{([^{}]*)\}/gu)];
+    // A rotation belongs to the 404 page's picture (its rules and keyframes).
+    const rotated = rules.filter(([, , body]) => /\brotate\(/u.test(body ?? ''));
+    for (const [, selector] of rotated) expect(selector).toMatch(/\.lost-|^\s*\d+%/u);
+    // Letter-spacing breaks the joining of Arabic letters, so only the Latin
+    // brand name may carry it.
+    const spaced = rules.filter(([, , body]) => /letter-spacing\s*:/u.test(body ?? ''));
+    expect(spaced.map(([, selector]) => (selector ?? '').trim())).toEqual(['.wordmark']);
+  });
+
   it('hides only the logo variant not in use, and never shows the other', () => {
     const rules = [...pagesCss.matchAll(/[^{}]*\.logo\.logo-(?:dark|light)[^{}]*\{([^}]*)\}/gu)];
     expect(rules).toHaveLength(4);

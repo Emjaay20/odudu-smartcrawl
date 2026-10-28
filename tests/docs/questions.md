@@ -466,7 +466,7 @@ Real questions a newcomer asks, each answered strictly from the built documentat
 - Before: partly
 - Status: answered
 - Pages: introduction/index, roadmap
-- Note: Fixed: English today; translations are planned (P4b, P4h).
+- Note: Fixed: English and Arabic (right to left), chosen per tenant; other translations are not shipped (P4b, P4h for the console).
 
 ## O01. How do I deploy with Docker Compose?
 
