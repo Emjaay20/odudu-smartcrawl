@@ -34,10 +34,12 @@ it('shows every pair of a customised palette with its ratio', async () => {
   ).toBeVisible();
 });
 
-it('says Instrument’s own colours need no checking here', async () => {
+it('says Instrument’s own colours are used, and meet every requirement', async () => {
   renderConsoleAt(AT, brandingRoutes(themeAnswer(themeView())));
   const contrast = await screen.findByRole('region', { name: 'Contrast' });
-  expect(within(contrast).getByRole('status')).toHaveTextContent(/Instrument’s own colours/u);
+  expect(within(contrast).getByRole('status')).toHaveTextContent(
+    'Instrument’s own colours are used, and they meet every requirement.',
+  );
 });
 
 it('has nothing axe can find in either theme', async () => {

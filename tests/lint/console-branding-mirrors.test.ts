@@ -89,7 +89,7 @@ describe('what the Branding screens show of the server', () => {
     }
   });
 
-  it('starts a customised palette from colours the server accepts', async () => {
+  it('holds Instrument’s own palettes, which customising starts from, to the server’s check', async () => {
     const { DEFAULT_PALETTES } = await load();
     expect(
       contrastFailures({

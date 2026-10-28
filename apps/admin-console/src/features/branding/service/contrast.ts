@@ -112,7 +112,7 @@ export function rowText(row: PairRow): string {
 }
 
 export function contrastSummary(failing: readonly PairRow[], shown: number): string {
-  if (shown === 0) return 'Instrument’s own colours are in use, so there is nothing to check.';
+  if (shown === 0) return 'Instrument’s own colours are used, and they meet every requirement.';
   if (failing.length === 0) return `All ${counted(shown, 'pair', 'pairs')} meet their requirement.`;
   return `${counted(failing.length, 'pair fails', 'pairs fail')} its requirement.`;
 }

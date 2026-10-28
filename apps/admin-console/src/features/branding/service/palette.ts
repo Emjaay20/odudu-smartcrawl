@@ -70,9 +70,8 @@ export const PALETTE_LABELS: Readonly<Record<PaletteKey, PaletteLabel>> = {
 };
 
 // Instrument's own colours, which a palette starts from when it is first
-// customised, except the border: Instrument's own is under the 3:1 a border
-// must reach, so the starting one is darkened to meet it and a new palette
-// never begins blocked. A test holds the rest to the console's tokens.
+// customised. A test holds them to the console's tokens, and another holds
+// them to the server's contrast check.
 export const DEFAULT_PALETTES: Readonly<Record<Scheme, Palette>> = {
   light: {
     surfacePage: '#e7eae9',
@@ -84,7 +83,7 @@ export const DEFAULT_PALETTES: Readonly<Record<Scheme, Palette>> = {
     signalActiveInk: '#0a6344',
     signalDanger: '#fae3d7',
     signalDangerInk: '#9c3a0e',
-    borderStrong: '#7a8581',
+    borderStrong: '#898f8d',
     focusRing: '#0a7c55',
   },
   dark: {
@@ -97,7 +96,7 @@ export const DEFAULT_PALETTES: Readonly<Record<Scheme, Palette>> = {
     signalActiveInk: '#6fd8a8',
     signalDanger: '#48220f',
     signalDangerInk: '#f59d73',
-    borderStrong: '#707c79',
+    borderStrong: '#656c6a',
     focusRing: '#4fc894',
   },
 };

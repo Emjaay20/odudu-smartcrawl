@@ -41,20 +41,10 @@ function pair(property: string): [string, string] {
 }
 
 describe('the palettes customising starts from', () => {
-  // The border is darkened to reach 3:1, which Instrument's own does not.
-  it.each(PALETTE_KEYS.filter((key) => key !== 'borderStrong'))(
-    '%s is the console’s own token, in both schemes',
-    (key) => {
-      const [light, dark] = pair(PROPERTY[key]);
-      expect(DEFAULT_PALETTES.light[key]).toBe(light);
-      expect(DEFAULT_PALETTES.dark[key]).toBe(dark);
-    },
-  );
-
-  it('darkens the border only, and only as far as the pairs ask', () => {
-    const [light, dark] = pair(PROPERTY.borderStrong);
-    expect(DEFAULT_PALETTES.light.borderStrong).not.toBe(light);
-    expect(DEFAULT_PALETTES.dark.borderStrong).not.toBe(dark);
+  it.each(PALETTE_KEYS)('%s is the console’s own token, in both schemes', (key) => {
+    const [light, dark] = pair(PROPERTY[key]);
+    expect(DEFAULT_PALETTES.light[key]).toBe(light);
+    expect(DEFAULT_PALETTES.dark[key]).toBe(dark);
   });
 });
 
