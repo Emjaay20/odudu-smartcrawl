@@ -65,6 +65,20 @@ describe('writing', () => {
     expect(fake.sent[0]?.body).toEqual(EMPTY);
   });
 
+  it('answers a 428 to a first save as stale, since a draft appeared meanwhile', async () => {
+    const fake = fakeTransport({
+      [`PUT ${TH}`]: problem(428, 'about:blank', 'Precondition Required'),
+    });
+    const result = await putTheme(
+      fake.transport.gateway,
+      'acme',
+      { kind: 'tenant' },
+      EMPTY,
+      NO_DRAFT_TAG,
+    );
+    expect(result).toMatchObject({ ok: false, kind: 'problem', problem: { status: 412 } });
+  });
+
   it('publishes on the draft’s tag', async () => {
     const fake = fakeTransport({
       [`POST ${TH}/publish`]: json({ ...draftedView(), warnings: [] }),

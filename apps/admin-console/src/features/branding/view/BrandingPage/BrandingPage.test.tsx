@@ -150,6 +150,26 @@ describe('saving the draft', () => {
     expect(within(section).getByRole('button', { name: /Take theirs/u })).toBeVisible();
   });
 
+  it('a first save met by somebody else’s first save offers keep mine or take theirs', async () => {
+    const user = userEvent.setup();
+    const theirs = themeView({
+      draft: { ...EMPTY, tokens: { dark: OWN_LIGHT } },
+      draft_sources: { 'tokens.dark': 'tenant' },
+    });
+    renderConsoleAt(
+      AT,
+      brandingRoutes(inTurn(themeAnswer(themeView()), themeAnswer(theirs, '"d1"')), {
+        [`PUT ${TH}`]: problem(428, 'about:blank', 'Precondition Required'),
+      }),
+    );
+    const section = await colours();
+    await user.click(within(section).getByRole('switch', { name: 'Use my own dark colours' }));
+    await user.click(within(section).getByRole('button', { name: /Save/u }));
+    expect(await within(section).findByRole('button', { name: /Keep mine/u })).toBeVisible();
+    expect(within(section).getByRole('button', { name: /Take theirs/u })).toBeVisible();
+    expect(section).not.toHaveTextContent('fault in the console');
+  });
+
   it('shows the server’s refusal of a template under it, by path', async () => {
     const user = userEvent.setup();
     renderConsoleAt(

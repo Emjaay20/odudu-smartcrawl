@@ -10,6 +10,7 @@ import {
   type ThemeView,
 } from '@odudu/contracts/admin';
 import { adminCall, nothing, segment } from '#/shared/adapter/route';
+import { staleWhenTagMissing } from '#/shared/service/failure';
 import { GATEWAY_BASE, type Gateway, type GatewayResult } from '#/shared/transport/gateway';
 import {
   ifMatchOf,
@@ -50,13 +51,15 @@ export async function putTheme(
   const ifMatch = ifMatchOf(tag);
   const options = {
     body,
-    ...(ifMatch === undefined ? {} : { ifMatch }),
+    ...(ifMatch === undefined ? { withoutTag: true } : { ifMatch }),
     schema: themeViewSchema,
   };
   return tagged(
-    scope.kind === 'tenant'
-      ? await adminCall(gateway, 'PUT', tenant, ['theme'], options)
-      : await adminCall(gateway, 'PUT', tenant, ['clients', scope.id, 'theme'], options),
+    staleWhenTagMissing(
+      scope.kind === 'tenant'
+        ? await adminCall(gateway, 'PUT', tenant, ['theme'], options)
+        : await adminCall(gateway, 'PUT', tenant, ['clients', scope.id, 'theme'], options),
+    ),
   );
 }
 

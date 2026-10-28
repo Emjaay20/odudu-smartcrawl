@@ -13,6 +13,9 @@ export interface RequestOptions<T> {
   body?: unknown;
   // A file sent as the body in place of JSON, under its own media type.
   file?: Blob;
+  // The write carries no If-Match on purpose, as a first write to a resource
+  // that has no ETag yet, so a 428 is the server's answer and not a console defect.
+  withoutTag?: boolean;
   ifMatch?: string;
   schema: ZodType<T>;
 }
@@ -161,7 +164,7 @@ export function createGateway(dependencies: GatewayDependencies = {}): Gateway {
   async function exchange(
     method: Method,
     path: string,
-    options: { body?: unknown; file?: Blob; ifMatch?: string },
+    options: { body?: unknown; file?: Blob; ifMatch?: string; withoutTag?: boolean },
   ): Promise<{ ok: true; answer: Answer; where: string } | GatewayFailure> {
     const url = resolve(path);
     const where = `${method} ${url.pathname.slice(BASE.length)}`;
@@ -189,7 +192,7 @@ export function createGateway(dependencies: GatewayDependencies = {}): Gateway {
     const { response, text } = answer;
 
     if (!response.ok) {
-      if (response.status === 428) {
+      if (response.status === 428 && options.withoutTag !== true) {
         log(`console defect: ${where} answered 428: the server required If-Match`);
         return { ok: false, kind: 'defect' };
       }

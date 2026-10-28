@@ -610,3 +610,24 @@ describe('gateway.request, an image as the body', () => {
     expect(calls).toHaveLength(1);
   });
 });
+
+describe('gateway.request, a write sent with no tag on purpose', () => {
+  const required = () => problem(428, 'about:blank', 'Precondition Required');
+
+  it('answers a 428 as the server’s refusal, not as a console defect', async () => {
+    const { gateway, log } = harness(required());
+    const result = await gateway.request('PUT', SUBJECT_PATH, {
+      body: {},
+      withoutTag: true,
+      schema: subjectSchema,
+    });
+    expect(result).toMatchObject({ ok: false, kind: 'problem', problem: { status: 428 } });
+    expect(log).not.toHaveBeenCalled();
+  });
+
+  it('still calls a 428 a defect when the tag was meant to be sent', async () => {
+    const { gateway } = harness(required());
+    const result = await gateway.request('PUT', SUBJECT_PATH, { body: {}, schema: subjectSchema });
+    expect(result).toEqual({ ok: false, kind: 'defect' });
+  });
+});
