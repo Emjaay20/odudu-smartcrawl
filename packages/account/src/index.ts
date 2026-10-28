@@ -88,3 +88,4 @@ export {
 } from '#/service/required-actions';
 export { DEFAULT_TEMPLATES } from '#/view/templates/index';
 export { hasMessage as isAccountMessageKey } from '#/view/template';
+export { PREVIEW_PAGES as ACCOUNT_PREVIEW_PAGES } from '#/view/preview-pages';

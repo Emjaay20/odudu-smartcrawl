@@ -35,9 +35,18 @@ export {
   isSameOriginPath,
   pageHeaders,
   reloadOnRestore,
+  stylesheetLink,
   withBranding,
   withPageTheme,
 } from '#/page';
+export {
+  MAX_PREVIEW_BYTES,
+  inlinePreview,
+  previewHeaders,
+  type InlinedPreview,
+  type PreviewInline,
+  type PreviewRender,
+} from '#/page-preview';
 export {
   PAGE_THEME_COOKIE,
   PAGE_THEMES,
