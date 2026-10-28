@@ -1,15 +1,22 @@
-import { PAGE_KINDS, type PageKind } from '@odudu/kernel';
+import {
+  FONT_CHOICES,
+  MAX_ALT_LENGTH,
+  MAX_STYLESHEET_BYTES,
+  MAX_TEMPLATE_BYTES,
+  PALETTE_KEYS,
+  themeAssetsSchema,
+  themeStylesheetSchema,
+  themeTemplatesSchema,
+  themeTokensSchema,
+  type FontChoice,
+} from '@odudu/contracts';
+import { type PageKind } from '@odudu/kernel';
 import { z } from 'zod';
 
-// The families Instrument serves itself; a theme names one, never a URL.
-export const FONT_CHOICES = ['IBM Plex Sans', 'IBM Plex Mono'] as const;
-export type FontChoice = (typeof FONT_CHOICES)[number];
-
-export const MAX_TEMPLATE_BYTES = 64 * 1024;
-export const MAX_STYLESHEET_BYTES = 128 * 1024;
-export const MAX_ALT_LENGTH = 200;
-
-const HEX_COLOUR = /^#[0-9a-f]{6}$/iu;
+// The shape is the admin API's contract, so a body that parses here is one
+// the API accepts; only the defaults and the lower-casing live in this file.
+export { FONT_CHOICES, MAX_ALT_LENGTH, MAX_STYLESHEET_BYTES, MAX_TEMPLATE_BYTES };
+export type { FontChoice };
 
 // Named after the custom properties the pages read. A group is complete or
 // absent, so a client that overrides one replaces it whole. Not themeable,
@@ -69,61 +76,11 @@ export interface BodyIssue {
 
 export type ParsedBody = { ok: true; body: ThemeBody } | { ok: false; issues: BodyIssue[] };
 
-const byteLength = (text: string): number => new TextEncoder().encode(text).length;
-
-function boundedText(maxBytes: number): z.ZodType<string> {
-  return z.string().superRefine((text, ctx) => {
-    if (byteLength(text) > maxBytes) {
-      ctx.addIssue({ code: 'too_big', origin: 'string', maximum: maxBytes, inclusive: true });
-    }
-  });
-}
-
-const colour = z
-  .string()
-  .regex(HEX_COLOUR)
-  .transform((value) => value.toLowerCase());
-
-const palette = z.strictObject({
-  surfacePage: colour,
-  surfacePanel: colour,
-  surfaceSunken: colour,
-  inkPrimary: colour,
-  inkMuted: colour,
-  signalActive: colour,
-  signalActiveInk: colour,
-  signalDanger: colour,
-  signalDangerInk: colour,
-  borderStrong: colour,
-  focusRing: colour,
-});
-
-const assetId = z.uuid().transform((value) => value.toLowerCase());
-const alt = z
-  .string()
-  .max(MAX_ALT_LENGTH)
-  .refine((value) => value.trim() !== '');
-
-const pageKinds = Object.keys(PAGE_KINDS) as [PageKind, ...PageKind[]];
-
 const bodySchema = z.strictObject({
-  tokens: z
-    .strictObject({
-      light: palette.optional(),
-      dark: palette.optional(),
-      font: z.enum(FONT_CHOICES).optional(),
-    })
-    .default({}),
-  stylesheet: boundedText(MAX_STYLESHEET_BYTES).nullable().default(null),
-  templates: z.partialRecord(z.enum(pageKinds), boundedText(MAX_TEMPLATE_BYTES)).default({}),
-  assets: z
-    .strictObject({
-      logo: z.strictObject({ assetId, alt }).optional(),
-      darkLogo: z.strictObject({ assetId, alt }).optional(),
-      favicon: z.strictObject({ assetId }).optional(),
-      background: z.strictObject({ assetId }).optional(),
-    })
-    .default({}),
+  tokens: themeTokensSchema.default({}),
+  stylesheet: themeStylesheetSchema.default(null),
+  templates: themeTemplatesSchema.default({}),
+  assets: themeAssetsSchema.default({}),
 });
 
 function codeOf(issue: z.core.$ZodIssue): BodyIssueCode {
@@ -162,10 +119,38 @@ function issuesOf(error: z.ZodError): BodyIssue[] {
   });
 }
 
+function lowerPalette(palette: z.infer<typeof bodySchema>['tokens']['light']): Palette | undefined {
+  if (palette === undefined) return undefined;
+  const lowered = { ...palette };
+  for (const key of PALETTE_KEYS) lowered[key] = palette[key].toLowerCase();
+  return lowered;
+}
+
+// Colours and ids compare as lower case everywhere downstream.
+function normalise(parsed: z.infer<typeof bodySchema>): ThemeBody {
+  const { tokens, assets } = parsed;
+  const lowerAsset = <T extends { assetId: string }>(asset: T | undefined): T | undefined =>
+    asset === undefined ? undefined : { ...asset, assetId: asset.assetId.toLowerCase() };
+  return {
+    ...parsed,
+    tokens: {
+      ...tokens,
+      ...(tokens.light === undefined ? {} : { light: lowerPalette(tokens.light) }),
+      ...(tokens.dark === undefined ? {} : { dark: lowerPalette(tokens.dark) }),
+    },
+    assets: {
+      ...(assets.logo === undefined ? {} : { logo: lowerAsset(assets.logo) }),
+      ...(assets.darkLogo === undefined ? {} : { darkLogo: lowerAsset(assets.darkLogo) }),
+      ...(assets.favicon === undefined ? {} : { favicon: lowerAsset(assets.favicon) }),
+      ...(assets.background === undefined ? {} : { background: lowerAsset(assets.background) }),
+    },
+  };
+}
+
 export function parseThemeBody(input: unknown): ParsedBody {
   const parsed = bodySchema.safeParse(input);
   if (!parsed.success) return { ok: false, issues: issuesOf(parsed.error) };
-  return { ok: true, body: parsed.data };
+  return { ok: true, body: normalise(parsed.data) };
 }
 
 // Every asset the body names, once each.
