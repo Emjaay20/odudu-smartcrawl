@@ -36,9 +36,14 @@ which can carry script and external references. The server holds up to
   26 MB as RGBA), and it only matters to a caller that asks for a larger side.
 - **Bounded work.** At most two decodes run at once and sixteen more wait; the
   next is refused as `busy`, so a hundred simultaneous uploads hold two decoded
-  images and sixteen request bodies. A decode has ten seconds (sharp's own
-  `timeout`, and a deadline in the inspector that frees the slot and refuses as
-  `timeout`), so a stuck libvips call cannot hold both slots. libvips's
+  images and sixteen request bodies. A decode has sharp's own
+  `timeout` of ten seconds on the encode pipeline (it does not apply to the
+  header read, which sharp does not time, and which the upload's size bounds),
+  and the inspector's deadline of twelve seconds (`DECODE_TIMEOUT_SECONDS`
+  times 1,000 plus 2,000 ms) frees the slot and refuses as `timeout`. The
+  deadline does not stop the libvips work: that is bounded by sharp's timeout
+  and by the pixel and side limits, so a stuck call cannot hold both slots but
+  can keep a thread busy until sharp gives up. libvips's
   operation cache is off.
 - **Kept in PostgreSQL**, in `theme_assets` with the bytes in a `bytea` column,
   never selected by a list or a page render, addressed by the SHA-256 of the
@@ -57,7 +62,19 @@ which can carry script and external references. The server holds up to
   client's theme is one of its layers) names the layers it is made from, the
   route reads them again through the resolver's own build and serves the
   result only if it hashes to the URL. No process memory is involved, so any
-  replica answers for a page another rendered. After a publish the previous
+  replica answers for a page another rendered. The build is remembered in a
+  bounded memo (at most 1,000 entries and 16 MiB of css, least recently used
+  out) keyed by tenant, tenant name and the published version ids, which one
+  small identity read supplies without any body; a hash that is not the
+  remembered one answers `404` with no parse, concurrent first requests share
+  one build, and a publish changes the key so the old entry only ages out.
+  A client segment that resolves to no layer (none published, or another
+  tenant's client) is a `404`, so the tenant-form URL has no aliases. The
+  client row id in that URL is an internal primary key: random, not guessable,
+  not a secret, and exposed only for a client with a published theme. A
+  conditional request is answered from metadata, without reading the bytes.
+  Every invalid shape under `/brand/`, a segment over the router's length
+  limit included, is the same bare `404`. After a publish the previous
   hash no longer matches and answers `404`: a page another replica rendered
   from its cache in the last 30 seconds shows no theme until its next
   render. Per request the work is a tenant lookup and one indexed read; no
