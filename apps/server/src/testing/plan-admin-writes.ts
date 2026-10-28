@@ -1,4 +1,5 @@
 import { newId } from '@odudu/kernel';
+import { makePng } from '@odudu/testkit';
 import { type LightMyRequestResponse } from 'fastify';
 import { type AdminIds, type AdminTokens } from '#/testing/plan-admin-drives';
 import { type Capture } from '#/testing/plan-paths';
@@ -8,6 +9,8 @@ interface Call {
   readonly method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   readonly url: string;
   readonly body?: unknown;
+  // An image sent as the raw request body, which is how an upload is made.
+  readonly image?: Buffer;
   // Fetched first, and sent as If-Match, for the routes that refuse without it.
   readonly etagFrom?: string;
   readonly system?: boolean;
@@ -471,6 +474,7 @@ export async function driveAdminWrites(
     ['delete the tenant’s SMTP', { method: 'DELETE', url: `${T}/smtp` }],
     ...themeCalls(T, T, 'the tenant’s theme'),
     ...themeCalls(T, `${T}/clients/${ids.client}`, 'a client’s theme'),
+    ...assetCalls(T),
     [
       'replace the sign-in flow',
       {
@@ -505,7 +509,8 @@ export async function driveAdminWrites(
       const from = await world.http.inject({ url: call.bodyFrom.url, headers });
       body = call.bodyFrom.make(from.json());
     }
-    if (body !== undefined) headers['content-type'] = 'application/json';
+    if (call.image !== undefined) headers['content-type'] = 'image/png';
+    else if (body !== undefined) headers['content-type'] = 'application/json';
     if (call.etagFrom !== undefined) {
       const current = await world.http.inject({ url: call.etagFrom, headers });
       headers['if-match'] = String(current.headers.etag);
@@ -518,7 +523,15 @@ export async function driveAdminWrites(
           method: call.method,
           url,
           headers,
-          ...(body === undefined ? {} : { payload: JSON.stringify(body) }),
+          ...(call.image === undefined ? {} : { payload: call.image }),
+          ...(body === undefined || call.image !== undefined
+            ? {}
+            : {
+                payload: JSON.stringify(body).replace(
+                  /\{(\w+)\}/gu,
+                  (_, name: string) => saved.get(name) ?? name,
+                ),
+              }),
         }),
     );
     if (call.saveAs !== undefined) {
@@ -563,5 +576,27 @@ function themeCalls(T: string, base: string, what: string): [string, Call][] {
     [`read ${what}`, { method: 'GET', url: theme }],
     [`list the versions of ${what}`, { method: 'GET', url: `${theme}/versions` }],
     [`reset ${what}`, { method: 'DELETE', url: theme }],
+  ];
+}
+
+// An image uploaded, stored again, named by a draft, refused deletion while it
+// is, and deleted once the draft is gone.
+function assetCalls(T: string): [string, Call][] {
+  const png = makePng({ width: 16, height: 16, rgb: [10, 120, 200] });
+  const upload = `${T}/theme/assets?kind=logo`;
+  return [
+    ['upload an image', { method: 'POST', url: upload, image: png, saveAs: 'asset' }],
+    ['upload the same image again', { method: 'POST', url: upload, image: png }],
+    [
+      'save a draft that names the image',
+      {
+        method: 'PUT',
+        url: `${T}/theme`,
+        body: { assets: { logo: { assetId: '{asset}', alt: 'Logo' } } },
+      },
+    ],
+    ['delete the image a draft names', { method: 'DELETE', url: `${T}/theme/assets/{asset}` }],
+    ['reset the theme', { method: 'DELETE', url: `${T}/theme` }],
+    ['delete the image', { method: 'DELETE', url: `${T}/theme/assets/{asset}` }],
   ];
 }
