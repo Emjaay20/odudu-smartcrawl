@@ -251,6 +251,12 @@ describe('the pages a tenant theme reaches without a parked request', () => {
 // that cannot be a hash, and the read has a plan that uses the index even
 // where a table is small enough for the planner to prefer scanning it.
 describe('a brand file', () => {
+  const bodyReads = (statements: Statement[]): number =>
+    statements.filter((s) => s.query.includes('"theme_versions"') && s.query.includes('"body"'))
+      .length;
+  const byteReads = (statements: Statement[]): number =>
+    statements.filter((s) => s.query.includes('"theme_assets"."bytes"')).length;
+
   it('costs a tenant lookup and one read, and nothing for a malformed name', () => {
     expect(workOf(BRANDING_PATHS.brandNothing)).toEqual([]);
     for (const path of [BRANDING_PATHS.brandImage, BRANDING_PATHS.brandStylesheet]) {
@@ -260,9 +266,26 @@ describe('a brand file', () => {
     }
   });
 
+  it('reads no body for a wrong stylesheet hash once the versions are remembered', () => {
+    const cold = workOf(BRANDING_PATHS.brandStylesheetCold);
+    expect(bodyReads(cold)).toBe(1);
+    const remembered = workOf(BRANDING_PATHS.brandStylesheetRandom);
+    expect(tenantLookups(remembered)).toBe(1);
+    expect(remembered.length).toBe(2);
+    expect(bodyReads(remembered)).toBe(0);
+    expect(bodyReads(workOf(BRANDING_PATHS.brandStylesheet))).toBe(0);
+  });
+
+  it('answers a matching conditional request for an image without its bytes', () => {
+    const revalidate = workOf(BRANDING_PATHS.brandImageRevalidate);
+    expect(revalidate.length).toBe(2);
+    expect(byteReads(revalidate)).toBe(0);
+    expect(byteReads(workOf(BRANDING_PATHS.brandImage))).toBe(1);
+  });
+
   it('reads an image and the stylesheet layers by index, even where scanning is allowed to lose', async () => {
     const image = workOf(BRANDING_PATHS.brandImage).find((s) => s.query.includes('"theme_assets"'));
-    const layers = workOf(BRANDING_PATHS.brandStylesheet).find((s) =>
+    const layers = workOf(BRANDING_PATHS.brandStylesheetRandom).find((s) =>
       s.query.includes('"theme_versions"'),
     );
     expect(image).toBeDefined();
