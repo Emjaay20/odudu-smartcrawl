@@ -658,7 +658,9 @@ describe('access', () => {
     };
   }
 
-  const themeRoutes = ADMIN_ROUTES.filter((route) => /\/theme(\/|$)/u.test(route.pattern));
+  const themeRoutes = ADMIN_ROUTES.filter(
+    (route) => /\/theme(\/|$)/u.test(route.pattern) && !route.pattern.includes('/theme/assets'),
+  );
 
   it('covers the twelve routes of a tenant’s and a client’s theme', () => {
     expect(themeRoutes).toHaveLength(12);

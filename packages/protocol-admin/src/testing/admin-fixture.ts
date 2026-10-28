@@ -51,6 +51,7 @@ import {
 import { createAppRole, startTestDatabase, type TestDatabase } from '@odudu/testkit';
 import { and, eq } from 'drizzle-orm';
 import Fastify, { type FastifyInstance, type LightMyRequestResponse } from 'fastify';
+import { type inspectImage } from '@odudu/domain-theme';
 import { adminRoutesForTesting } from '#/index';
 
 // Encrypts every signing key this fixture generates, and decrypts every one
@@ -220,6 +221,8 @@ export interface AdminFixtureOptions {
   readonly auditReadTimeoutMs?: number;
   /** Which `{{t "key"}}` a theme template may name; the oidc catalogue's keys by default. */
   readonly themeMessageKeys?: (kind: PageKind, key: string) => boolean;
+  /** The image inspector an upload runs, where a test needs it refused or slow. */
+  readonly inspectImage?: typeof inspectImage;
 }
 
 const defaultMessageKey = (_kind: PageKind, key: string): boolean => isOidcMessageKey(key);
@@ -290,6 +293,7 @@ export async function startAdminFixture(options: AdminFixtureOptions = {}): Prom
         },
         isThemeMessageKey: (kind, key) =>
           (options.themeMessageKeys ?? defaultMessageKey)(kind, key),
+        ...(options.inspectImage === undefined ? {} : { inspectImage: options.inspectImage }),
         ...(options.auditReadTimeoutMs === undefined
           ? {}
           : { auditReadTimeoutMs: options.auditReadTimeoutMs }),

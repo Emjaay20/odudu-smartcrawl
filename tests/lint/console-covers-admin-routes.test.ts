@@ -46,11 +46,14 @@ function pendingBrandingRoutes(): Record<string, string> {
     ['GET', '/theme/versions'],
     ['POST', '/theme/versions/:versionId/restore'],
   ];
-  return Object.fromEntries(
-    ['/admin/tenants/:tenant', '/admin/tenants/:tenant/clients/:id'].flatMap((base) =>
+  const entries: [string, string][] = [
+    ...['/admin/tenants/:tenant', '/admin/tenants/:tenant/clients/:id'].flatMap((base) =>
       tails.map(([method, tail]) => [`${method} ${base}${tail}`, reason]),
     ),
-  );
+    ['POST /admin/tenants/:tenant/theme/assets', reason],
+    ['DELETE /admin/tenants/:tenant/theme/assets/:assetId', reason],
+  ];
+  return Object.fromEntries(entries);
 }
 
 function template(pattern: string): string {

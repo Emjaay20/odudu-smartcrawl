@@ -5,7 +5,7 @@ description: 'A tenant’s branding, and a client’s over it, saved as a draft 
 
 # Theme: draft, publish, versions, restore, reset
 
-This page covers `GET /theme`, `PUT /theme`, `POST /theme/publish`, `GET /theme/versions`, `POST /theme/versions/{versionId}/restore`, `DELETE /theme`, `GET /clients/:id/theme`, `PUT /clients/:id/theme`, `POST /clients/:id/theme/publish`, `GET /clients/:id/theme/versions`, `POST /clients/:id/theme/versions/{versionId}/restore` and `DELETE /clients/:id/theme`.
+This page covers `GET /theme`, `PUT /theme`, `POST /theme/publish`, `GET /theme/versions`, `POST /theme/versions/{versionId}/restore`, `DELETE /theme`, `GET /clients/:id/theme`, `PUT /clients/:id/theme`, `POST /clients/:id/theme/publish`, `GET /clients/:id/theme/versions`, `POST /clients/:id/theme/versions/{versionId}/restore` and `DELETE /clients/:id/theme`, and the tenant's image routes `POST /theme/assets` and `DELETE /theme/assets/{assetId}`.
 
 **No captured output yet.** The theme API is built and tested against a real
 database, but a transcript of it needs a published theme to render against, and
@@ -42,6 +42,28 @@ one of another tenant, or that does not exist, answers `404`.
   (`about:blank#theme-assets-missing`) when an image it names has been deleted.
 - `DELETE /theme` deletes the draft and archives the published version, so the
   tenant shows the default and a client shows its tenant's theme. History is kept.
+
+- `POST /theme/assets?kind=logo|darkLogo|favicon|background` uploads an image
+  for the tenant's themes (`manage-tenant`). The body is the image itself, not
+  JSON; a declared type other than `image/png`, `image/jpeg`, `image/webp` or
+  `application/octet-stream` is `415`, and none is trusted: the bytes decide.
+  The image is decoded and stored re-encoded, so its metadata and anything
+  appended are gone, and the answer (`201`) carries the stored `id`, `sha256`,
+  `mime`, `width`, `height` and `bytes`. The same picture is one image. The caller,
+  the `kind` (`400`) and the declared length (`413`) are checked before any of
+  the body is read. Limits: `logo`, `darkLogo` and `favicon` 256 KiB and 1024
+  pixels, `background` 1 MiB and 2560 pixels, 8 MiB of stored images a tenant
+  (`409`, `about:blank#asset-cap`). Other refusals: `415`
+  `asset-unsupported-type`, `422` `asset-animated`, `asset-corrupt`,
+  `asset-dimensions`, `asset-timeout`, `413` `asset-too-large`, and `503`
+  `asset-busy` with `Retry-After` while the server decodes as many images as it
+  will. An uploaded image is not served until a published theme names it.
+- `DELETE /theme/assets/{assetId}` answers `204`, or `409`
+  (`about:blank#asset-in-use`) while a draft or published theme of the tenant or
+  of a client names the image, `errors` listing the first 20 by path and
+  version. `404` for an image that does not exist or is another tenant's.
+  Uploads and deletes are audited as `theme.asset_uploaded` and
+  `theme.asset_deleted`, with ids, hash, kind and size and never the bytes.
 
 A publish, a restore and a reset take effect on the next page this process
 renders; another replica shows the previous theme for at most 30 seconds, the

@@ -119,6 +119,55 @@ export const ADMIN_PROBLEM_TYPES: Readonly<Record<string, AdminProblemType>> = {
       'The tenant was disabled, but ending its sessions did not finish. Repeat the request to ' +
       'finish it.',
   },
+  'asset-in-use': {
+    status: 409,
+    summary:
+      'An uploaded image is not deleted while a draft or a published theme of the tenant or ' +
+      'of one of its clients names it. `errors` lists the first 20, each by the theme\u2019s ' +
+      'path and the version that names it; save or publish a theme without the image first.',
+  },
+  'asset-cap': {
+    status: 409,
+    summary:
+      'The tenant\u2019s stored images, the new one included, would pass 8 MiB. Delete an ' +
+      'image that no theme names.',
+  },
+  'asset-unsupported-type': {
+    status: 415,
+    summary:
+      'The upload is not a PNG, a JPEG or a WebP, whatever its `Content-Type` said. An ' +
+      'SVG, a GIF, an AVIF and a document are refused.',
+  },
+  'asset-animated': {
+    status: 422,
+    summary: 'The upload is animated (an APNG, an animated WebP), which no slot accepts.',
+  },
+  'asset-corrupt': {
+    status: 422,
+    summary: 'The upload could not be decoded as the image its bytes claim to be, or is empty.',
+  },
+  'asset-dimensions': {
+    status: 422,
+    summary:
+      'The image is wider or taller than its kind allows, or holds too many pixels to decode. ' +
+      '`detail` gives the limit.',
+  },
+  'asset-timeout': {
+    status: 422,
+    summary: 'Decoding the image ran past the time the server allows, so it was abandoned.',
+  },
+  'asset-too-large': {
+    status: 413,
+    summary:
+      'The image is over its kind\u2019s size, as uploaded or once the server re-encoded it. ' +
+      'A body over the limit is refused with a plain `413` before it is read.',
+  },
+  'asset-busy': {
+    status: 503,
+    summary:
+      'The server is decoding as many images as it will at once, and others are waiting. ' +
+      'Repeat the upload after the `Retry-After` interval.',
+  },
   'theme-assets-missing': {
     status: 409,
     summary:

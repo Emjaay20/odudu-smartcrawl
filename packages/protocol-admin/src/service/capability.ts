@@ -127,14 +127,18 @@ import {
   importTenantRequestSchema,
   importTenantResponseSchema,
   TENANT_IMPORT_BODY_LIMIT,
+  THEME_ASSET_BODY_LIMIT,
   THEME_BODY_LIMIT,
   listThemeVersionsResponseSchema,
+  themeAssetSchema,
+  uploadThemeAssetQuerySchema,
   publishThemeResponseSchema,
   putThemeRequestSchema,
   themeViewSchema,
 } from '@odudu/contracts/admin';
 import { MANAGE_TENANTS, type TenantCapability } from '@odudu/domain-tenant';
 import { z } from 'zod';
+import { uploadLimitFor } from '#/service/theme-assets';
 
 // `manage-tenants` reaches every tenant and is provisioned only in the
 // system tenant (@odudu/domain-tenant's admin-capabilities.ts), so it is
@@ -170,6 +174,14 @@ export interface AdminRoute {
   readonly bodySchema?: z.ZodType;
   // Fastify's per-route body limit, in bytes — omitted, the server's own.
   readonly bodyLimit?: number;
+  // A body that is raw bytes, not JSON, read only by this route: the router
+  // authenticates the caller and checks the limit `limitFor` names for this
+  // query before it reads any of it, and a declared type outside
+  // `contentTypes` is refused. Replaces `bodySchema`.
+  readonly rawBody?: {
+    readonly contentTypes: readonly string[];
+    readonly limitFor: (query: unknown) => number | null;
+  };
   // Extra prose `/admin/openapi.json` carries beside the generated
   // capability summary — for a caveat a generated client's user needs
   // without reading this repository's own docs.
@@ -854,6 +866,48 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
       'committed and in batches, as `PATCH /admin/tenants/{tenant}` does.',
   },
   ...themeRoutes('/admin/tenants/:tenant', 'manage-tenant', 'tenant'),
+  {
+    method: 'POST',
+    pattern: '/admin/tenants/:tenant/theme/assets',
+    capability: 'manage-tenant',
+    responseSchema: themeAssetSchema,
+    successStatus: 201,
+    querystringSchema: uploadThemeAssetQuerySchema,
+    bodyLimit: THEME_ASSET_BODY_LIMIT,
+    rawBody: {
+      contentTypes: ['image/png', 'image/jpeg', 'image/webp', 'application/octet-stream'],
+      limitFor: uploadLimitFor,
+    },
+    description:
+      'Uploads an image for the tenant\u2019s themes: the request body is the image itself, ' +
+      'not JSON, and `kind` says which slot it is for. A declared `Content-Type` other than ' +
+      '`image/png`, `image/jpeg`, `image/webp` or `application/octet-stream` is refused with ' +
+      '`415`, and none of them is trusted: PNG, JPEG and WebP are told by the bytes. The ' +
+      'image is decoded and stored re-encoded, which drops its metadata and anything ' +
+      'appended, so `bytes` and `sha256` are the stored ones; the same picture uploaded ' +
+      'twice is one image. An uploaded image is not served until a published theme names ' +
+      'it. The caller is authenticated and the size checked before the body is read: `413` ' +
+      'for a body over the kind\u2019s limit, `400` for a `kind` that is missing or unknown. ' +
+      'Refused with `415` (`about:blank#asset-unsupported-type`) for bytes that are not one ' +
+      'of the three, `422` (`about:blank#asset-animated`, `asset-corrupt`, ' +
+      '`asset-dimensions`, `asset-timeout`), `413` (`about:blank#asset-too-large`) for an ' +
+      'image whose stored size is over the limit, `409` (`about:blank#asset-cap`) when the ' +
+      'tenant\u2019s stored images would pass 8 MiB, and `503` (`about:blank#asset-busy`) ' +
+      'with `Retry-After` when the server is decoding as many images as it will at once.',
+  },
+  {
+    method: 'DELETE',
+    pattern: '/admin/tenants/:tenant/theme/assets/:assetId',
+    capability: 'manage-tenant',
+    responseSchema: z.void(),
+    successStatus: 204,
+    description:
+      'Deletes an uploaded image. Refused with `409` (`about:blank#asset-in-use`) while a ' +
+      'draft or a published theme of the tenant or of any of its clients names it, `errors` ' +
+      'listing the first 20 by the theme\u2019s path and version; an archived version does ' +
+      'not hold it, so restoring one that names a deleted image is refused. `404` for an ' +
+      'image that does not exist or is another tenant\u2019s.',
+  },
   // No `view-clients`: client metadata is configuration rather than a
   // population to browse, so every route below requires `manage-clients`.
   {

@@ -33,6 +33,7 @@ describe('paramsSchemaFor', () => {
     );
 
     expect([...names].sort()).toEqual([
+      'assetId',
       'childId',
       'clientId',
       'credentialId',

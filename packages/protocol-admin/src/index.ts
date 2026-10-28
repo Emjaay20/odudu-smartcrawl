@@ -5,6 +5,7 @@ import { auditRepository, type AdminMutationAction } from '@odudu/domain-audit';
 import { effectiveRoles } from '@odudu/domain-authz';
 import { hashPassword, subjectIsEnabled, subjectRepository } from '@odudu/domain-identity';
 import { ADMIN_CLIENT_ID, clientRepository } from '@odudu/domain-tenant';
+import { type inspectImage } from '@odudu/domain-theme';
 import {
   type ClaimMapperRegistry,
   type Clock,
@@ -31,6 +32,7 @@ import { type Audit as ScopeAudit } from '#/usecase/scopes';
 import { type Audit as ScopeMapperAudit } from '#/usecase/scope-mappers';
 import { type Audit as SettingsAudit } from '#/usecase/settings';
 import { type Audit as ThemeAudit } from '#/usecase/theme';
+import { type Audit as ThemeAssetAudit } from '#/usecase/theme-assets';
 import { type Audit as TenantExportAudit } from '#/usecase/tenant-export';
 import { type Audit as TenantImportAudit } from '#/usecase/tenant-import';
 import { type Audit as SmtpAudit } from '#/usecase/smtp';
@@ -160,6 +162,7 @@ import {
   type SettingsRouteDeps,
 } from '#/view/routes/settings';
 import { themeHandlers, type ThemeRouteDeps } from '#/view/routes/theme';
+import { themeAssetHandlers, type ThemeAssetRouteDeps } from '#/view/routes/theme-assets';
 import { exportTenantHandler, type TenantExportRouteDeps } from '#/view/routes/tenant-export';
 import { importTenantHandler, type TenantImportRouteDeps } from '#/view/routes/tenant-import';
 import {
@@ -296,6 +299,9 @@ export interface AdminRoutesDeps {
   // catalogue its page is filled from, which the packages that render
   // pages own.
   isThemeMessageKey: (kind: PageKind, key: string) => boolean;
+  // The image inspector an upload runs; the bounded process-wide one when
+  // omitted, which is what production uses. Tests give one that is busy.
+  inspectImage?: typeof inspectImage;
   // How long an audit read may run before it is refused as too broad;
   // `AUDIT_READ_TIMEOUT_MS` unless a test shortens it.
   auditReadTimeoutMs?: number;
@@ -382,6 +388,7 @@ function buildAdminRoutes(
     const smtpAudit: SmtpAudit = recordAudit;
     const settingsAudit: SettingsAudit = recordAudit;
     const themeAudit: ThemeAudit = recordAudit;
+    const themeAssetAudit: ThemeAssetAudit = recordAudit;
     const tenantExportAudit: TenantExportAudit = recordAudit;
     const tenantImportAudit: TenantImportAudit = recordAudit;
     // Same call `authzDeps.effectiveRoles` makes below, scoped to whichever
@@ -497,6 +504,12 @@ function buildAdminRoutes(
     };
     const tenantTheme = themeHandlers(themeDeps, 'tenant');
     const clientTheme = themeHandlers(themeDeps, 'client');
+    const assetDeps: ThemeAssetRouteDeps = {
+      database: deps.database.db,
+      audit: themeAssetAudit,
+      ...(deps.inspectImage === undefined ? {} : { inspect: deps.inspectImage }),
+    };
+    const themeAssets = themeAssetHandlers(assetDeps);
     const clientsDeps: ClientsRouteDeps = {
       database: deps.database.db,
       cursorKey: deps.cursorKey,
@@ -660,6 +673,8 @@ function buildAdminRoutes(
       'PUT /admin/tenants/:tenant/theme': tenantTheme.put,
       'DELETE /admin/tenants/:tenant/theme': tenantTheme.reset,
       'POST /admin/tenants/:tenant/theme/publish': tenantTheme.publish,
+      'POST /admin/tenants/:tenant/theme/assets': themeAssets.upload,
+      'DELETE /admin/tenants/:tenant/theme/assets/:assetId': themeAssets.remove,
       'GET /admin/tenants/:tenant/theme/versions': tenantTheme.versions,
       'POST /admin/tenants/:tenant/theme/versions/:versionId/restore': tenantTheme.restore,
       'GET /admin/tenants/:tenant/clients/:id/theme': clientTheme.read,

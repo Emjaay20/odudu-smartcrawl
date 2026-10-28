@@ -150,6 +150,8 @@ shown once — a registration token, a client secret, a one-time password.
 | `PUT`    | `/admin/tenants/{tenant}/theme`                                         | Save a tenant's draft theme                |
 | `DELETE` | `/admin/tenants/{tenant}/theme`                                         | Reset a tenant's theme to the default      |
 | `POST`   | `/admin/tenants/{tenant}/theme/publish`                                 | Publish a tenant's draft theme             |
+| `POST`   | `/admin/tenants/{tenant}/theme/assets`                                  | Upload an image for a tenant's themes      |
+| `DELETE` | `/admin/tenants/{tenant}/theme/assets/:assetId`                         | Delete an uploaded image                   |
 | `GET`    | `/admin/tenants/{tenant}/theme/versions`                                | List a tenant's theme versions             |
 | `POST`   | `/admin/tenants/{tenant}/theme/versions/:versionId/restore`             | Restore a tenant's earlier theme           |
 | `GET`    | `/admin/tenants/{tenant}/clients/:id/theme`                             | Read a client's draft and published theme  |
