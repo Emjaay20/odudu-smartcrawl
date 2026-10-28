@@ -251,3 +251,99 @@ describe('publishedThemeRepository.forStylesheet', () => {
     });
   });
 });
+
+describe('assetRepository.publishedMime', () => {
+  it('answers what getPublished would, without bytes', async () => {
+    const tenantId = await fresh();
+    const logo = await withTenant(app.db, tenantId, (tx) => store(tx, tenantId, 'mime-logo'));
+    const mime = () =>
+      withTenant(app.db, tenantId, (tx) =>
+        assetRepository(tx).publishedMime(tenantId, logo.sha256),
+      );
+    expect(await mime()).toBeNull();
+    await publish({ tenantId, clientId: null }, body('t', logo.id));
+    expect(await mime()).toBe('image/webp');
+    await publish({ tenantId, clientId: null }, body('t2'));
+    expect(await mime()).toBeNull();
+  });
+
+  it('finds nothing for a foreign tenant id', async () => {
+    await expectCrossTenantMethodProbe(app.db, {
+      seed: async (tx, tenantId) => {
+        await seedTenant(tx, tenantId);
+        const logo = await store(tx, tenantId, `mime-${tenantId}`);
+        const themes = themeRepository(tx);
+        await themes.saveDraft({ tenantId, clientId: null }, body('x', logo.id), null);
+        await themes.publish({ tenantId, clientId: null });
+        return { tenantId, sha256: logo.sha256 };
+      },
+      verifySeeded: async (tx, seeded) => {
+        expect(await assetRepository(tx).publishedMime(seeded.tenantId, seeded.sha256)).toBe(
+          'image/webp',
+        );
+      },
+      attempt: (tx, seeded) => assetRepository(tx).publishedMime(seeded.tenantId, seeded.sha256),
+      expectBlocked: (result) => {
+        expect(result).toBeNull();
+      },
+    });
+  });
+});
+
+describe('publishedThemeRepository.identity', () => {
+  it('names the published versions and the client row, and no more', async () => {
+    const tenantId = await fresh();
+    const clientRow = await withTenant(app.db, tenantId, (tx) => seedClient(tx, tenantId));
+    await publish({ tenantId, clientId: null }, body('tenant'));
+    await publish({ tenantId, clientId: clientRow }, body('client'));
+    const read = (client: string | null) =>
+      withTenant(app.db, tenantId, (tx) => publishedThemeRepository(tx).identity(tenantId, client));
+    const layers = await withTenant(app.db, tenantId, (tx) =>
+      publishedThemeRepository(tx).forStylesheet(tenantId, clientRow),
+    );
+    const both = await read(clientRow);
+    expect(both.tenant?.versionId).toBe(layers.tenant?.versionId);
+    expect(both.client).toEqual({
+      versionId: layers.client?.versionId,
+      version: 1,
+      clientId: clientRow,
+    });
+    expect((await read(null)).client).toBeNull();
+    expect(Object.keys(both.tenant ?? {}).sort()).toEqual(['version', 'versionId']);
+  });
+
+  it("selects no client for another tenant's client row, and no draft", async () => {
+    const a = await fresh();
+    const b = await fresh();
+    const foreign = await withTenant(app.db, b, (tx) => seedClient(tx, b));
+    await publish({ tenantId: b, clientId: foreign }, body('b-client'));
+    await withTenant(app.db, a, (tx) =>
+      themeRepository(tx).saveDraft({ tenantId: a, clientId: null }, body('draft'), null),
+    );
+    const identity = await withTenant(app.db, a, (tx) =>
+      publishedThemeRepository(tx).identity(a, foreign),
+    );
+    expect(identity).toEqual({ tenant: null, client: null });
+  });
+
+  it('finds nothing for a foreign tenant id', async () => {
+    await expectCrossTenantMethodProbe(app.db, {
+      seed: async (tx, tenantId) => {
+        await seedTenant(tx, tenantId);
+        const themes = themeRepository(tx);
+        await themes.saveDraft({ tenantId, clientId: null }, body('z'), null);
+        await themes.publish({ tenantId, clientId: null });
+        return { tenantId };
+      },
+      verifySeeded: async (tx, seeded) => {
+        expect(
+          (await publishedThemeRepository(tx).identity(seeded.tenantId, null)).tenant,
+        ).not.toBeNull();
+      },
+      attempt: (tx, seeded) => publishedThemeRepository(tx).identity(seeded.tenantId, null),
+      expectBlocked: (result) => {
+        expect(result).toEqual({ tenant: null, client: null });
+      },
+    });
+  });
+});

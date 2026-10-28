@@ -17,7 +17,7 @@ import {
 } from '@odudu/account';
 import { type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
 import { createBranding, type Branding } from '#/branding';
-import { brandRoutes } from '#/brand-routes';
+import { brandRoutes, frameworkError } from '#/brand-routes';
 import { requiredActionRepository } from '@odudu/authn-flows';
 import { consoleGateway } from '@odudu/console-gateway';
 import { instrumentRoutes } from '@odudu/instrument';
@@ -353,6 +353,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     loggerInstance: deps.logger,
     genReqId: () => newId(),
     requestIdHeader: 'x-request-id',
+    frameworkErrors: frameworkError,
     trustProxy: deps.trustProxy ?? false,
   });
 

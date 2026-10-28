@@ -26,6 +26,7 @@ let container: TestDatabase;
 let owner: DatabaseHandle;
 let appDb: DatabaseHandle;
 let app: FastifyInstance;
+const queries: string[] = [];
 
 const KEK = Buffer.alloc(32, 7);
 const BASE = 'https://id.example.test';
@@ -52,7 +53,12 @@ beforeAll(async () => {
   owner = createDatabase(container.adminUrl);
   await runMigrations(owner.db, MIGRATIONS_DIR);
   const appUrl = await createAppRole(container.adminUrl);
-  appDb = createDatabase(appUrl, { max: 8 });
+  appDb = createDatabase(appUrl, {
+    max: 8,
+    onQueryForTests: (query) => {
+      queries.push(query);
+    },
+  });
   process.env.ODUDU_DATABASE_URL = container.adminUrl;
   process.env.ODUDU_APP_DATABASE_URL = appUrl;
   process.env.ODUDU_KEK = KEK.toString('base64');
@@ -293,10 +299,43 @@ describe('a published image', () => {
     }
   });
 
-  it('is refused by the router, before any read, when a segment is far too long', async () => {
-    const { w } = await brandedTenant();
-    const res = await app.inject({ url: `/tenants/${w.name}/brand/${'a'.repeat(5000)}.png` });
+  it('answers every malformed shape with the same bare 404, a long segment included', async () => {
+    const { w, image } = await brandedTenant();
+    const missing = await app.inject({ url: `/tenants/${w.name}/brand/${'0'.repeat(64)}.png` });
+    const shapes = [
+      `/tenants/${w.name}/brand/${image.toUpperCase()}.png`,
+      `/tenants/${w.name}/brand/${image}.svg`,
+      `/tenants/${w.name}/brand/${'a'.repeat(150)}.png`,
+      `/tenants/${w.name}/brand/${'a'.repeat(5000)}.png`,
+      `/tenants/${w.name}/brand/c/${'a'.repeat(150)}/${image}.css`,
+      `/tenants/${w.name}/brand/c/${'a'.repeat(5000)}/${image}.css`,
+      `/tenants/${'t'.repeat(150)}/brand/${image}.png`,
+      `/tenants/${'t'.repeat(5000)}/brand/${image}.png`,
+    ];
+    for (const url of shapes) {
+      const res = await app.inject({ url });
+      expect(res.statusCode, url.slice(0, 80)).toBe(404);
+      expect(res.rawPayload.toString(), url.slice(0, 80)).toBe(missing.rawPayload.toString());
+      expect(stable(res.headers), url.slice(0, 80)).toEqual(stable(missing.headers));
+    }
+  });
+
+  it('leaves the router answer for a long segment elsewhere under /tenants as it was', async () => {
+    const res = await app.inject({ url: `/tenants/${'t'.repeat(150)}/login-actions/registration` });
     expect(res.statusCode).toBe(414);
+  });
+
+  it('decides a conditional request without reading the bytes', async () => {
+    const { imagePath, image } = await brandedTenant();
+    queries.length = 0;
+    const res = await app.inject({ url: imagePath, headers: { 'if-none-match': `"${image}"` } });
+    expect(res.statusCode).toBe(304);
+    const reads = queries.filter((q) => q.includes('theme_assets'));
+    expect(reads).toHaveLength(1);
+    expect(reads[0]).not.toContain('"bytes"');
+    queries.length = 0;
+    expect((await app.inject({ url: imagePath })).statusCode).toBe(200);
+    expect(queries.filter((q) => q.includes('"bytes"'))).toHaveLength(1);
   });
 
   it('is served to concurrent requests, each the same bytes', async () => {
@@ -410,5 +449,38 @@ describe('what a themed page links', () => {
       });
       expect(res.statusCode, client).toBe(404);
     }
+  });
+
+  it('is no alias of the tenant-form URL under a client with no layer', async () => {
+    const { w } = await brandedTenant();
+    const page = await authorize(w.name, 'portal');
+    const sheet = /href="(\/tenants\/[^"]+\.css)"/u.exec(page.body)?.[1] ?? '';
+    expect(sheet).not.toContain('/c/');
+    const hash = /([0-9a-f]{64})\.css$/u.exec(sheet)?.[1] ?? '';
+    expect((await app.inject({ url: sheet })).statusCode).toBe(200);
+    const themelessClient = await w.clientRow('portal');
+    const foreign = await brandedTenant(Buffer.concat([PNG, Buffer.from('other')]));
+    const foreignClient = await foreign.w.clientRow('portal');
+    for (const client of [themelessClient, foreignClient, newId()]) {
+      const res = await app.inject({ url: `/tenants/${w.name}/brand/c/${client}/${hash}.css` });
+      expect(res.statusCode, client).toBe(404);
+    }
+  });
+
+  it('answers random hashes from one small read each, building once at most', async () => {
+    const { w } = await brandedTenant();
+    const bodies = () => queries.filter((q) => q.includes('"body"')).length;
+    queries.length = 0;
+    for (let n = 0; n < 60; n += 1) {
+      const hash = n.toString(16).padStart(64, '0');
+      expect((await app.inject({ url: `/tenants/${w.name}/brand/${hash}.css` })).statusCode).toBe(
+        404,
+      );
+    }
+    expect(bodies()).toBeLessThanOrEqual(1);
+    const identities = queries.filter(
+      (q) => q.includes('"theme_versions"') && !q.includes('"body"'),
+    );
+    expect(identities.length).toBeGreaterThanOrEqual(60);
   });
 });

@@ -3,7 +3,7 @@ export { themeVersionAssets } from '#/schema/theme-version-assets';
 export { themeAssets } from '#/schema/theme-assets';
 export { themeRepository, NoDraftError, VersionNotFoundError } from '#/repository/themes';
 export { assetRepository, type NewAsset } from '#/repository/assets';
-export { publishedThemeRepository } from '#/repository/published-themes';
+export { publishedThemeRepository, type PublishedIdentity } from '#/repository/published-themes';
 export {
   THEME_VERSION_LIMIT,
   type AssetRecord,
@@ -113,8 +113,13 @@ export {
   type UploadRefusalCode,
 } from '#/usecase/upload-asset';
 export {
+  BRAND_MEMO,
+  MAX_BRAND_BUILDS_IN_FLIGHT,
+  createBrandMemo,
   serveBrand,
-  type BrandContent,
+  type BrandAnswer,
+  type BrandMemo,
   type BrandRequest,
+  type BuiltSheet,
   type ServeBrandDeps,
 } from '#/usecase/serve-brand';
