@@ -107,10 +107,24 @@ function resolved(schema: Schema | undefined): Schema {
 
 // The field paths a reader should find for a body, walked here from the
 // document and not taken from the generator, which is what is under test.
-function fieldPaths(schema: Schema | undefined, path: string, depth: number): string[] {
+// A shape a component names is walked where it first occurs in the body, and
+// only its own field is expected where it occurs again.
+function fieldPaths(
+  schema: Schema | undefined,
+  path: string,
+  depth: number,
+  seen = new Set<string>(),
+): string[] {
   const found = resolved(schema);
   const variants = [...((found.anyOf as Schema[] | undefined) ?? [])];
   const others = variants.filter((variant) => variant.type !== 'null');
+  const named = [schema, ...((schema?.anyOf as Schema[] | undefined) ?? [])]
+    .map((node) => node?.$ref)
+    .find((ref): ref is string => typeof ref === 'string');
+  if (named !== undefined && path !== '') {
+    if (seen.has(named)) return [path];
+    seen.add(named);
+  }
   const inner =
     others.length === 1 && others.length < variants.length ? resolved(others[0]) : found;
   const properties = inner.properties as Record<string, Schema> | undefined;
@@ -119,10 +133,10 @@ function fieldPaths(schema: Schema | undefined, path: string, depth: number): st
   if (depth >= 5) return paths;
   if (properties !== undefined) {
     for (const [name, child] of Object.entries(properties)) {
-      paths.push(...fieldPaths(child, path === '' ? name : `${path}.${name}`, depth + 1));
+      paths.push(...fieldPaths(child, path === '' ? name : `${path}.${name}`, depth + 1, seen));
     }
   } else if (items !== undefined && resolved(items).properties !== undefined) {
-    paths.push(...fieldPaths(items, `${path}[]`, depth + 1));
+    paths.push(...fieldPaths(items, `${path}[]`, depth + 1, seen));
   }
   return paths;
 }

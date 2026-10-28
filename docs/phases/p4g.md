@@ -1532,7 +1532,7 @@ error and config tables from `@odudu/kernel`, the audit vocabulary from
 | `subject-sessions`    | 31        | 31     |
 | `subject-sign-in`     | 12        | 17     |
 | `tenants`             | 175       | 202    |
-| `theme`               | 492       | 492    |
+| `theme`               | 219       | 219    |
 | `whoami`              | 4         | 4      |
 
 - The `generate.test.ts` comparison of the files on disk with a fresh generation guards a stale local tree; in CI
