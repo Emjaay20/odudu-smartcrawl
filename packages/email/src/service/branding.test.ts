@@ -105,12 +105,26 @@ describe('a themed mail', () => {
   });
 
   it('shows the dark logo only where the client honours prefers-color-scheme', () => {
-    const style = /<style>([\s\S]*?)<\/style>/u.exec(html)?.[1] ?? '';
-    const dark = /<img class="m-logo-dark" src="[^"]*bb\.png"[^>]*style="[^"]*display:none/u;
-    expect(html).toMatch(dark);
-    expect(style).toMatch(/\.m-logo-dark\{[^}]*display:block!important/u);
-    expect(style).toMatch(/\.m-logo-light\{[^}]*display:none!important/u);
-    expect(html).toMatch(/<img class="m-logo-light" src="[^"]*aa\.png"/u);
+    const dark = /<img class="m-logo-dark" src="[^"]*bb\.png"[^>]*style="([^"]*)"/u;
+    const light = /<img class="m-logo-light" src="[^"]*aa\.png"[^>]*style="([^"]*)"/u;
+    const darkStyle = dark.exec(html)?.[1] ?? '';
+    const lightStyle = light.exec(html)?.[1] ?? '';
+    const rules = (name: string): string => {
+      const media = /@media \(prefers-color-scheme:dark\)\{([\s\S]*)\}<\/style>/u.exec(html);
+      return new RegExp(`\\.${name}\\{([^}]*)\\}`, 'u').exec(media?.[1] ?? '')?.[1] ?? '';
+    };
+    // No media support: exactly the light logo is shown.
+    expect(lightStyle).toContain('display:block');
+    expect(darkStyle).toContain('display:none');
+    // Dark mode: the inline declarations are overridden and nothing else on
+    // the dark logo is left at zero size or clipped.
+    expect(rules('m-logo-dark')).toContain('display:block!important');
+    expect(rules('m-logo-light')).toContain('display:none!important');
+    for (const declaration of [darkStyle, rules('m-logo-dark')]) {
+      expect(declaration).not.toMatch(
+        /max-height:\s*0|max-width:\s*0|overflow:\s*hidden|(^|;)(width|height):\s*0/u,
+      );
+    }
   });
 
   it('draws no dark logo when the theme has none', () => {

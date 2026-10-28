@@ -253,4 +253,49 @@ describe('a mail queued under a published theme', () => {
     expect(res.statusCode, res.body).toBe(202);
     expect((await drain()).sent[0]?.html).toContain('#fff4e0');
   });
+
+  it('queues reset and registration mail unthemed when the theme cannot be had', async () => {
+    const broken = buildApp({
+      database: appDb,
+      ownerDatabase: owner,
+      kek: KEK,
+      logger: pino({ level: 'silent' }),
+      tls: false,
+      publicBaseUrl: BASE,
+      branding: { ...branding, resolveMailBranding: () => Promise.reject(new Error('down')) },
+      throttle: { limit: 100_000, windowSeconds: 60 },
+    });
+    await broken.ready();
+    try {
+      const w = await world();
+      await owner.db
+        .update(tenants)
+        .set({ verifyEmail: true, registrationAllowed: true })
+        .where(eq(tenants.id, w.tenantId));
+      const form = { 'content-type': 'application/x-www-form-urlencoded' };
+      const reset = await broken.inject({
+        method: 'POST',
+        url: `/tenants/${w.name}/login-actions/reset-password`,
+        payload: new URLSearchParams({ email: EMAIL }).toString(),
+        headers: form,
+      });
+      const registered = await broken.inject({
+        method: 'POST',
+        url: `/tenants/${w.name}/login-actions/registration`,
+        payload: new URLSearchParams({
+          username: 'grace',
+          email: 'grace@example.test',
+          password: 'correct horse battery staple',
+          password_confirm: 'correct horse battery staple',
+        }).toString(),
+        headers: form,
+      });
+      expect([reset.statusCode, registered.statusCode]).toEqual([200, 201]);
+      const sent = (await drain()).sent;
+      expect(sent).toHaveLength(2);
+      for (const message of sent) expect(message.html).toContain('cid:odudu-mark');
+    } finally {
+      await broken.close();
+    }
+  });
 });

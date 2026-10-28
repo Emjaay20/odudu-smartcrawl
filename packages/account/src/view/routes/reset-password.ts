@@ -37,9 +37,8 @@ export interface ResetPasswordRouteDeps extends BrandedLocaleDeps {
   // The clock a mail's send time comes from.
   readonly now: () => Date;
   // Reads the tenant's theme for the mail this route queues, as it does for
-  // the page. The composition root passes it and its wiring test asks every
-  // route that queues mail; absent, the mail is unthemed.
-  readonly resolveMailBranding?: MailBrandingResolver | undefined;
+  // the page: a route cannot queue a mail without being handed it.
+  readonly resolveMailBranding: MailBrandingResolver;
   readonly findByEmail: (
     tx: TenantScopedDatabase,
     email: string,

@@ -186,4 +186,26 @@ describe('resolveMailBranding', () => {
     expect(found?.logo).toBeNull();
     expect(found?.darkLogo).toBeNull();
   });
+
+  it('answers null and logs once when the read fails, and does not cache the failure', async () => {
+    const logged: string[] = [];
+    const cache = createBrandingCache<PageBranding | null>({ now: () => 0 });
+    let fail = true;
+    const deps = {
+      readPublished: () => Promise.resolve({ tenant: null, client: null }),
+      origin: ORIGIN,
+      now: () => 0,
+      cache,
+      log: ({ reason }: { reason: string }) => logged.push(reason),
+      reportFallback: () => undefined,
+    };
+    const mail = resolveMailBranding(deps, () =>
+      fail ? Promise.reject(new Error('boom')) : Promise.resolve({ tenant: themed, client: null }),
+    );
+    expect(await mail('tx', SCOPE)).toBeNull();
+    expect(await mail('tx', SCOPE)).toBeNull();
+    expect(logged).toHaveLength(1);
+    fail = false;
+    expect((await mail('tx', SCOPE))?.logo?.alt).toBe('Acme');
+  });
 });

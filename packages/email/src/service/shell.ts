@@ -135,17 +135,16 @@ function rawLink(c: MailColours, start: string, locale: PageLocale, href: string
 }
 
 function image(c: MailColours, logo: MailLogo, variant: 'light' | 'dark' | null): string {
-  const hidden =
-    variant === 'dark'
-      ? 'display:none;max-height:0;overflow:hidden;mso-hide:all;'
-      : 'display:block;';
+  const hidden = variant === 'dark' ? 'display:none;mso-hide:all;' : 'display:block;';
   const klass = variant === null ? '' : ` class="m-logo-${variant}"`;
   const size = `width:${String(logo.width)}px;height:${String(logo.height)}px`;
   return `<img${klass} src="${escapeHtml(logo.src)}" width="${String(logo.width)}" height="${String(logo.height)}" alt="${escapeHtml(logo.alt)}" style="${hidden}${size};border:0;font:600 14px/${String(logo.height)}px ${SANS};color:${c.ink}">`;
 }
 
 // A logo that fails these checks is not drawn, whatever the theme says: the
-// shell is where a stored address first becomes markup.
+// shell is where a stored address first becomes markup. That it is on this
+// server's origin is the resolver's invariant (it writes the address as the
+// public origin plus a hashed brand path); the shell checks only the shape.
 function usable(logo: MailLogo | null | undefined): MailLogo | null {
   if (logo === null || logo === undefined || mailLogoProblem(logo) !== null) return null;
   try {

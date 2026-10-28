@@ -75,4 +75,13 @@ describe('mailContext', () => {
     );
     expect(context.tenantDefaultLocale).toBeNull();
   });
+
+  it('is unthemed, and still reads the language, when the resolver rejects', async () => {
+    const t = await tenant('fr');
+    const resolve: MailBrandingResolver = () => Promise.reject(new Error('theme store down'));
+    const context = await withTenant(app.db, t.id, (tx) =>
+      mailContext(tx, resolve, { tenantId: t.id, tenantName: t.name }),
+    );
+    expect(context).toEqual({ branding: null, tenantDefaultLocale: 'fr' });
+  });
 });

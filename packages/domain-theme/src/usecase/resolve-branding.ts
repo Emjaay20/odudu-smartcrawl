@@ -78,8 +78,9 @@ export type ReadTenantLayer<Tx> = (tx: Tx, tenantId: string) => Promise<Publishe
 // mail is queued in rather than a second connection, so a burst of mail
 // cannot hold every pooled connection while each waits for another. A hit in
 // the page cache costs nothing; a miss is one statement and fills the cache
-// for the pages too. A failed read propagates: it has already aborted the
-// transaction it ran in.
+// for the pages too. It never rejects: a theme that cannot be read or built
+// gives an unthemed mail, and a read that fails must be made in a savepoint by
+// the caller, since a failed statement would abort the transaction otherwise.
 export function resolveMailBranding<Tx>(
   deps: ResolveBrandingDeps,
   read: ReadTenantLayer<Tx>,
@@ -181,13 +182,18 @@ function createResolvers(deps: ResolveBrandingDeps): {
     const held = deps.cache.get(key);
     if (held !== undefined) return held.value?.mail ?? null;
     const generation = deps.cache.generation(scope.tenantId);
-    const layers = await read(scope.tenantId);
-    const built = buildBranding({
-      tenantName: scope.tenantName,
-      origin: deps.origin,
-      layers: layers.tenant === null ? [] : [{ name: 'tenant', layer: layers.tenant }],
-    });
-    return settle(built, key, scope.tenantId, generation)?.mail ?? null;
+    try {
+      const layers = await read(scope.tenantId);
+      const built = buildBranding({
+        tenantName: scope.tenantName,
+        origin: deps.origin,
+        layers: layers.tenant === null ? [] : [{ name: 'tenant', layer: layers.tenant }],
+      });
+      return settle(built, key, scope.tenantId, generation)?.mail ?? null;
+    } catch (error) {
+      note(key, `the theme could not be read for a mail: ${describe(error)}`);
+      return null;
+    }
   }
 
   const page: BrandingResolver = (input) => {

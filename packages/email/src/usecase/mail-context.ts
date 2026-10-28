@@ -20,6 +20,21 @@ export interface MailContext {
   readonly tenantDefaultLocale: string | null;
 }
 
+// A theme that cannot be had never stops the mail it would have dressed: the
+// resolver is told to read in a savepoint, and what it still throws leaves
+// the mail unthemed.
+async function resolved(
+  resolve: MailBrandingResolver,
+  tx: TenantScopedDatabase,
+  scope: MailTenantScope,
+): Promise<MailBranding | null> {
+  try {
+    return await resolve(tx, scope);
+  } catch {
+    return null;
+  }
+}
+
 // What a mail needs from its tenant beyond the text, decided once when the
 // mail is queued: the outbox row keeps the rendered result, so a theme
 // published after this moment does not reach a mail already queued. Both
@@ -30,7 +45,7 @@ export async function mailContext(
   resolve: MailBrandingResolver | undefined,
   scope: MailTenantScope,
 ): Promise<MailContext> {
-  const branding = resolve === undefined ? null : await resolve(tx, scope);
+  const branding = resolve === undefined ? null : await resolved(resolve, tx, scope);
   const [row] = await tx
     .select({ defaultLocale: tenants.defaultLocale })
     .from(tenants)

@@ -1,4 +1,9 @@
-import { withTenant, type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
+import {
+  withSavepoint,
+  withTenant,
+  type DatabaseHandle,
+  type TenantScopedDatabase,
+} from '@odudu/db';
 import {
   createBrandingCache,
   publishedThemeRepository,
@@ -59,7 +64,7 @@ export function createBranding(deps: {
   return {
     resolveBranding: resolveBranding(themeDeps),
     resolveMailBranding: resolveMailBranding(themeDeps, (tx: TenantScopedDatabase, tenantId) =>
-      publishedThemeRepository(tx).forRender(tenantId, null),
+      withSavepoint(tx, (inner) => publishedThemeRepository(inner).forRender(tenantId, null)),
     ),
     isClientOfTenant: (tenantId, clientId) =>
       withTenant(

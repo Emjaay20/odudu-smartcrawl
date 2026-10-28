@@ -44,7 +44,11 @@ export interface AccountRecoveryInput {
 
 export interface AccountRecoveryDeps {
   readonly audit: Audit;
-  /** Themes the notice mail the way the tenant's pages are; absent, it is unthemed. */
+  /**
+   * Themes the notice mail the way the tenant's pages are. Optional here so the
+   * usecase runs without a theme store; its route deps require it, so no route
+   * queues a notice without one.
+   */
   readonly resolveMailBranding?: MailBrandingResolver | undefined;
 }
 

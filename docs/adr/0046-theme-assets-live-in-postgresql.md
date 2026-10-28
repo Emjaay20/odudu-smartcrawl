@@ -141,3 +141,11 @@ URL a page uses, not an inline (CID) attachment.
   which no tenant theme replaces, stays an inline attachment and is drawn
   when the theme sets no logo.
 - Mail is themed from the tenant's layer only: no flow gains a stored client.
+- The markup is rendered when the mail is queued and stored as it is; the
+  sender does not revalidate it. What reaches the row has already passed the
+  shell's checks (address shape, whole-number sizes, `#rrggbb`, escaping), so
+  altering it needs a write to `email_outbox`, which is not a threat this
+  design adds to.
+- A theme that cannot be read or built never stops a mail: the read runs in a
+  savepoint (`withSavepoint`, two extra statements on a cache miss only), the
+  failure is logged once, and the mail goes out unthemed.
