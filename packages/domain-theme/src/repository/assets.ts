@@ -4,7 +4,7 @@ import { and, eq, inArray, sql } from 'drizzle-orm';
 import { themeAssets } from '#/schema/theme-assets';
 import { themeVersionAssets } from '#/schema/theme-version-assets';
 import { themeVersions } from '#/schema/theme-versions';
-import { type AssetRecord, type AssetRef } from '#/service/theme-body';
+import { type AssetRecord, type AssetRef, type ThemeState } from '#/service/theme-body';
 
 export interface NewAsset {
   tenantId: string;
@@ -15,6 +15,14 @@ export interface NewAsset {
   bytes: Buffer;
   // What the tenant's stored images, this one included, may total.
   tenantCapBytes: number;
+}
+
+export interface AssetReference {
+  versionId: string;
+  version: number;
+  state: ThemeState;
+  // The client's row id; null for the tenant's own theme.
+  clientId: string | null;
 }
 
 const REF = {
@@ -165,6 +173,44 @@ export function assetRepository(tx: TenantScopedDatabase) {
           ),
         );
       return row?.count ?? 0;
+    },
+
+    // The draft and published versions that name the asset, which scope each
+    // belongs to, at most `limit` of them: a list to show a person, where
+    // `referencedBy` only counts. A btree lookup through
+    // theme_version_assets_by_asset, however many versions name it.
+    async references(tenantId: string, assetId: string, limit: number): Promise<AssetReference[]> {
+      return tx
+        .select({
+          versionId: themeVersions.id,
+          version: themeVersions.version,
+          state: themeVersions.state,
+          clientId: themeVersions.clientId,
+        })
+        .from(themeVersionAssets)
+        .innerJoin(themeVersions, eq(themeVersions.id, themeVersionAssets.versionId))
+        .where(
+          and(
+            eq(themeVersionAssets.tenantId, tenantId),
+            eq(themeVersionAssets.assetId, assetId),
+            eq(themeVersions.tenantId, tenantId),
+            inArray(themeVersions.state, ['draft', 'published']),
+          ),
+        )
+        .orderBy(themeVersions.clientId, themeVersions.state, themeVersions.id)
+        .limit(limit);
+    },
+
+    // The asset, locked against a concurrent save that names it: `hold` takes
+    // the shared lock this one conflicts with, so a delete decides on the
+    // references that exist once the save has committed or fails the save.
+    async lock(tenantId: string, assetId: string): Promise<AssetRef | null> {
+      const [row] = await tx
+        .select(REF)
+        .from(themeAssets)
+        .where(and(eq(themeAssets.tenantId, tenantId), eq(themeAssets.id, assetId)))
+        .for('update');
+      return row ?? null;
     },
 
     async delete(tenantId: string, assetId: string): Promise<void> {

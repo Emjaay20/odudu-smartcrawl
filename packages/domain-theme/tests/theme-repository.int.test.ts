@@ -770,6 +770,45 @@ describe('assetRepository', () => {
     });
   });
 
+  it('lists the draft and published versions that name an asset, bounded', async () => {
+    const tenantId = await freshTenant();
+    const clientId = await withTenant(app.db, tenantId, (tx) => seedClient(tx, tenantId));
+    const tenantScope = { tenantId, clientId: null };
+    const clientScope = { tenantId, clientId };
+    await withTenant(app.db, tenantId, async (tx) => {
+      const assets = assetRepository(tx);
+      const stored = await assets.put(asset(tenantId, 'logo'));
+      if (stored === 'over_cap') throw new Error('refused');
+      const themes = themeRepository(tx);
+      expect(await assets.references(tenantId, stored.id, 10)).toEqual([]);
+      await themes.saveDraft(tenantScope, body('a', stored.id), null);
+      await themes.publish(tenantScope);
+      await themes.saveDraft(tenantScope, body('b', stored.id), null);
+      await themes.saveDraft(clientScope, body('c', stored.id), null);
+      await themes.publish(clientScope);
+      await themes.publish(tenantScope);
+      const found = await assets.references(tenantId, stored.id, 10);
+      expect(found.map((r) => [r.clientId, r.state]).sort()).toEqual(
+        [
+          [null, 'published'],
+          [clientId, 'published'],
+        ].sort(),
+      );
+      expect(await assets.references(tenantId, stored.id, 1)).toHaveLength(1);
+    });
+  });
+
+  it('locks an asset the tenant holds and nothing else', async () => {
+    const tenantId = await freshTenant();
+    await withTenant(app.db, tenantId, async (tx) => {
+      const assets = assetRepository(tx);
+      const stored = await assets.put(asset(tenantId, 'logo'));
+      if (stored === 'over_cap') throw new Error('refused');
+      expect(await assets.lock(tenantId, stored.id)).toEqual(stored);
+      expect(await assets.lock(tenantId, newId())).toBeNull();
+    });
+  });
+
   it('reads a tenant total above 2^31 bytes', async () => {
     const tenantId = await freshTenant();
     await owner.sql.unsafe(`
@@ -845,6 +884,48 @@ describe('assetRepository', () => {
         attempt: (tx, { tenantId, assetId }) => assetRepository(tx).referencedBy(tenantId, assetId),
         expectBlocked: (result) => {
           expect(result).toBe(0);
+        },
+      });
+    });
+
+    it('references lists nothing', async () => {
+      await expectCrossTenantMethodProbe(app.db, {
+        seed: async (tx, tenantId) => {
+          await seedTenant(tx, tenantId);
+          const stored = await assetRepository(tx).put(asset(tenantId, 'logo'));
+          if (stored === 'over_cap') throw new Error('refused');
+          await themeRepository(tx).saveDraft(
+            { tenantId, clientId: null },
+            body('x', stored.id),
+            null,
+          );
+          return { tenantId, assetId: stored.id };
+        },
+        verifySeeded: async (tx, { tenantId, assetId }) => {
+          expect(await assetRepository(tx).references(tenantId, assetId, 5)).toHaveLength(1);
+        },
+        attempt: (tx, { tenantId, assetId }) =>
+          assetRepository(tx).references(tenantId, assetId, 5),
+        expectBlocked: (result) => {
+          expect(result).toEqual([]);
+        },
+      });
+    });
+
+    it('lock finds nothing', async () => {
+      await expectCrossTenantMethodProbe(app.db, {
+        seed: async (tx, tenantId) => {
+          await seedTenant(tx, tenantId);
+          const stored = await assetRepository(tx).put(asset(tenantId, 'logo'));
+          if (stored === 'over_cap') throw new Error('refused');
+          return { tenantId, assetId: stored.id };
+        },
+        verifySeeded: async (tx, { tenantId, assetId }) => {
+          expect(await assetRepository(tx).lock(tenantId, assetId)).not.toBeNull();
+        },
+        attempt: (tx, { tenantId, assetId }) => assetRepository(tx).lock(tenantId, assetId),
+        expectBlocked: (result) => {
+          expect(result).toBeNull();
         },
       });
     });
