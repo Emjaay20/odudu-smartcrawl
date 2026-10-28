@@ -1097,4 +1097,5 @@ export {
   type EvaluateClaimsOutcome,
 } from '#/usecase/evaluate-claims';
 export { DEFAULT_TEMPLATES } from '#/view/templates/index';
+export { hasMessage as isOidcMessageKey } from '#/view/template';
 export { renderLoggedOutRedirectPage } from '#/view/logout-html';

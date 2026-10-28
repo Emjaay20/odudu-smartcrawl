@@ -87,3 +87,4 @@ export {
   type LinkedRequiredAction,
 } from '#/service/required-actions';
 export { DEFAULT_TEMPLATES } from '#/view/templates/index';
+export { hasMessage as isAccountMessageKey } from '#/view/template';
