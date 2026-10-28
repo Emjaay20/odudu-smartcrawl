@@ -33,7 +33,8 @@ it('marks a colour changed once it differs from the saved one', async () => {
   const text = within(section).getByRole('textbox', { name: 'Light text' });
   await user.clear(text);
   await user.type(text, '#000000');
-  expect(within(section).getAllByText('Changed')).toHaveLength(1);
+  // The palette's own switch, and the one colour.
+  expect(within(section).getAllByText('Changed')).toHaveLength(2);
 });
 
 it('shows every pair of a customised palette with its ratio', async () => {
