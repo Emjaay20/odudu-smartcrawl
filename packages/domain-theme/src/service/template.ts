@@ -21,6 +21,7 @@ export type TemplateIssueCode =
   | 'too-many-slots'
   | 'malformed-slot'
   | 'unknown-slot'
+  | 'unknown-message-key'
   | 'missing-part'
   | 'repeated-part'
   | 'slot-in-attribute'
@@ -55,6 +56,10 @@ export interface TemplateOptions {
   // Whether a URL names one of the theme's own uploaded assets. Without it
   // no <img src> is acceptable.
   isAssetUrl?: (url: string) => boolean;
+  // Whether `{{t "key"}}` names an entry of the catalogue the page is filled
+  // from. Without it any key is accepted, the way a stored theme is read back
+  // at render, where an unknown key makes the template unfillable.
+  isMessageKey?: (key: string) => boolean;
 }
 
 // Anything not listed is refused. Form controls, scripts, styles, embeds
@@ -228,13 +233,22 @@ function checkForm(manifest: PageManifest, slots: ReturnType<typeof scanSlots>, 
   }
 }
 
-function checkManifest(kind: PageKind, slots: ReturnType<typeof scanSlots>, add: Add): void {
+function checkManifest(
+  kind: PageKind,
+  slots: ReturnType<typeof scanSlots>,
+  add: Add,
+  options: TemplateOptions,
+): void {
   const manifest = PAGE_KINDS[kind];
   const counts = new Map<string, number>();
   for (const slot of slots) {
     if (slot.kind === 'malformed') {
       add('malformed-slot', `at ${String(slot.index)}`, slot.index);
-    } else if (slot.kind === 'part') {
+    } else if (slot.kind === 'text') {
+      if (options.isMessageKey?.(slot.name) === false) {
+        add('unknown-message-key', slot.name, slot.index);
+      }
+    } else {
       counts.set(slot.name, (counts.get(slot.name) ?? 0) + 1);
     }
   }
@@ -265,8 +279,9 @@ function checkManifest(kind: PageKind, slots: ReturnType<typeof scanSlots>, add:
 // slot in it is recognised. The tree is read, never serialised back out, so
 // what is checked is what the parser saw and the template text itself is
 // what gets filled.
-// `{{t "key"}}` keys are not checked against a catalogue here; the `t`
-// callback given to fillTemplate decides what an unknown key does.
+// `{{t "key"}}` keys are checked against a catalogue only when the caller
+// supplies `isMessageKey`; otherwise the `t` callback given to fillTemplate
+// decides what an unknown key does.
 export function checkTemplate(
   kind: PageKind,
   template: string,
@@ -301,7 +316,7 @@ export function checkTemplate(
     add('too-many-slots', String(slots.length));
     return issues;
   }
-  checkManifest(kind, slots, add);
+  checkManifest(kind, slots, add, options);
 
   // The source is what gets filled, so a tag the parser would drop here
   // (frame, a second body whose attributes would merge onto the page's) is

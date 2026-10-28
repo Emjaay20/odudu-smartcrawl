@@ -63,6 +63,18 @@ export function assetRepository(tx: TenantScopedDatabase) {
       return stored;
     },
 
+    // The images of the tenant among `ids`, locked against deletion until the
+    // transaction ends: a theme that names one is saved or published knowing
+    // it exists. An id of another tenant or of nothing is simply absent.
+    async hold(tenantId: string, ids: string[]): Promise<AssetRef[]> {
+      if (ids.length === 0) return [];
+      return tx
+        .select(REF)
+        .from(themeAssets)
+        .where(and(eq(themeAssets.tenantId, tenantId), inArray(themeAssets.id, ids)))
+        .for('share');
+    },
+
     // The only read of an image's bytes.
     async get(tenantId: string, sha256: string): Promise<AssetRecord | null> {
       const [row] = await tx

@@ -8,6 +8,7 @@ import { assetIdsOf, type ThemeBody } from '#/service/body';
 import {
   THEME_VERSION_LIMIT,
   type ThemeRecord,
+  type ThemeVersionSummary,
   type ThemeScope,
   type ThemeState,
 } from '#/service/theme-body';
@@ -137,6 +138,16 @@ export function themeRepository(tx: TenantScopedDatabase) {
       return first(await tx.select().from(themeVersions).where(inState(scope, 'published')));
     },
 
+    // The scope's draft, read under the scope's write lock and held for
+    // update until the transaction ends: what a caller that must check the
+    // draft before acting on it reads, so the draft it checked is the one it
+    // acts on.
+    async lockDraft(scope: ThemeScope): Promise<ThemeRecord | null> {
+      await lockScope(scope);
+      const row = await lockedDraft(scope);
+      return row === undefined ? null : toRecord(row);
+    },
+
     // `ifMatch` is the etag of the draft being replaced; null states that
     // there is no draft yet, so a save that would replace one it never saw is
     // refused. The body must already have passed `parseThemeBody`; the admin
@@ -199,6 +210,40 @@ export function themeRepository(tx: TenantScopedDatabase) {
         .orderBy(desc(themeVersions.version))
         .limit(limit);
       return rows.map(toRecord);
+    },
+
+    // One published or archived version of the scope, with its body.
+    async version(scope: ThemeScope, versionId: string): Promise<ThemeRecord | null> {
+      return first(
+        await tx
+          .select()
+          .from(themeVersions)
+          .where(
+            and(
+              inScope(scope),
+              eq(themeVersions.id, versionId),
+              inArray(themeVersions.state, ['published', 'archived']),
+            ),
+          ),
+      );
+    },
+
+    // The newest versions of the scope without their bodies, which can each
+    // be a megabyte: one indexed read of at most `limit` small rows.
+    async listVersions(scope: ThemeScope, limit: number): Promise<ThemeVersionSummary[]> {
+      const rows = await tx
+        .select({
+          id: themeVersions.id,
+          version: themeVersions.version,
+          state: themeVersions.state,
+          createdAt: themeVersions.createdAt,
+          publishedAt: themeVersions.publishedAt,
+        })
+        .from(themeVersions)
+        .where(and(inScope(scope), inArray(themeVersions.state, ['published', 'archived'])))
+        .orderBy(desc(themeVersions.version))
+        .limit(limit);
+      return rows;
     },
 
     // Publishes a copy of an earlier version as the next one, leaving the

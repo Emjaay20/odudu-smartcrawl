@@ -14,6 +14,7 @@ export {
   type ThemeRecord,
   type ThemeScope,
   type ThemeState,
+  type ThemeVersionSummary,
 } from '#/service/theme-body';
 export {
   MAX_TEMPLATE_SLOTS,

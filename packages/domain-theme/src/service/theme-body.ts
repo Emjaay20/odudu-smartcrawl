@@ -19,6 +19,15 @@ export interface ThemeRecord {
   publishedAt: Date | null;
 }
 
+// A published or archived version as a list shows it, with no body.
+export interface ThemeVersionSummary {
+  id: string;
+  version: number;
+  state: ThemeState;
+  createdAt: Date;
+  publishedAt: Date | null;
+}
+
 export interface AssetRef {
   id: string;
   sha256: string;
