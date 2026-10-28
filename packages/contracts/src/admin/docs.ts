@@ -138,6 +138,8 @@ import {
 import {
   listThemeVersionsResponseSchema,
   publishedThemeSchema,
+  themeAssetSchema,
+  uploadThemeAssetQuerySchema,
   themeVersionSchema,
   themeViewSchema,
   themeWarningSchema,
@@ -1110,6 +1112,19 @@ describeFields(themeVersionSchema, {
   state: '`published` for the one users see, `archived` for an earlier one.',
   created_at: 'When the version was first saved as a draft.',
   published_at: 'When it was published.',
+});
+describeFields(uploadThemeAssetQuerySchema, {
+  kind: 'The slot the image is for, which sets its limits: `logo`, `darkLogo` and `favicon` at most 256 KiB and 1024 pixels on the longer side, `background` at most 1 MiB and 2560 pixels.',
+});
+describeFields(themeAssetSchema, {
+  id: 'The image\u2019s identifier, which a theme names as `assetId`.',
+  sha256: 'The SHA-256 of the stored image, the hash its public address carries.',
+  mime: 'The stored type: `image/png`, `image/jpeg` or `image/webp`, as the bytes are and never as the request declared.',
+  width: 'The width in pixels.',
+  height: 'The height in pixels.',
+  bytes:
+    'The stored size in bytes, after the image was re-encoded; this is what counts against the tenant\u2019s 8 MiB.',
+  kind: 'The slot the upload was checked as.',
 });
 describeFields(listThemeVersionsResponseSchema, {
   items: 'At most 20 versions, newest first, without their bodies.',

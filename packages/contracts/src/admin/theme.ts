@@ -58,3 +58,26 @@ export const listThemeVersionsResponseSchema = z.object({
   items: z.array(themeVersionSchema),
 });
 export type ListThemeVersionsResponse = z.infer<typeof listThemeVersionsResponseSchema>;
+
+// The slots an uploaded image may fill; the theme package keeps each one's
+// limits, and a test holds the two lists equal.
+export const THEME_ASSET_KINDS = ['logo', 'darkLogo', 'favicon', 'background'] as const;
+export const themeAssetKindSchema = z.enum(THEME_ASSET_KINDS);
+
+export const uploadThemeAssetQuerySchema = z.strictObject({ kind: themeAssetKindSchema });
+export type UploadThemeAssetQuery = z.infer<typeof uploadThemeAssetQuerySchema>;
+
+// The largest image any kind accepts, which is what Fastify refuses a larger
+// upload at before reading it; the smaller kinds are refused at their own.
+export const THEME_ASSET_BODY_LIMIT = 1024 * 1024;
+
+export const themeAssetSchema = z.object({
+  id: idSchema,
+  sha256: z.string(),
+  mime: z.string(),
+  width: z.number().int(),
+  height: z.number().int(),
+  bytes: z.number().int(),
+  kind: themeAssetKindSchema,
+});
+export type ThemeAsset = z.infer<typeof themeAssetSchema>;

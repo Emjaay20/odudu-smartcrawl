@@ -65,6 +65,8 @@ export const ADMIN_MUTATION_ACTIONS = [
   'tenant.smtp_delete',
   'tenant.smtp_set',
   'tenant.smtp_test',
+  'theme.asset_deleted',
+  'theme.asset_uploaded',
   'theme.draft_saved',
   'theme.published',
   'theme.reset',
