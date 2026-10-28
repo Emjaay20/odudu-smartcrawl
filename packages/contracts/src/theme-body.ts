@@ -91,11 +91,14 @@ export const themeTokensSchema = z.strictObject({
   font: z.enum(FONT_CHOICES).optional(),
 });
 
+export const themeLogoSchema = z.strictObject({ assetId, alt });
+export const themeImageSchema = z.strictObject({ assetId });
+
 export const themeAssetsSchema = z.strictObject({
-  logo: z.strictObject({ assetId, alt }).optional(),
-  darkLogo: z.strictObject({ assetId, alt }).optional(),
-  favicon: z.strictObject({ assetId }).optional(),
-  background: z.strictObject({ assetId }).optional(),
+  logo: themeLogoSchema.optional(),
+  darkLogo: themeLogoSchema.optional(),
+  favicon: themeImageSchema.optional(),
+  background: themeImageSchema.optional(),
 });
 
 export const themeTemplatesSchema = z.partialRecord(

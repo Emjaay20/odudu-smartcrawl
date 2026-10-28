@@ -65,6 +65,10 @@ export const ADMIN_MUTATION_ACTIONS = [
   'tenant.smtp_delete',
   'tenant.smtp_set',
   'tenant.smtp_test',
+  'theme.draft_saved',
+  'theme.published',
+  'theme.reset',
+  'theme.restored',
 ] as const;
 
 export type AdminMutationAction = (typeof ADMIN_MUTATION_ACTIONS)[number];

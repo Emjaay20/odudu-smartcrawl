@@ -442,3 +442,20 @@ export {
   type ImportError,
   TENANT_IMPORT_BODY_LIMIT,
 } from '#/admin/tenant-document';
+export {
+  THEME_BODY_LIMIT,
+  THEME_VERSIONS_LIMIT,
+  listThemeVersionsResponseSchema,
+  publishThemeResponseSchema,
+  publishedThemeSchema,
+  putThemeRequestSchema,
+  themeSourceSchema,
+  themeSourcesSchema,
+  themeVersionSchema,
+  themeViewSchema,
+  themeWarningSchema,
+  type ListThemeVersionsResponse,
+  type PublishThemeResponse,
+  type PutThemeRequest,
+  type ThemeView,
+} from '#/admin/theme';

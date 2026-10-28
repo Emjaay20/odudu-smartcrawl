@@ -153,4 +153,8 @@ export const ADMIN_MUTATION_ACTION_DOCS: Record<AdminMutationAction, string> = {
   'tenant.smtp_delete': 'A tenant’s SMTP relay was removed.',
   'tenant.smtp_set': 'A tenant’s SMTP relay was set.',
   'tenant.smtp_test': 'A test message was sent through a tenant’s SMTP relay.',
+  'theme.draft_saved': 'The draft of a tenant’s or a client’s theme was saved.',
+  'theme.published': 'The draft of a tenant’s or a client’s theme was published.',
+  'theme.reset': 'A tenant’s theme was reset to the default, or a client’s to its tenant’s.',
+  'theme.restored': 'An earlier version of a theme was published again.',
 };

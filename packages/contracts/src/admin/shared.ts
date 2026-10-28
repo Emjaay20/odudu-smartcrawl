@@ -88,6 +88,12 @@ export const fieldErrorSchema = z.strictObject({
   // Present where the refusal has a stable name a client can act on without
   // reading the message: `bidi_control_refused` today.
   code: z.string().optional(),
+  // What a template or stylesheet refusal quotes of the text, bounded and
+  // free of control characters, and where it is, 1-based, when it has one
+  // place; absent for every other refusal.
+  detail: z.string().optional(),
+  line: z.number().int().nullable().optional(),
+  column: z.number().int().nullable().optional(),
 });
 export type FieldError = z.infer<typeof fieldErrorSchema>;
 

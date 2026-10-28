@@ -37,6 +37,8 @@ export {
   themeAssetsSchema,
   themeBodyRequestSchema,
   themeBodySchema,
+  themeImageSchema,
+  themeLogoSchema,
   themeStylesheetSchema,
   themeTemplatesSchema,
   themeTokensSchema,

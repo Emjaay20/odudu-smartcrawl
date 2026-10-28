@@ -1,0 +1,60 @@
+import { z } from 'zod';
+import { dateTimeSchema, idSchema } from '#/admin/shared';
+import { themeBodyRequestSchema, themeBodySchema } from '#/theme-body';
+
+// The most a theme write may carry: the largest theme (a template for each of
+// the seventeen page kinds and a stylesheet) with room for JSON escaping.
+// Fastify refuses a larger body before it reads it.
+export const THEME_BODY_LIMIT = 4 * 1024 * 1024;
+
+// The versions a scope keeps, published and archived together.
+export const THEME_VERSIONS_LIMIT = 20;
+
+export const putThemeRequestSchema = themeBodyRequestSchema;
+export type PutThemeRequest = z.infer<typeof putThemeRequestSchema>;
+
+// Which layer supplies a piece. The names of the pieces are the theme
+// package's own (`tokens.light`, `templates.sign-in`, `assets.logo`), so they
+// are not restated here.
+export const themeSourceSchema = z.enum(['client', 'tenant', 'default']);
+export const themeSourcesSchema = z.record(z.string(), themeSourceSchema);
+
+export const publishedThemeSchema = z.object({
+  id: idSchema,
+  version: z.number().int(),
+  published_at: dateTimeSchema.nullable(),
+  body: themeBodySchema,
+});
+
+export const themeViewSchema = z.object({
+  scope: z.enum(['tenant', 'client']),
+  draft: themeBodySchema.nullable(),
+  published: publishedThemeSchema.nullable(),
+  sources: themeSourcesSchema,
+  draft_sources: themeSourcesSchema.nullable(),
+});
+export type ThemeView = z.infer<typeof themeViewSchema>;
+
+export const themeWarningSchema = z.object({
+  piece: z.string(),
+  code: z.enum(['stylesheet-unverified', 'template-unverified']),
+  message: z.string(),
+});
+
+export const publishThemeResponseSchema = themeViewSchema.extend({
+  warnings: z.array(themeWarningSchema),
+});
+export type PublishThemeResponse = z.infer<typeof publishThemeResponseSchema>;
+
+export const themeVersionSchema = z.object({
+  id: idSchema,
+  version: z.number().int(),
+  state: z.enum(['published', 'archived']),
+  created_at: dateTimeSchema,
+  published_at: dateTimeSchema.nullable(),
+});
+
+export const listThemeVersionsResponseSchema = z.object({
+  items: z.array(themeVersionSchema),
+});
+export type ListThemeVersionsResponse = z.infer<typeof listThemeVersionsResponseSchema>;
