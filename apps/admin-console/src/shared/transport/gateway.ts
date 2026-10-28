@@ -42,7 +42,10 @@ export interface GatewayDependencies {
   timeoutMs?: number;
 }
 
-const BASE = '/console/api/';
+// Where the console's own origin answers for the gateway: what a page links
+// to or frames, such as the theme preview, begins here.
+export const GATEWAY_BASE = '/console/api/';
+const BASE = GATEWAY_BASE;
 const ADMIN = 'admin/';
 const SUBJECT_HEADER = 'x-odudu-console-subject';
 const BACKOFF_MS = 250;

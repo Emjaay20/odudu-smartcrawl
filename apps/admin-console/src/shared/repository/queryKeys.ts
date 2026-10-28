@@ -133,3 +133,8 @@ export function sessionKey() {
 export function overviewKey(tenant: string, ...read: readonly string[]) {
   return ['overview', tenant, ...read] as const;
 }
+
+// The published and archived versions of one scope's theme.
+export function themeVersionsKey(tenant: string, scope: string) {
+  return ['theme-versions', tenant, scope] as const;
+}
