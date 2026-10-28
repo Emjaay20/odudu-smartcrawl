@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { type PublishedLayer, type PublishedLayers } from '#/service/theme-body';
 import { type ThemeBody } from '#/service/body';
 import { assetPath, parseBrandFile, sha256Hex, stylesheetPath } from '#/service/branding-urls';
+import { brandingCss, tokensCss } from '#/service/branding-css';
 import { buildBranding } from '#/service/build-branding';
 import { serveBrand, type ServeBrandDeps } from '#/usecase/serve-brand';
 
@@ -189,7 +190,7 @@ describe('serveBrand stylesheets', () => {
   it('never serves a stylesheet the check refuses, even from a stored row', async () => {
     const hostile = '@import url(https://evil.example/x.css);.logo{display:none}';
     const layers = { tenant: layer(body(hostile), null), client: null };
-    const hash = sha256Hex(`${hostile}\n`);
+    const hash = sha256Hex(brandingCss(tokensCss(body(hostile).tokens), hostile));
     const served = await serveBrand(deps({ layers }), {
       tenant: 'acme',
       client: null,
