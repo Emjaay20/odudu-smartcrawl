@@ -100,12 +100,12 @@ describe('the information architecture', () => {
     ]);
   });
 
-  it('opens the admin console to the tour and its fifteen areas, in order', () => {
+  it('opens the admin console to the tour and its sixteen areas, in order', () => {
     const links = sidebarLinks('admin-console/index.html');
     const start = links.indexOf(`${PAGES_DOCS_BASE}admin-console/`);
     expect(
       links
-        .slice(start + 1, start + 17)
+        .slice(start + 1, start + 18)
         .map((href) => href.slice(`${PAGES_DOCS_BASE}admin-console/`.length)),
     ).toEqual([
       'tour/',
@@ -120,6 +120,7 @@ describe('the information architecture', () => {
       'signing-keys/',
       'sessions/',
       'settings/',
+      'branding/',
       'email/',
       'audit-trail/',
       'tenants/',

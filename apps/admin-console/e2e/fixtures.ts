@@ -72,6 +72,7 @@ export function forgive(problems: Problem[], path: string): void {
 export { expect };
 
 export const PHONE = { width: 390, height: 844 };
+export const LAPTOP = { width: 1440, height: 900 };
 
 // Presses Tab until `target` has focus; fails once `limit` presses have not
 // reached it, which is how a page that makes its controls hard to reach is caught.

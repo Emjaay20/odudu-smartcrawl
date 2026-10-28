@@ -147,7 +147,10 @@ describe('the content-security-policy lines the guides record', () => {
   });
 
   it('records frame-src only as a list of bare origins', () => {
-    const framed = lines.filter((line) => line.policy.includes('frame-src '));
+    // The shell's own policy is held to the gateway's exact string below.
+    const framed = lines.filter(
+      (line) => line.policy.includes('frame-src ') && !line.policy.startsWith("default-src 'self'"),
+    );
     expect(framed.length).toBeGreaterThan(0);
     const bad = framed
       .filter((line) =>

@@ -7,6 +7,7 @@ import {
   signIn,
   tabsWithin,
   test,
+  LAPTOP,
   PHONE,
 } from './fixtures';
 import { authorize } from './page-flows';
@@ -14,7 +15,6 @@ import { seeded } from './stack';
 
 const { branding } = seeded().config;
 const TABLET = { width: 768, height: 1024 };
-const LAPTOP = { width: 1440, height: 900 };
 
 // A 1 x 1 PNG, which is all a logo needs to be to be stored.
 const PNG = Buffer.from(
