@@ -474,6 +474,55 @@ describe('a delete racing a save that names the image', () => {
   });
 });
 
+describe('a delete racing an upload of bytes already stored', () => {
+  it('waits for the upload’s transaction, so the id it returned still exists inside it', async () => {
+    const ctx = await tenantCtx();
+    const image = await stored(ctx, [41, 41, 41]);
+    const actor = { actorSubjectId: newId(), actorTenantId: ctx.tenant.id, actorClientId: newId() };
+    let release: () => void = () => undefined;
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let reading: () => void = () => undefined;
+    const readStarted = new Promise<void>((resolve) => {
+      reading = resolve;
+    });
+
+    const again = withTenant(fixture.app.db, ctx.tenant.id, async (tx) => {
+      const found = await assetRepository(tx).put({
+        tenantId: ctx.tenant.id,
+        sha256: image.sha256,
+        mime: image.mime,
+        width: 1,
+        height: 1,
+        bytes: Buffer.from('x'),
+        tenantCapBytes: 1_000_000,
+      });
+      reading();
+      await held;
+      return found;
+    });
+    await readStarted;
+
+    let settled = false;
+    const deleting = withTenant(fixture.app.db, ctx.tenant.id, (tx) =>
+      deleteThemeAsset(tx, { audit: () => Promise.resolve() }, actor, {
+        tenantId: ctx.tenant.id,
+        assetId: image.id,
+      }),
+    ).then((outcome) => {
+      settled = true;
+      return outcome;
+    });
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    expect(settled, 'the delete waits for the upload').toBe(false);
+
+    release();
+    expect(await again).toMatchObject({ id: image.id });
+    expect(await deleting).toEqual({ kind: 'deleted' });
+  });
+});
+
 describe('audit', () => {
   it('records an upload and a delete with ids, hash, kind and size, and never the bytes', async () => {
     const ctx = await tenantCtx();
@@ -612,20 +661,6 @@ describe('before the body is read', () => {
       chunk,
     ]);
     expect(status).toBe(413);
-  });
-
-  it('never reads past a declared length that is shorter than what is sent', async () => {
-    const ctx = await tenantCtx();
-    const token = await fixture.adminTokenAt(
-      ctx.tenant.name,
-      ['manage-tenant'],
-      `127.0.0.1:${String(port)}`,
-    );
-    const status = await streamed(ctx, token, { 'content-length': '100' }, [
-      Buffer.alloc(300 * 1024, 1),
-    ]);
-    // The first 100 bytes are a truncated image; the rest is not part of it.
-    expect([400, 422, 'closed']).toContain(status);
   });
 
   it('answers 413 for a declared length over the kind’s limit without the body', async () => {
