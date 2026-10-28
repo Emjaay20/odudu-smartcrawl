@@ -1,11 +1,32 @@
 import { PALETTE_KEYS } from '../../packages/contracts/src/index.js';
 import { ASSET_LIMITS, contrastFailures } from '../../packages/domain-theme/src/index.js';
 import { PAGE_KINDS } from '../../packages/kernel/src/index.js';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { SLOT_RULES } from '../../apps/admin-console/src/features/branding/service/assets';
-import { DEFAULT_PALETTES } from '../../apps/admin-console/src/features/branding/service/palette';
-import { MANIFESTS } from '../../apps/admin-console/src/features/branding/service/templates';
-import { pairRows } from '../../apps/admin-console/src/features/branding/service/contrast';
+
+// The console's own modules, loaded by path: its `#/` imports resolve only
+// under the console's own configuration, so they are read at run time and
+// typed here by what this test uses of them.
+const SERVICE = path.resolve(
+  import.meta.dirname,
+  '../../apps/admin-console/src/features/branding/service',
+);
+type ServerPalette = NonNullable<Parameters<typeof contrastFailures>[0]['light']>;
+type Palette = ServerPalette;
+interface Mirrors {
+  SLOT_RULES: Record<string, { bytes: number; side: number }>;
+  DEFAULT_PALETTES: { light: Palette; dark: Palette };
+  MANIFESTS: Record<string, { required: string[]; optional: string[]; inForm: string[] }>;
+  pairRows: (scheme: 'light', palette: Palette) => { id: string; passes: boolean }[];
+}
+async function load(): Promise<Mirrors> {
+  const [assets, palette, templates, contrast] = await Promise.all(
+    ['assets', 'palette', 'templates', 'contrast'].map(
+      (name) => import(path.join(SERVICE, `${name}.ts`)) as Promise<Record<string, unknown>>,
+    ),
+  );
+  return { ...assets, ...palette, ...templates, ...contrast } as unknown as Mirrors;
+}
 
 // The Branding screens may not import the server's packages, so three things
 // are written out twice: the parts each page kind offers, the contrast pairs
@@ -13,10 +34,11 @@ import { pairRows } from '../../apps/admin-console/src/features/branding/service
 // preview of the server's verdict; this holds it to the server's own.
 
 describe('what the Branding screens show of the server', () => {
-  it('lists the parts of every page kind exactly as the renderer’s manifest does', () => {
+  it('lists the parts of every page kind exactly as the renderer’s manifest does', async () => {
+    const { MANIFESTS } = await load();
     expect(Object.keys(MANIFESTS).sort()).toEqual(Object.keys(PAGE_KINDS).sort());
     for (const [kind, manifest] of Object.entries(PAGE_KINDS)) {
-      expect(MANIFESTS[kind as keyof typeof MANIFESTS], kind).toEqual({
+      expect(MANIFESTS[kind], kind).toEqual({
         required: manifest.required,
         optional: manifest.optional,
         inForm: manifest.inForm,
@@ -24,17 +46,19 @@ describe('what the Branding screens show of the server', () => {
     }
   });
 
-  it('states each image kind’s limits as the server enforces them', () => {
+  it('states each image kind’s limits as the server enforces them', async () => {
+    const { SLOT_RULES } = await load();
     for (const [kind, limits] of Object.entries(ASSET_LIMITS)) {
-      const rule = SLOT_RULES[kind as keyof typeof SLOT_RULES];
-      expect({ bytes: rule.bytes, side: rule.side }, kind).toEqual({
+      const rule = SLOT_RULES[kind];
+      expect({ bytes: rule?.bytes, side: rule?.side }, kind).toEqual({
         bytes: limits.maxBytes,
         side: limits.maxSide,
       });
     }
   });
 
-  it('judges a palette by the same pairs as the server, for Instrument’s and for random ones', () => {
+  it('judges a palette by the same pairs as the server, for Instrument’s and for random ones', async () => {
+    const { DEFAULT_PALETTES, pairRows } = await load();
     let seed = 7;
     const next = (): number => {
       seed = (seed * 1664525 + 1013904223) % 4294967296;
@@ -52,7 +76,7 @@ describe('what the Branding screens show of the server', () => {
       ...Array.from({ length: 200 }, () =>
         Object.fromEntries(PALETTE_KEYS.map((key) => [key, colour()])),
       ),
-    ] as (typeof DEFAULT_PALETTES.light)[];
+    ] as Palette[];
     for (const palette of palettes) {
       const server = contrastFailures({ light: palette })
         .map((failure) => failure.pair)
@@ -65,9 +89,13 @@ describe('what the Branding screens show of the server', () => {
     }
   });
 
-  it('starts a customised palette from colours the server accepts', () => {
+  it('starts a customised palette from colours the server accepts', async () => {
+    const { DEFAULT_PALETTES } = await load();
     expect(
-      contrastFailures({ light: DEFAULT_PALETTES.light, dark: DEFAULT_PALETTES.dark }),
+      contrastFailures({
+        light: DEFAULT_PALETTES.light,
+        dark: DEFAULT_PALETTES.dark,
+      }),
     ).toEqual([]);
   });
 });
