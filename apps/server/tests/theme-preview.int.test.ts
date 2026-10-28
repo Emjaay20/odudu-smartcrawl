@@ -223,7 +223,7 @@ describe('the preview through the console', () => {
     const { jar } = await signedIn();
     const other = await tenant();
     const res = await get(jar, PATH(other.name));
-    expect([401, 403]).toContain(res.statusCode);
+    expect(res.statusCode).toBe(401);
     expect(res.body).not.toContain('<main');
   });
 });

@@ -233,6 +233,21 @@ describe('the images of a preview', () => {
     expect(res.body.length).toBeLessThan(2000);
   });
 
+  it('counts an image once for every place the stylesheet repeats it', async () => {
+    const ctx = await tenantCtx();
+    const bytes = Buffer.alloc(300_000, 'r');
+    const background = await storeImage(ctx, 'repeat', bytes);
+    const sha = createHash('sha256').update(bytes).digest('hex');
+    const rule = `.page { background-image: url(/tenants/${ctx.tenant.name}/brand/${sha}.png); }\n`;
+    await saveDraft(ctx, {
+      assets: { background: { assetId: background } },
+      stylesheet: rule.repeat(20),
+    });
+    const res = await preview(ctx);
+    expect(res.statusCode).toBe(422);
+    expect(res.json()).toMatchObject({ type: 'about:blank#theme-preview-too-large' });
+  });
+
   it('serves just under the bound', async () => {
     const ctx = await tenantCtx();
     const logo = await storeImage(ctx, 'c', Buffer.alloc(700_000, 'c'));
@@ -273,6 +288,51 @@ describe('the headers of a preview', () => {
     expect(res.body).not.toContain('alert(');
     expect(res.body).not.toContain('<script');
     expect(header(res, 'content-security-policy')).not.toContain('script-src');
+  });
+});
+
+describe('what a scope with no draft shows', () => {
+  it('shows a tenant’s published theme when the draft is gone', async () => {
+    const ctx = await tenantCtx();
+    await saveDraft(ctx, { templates: { 'sign-in': SIGN_IN('published-own') } });
+    await publish(ctx);
+    const scope = { tenantId: ctx.tenant.id, clientId: null };
+    await withTenant(fixture.app.db, ctx.tenant.id, async (tx) => {
+      expect(await themeRepository(tx).draft(scope)).toBeNull();
+    });
+    expect((await preview(ctx)).body).toContain('published-own');
+  });
+
+  it('shows a client’s own published theme over its tenant’s', async () => {
+    const ctx = await tenantCtx();
+    const client = await fixture.createConfidentialClient(ctx.tenant.name, {});
+    const base = `/clients/${client.id}`;
+    await saveDraft(ctx, { templates: { 'sign-in': SIGN_IN('tenant-look') } });
+    await publish(ctx);
+    await saveDraft(ctx, { templates: { 'sign-in': SIGN_IN('client-look') } }, base);
+    await publish(ctx, base);
+    const body = (await preview(ctx, '', base)).body;
+    expect(body).toContain('client-look');
+    expect(body).not.toContain('tenant-look');
+  });
+});
+
+describe('a template that cannot be filled', () => {
+  it('shows the default page and names the kind in a header', async () => {
+    const ctx = await tenantCtx();
+    await plantDraft(ctx, {
+      templates: {
+        'sign-in':
+          '<p>{{t "no.such.key"}}</p>{{form.open}}{{fields}}{{submit}}{{error}}{{form.close}}',
+      },
+    });
+    const res = await preview(ctx);
+    expect(res.statusCode).toBe(200);
+    expect(header(res, 'x-odudu-preview-fallback')).toBe('sign-in');
+    expect(res.body).not.toContain('no.such.key');
+    expect(header(await preview(ctx, '?kind=consent'), 'x-odudu-preview-fallback')).toBe(
+      'undefined',
+    );
   });
 });
 

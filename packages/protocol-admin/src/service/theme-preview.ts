@@ -38,8 +38,14 @@ export interface UsedImage {
   readonly path: string;
 }
 
+function occurrences(text: string, part: string): number {
+  return text.split(part).length - 1;
+}
+
 // The images whose public path the page or its stylesheet actually holds:
-// only those are inlined, so a theme's unused image costs the preview nothing.
+// only those are inlined. Each occurrence is replaced by the whole data
+// address, so the weight is the base64 length times every occurrence in the
+// page and the stylesheet, which is what the inlined output grows by.
 export function usedImages(
   tenantName: string,
   images: readonly WeighedImage[],
@@ -49,9 +55,11 @@ export function usedImages(
   let weight = 0;
   for (const image of images) {
     const path = assetPath(tenantName, image.sha256, image.mime);
-    if (path === null || !texts.some((text) => text.includes(path))) continue;
+    if (path === null) continue;
+    const count = texts.reduce((total, text) => total + occurrences(text, path), 0);
+    if (count === 0) continue;
     used.push({ id: image.id, path });
-    weight += base64Length(image.size);
+    weight += base64Length(image.size) * count;
   }
   return { used, weight };
 }

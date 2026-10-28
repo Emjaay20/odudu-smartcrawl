@@ -51,6 +51,9 @@ export function themePreviewHandler(
     reply.code(200).header('content-type', 'text/html; charset=utf-8');
     for (const [name, value] of previewHeaders(outcome.inlined)) reply.header(name, value);
     if (outcome.inlined.scriptOmitted) reply.header('x-odudu-preview-script', 'omitted');
+    if (outcome.fallbacks.length > 0) {
+      reply.header('x-odudu-preview-fallback', outcome.fallbacks.join(','));
+    }
     return reply.send(outcome.inlined.html);
   };
 }

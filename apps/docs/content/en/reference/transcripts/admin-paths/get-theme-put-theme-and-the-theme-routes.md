@@ -44,14 +44,14 @@ one of another tenant, or that does not exist, answers `404`.
   page of the draft as an HTML document: the page kind (`sign-in` when left out)
   rendered by the same code users are sent, with sample values, in the `light`
   or `dark` palette if `scheme` asks. A client's draft is shown over its tenant's
-  published theme, and a scope with no draft shows what is below it. The
+  published theme, and a scope with no draft shows its own published theme, then what is below it. The
   stylesheet and the images the page shows are inside the document as `data:`
   addresses, so an image that no public address serves still appears; together
-  they may come to 1 MiB, past which the answer is `422`
+  they may come to 1 MiB, counting an image once for each place it is written, past which the answer is `422`
   (`about:blank#theme-preview-too-large`). The response is meant for a frame
   whose parent is the same origin: its policy allows no script, so a page that
   needs one (`passkey-enrolment`) is rendered without it and the response says
-  `X-Odudu-Preview-Script: omitted`. Through the console it is
+  `X-Odudu-Preview-Script: omitted`. A template that cannot be filled shows the default page, and `X-Odudu-Preview-Fallback` lists the kinds. Through the console it is
   `/console/api/admin/tenants/{tenant}/theme/preview`, which the admin's session
   cookie authorises. An unknown `kind` or `scheme` is `400`. It reads the draft
   and writes nothing.

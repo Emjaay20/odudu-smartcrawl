@@ -3,7 +3,7 @@ const ADMIN = '/admin/';
 
 const FORWARDED_REQUEST_HEADERS = ['content-type', 'if-match', 'if-none-match', 'accept'] as const;
 
-// The last four are what the draft theme preview, the one admin response a
+// The last five are what the draft theme preview, the one admin response a
 // browser frames, is sent under; dropped, the frame would carry no policy.
 const PASSED_RESPONSE_HEADERS = [
   'content-type',
@@ -15,6 +15,7 @@ const PASSED_RESPONSE_HEADERS = [
   'referrer-policy',
   'x-content-type-options',
   'x-odudu-preview-script',
+  'x-odudu-preview-fallback',
 ] as const;
 
 type IncomingHeaders = Readonly<Record<string, string | readonly string[] | undefined>>;

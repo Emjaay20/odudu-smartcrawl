@@ -319,8 +319,9 @@ function themeRoutes(
         'parent is this origin: the stylesheet and images are carried inside it, so a draft ' +
         'image that no address serves still shows, and nothing in it needs a script. A page ' +
         'whose kind needs one (`passkey-enrolment`) is rendered without it, which the ' +
-        '`X-Odudu-Preview-Script: omitted` header says. A scope with no draft shows what is ' +
-        'below it. Refused with `422` (`about:blank#theme-preview-too-large`) when the ' +
+        '`X-Odudu-Preview-Script: omitted` header says. A scope with no draft shows its own ' +
+        'published theme, then what is below it. A template that cannot be filled shows the default ' +
+        'page, and `X-Odudu-Preview-Fallback` lists the kinds. Refused with `422` (`about:blank#theme-preview-too-large`) when the ' +
         'stylesheet and the images the page shows come to over 1 MiB once inlined. Reads ' +
         'the draft only: nothing is saved and nothing is published.',
     },

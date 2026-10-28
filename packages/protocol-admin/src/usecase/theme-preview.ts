@@ -23,13 +23,13 @@ export interface ThemePreviewDeps {
 export type PreviewOutcome =
   | { kind: 'not_found' }
   | { kind: 'too_large'; bytes: number }
-  | { kind: 'rendered'; inlined: InlinedPreview };
+  | { kind: 'rendered'; inlined: InlinedPreview; fallbacks: PageKind[] };
 
-// The draft of the scope rendered as the page would be, over what sits below
-// it: a client's draft over its tenant's published theme, a tenant's over
-// the default. A scope with no draft shows what is below it. At most five
-// statements whatever the theme names: the client, the draft, the tenant's
-// published theme, the images' sizes and, once they fit, their bytes.
+// The scope rendered as its next publish would be, over what sits below it: a
+// client's draft over its tenant's published theme, a tenant's over the
+// default. A scope with no draft shows its own published theme. At most six
+// statements whatever the theme names: the client, the draft, the published
+// theme, the tenant's, the images' sizes and, once they fit, their bytes.
 export async function previewTheme(
   tx: TenantScopedDatabase,
   deps: ThemePreviewDeps,
@@ -39,21 +39,26 @@ export async function previewTheme(
   if (!(await clientExists(tx, target))) return { kind: 'not_found' };
   const themes = themeRepository(tx);
   const isClient = target.clientRowId !== null;
-  const draft = await themes.draft({ tenantId: target.tenantId, clientId: target.clientRowId });
+  const scope = { tenantId: target.tenantId, clientId: target.clientRowId };
+  // What the scope shows once published: its draft, or with none its own
+  // published version.
+  const own = (await themes.draft(scope)) ?? (await themes.published(scope));
   const tenantPublished = isClient
     ? await themes.published({ tenantId: target.tenantId, clientId: null })
     : null;
-  const records = [draft, tenantPublished].filter((record) => record !== null);
+  const records = [own, tenantPublished].filter((record) => record !== null);
 
   const images = await assetRepository(tx).sizes(target.tenantId, imageIdsOf(records));
   const layers: { name: 'client' | 'tenant'; layer: ReturnType<typeof layerOf> }[] = [];
-  if (draft !== null)
-    layers.push({ name: isClient ? 'client' : 'tenant', layer: layerOf(draft, images) });
+  if (own !== null) {
+    layers.push({ name: isClient ? 'client' : 'tenant', layer: layerOf(own, images) });
+  }
   if (tenantPublished !== null && isClient) {
     layers.push({ name: 'tenant', layer: layerOf(tenantPublished, images) });
   }
   const built = buildBranding({ tenantName: target.tenantName, origin: input.origin, layers });
 
+  const fallbacks = new Set<PageKind>(built.refused.map((entry) => entry.kind));
   const locale = withBranding(
     {
       tag: 'en',
@@ -61,6 +66,9 @@ export async function previewTheme(
       ...(input.query.scheme === undefined ? {} : { theme: input.query.scheme }),
     },
     built.branding,
+    (kind) => {
+      fallbacks.add(kind);
+    },
   );
   const render = deps.pages[input.query.kind ?? DEFAULT_KIND];
   const page = render(target.tenantName, locale);
@@ -81,6 +89,7 @@ export async function previewTheme(
   }
   return {
     kind: 'rendered',
+    fallbacks: [...fallbacks],
     inlined: inlinePreview(page, {
       stylesheetUrl: built.branding?.stylesheetUrl ?? null,
       css: built.css,

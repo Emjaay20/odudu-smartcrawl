@@ -138,6 +138,7 @@ describe('passedResponseHeaders', () => {
       'referrer-policy': 'no-referrer',
       'x-content-type-options': 'nosniff',
       'x-odudu-preview-script': 'omitted',
+      'x-odudu-preview-fallback': 'sign-in',
     };
     expect(passedResponseHeaders({ ...preview, 'x-frame-options': 'DENY' })).toEqual(preview);
   });
