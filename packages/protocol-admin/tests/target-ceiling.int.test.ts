@@ -403,10 +403,24 @@ describe('the target ceiling holds on every route that mutates a subject', () =>
 // from the route table, so a new client mutation without it fails here.
 // A client's theme is how its pages look and reaches nothing the service
 // account may do, so its routes are outside the ceiling.
+const CLIENT_THEME_ROUTES: ReadonlySet<string> = new Set(
+  [
+    'GET /theme',
+    'PUT /theme',
+    'DELETE /theme',
+    'POST /theme/publish',
+    'GET /theme/versions',
+    'POST /theme/versions/:versionId/restore',
+  ].map(
+    (tail) =>
+      `${tail.split(' ')[0] ?? ''} /admin/tenants/:tenant/clients/:id${tail.split(' ')[1] ?? ''}`,
+  ),
+);
+
 const CLIENT_MUTATIONS = ADMIN_ROUTES.filter(
   (route) =>
     route.method !== 'GET' &&
-    !route.pattern.includes('/theme') &&
+    !CLIENT_THEME_ROUTES.has(`${route.method} ${route.pattern}`) &&
     (route.pattern.startsWith('/admin/tenants/:tenant/clients/:id') ||
       route.pattern === '/admin/tenants/:tenant/scopes/:id/clients/:clientId'),
 ).map((route) => `${route.method} ${route.pattern}`);
@@ -873,5 +887,14 @@ describe('deleting a client is judged by what its roles reach', () => {
     );
 
     expect(res.statusCode).toBe(204);
+  });
+});
+
+describe('the client theme exemption', () => {
+  it('names exactly the theme routes under a client, so a seventh is judged', () => {
+    const found = ADMIN_ROUTES.filter((route) => route.pattern.includes('/clients/:id/theme')).map(
+      (route) => `${route.method} ${route.pattern}`,
+    );
+    expect([...CLIENT_THEME_ROUTES].sort()).toEqual(found.sort());
   });
 });

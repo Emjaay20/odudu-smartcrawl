@@ -4,6 +4,7 @@ import { checkTemplate } from '@odudu/domain-theme';
 import { PAGE_KINDS, type PageKind } from '@odudu/kernel';
 import { DEFAULT_TEMPLATES as PROTOCOL_OIDC } from '@odudu/protocol-oidc';
 import { describe, expect, it } from 'vitest';
+import { isThemeMessageKey } from '#/theme-message-keys';
 
 interface Owner {
   name: string;
@@ -37,6 +38,11 @@ describe('the default templates', () => {
 
         it(`passes the check a saved template passes: ${kind}`, () => {
           expect(checkTemplate(kind, template)).toEqual([]);
+        });
+
+        it(`uses only keys of the catalogue its page is filled from: ${kind}`, () => {
+          const options = { isMessageKey: (key: string) => isThemeMessageKey(kind, key) };
+          expect(checkTemplate(kind, template, options)).toEqual([]);
         });
 
         it(`places every required part: ${kind}`, () => {

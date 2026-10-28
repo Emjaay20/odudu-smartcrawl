@@ -324,6 +324,7 @@ export type RestoreOutcome =
   | { kind: 'not_found' }
   | { kind: 'version_not_found' }
   | { kind: 'assets_missing'; errors: FieldError[] }
+  | { kind: 'fails_checks'; errors: FieldError[] }
   | { kind: 'restored'; view: ThemeViewResult };
 
 export async function restoreVersion(
@@ -345,6 +346,12 @@ export async function restoreVersion(
   const held = await holdAssets(tx, target, parsed.body);
   if (held.missing.length > 0) {
     return { kind: 'assets_missing', errors: missingAssetErrors(held.missing) };
+  }
+  // A version that passed the checks of its day may fail today's: restoring
+  // it would publish a piece the renderer drops for the layer below.
+  const failing = pieceErrors(parsed.body, held, deps);
+  if (failing.length > 0) {
+    return { kind: 'fails_checks', errors: failing.slice(0, MAX_THEME_ERRORS) };
   }
 
   const restored = await themes.restore(scope, input.versionId);

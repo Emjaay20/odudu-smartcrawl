@@ -125,6 +125,13 @@ export const ADMIN_PROBLEM_TYPES: Readonly<Record<string, AdminProblemType>> = {
       'An earlier version of a theme names an image that has since been deleted, so it cannot ' +
       'be restored whole. `errors` names each image by the slot that holds it.',
   },
+  'theme-version-fails-checks': {
+    status: 409,
+    summary:
+      'An earlier version of a theme has a template or stylesheet that fails the checks as ' +
+      'they are now, so restoring it would show the default for that piece. `errors` lists ' +
+      'them. Save a corrected draft and publish it instead.',
+  },
   'theme-no-draft': {
     status: 409,
     summary:

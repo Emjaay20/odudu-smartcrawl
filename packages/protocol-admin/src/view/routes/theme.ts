@@ -224,6 +224,16 @@ export function themeHandlers(deps: ThemeRouteDeps, scope: 'tenant' | 'client'):
             ),
             errors: outcome.errors,
           });
+        case 'fails_checks':
+          return sendProblem(reply, request, {
+            ...problem(
+              409,
+              'about:blank#theme-version-fails-checks',
+              'Conflict',
+              'the version has pieces that fail today’s checks, so it cannot be restored; errors lists them',
+            ),
+            errors: outcome.errors,
+          });
         case 'restored':
           deps.invalidateTenant(tenantId);
           return sendView(reply, outcome.view);

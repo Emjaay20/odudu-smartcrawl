@@ -474,6 +474,40 @@ describe('versions, restore and reset', () => {
     ).toBe(2);
   });
 
+  it('restore refuses a version whose template fails today’s checks, listing it', async () => {
+    const ctx = await tenantCtx();
+    // Written as rows: a version published when the key was in the catalogue.
+    for (const template of [SIGN_IN.replace('login.title', 'login.gone'), SIGN_IN]) {
+      const scope = { tenantId: ctx.tenant.id, clientId: null };
+      await withTenant(fixture.app.db, ctx.tenant.id, async (tx) => {
+        const themes = themeRepository(tx);
+        await themes.saveDraft(
+          scope,
+          { tokens: {}, stylesheet: null, templates: { 'sign-in': template }, assets: {} },
+          null,
+        );
+        await themes.publish(scope);
+      });
+    }
+    const first = (await call(ctx, 'GET', '/theme/versions'))
+      .json<{ items: { id: string; version: number }[] }>()
+      .items.find((v) => v.version === 1);
+    const before = fixture.invalidatedThemes.length;
+
+    const res = await call(ctx, 'POST', `/theme/versions/${first?.id ?? ''}/restore`);
+
+    expect(res.statusCode).toBe(409);
+    expect(res.json()).toMatchObject({ type: 'about:blank#theme-version-fails-checks' });
+    expect(errorsOf(res)).toMatchObject([
+      { path: 'templates.sign-in', code: 'unknown-message-key', detail: 'login.gone' },
+    ]);
+    expect(fixture.invalidatedThemes).toHaveLength(before);
+    expect(
+      (await call(ctx, 'GET', '/theme')).json<{ published: { version: number } }>().published
+        .version,
+    ).toBe(2);
+  });
+
   it('answers 404 for a version of another scope or tenant, and for a made-up one', async () => {
     const ctx = await tenantCtx();
     const other = await tenantCtx();

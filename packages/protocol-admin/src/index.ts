@@ -290,8 +290,7 @@ export interface AdminRoutesDeps {
   // stops offering a message: what `GET …/mail` reports as `failed`.
   outboxMaxAttempts: number;
   // Drops a tenant's cached themes in this process: called once a publish, a
-  // restore or a reset has committed, and when a client is deleted or a
-  // tenant renamed, which change what a cached theme names.
+  // restore or a reset has committed, and when a client or a tenant is deleted.
   invalidateTheme: (tenantId: string) => void;
   // Whether `{{t "key"}}` in a template of `kind` names an entry of the
   // catalogue its page is filled from, which the packages that render
