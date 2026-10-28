@@ -1,6 +1,7 @@
 import { PALETTE_KEYS } from '../../packages/contracts/src/index.js';
 import { ASSET_LIMITS, contrastFailures } from '../../packages/domain-theme/src/index.js';
 import { PAGE_KINDS } from '../../packages/kernel/src/index.js';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -87,6 +88,20 @@ describe('what the Branding screens show of the server', () => {
         .sort();
       expect(here).toEqual(server);
     }
+  });
+
+  it('words “more themes than listed” as the server’s detail does', async () => {
+    const { IN_USE_MORE } = (await import(path.join(SERVICE, 'assets.ts'))) as {
+      IN_USE_MORE: string;
+    };
+    const server = readFileSync(
+      path.resolve(
+        import.meta.dirname,
+        '../../packages/protocol-admin/src/view/routes/theme-assets.ts',
+      ),
+      'utf8',
+    );
+    expect(server).toContain(IN_USE_MORE);
   });
 
   it('holds Instrument’s own palettes, which customising starts from, to the server’s check', async () => {

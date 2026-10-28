@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { STOCK_FAVICON_LINKS, stylesheetLink, type PageLocale, type RenderedPage } from '#/page';
+import { stylesheetLink, type PageLocale, type RenderedPage } from '#/page';
 
 // What a package renders a kind with for the theme preview: its own renderer,
 // handed fixed sample values, so the page is the one a person would be sent.
@@ -41,6 +41,10 @@ function withoutScript(page: RenderedPage): { html: string; omitted: boolean } {
   };
 }
 
+// An icon link to one of Instrument's own icons, found by its address so that
+// the head's layout does not matter.
+const STOCK_ICON_LINK = /<link rel="icon" href="\/instrument\/favicon\.(?:svg|ico)"[^>]*>\n?/gu;
+
 // The page as `page` rendered it, with the theme's own files carried inside
 // it, so nothing the draft holds needs a public URL. A stylesheet that
 // contains `<` is left out: the sanitiser refuses one, and a policy hash
@@ -48,10 +52,7 @@ function withoutScript(page: RenderedPage): { html: string; omitted: boolean } {
 // a framed page has no tab, and the policy loads no image but a `data:` one.
 export function inlinePreview(page: RenderedPage, inline: PreviewInline): InlinedPreview {
   const stripped = withoutScript(page);
-  let html = STOCK_FAVICON_LINKS.reduce(
-    (text, link) => replaceAll(text, `${link}\n`, ''),
-    stripped.html,
-  );
+  let html = stripped.html.replace(STOCK_ICON_LINK, '');
   let styleSha256: string | null = null;
   if (inline.stylesheetUrl !== null) {
     let css = inline.css;

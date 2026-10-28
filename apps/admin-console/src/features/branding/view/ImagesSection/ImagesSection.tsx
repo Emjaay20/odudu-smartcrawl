@@ -39,8 +39,8 @@ function Slot({
   images: Images;
   onDelete: (ask: ImageAsk) => void;
 }) {
-  const shown = slotView(slot, images.save.values);
   const state = images.slots[slot];
+  const shown = slotView(slot, images.save.values, state.busy);
   const { assetId } = shown;
   return (
     <fieldset className={styles.slot}>
@@ -55,6 +55,7 @@ function Slot({
           description={ALT_RULE}
           value={shown.alt}
           error={altProblem(shown.alt)}
+          changed={images.altChanged(slot)}
           onChange={(alt) => {
             if (slot === 'logo' || slot === 'darkLogo') images.setAlt(slot, alt);
           }}

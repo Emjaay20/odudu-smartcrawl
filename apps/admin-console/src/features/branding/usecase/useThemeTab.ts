@@ -3,6 +3,7 @@ import { useThemeWrites } from '#/features/branding/repository/useThemeWrites';
 import {
   contrastReport,
   themeRecord,
+  unsavedSections,
   type ContrastReport,
   type ThemeScope,
 } from '#/features/branding/service';
@@ -53,7 +54,7 @@ export function useThemeTab({
       tenant,
       view,
       tag,
-      unsaved: dirty.size > 0,
+      unsaved: unsavedSections(dirty),
       contrast: report.hold,
       writes,
     }),

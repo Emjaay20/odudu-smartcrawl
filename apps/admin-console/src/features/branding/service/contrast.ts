@@ -125,10 +125,16 @@ export function contrastHold(failing: readonly PairRow[]): string | undefined {
   return `Fix the contrast before publishing: ${rowText(first)}${more > 0 ? `, and ${counted(more, 'more pair', 'more pairs')}` : ''}.`;
 }
 
+export const CONTRAST_PASSES = 'Contrast passes.';
+export const CONTRAST_FAILS = 'Contrast fails: see the pairs listed.';
+
 export interface ContrastReport {
   rows: readonly PairRow[];
   failing: readonly PairRow[];
   summary: string;
+  // The short word a screen reader is told, which changes only when the
+  // answer does and not with each colour typed.
+  verdict: string;
   hold: string | undefined;
 }
 
@@ -143,6 +149,7 @@ export function contrastReport(values: ColourValues): ContrastReport {
     rows,
     failing,
     summary: contrastSummary(failing, rows.length),
+    verdict: failing.length > 0 ? CONTRAST_FAILS : CONTRAST_PASSES,
     hold: contrastHold(failing),
   };
 }

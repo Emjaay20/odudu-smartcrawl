@@ -2,6 +2,7 @@ import type { ThemeView } from '@odudu/contracts/admin';
 import { useThemeRecord } from '#/features/branding/repository/useThemeRecord';
 import {
   OFFERED_TABS,
+  selectOffered,
   tabsWithEdits,
   themeRecord,
   type OfferedTab,
@@ -10,7 +11,7 @@ import {
 import { usePreview, type Preview } from '#/features/branding/usecase/usePreview';
 import { useDirtySections } from '#/shared/repository/useDirtySections';
 import { useRecordTab } from '#/shared/repository/useRecordTab';
-import { tabNamed, type RecordView } from '#/shared/service/record';
+import type { RecordView } from '#/shared/service/record';
 
 export interface BrandingPage {
   record: RecordView;
@@ -34,8 +35,7 @@ export function useBrandingPage(tenant: string, scope: ThemeScope): BrandingPage
     tag: record.etag,
     tab,
     selectTab: (next) => {
-      const chosen = tabNamed(OFFERED_TABS, next);
-      if (chosen !== undefined) selectTab(chosen);
+      selectOffered(next, selectTab);
     },
     dirty: tabsWithEdits(dirty),
     preview: usePreview(tenant, scope, record.data, record.etag),

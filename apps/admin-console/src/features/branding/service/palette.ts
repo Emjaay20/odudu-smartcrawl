@@ -4,6 +4,8 @@ export type PaletteKey = (typeof PALETTE_KEYS)[number];
 export type Palette = Record<PaletteKey, string>;
 export type Scheme = 'light' | 'dark';
 
+export const PALETTE_ORDER: readonly PaletteKey[] = PALETTE_KEYS;
+
 export const SCHEMES: readonly Scheme[] = ['light', 'dark'];
 
 export const SCHEME_LABELS: Readonly<Record<Scheme, string>> = { light: 'Light', dark: 'Dark' };
@@ -142,4 +144,12 @@ export function paletteProblems(palette: Palette | null): readonly PaletteKey[] 
 // What the native colour input shows for a value that is not finished yet.
 export function swatchOf(value: string): string {
   return isHexColour(value) ? value : '#000000';
+}
+
+// The colours of a palette that differ from what the record holds, so a
+// changed one can be marked. A palette newly customised marks every colour
+// that differs from the one it replaced, none when it was not customised.
+export function changedColours(saved: Palette | null, now: Palette | null): readonly PaletteKey[] {
+  if (now === null) return [];
+  return PALETTE_KEYS.filter((key) => saved?.[key] !== now[key]);
 }

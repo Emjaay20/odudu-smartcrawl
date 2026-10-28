@@ -1,5 +1,5 @@
 import type { FieldError, PublishThemeResponse, ThemeView } from '@odudu/contracts/admin';
-import { counted } from '#/shared/service/format';
+import { andList, counted } from '#/shared/service/format';
 import type { Problem } from '#/shared/service/result';
 
 export const PUBLISH_TITLE = 'Publish';
@@ -9,7 +9,9 @@ export const PUBLISH_BODY =
 
 export const NO_DRAFT_HOLD = 'There is no draft to publish. Save a change first.';
 
-export const UNSAVED_HOLD = 'Save your changes first: publishing uses the saved draft.';
+export function unsavedHold(sections: readonly string[]): string {
+  return `Save your changes first, in ${andList(sections)}: publishing uses the saved draft.`;
+}
 
 export function publishHold({
   view,
@@ -17,10 +19,10 @@ export function publishHold({
   contrast,
 }: {
   view: ThemeView;
-  unsaved: boolean;
+  unsaved: readonly string[];
   contrast: string | undefined;
 }): string | undefined {
-  if (unsaved) return UNSAVED_HOLD;
+  if (unsaved.length > 0) return unsavedHold(unsaved);
   if (view.draft === null) return NO_DRAFT_HOLD;
   return contrast;
 }
@@ -95,7 +97,7 @@ export function refusalText(problem: Problem, verb: string): string | null {
 }
 
 export function publishConflict(): string {
-  return 'Somebody saved the draft after you opened it. Reload the page to see their version, then publish.';
+  return 'Somebody saved the draft after you opened it. The page now shows their version: look it over, then publish.';
 }
 
 // A refusal that joins many problems, cut to as many as one field shows.

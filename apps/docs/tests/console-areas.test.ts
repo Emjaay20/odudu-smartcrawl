@@ -187,7 +187,12 @@ describe('the admin console section', () => {
   it('gives each page of an area a picture, in a story that says what cannot be undone', () => {
     for (const slug of SLUGS) {
       const source = page(slug);
-      if (!PICTURE_OWED.includes(slug)) expect(source, slug).toMatch(/<ConsoleShot\s/u);
+      if (PICTURE_OWED.includes(slug)) {
+        // Leaves the list with its picture: a listed page that has one fails.
+        expect(source, slug).not.toMatch(/<ConsoleShot\s/u);
+      } else {
+        expect(source, slug).toMatch(/<ConsoleShot\s/u);
+      }
       expect(source, slug).toMatch(/^## (Things|Nothing)/mu);
       expect(source, slug).toMatch(/^## \d\. /mu);
     }

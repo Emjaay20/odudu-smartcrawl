@@ -4,25 +4,26 @@ import { useRefusal } from '#/features/session';
 import { useAssetUpload } from '#/features/branding/repository/useThemeAssets';
 import { imageSave } from '#/features/branding/repository/themeSaves';
 import {
+  altChanged,
   altEdited,
   IDLE_SLOTS,
-  imageAfterUpload,
   imageField,
   imageFields,
   imageValues,
   imagesHold,
   IMAGES_TITLE,
-  slotBusy,
-  slotDone,
-  slotFailed,
+  slotAfterUpload,
+  slotNames,
   themeRecord,
-  uploadFailureOf,
-  uploadRefusal,
+  uploadedImage,
+  uploadStart,
   type ImageValues,
   type ImageSlot,
   type SlotStates,
   type ThemeScope,
 } from '#/features/branding/service';
+import { useLatest } from '#/shared/repository/useLatest';
+import { failureOf } from '#/shared/service/settled';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
 import { writeRefusal } from '#/shared/service/capabilities';
 
@@ -35,6 +36,8 @@ export interface Images {
   remove: (slot: ImageSlot) => void;
   // Takes a deleted image out of the slot that still names it.
   forget: (slot: ImageSlot, assetId: string) => void;
+  // Whether a logo's alt text differs from the saved one.
+  altChanged: (slot: ImageSlot) => boolean;
 }
 
 export function useImages({
@@ -53,6 +56,7 @@ export function useImages({
   const refusal = useRefusal(tenant);
   const uploading = useAssetUpload(tenant);
   const [slots, setSlots] = useState(IDLE_SLOTS);
+  const saved = imageValues(view);
   const save = useSectionSave({
     tenant,
     record: themeRecord(scope),
@@ -66,32 +70,26 @@ export function useImages({
     fields: imageFields(imageValues(view)),
     save: imageSave(tenant, scope, view),
   });
+  const latestValues = useLatest(save.values);
   return {
     save,
     blocked: imagesHold(save.values),
     slots,
     upload: (slot, file) => {
-      const refused = uploadRefusal(slot, file);
-      if (refused !== null) {
-        setSlots((was) => slotFailed(was, slot, refused));
-        return;
-      }
-      setSlots((was) => slotBusy(was, slot));
+      const start = uploadStart(slots, slot, file);
+      setSlots(start.slots);
+      if (!start.send) return;
       uploading
         .run({ kind: slot, file })
         .then((result) => {
-          if (result.ok) {
-            save.edit(imageField(slot), imageAfterUpload(slot, result.data.id, save.values));
-            setSlots((was) => slotDone(was, slot));
-            return;
-          }
-          refusal.report(result, 'manage-tenant');
-          setSlots((was) => slotFailed(was, slot, uploadFailureOf(slot, result)));
+          setSlots((was) => slotAfterUpload(was, slot, result));
+          const image = uploadedImage(slot, result, latestValues());
+          if (image !== null) save.edit(imageField(slot), image);
+          const failure = failureOf(result);
+          if (failure !== null) refusal.report(failure, 'manage-tenant');
         })
         .catch(() => {
-          setSlots((was) =>
-            slotFailed(was, slot, uploadFailureOf(slot, { ok: false, kind: 'defect' })),
-          );
+          setSlots((was) => slotAfterUpload(was, slot, { ok: false, kind: 'defect' }));
         });
     },
     setAlt: (slot, alt) => {
@@ -102,7 +100,8 @@ export function useImages({
       save.edit(imageField(slot), null);
     },
     forget: (slot, assetId) => {
-      if (save.values[imageField(slot)]?.assetId === assetId) save.edit(imageField(slot), null);
+      if (slotNames(latestValues(), slot, assetId)) save.edit(imageField(slot), null);
     },
+    altChanged: (slot) => altChanged(saved, save.values, slot),
   };
 }

@@ -1,4 +1,3 @@
-import { PALETTE_KEYS } from '@odudu/contracts';
 import type { ThemeView } from '@odudu/contracts/admin';
 import {
   CONTRAST_LEAD,
@@ -14,6 +13,7 @@ import {
   FONT_LABEL,
   FONT_OPTIONS,
   PALETTE_LABELS,
+  PALETTE_ORDER,
   paletteField,
   paletteLegend,
   SCHEME_LABELS,
@@ -27,6 +27,7 @@ import { ColourField } from '#/features/branding/view/ColourField';
 import { FieldGroup, SelectField, ToggleField } from '#/shared/view/Field';
 import { FieldGrid, GridCell } from '#/shared/view/FieldGrid';
 import { Panel } from '#/shared/view/Panel';
+import { VisuallyHidden } from '#/shared/view/VisuallyHidden';
 import { recordTab } from '#/shared/view/RecordTab';
 import { SaveSection } from '#/shared/view/SaveSection';
 import { StatusTag } from '#/shared/view/StatusTag';
@@ -47,6 +48,7 @@ function SchemeGroup({
   const field = paletteField(scheme);
   const palette = save.values[field];
   const problems = colourProblems(palette);
+  const changed = colours.changedKeys(scheme);
   return (
     <FieldGroup label={paletteLegend(SCHEME_LABELS[scheme])}>
       <ToggleField
@@ -62,13 +64,13 @@ function SchemeGroup({
       {palette === null ? null : (
         <div className={styles.colours}>
           <FieldGrid>
-            {PALETTE_KEYS.map((key) => (
+            {PALETTE_ORDER.map((key) => (
               <GridCell key={key}>
                 <ColourField
                   label={`${SCHEME_LABELS[scheme]} ${PALETTE_LABELS[key].label.toLowerCase()}`}
                   value={palette[key]}
                   error={problems[key]}
-                  changed={false}
+                  changed={changed.includes(key)}
                   onChange={(text) => {
                     colours.setColour(scheme, key, text);
                   }}
@@ -122,13 +124,10 @@ export function ContrastPanel({ report }: { report: ContrastReport }) {
   return (
     <Panel title={CONTRAST_TITLE}>
       <p className={recordTab.rule}>{CONTRAST_LEAD}</p>
-      <p
-        role="status"
-        className={styles.summary}
-        data-failing={report.failing.length > 0 || undefined}
-      >
+      <p className={styles.summary} data-failing={report.failing.length > 0 || undefined}>
         {report.summary}
       </p>
+      <VisuallyHidden role="status">{report.verdict}</VisuallyHidden>
       {report.rows.length === 0 ? null : (
         <ul className={styles.pairs}>
           {report.rows.map((row) => (

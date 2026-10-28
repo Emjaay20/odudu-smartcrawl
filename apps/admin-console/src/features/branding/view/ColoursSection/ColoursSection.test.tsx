@@ -25,6 +25,17 @@ it('keeps a scheme Instrument’s own until it is customised, then starts from I
   expect(within(section).getAllByRole('textbox')).toHaveLength(11);
 });
 
+it('marks a colour changed once it differs from the saved one', async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(AT, brandingRoutes(themeAnswer(draftedView(), '"d1"')));
+  const section = await screen.findByRole('region', { name: 'Colours and font' });
+  expect(within(section).queryByText('Changed')).toBeNull();
+  const text = within(section).getByRole('textbox', { name: 'Light text' });
+  await user.clear(text);
+  await user.type(text, '#000000');
+  expect(within(section).getAllByText('Changed')).toHaveLength(1);
+});
+
 it('shows every pair of a customised palette with its ratio', async () => {
   renderConsoleAt(AT, brandingRoutes(themeAnswer(draftedView(), '"d1"')));
   const contrast = await screen.findByRole('region', { name: 'Contrast' });
@@ -37,9 +48,11 @@ it('shows every pair of a customised palette with its ratio', async () => {
 it('says Instrument’s own colours are used, and meet every requirement', async () => {
   renderConsoleAt(AT, brandingRoutes(themeAnswer(themeView())));
   const contrast = await screen.findByRole('region', { name: 'Contrast' });
-  expect(within(contrast).getByRole('status')).toHaveTextContent(
-    'Instrument’s own colours are used, and they meet every requirement.',
-  );
+  expect(
+    within(contrast).getByText(
+      'Instrument’s own colours are used, and they meet every requirement.',
+    ),
+  ).toBeVisible();
 });
 
 it('has nothing axe can find in either theme', async () => {

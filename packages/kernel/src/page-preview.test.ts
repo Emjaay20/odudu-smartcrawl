@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import { pageHeaders, STOCK_FAVICON_LINKS, stylesheetLink, type RenderedPage } from '#/page';
+import { brandingHead, pageHeaders, stylesheetLink, type RenderedPage } from '#/page';
 import { MAX_PREVIEW_BYTES, inlinePreview, previewHeaders } from '#/page-preview';
 
 const SHEET = '/tenants/acme/brand/' + 'a'.repeat(64) + '.css';
@@ -57,11 +57,22 @@ describe('inlinePreview', () => {
     expect(out.scriptOmitted).toBe(true);
   });
 
-  it('leaves out the stock icon links, which the policy would refuse to load', () => {
-    const head = `<head>${stylesheetLink('/instrument/instrument.css')}\n${STOCK_FAVICON_LINKS.join('\n')}\n</head><p>x</p>`;
-    const out = inlinePreview(pageWith(head), { stylesheetUrl: null, css: '', images: new Map() });
-    expect(out.html).toBe(`<head>${stylesheetLink('/instrument/instrument.css')}\n</head><p>x</p>`);
-    expect(out.html).not.toContain('rel="icon"');
+  it('leaves out the icon links the real head carries, wherever they sit in it', () => {
+    const head = brandingHead({ tag: 'en', dir: 'ltr' });
+    expect(head).toContain('rel="icon"');
+    for (const page of [
+      `<head>${head}</head><p>x</p>`,
+      `<head>${head}<meta name="a" content="b"></head>`,
+      `<head><meta name="a" content="b">${head}</head>`,
+    ]) {
+      const out = inlinePreview(pageWith(page), {
+        stylesheetUrl: null,
+        css: '',
+        images: new Map(),
+      });
+      expect(out.html).not.toContain('rel="icon"');
+      expect(out.html).toContain('<head>');
+    }
   });
 
   it('keeps a theme’s own favicon, carried as the data it was swapped for', () => {

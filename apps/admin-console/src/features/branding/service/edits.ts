@@ -1,6 +1,7 @@
 import type { GatewayFailure, GatewayResult } from '#/shared/service/result';
 import {
   logoOf,
+  uploadRefusal,
   uploadFailureText,
   UPLOAD_FAULT,
   UPLOAD_LOST,
@@ -16,6 +17,7 @@ import {
 import {
   NO_ISSUES,
   issuesOf,
+  PUBLISHED_TOAST,
   warningLines,
   type Issues,
 } from '#/features/branding/service/publish';
@@ -27,7 +29,9 @@ import {
   type Logo,
   type Plain,
 } from '#/features/branding/service/values';
-import type { PublishThemeResponse, ThemeView } from '@odudu/contracts/admin';
+import type { PublishThemeResponse, ThemeAsset, ThemeView } from '@odudu/contracts/admin';
+import { tabNamed } from '#/shared/service/record';
+import { OFFERED_TABS, type OfferedTab } from '#/features/branding/service/tabs';
 
 export function paletteField(scheme: Scheme): 'tokens.light' | 'tokens.dark' {
   return `tokens.${scheme}`;
@@ -123,17 +127,31 @@ export interface PublishOutcome {
   issues: Issues;
   warnings: readonly string[];
   message: string | null;
+  // Said as a toast once the publish went through.
+  toast: string | null;
 }
 
-export const NO_OUTCOME: PublishOutcome = { issues: NO_ISSUES, warnings: [], message: null };
+export const NO_OUTCOME: PublishOutcome = {
+  issues: NO_ISSUES,
+  warnings: [],
+  message: null,
+  toast: null,
+};
 
 export function publishOutcomeOf(
   result: GatewayResult<PublishThemeResponse>,
   failureText: (failure: GatewayFailure) => string,
 ): PublishOutcome {
-  if (result.ok) return { issues: NO_ISSUES, warnings: warningLines(result.data), message: null };
+  if (result.ok) {
+    return {
+      issues: NO_ISSUES,
+      warnings: warningLines(result.data),
+      message: null,
+      toast: PUBLISHED_TOAST,
+    };
+  }
   const errors = result.kind === 'problem' ? result.problem.errors : undefined;
-  return { issues: issuesOf(errors), warnings: [], message: failureText(result) };
+  return { issues: issuesOf(errors), warnings: [], message: failureText(result), toast: null };
 }
 
 export function previewWith(choice: PreviewChoice, change: Partial<PreviewChoice>): PreviewChoice {
@@ -148,4 +166,45 @@ export function previewKey(
   choice: PreviewChoice,
 ): string {
   return `${String(view?.published?.version ?? 0)}|${tag ?? ''}|${choice.kind}|${choice.scheme}`;
+}
+
+export interface UploadStart {
+  slots: SlotStates;
+  // False when the file is refused here, before anything is sent.
+  send: boolean;
+}
+
+export function uploadStart(
+  slots: SlotStates,
+  slot: ImageSlot,
+  file: { type: string; size: number },
+): UploadStart {
+  const refused = uploadRefusal(slot, file);
+  return refused === null
+    ? { slots: slotBusy(slots, slot), send: true }
+    : { slots: slotFailed(slots, slot, refused), send: false };
+}
+
+// The slot once its upload has answered.
+export function slotAfterUpload(
+  slots: SlotStates,
+  slot: ImageSlot,
+  result: GatewayResult<ThemeAsset>,
+): SlotStates {
+  return result.ok ? slotDone(slots, slot) : slotFailed(slots, slot, uploadFailureOf(slot, result));
+}
+
+// What an answered upload puts in its slot, nothing when it was refused.
+export function uploadedImage(
+  slot: ImageSlot,
+  result: GatewayResult<ThemeAsset>,
+  values: ImageValues,
+): Logo | Plain | null {
+  return result.ok ? imageAfterUpload(slot, result.data.id, values) : null;
+}
+
+// Runs `select` for a tab this area has, and for no other name.
+export function selectOffered(name: string, select: (tab: OfferedTab) => void): void {
+  const tab = tabNamed(OFFERED_TABS, name);
+  if (tab !== undefined) select(tab);
 }

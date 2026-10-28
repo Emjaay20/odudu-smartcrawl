@@ -2,6 +2,7 @@ import type { ThemeView } from '@odudu/contracts/admin';
 import { useRefusal } from '#/features/session';
 import { colourSave } from '#/features/branding/repository/themeSaves';
 import {
+  changedColours,
   colourFields,
   colourValues,
   coloursHold,
@@ -25,6 +26,8 @@ export interface Colours {
   customise: (scheme: Scheme, custom: boolean) => void;
   setColour: (scheme: Scheme, key: PaletteKey, text: string) => void;
   setFont: (id: string) => void;
+  // The colours of a scheme that differ from the saved palette.
+  changedKeys: (scheme: Scheme) => readonly PaletteKey[];
 }
 
 export function useColours({
@@ -63,6 +66,8 @@ export function useColours({
     setColour: (scheme, key, text) => {
       save.edit(paletteField(scheme), editedPalette(save.values, scheme, key, text));
     },
+    changedKeys: (scheme) =>
+      changedColours(colourValues(view)[paletteField(scheme)], save.values[paletteField(scheme)]),
     setFont: (id) => {
       save.edit('tokens.font', fontChoice(id));
     },

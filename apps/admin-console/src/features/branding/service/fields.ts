@@ -74,3 +74,16 @@ export function templateFields(now: TemplateValues): SectionFields<TemplateValue
     ]),
   ) as SectionFields<TemplateValues>;
 }
+
+const SECTION_TITLES: Readonly<Record<string, string>> = {
+  colours: COLOURS_TITLE,
+  images: IMAGES_TITLE,
+  templates: TEMPLATES_SECTION_TITLE,
+};
+
+// The titles of the sections holding unsaved edits, in the order they sit.
+export function unsavedSections(dirty: ReadonlySet<string>): readonly string[] {
+  return Object.entries(SECTION_TITLES)
+    .filter(([id]) => dirty.has(id))
+    .map(([, title]) => title);
+}

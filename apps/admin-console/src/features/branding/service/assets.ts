@@ -101,6 +101,10 @@ export function uploadRefusal(
     : null;
 }
 
+function tooLarge(slot: ImageSlot): string {
+  return `The image is over ${bytesText(SLOT_RULES[slot].bytes)} for a ${SLOT_RULES[slot].label.toLowerCase()}, as uploaded or once stored.`;
+}
+
 const ASSET_PROBLEMS: Readonly<Record<string, (slot: ImageSlot) => string>> = {
   'asset-unsupported-type': () => 'That is not a PNG, a JPEG or a WebP.',
   'asset-animated': () => 'An animated image is not accepted.',
@@ -108,8 +112,7 @@ const ASSET_PROBLEMS: Readonly<Record<string, (slot: ImageSlot) => string>> = {
   'asset-dimensions': (slot) =>
     `The image is over ${String(SLOT_RULES[slot].side)} pixels on its longer side, or has too many pixels.`,
   'asset-timeout': () => 'The image took too long to decode. Try a smaller one.',
-  'asset-too-large': (slot) =>
-    `The image is over ${bytesText(SLOT_RULES[slot].bytes)} for a ${SLOT_RULES[slot].label.toLowerCase()}, as uploaded or once stored.`,
+  'asset-too-large': (slot) => tooLarge(slot),
   'asset-cap': () =>
     `The tenant’s images would pass ${TENANT_IMAGE_CAP}. Delete one that no theme uses.`,
   'asset-busy': () => 'The server is busy decoding images. Try again in a moment.',
@@ -124,7 +127,7 @@ function typeOf(problem: Problem): string {
 export function uploadFailureText(slot: ImageSlot, problem: Problem): string {
   const said = ASSET_PROBLEMS[typeOf(problem)]?.(slot);
   if (said !== undefined) return said;
-  if (problem.status === 413) return ASSET_PROBLEMS['asset-too-large']?.(slot) ?? '';
+  if (problem.status === 413) return tooLarge(slot);
   return 'The image was not uploaded.';
 }
 
@@ -145,11 +148,15 @@ function referenceLine(error: FieldError): string {
   return `${where}: ${error.message}.`;
 }
 
+// What the server's detail says when more themes name the image than it lists;
+// the mirror test holds this to the server's own sentence.
+export const IN_USE_MORE = 'more than errors lists';
+
 export function inUse(problem: Problem): InUse | null {
   if (!typeOf(problem).startsWith('asset-in-use')) return null;
   return {
     lines: (problem.errors ?? []).map(referenceLine),
-    more: problem.detail?.includes('more than errors lists') === true,
+    more: problem.detail?.includes(IN_USE_MORE) === true,
   };
 }
 
@@ -173,6 +180,8 @@ export function imagesHold(values: ImageValues): string | undefined {
     : undefined;
 }
 
+const UPLOADING_NAME = 'Uploading';
+
 export interface SlotView {
   label: string;
   note: string;
@@ -186,7 +195,7 @@ export interface SlotView {
 }
 
 // What a slot shows of the image it holds.
-export function slotView(slot: ImageSlot, values: ImageValues): SlotView {
+export function slotView(slot: ImageSlot, values: ImageValues, busy = false): SlotView {
   const { label } = SLOT_RULES[slot];
   const value = values[imageField(slot)];
   const lower = label.toLowerCase();
@@ -194,11 +203,25 @@ export function slotView(slot: ImageSlot, values: ImageValues): SlotView {
   return {
     label,
     note: value === null ? NO_IMAGE : imageNote(value.assetId),
-    uploadName: `${uploadText} ${lower}`,
+    uploadName: busy ? `${UPLOADING_NAME} ${lower}` : `${uploadText} ${lower}`,
     uploadText,
     removeName: `${REMOVE_LABEL}: ${lower}`,
     deleteName: `${DELETE_LABEL}: ${lower}`,
     assetId: value === null ? null : value.assetId,
     alt: value !== null && 'alt' in value ? value.alt : null,
   };
+}
+
+// Whether the slot holds exactly this image, which a deletion of it empties.
+export function slotNames(values: ImageValues, slot: ImageSlot, assetId: string): boolean {
+  return values[imageField(slot)]?.assetId === assetId;
+}
+
+// Whether a logo's alt text differs from the saved one.
+export function altChanged(saved: ImageValues, now: ImageValues, slot: ImageSlot): boolean {
+  const before = saved[imageField(slot)];
+  const after = now[imageField(slot)];
+  const was = before !== null && 'alt' in before ? before.alt : null;
+  const is = after !== null && 'alt' in after ? after.alt : null;
+  return was !== is && is !== null;
 }

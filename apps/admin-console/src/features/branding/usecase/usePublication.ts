@@ -7,10 +7,10 @@ import {
   publishFailure,
   publishHold,
   publishOutcomeOf,
-  PUBLISHED_TOAST,
   type PublishOutcome,
 } from '#/features/branding/service';
 import { useToast } from '#/shared/repository/useToasts';
+import { failureOf } from '#/shared/service/settled';
 
 export interface Publication {
   busy: boolean;
@@ -31,7 +31,8 @@ export function usePublication({
   tenant: string;
   view: ThemeView;
   tag: string;
-  unsaved: boolean;
+  // The sections holding unsaved edits.
+  unsaved: readonly string[];
   // Why the colours would be refused, from the pairs on screen.
   contrast: string | undefined;
   writes: ThemeWrites;
@@ -39,22 +40,25 @@ export function usePublication({
   const refusal = useRefusal(tenant);
   const toast = useToast();
   const [outcome, setOutcome] = useState(NO_OUTCOME);
+  const answered = (next: PublishOutcome): void => {
+    setOutcome(next);
+    if (next.toast !== null) toast.succeeded(next.toast);
+  };
   return {
     busy: writes.publish.busy,
     hold: publishHold({ view, unsaved, contrast }),
     outcome,
     publish: () => {
-      if (writes.publish.busy) return;
       setOutcome(NO_OUTCOME);
       writes.publish
         .run(tag)
         .then((result) => {
-          setOutcome(publishOutcomeOf(result, publishFailure));
-          if (result.ok) toast.succeeded(PUBLISHED_TOAST);
-          else refusal.report(result, 'manage-tenant');
+          answered(publishOutcomeOf(result, publishFailure));
+          const failure = failureOf(result);
+          if (failure !== null) refusal.report(failure, 'manage-tenant');
         })
         .catch(() => {
-          setOutcome(publishOutcomeOf({ ok: false, kind: 'defect' }, publishFailure));
+          answered(publishOutcomeOf({ ok: false, kind: 'defect' }, publishFailure));
         });
     },
   };

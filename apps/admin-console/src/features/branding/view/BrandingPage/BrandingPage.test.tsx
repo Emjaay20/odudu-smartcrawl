@@ -70,9 +70,8 @@ describe('contrast', () => {
       /Fix the contrast before publishing: Light: Text on page, 1\.\d:1, needs 4\.5:1/u,
     );
     const contrast = screen.getByRole('region', { name: 'Contrast' });
-    expect(within(contrast).getByRole('status')).toHaveTextContent(
-      /pairs? fails? its requirement/u,
-    );
+    expect(within(contrast).getByText(/pairs? fails? its requirement/u)).toBeVisible();
+    expect(within(contrast).getByRole('status')).toHaveTextContent(/^Contrast fails/u);
   });
 
   it('is judged as colours are typed, before anything is saved', async () => {
@@ -80,11 +79,12 @@ describe('contrast', () => {
     renderConsoleAt(AT, brandingRoutes(themeAnswer(draftedView(), '"d1"')));
     const section = await colours();
     const contrast = screen.getByRole('region', { name: 'Contrast' });
-    expect(within(contrast).getByRole('status')).toHaveTextContent('All 18 pairs meet');
+    expect(within(contrast).getByText(/^All 18 pairs meet/u)).toBeVisible();
+    expect(within(contrast).getByRole('status')).toHaveTextContent('Contrast passes.');
     const text = within(section).getByRole('textbox', { name: 'Light text' });
     await user.clear(text);
     await user.type(text, '#cccccc');
-    expect(within(contrast).getByRole('status')).toHaveTextContent(/fail/u);
+    expect(within(contrast).getByRole('status')).toHaveTextContent(/^Contrast fails/u);
     expect(within(contrast).getByText(/Light: Text on page, 1\.\d:1, needs 4\.5:1/u)).toBeVisible();
   });
 
