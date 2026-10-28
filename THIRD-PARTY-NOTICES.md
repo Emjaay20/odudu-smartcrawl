@@ -80,11 +80,12 @@ installed in the image. The other `@img` packages are Apache-2.0
 (`@img/colour`).
 
 The libraries in the libvips build, with the versions in the package's
-`versions.json` and the licences its README gives. The table was compared with
-the installed `@img/sharp-libvips-darwin-arm64` 1.3.4 (all 28 versions agree);
-the `linuxmusl` packages of the image were not installed where this was
-checked, so their own `versions.json` and README were not read, and they come
-from the same sharp-libvips 1.3.4 release:
+`versions.json` and the licences its README gives. Only the metadata of the
+installed `@img/sharp-libvips-darwin-arm64` 1.3.4 was read (all 28 versions
+agree with the table). Every platform package is built from the same
+sharp-libvips 1.3.4 release, but their component lists were not compared; the
+`linuxmusl` package lands in the container build, which is where it is
+installed:
 
 | Library       | Version | Licence                                         |
 | ------------- | ------- | ----------------------------------------------- |

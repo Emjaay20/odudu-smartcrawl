@@ -36,9 +36,12 @@ export function frameworkError(
     return;
   }
   const statusCode = error.statusCode ?? 400;
-  reply
-    .code(statusCode)
-    .send({ error: 'Bad Request', code: error.code, message: error.message, statusCode });
+  reply.code(statusCode).send({
+    error: statusCode >= 500 ? 'Internal Server Error' : 'Bad Request',
+    code: error.code,
+    message: error.message,
+    statusCode,
+  });
 }
 
 // The hashed images and stylesheets a theme names, public by design: every

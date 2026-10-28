@@ -242,14 +242,17 @@ describe('inspectImage', () => {
     const all = Promise.all(Array.from({ length: 20 }, () => inspector(png)));
     // A slot that is never freed leaves the queued calls waiting for ever;
     // the race turns that into a failure.
+    let guard: ReturnType<typeof setTimeout> | undefined;
     const results = await Promise.race([
       all,
       new Promise<never>((_, reject) => {
-        setTimeout(() => {
+        guard = setTimeout(() => {
           reject(new Error('queued decodes never ran: a slot was not freed'));
         }, 3000);
       }),
-    ]);
+    ]).finally(() => {
+      clearTimeout(guard);
+    });
     expect(peak).toBe(2);
     expect(results.map(refusedWith).filter((code) => code === 'corrupt')).toHaveLength(1);
     expect(results.map(refusedWith).filter((code) => code === 'accepted')).toHaveLength(19);
