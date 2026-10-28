@@ -139,7 +139,11 @@ describe('a tenant’s own list of languages', () => {
     const res = await http.inject({
       url: `/tenants/${tenant.name}/.well-known/openid-configuration`,
     });
-    expect(res.json().ui_locales_supported).toEqual(['en', 'fr-CA', 'ar']);
+    expect(res.json<{ ui_locales_supported: string[] }>().ui_locales_supported).toEqual([
+      'en',
+      'fr-CA',
+      'ar',
+    ]);
   });
 
   it('is all a request is matched against, whatever the browser or ui_locales asks for', async () => {

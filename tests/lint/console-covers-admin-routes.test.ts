@@ -53,6 +53,14 @@ function pendingBrandingRoutes(): Record<string, string> {
     ),
     ['POST /admin/tenants/:tenant/theme/assets', reason],
     ['DELETE /admin/tenants/:tenant/theme/assets/:assetId', reason],
+    ...[
+      'GET /admin/tenants/:tenant/message-overrides',
+      'PUT /admin/tenants/:tenant/message-overrides/:locale/:key',
+      'DELETE /admin/tenants/:tenant/message-overrides/:locale/:key',
+    ].map((route): [string, string] => [
+      route,
+      'The console has no Languages tab yet; the message override routes are called by it when it lands.',
+    ]),
   ];
   return Object.fromEntries(entries);
 }

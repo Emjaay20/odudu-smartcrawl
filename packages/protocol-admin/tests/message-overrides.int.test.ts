@@ -92,7 +92,7 @@ describe('PUT and DELETE /message-overrides/{locale}/{key}', () => {
     const ctx = await tenantCtx();
     const res = await put(ctx, 'fr', 'login.nonesuch', 'x');
     expect(res.statusCode).toBe(400);
-    expect(res.json().errors).toEqual([
+    expect(res.json<{ errors: unknown[] }>().errors).toEqual([
       { path: 'key', message: 'is not the key of any page message' },
     ]);
     expect((await list(ctx, 'locale=fr')).items).toEqual([]);
@@ -170,7 +170,7 @@ describe('the bound of 500 overrides a tenant holds', () => {
     expect((await put(ctx, 'fr', 'login.title', 'a')).statusCode).toBe(200);
     const refused = await put(ctx, 'fr', 'login.submit', 'b');
     expect(refused.statusCode).toBe(409);
-    expect(refused.json().type).toBe('about:blank#message-overrides-full');
+    expect(refused.json<{ type: string }>().type).toBe('about:blank#message-overrides-full');
     expect((await put(ctx, 'fr', 'login.title', 'changed')).statusCode).toBe(200);
     const rows = await fixture.owner
       .sql`select count(*)::int as n from message_overrides where tenant_id = ${ctx.tenant.id}`;

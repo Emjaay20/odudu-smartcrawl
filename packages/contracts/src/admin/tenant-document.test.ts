@@ -86,7 +86,7 @@ const DOCUMENT: TenantDocument = {
     login_with_email: false,
     audit_event_types: ['admin_mutation', 'admin_access'],
     supported_locales: ['en'],
-    default_locale: 'en',
+    default_locale: null,
   },
   flow: [{ authenticator: 'password', requirement: 'required' }],
   clients: [CLIENT],

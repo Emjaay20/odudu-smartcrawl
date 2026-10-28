@@ -215,6 +215,31 @@ describe('a themed page render', () => {
   });
 });
 
+const overrideReads = (statements: Statement[]): number =>
+  statements.filter((statement) => statement.query.includes('"message_overrides"')).length;
+
+describe('a page render and the tenant’s message overrides', () => {
+  it('reads a locale’s overrides once on a miss, and none on a hit', () => {
+    const baseline = workOf(BRANDING_PATHS.cachedHit);
+    const miss = workOf(BRANDING_PATHS.overridesMiss);
+    expect(overrideReads(baseline)).toBe(0);
+    expect(overrideReads(miss)).toBe(1);
+    expect(miss.length).toBe(baseline.length + 1);
+  });
+
+  it('reads them by the primary key, even where scanning is allowed to lose', async () => {
+    const read = workOf(BRANDING_PATHS.overridesMiss).find((statement) =>
+      statement.query.includes('"message_overrides"'),
+    );
+    expect(read).toBeDefined();
+    if (read === undefined) return;
+    const plan = await planned(read, { settings: ['enable_seqscan = off'] });
+    const own = scansOf(plan).filter((scan) => scan.relation === 'message_overrides');
+    expect(own.length).toBeGreaterThan(0);
+    expect(own.filter((scan) => scan.node === 'Seq Scan')).toEqual([]);
+  });
+});
+
 // What the registration form costs with a cached theme and no return_to: a
 // statement added to every registration path moves this number.
 const PLAIN_REGISTRATION_STATEMENTS = 1;

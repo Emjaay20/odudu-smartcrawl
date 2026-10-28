@@ -1,6 +1,7 @@
 import { withTenant } from '@odudu/db';
 import { assetRepository, themeRepository, type ThemeBody } from '@odudu/domain-theme';
 import { type FastifyInstance } from 'fastify';
+import { mintAdminToken } from '#/testing/plan-admin-drives';
 import { type PlanWorld, TARGET_CLIENT, TARGET_TENANT } from '#/testing/plan-world';
 import { type Capture } from '#/testing/plan-paths';
 
@@ -10,6 +11,7 @@ export const BRANDING_PATHS = {
   cachedHit: 'sign-in page of a client with no theme applied, theme cached',
   themedMiss: 'sign-in page of a themed client, theme not cached',
   themedHit: 'sign-in page of a themed client, theme cached',
+  overridesMiss: 'sign-in page of a client with no theme applied, overrides not cached',
   logoutPage: 'logout page of a themed tenant',
   registrationPlain: 'registration page, no return_to',
   registrationGarbage: 'registration page, return_to names no client',
@@ -71,6 +73,28 @@ export async function driveBranding(world: PlanWorld, capture: Capture): Promise
   await capture(BRANDING_PATHS.cachedHit, 'oidc', () =>
     http.inject({ url: signInUrl(TARGET_CLIENT, plain.uri) }),
   );
+
+  // A write drops the tenant's cached overrides, so the next render reads them:
+  // the tenant holds 499, so this is the 500th, and the write drive sets and
+  // removes the same message.
+  const token = await mintAdminToken(world, { id: tenantId, name: TARGET_TENANT }, [
+    'manage-tenant',
+  ]);
+  const written = await http.inject({
+    method: 'PUT',
+    url: `/admin/tenants/${TARGET_TENANT}/message-overrides/en/login.title`,
+    headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+    payload: JSON.stringify({ message: 'Sign in to the plan tenant' }),
+  });
+  if (written.statusCode !== 200) {
+    throw new Error(`the plan override was refused: ${String(written.statusCode)} ${written.body}`);
+  }
+  const overridden = await capture(BRANDING_PATHS.overridesMiss, 'oidc', () =>
+    http.inject({ url: signInUrl(TARGET_CLIENT, plain.uri) }),
+  );
+  if (!overridden.body.includes('Sign in to the plan tenant')) {
+    throw new Error('the sign-in page did not show the override');
+  }
 
   const logo = await withTenant(world.app.db, tenantId, (tx) =>
     assetRepository(tx).put({

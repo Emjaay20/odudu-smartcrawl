@@ -90,6 +90,9 @@ select s.id, s.tenant_id, 'o' || row_number() over (),
 insert into clients (id, tenant_id, client_id, name, type)
 select gen_random_uuid(), o.id, 'c' || g, 'App ' || g, 'public'
   from vol_other o cross join generate_series(1, ${v.clientsPerOtherTenant}) g;
+insert into message_overrides (tenant_id, locale, key, message)
+select ${t}, case when g % 2 = 0 then 'en' else 'fr' end, 'bulk.' || g, 'Wording ' || g
+  from generate_series(1, 499) g;
 insert into client_oidc_config (client_id, tenant_id, redirect_uris, grant_types, token_endpoint_auth_method, web_origins)
 select id, tenant_id, '{https://app.example/cb}', '{authorization_code}', 'none', '{+}'
   from clients where tenant_id in (select id from vol_other);

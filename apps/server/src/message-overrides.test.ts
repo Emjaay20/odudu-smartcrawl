@@ -118,7 +118,7 @@ describe('the message override reader', () => {
     expect(read).toHaveBeenCalledWith('t1', 'fr-CA');
   });
 
-  it('lets reads past the in-flight bound run alone rather than queue', async () => {
+  it('lets reads past the in-flight bound run alone rather than queue', () => {
     const read = vi.fn(() => new Promise<Record<string, string>>(() => undefined));
     const { overrides } = setup(read);
     for (let n = 0; n < MAX_OVERRIDE_READS_IN_FLIGHT + 5; n += 1) {

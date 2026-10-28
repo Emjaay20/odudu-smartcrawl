@@ -107,7 +107,10 @@ export const tenants = pgTable('tenants', {
   // of the browser's preference when set (null leaves the browser to decide);
   // a default is always one of the list
   // (packages/db/drizzle/0108_tenant_locales.sql, ADR 0043).
-  supportedLocales: text('supported_locales').array().notNull().default(sql`ARRAY['en']`),
+  supportedLocales: text('supported_locales')
+    .array()
+    .notNull()
+    .default(sql`ARRAY['en']`),
   defaultLocale: text('default_locale'),
   // Search keys, in the C collation, filled by the database
   // (packages/db/drizzle/0074_list_indexes_tenants_clients.sql).

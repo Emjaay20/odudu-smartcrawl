@@ -23,6 +23,7 @@ How they were captured is in [How the transcripts are captured and checked](../.
 - [POST /admin/tenant-imports](./post-admintenant-imports.md)
 - [GET /settings and PATCH /settings](./get-settings-and-patch-settings.md)
 - [Theme: draft, publish, versions, restore, reset](./get-theme-put-theme-and-the-theme-routes.md)
+- [Message overrides: list, set, remove](./get-message-overrides-put-message-overrides-and-delete-message-overrides.md)
 - [GET /clients, POST /clients and GET /clients/{id}](./get-clients-post-clients-and-get-clientsid.md)
 - [PATCH /clients/{id}](./patch-clientsid.md)
 - [DELETE /clients/{id}](./delete-clientsid.md)

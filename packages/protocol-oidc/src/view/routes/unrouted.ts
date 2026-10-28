@@ -79,7 +79,6 @@ export function answerServerError(
   error: FastifyError,
   request: FastifyRequest,
   reply: FastifyReply,
-  deps: UnroutedDeps,
 ): FastifyReply {
   const status = error.statusCode ?? 500;
   if (status < 500) return reply.send(error);

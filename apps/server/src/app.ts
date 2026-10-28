@@ -386,7 +386,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   };
   app.setNotFoundHandler((request, reply) => answerNotFound(request, reply, unrouted));
   app.setErrorHandler<FastifyError>((error, request, reply) =>
-    answerServerError(error, request, reply, unrouted),
+    answerServerError(error, request, reply),
   );
 
   const throttle: RateLimiter = slidingWindow({

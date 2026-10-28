@@ -79,9 +79,8 @@ describe('a tenant override carried on the locale', () => {
 
   it('ignores a key the map does not hold as its own, however it is spelled', () => {
     expect(t(withOverrides('en', {}), 'plain')).toBe("Can't go on");
-    expect(t({ tag: 'en', dir: 'ltr', overrides: Object.create({ plain: 'x' }) }, 'plain')).toBe(
-      "Can't go on",
-    );
+    const inherited = Object.create({ plain: 'x' }) as Record<string, string>;
+    expect(t({ tag: 'en', dir: 'ltr', overrides: inherited }, 'plain')).toBe("Can't go on");
   });
 });
 

@@ -247,8 +247,12 @@ export function withBranding(
   templateFallback?: PageLocale['templateFallback'],
 ): PageLocale {
   if (branding === null) {
-    const { branding: _branding, templateFallback: _fallback, ...rest } = locale;
-    return rest;
+    return {
+      tag: locale.tag,
+      dir: locale.dir,
+      ...(locale.theme === undefined ? {} : { theme: locale.theme }),
+      ...(locale.overrides === undefined ? {} : { overrides: locale.overrides }),
+    };
   }
   return templateFallback === undefined
     ? { ...locale, branding }

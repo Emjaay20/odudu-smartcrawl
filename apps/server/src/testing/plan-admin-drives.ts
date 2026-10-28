@@ -287,6 +287,7 @@ export function adminPaths(ids: AdminIds): {
     { path: `${C}/${ids.client}/logout-deliveries?status=failed` },
     { path: `${C}/${ids.client}/sessions` },
     { path: `${T}/registration-tokens` },
+    { path: `${T}/message-overrides?locale=en` },
     { path: `${T}/keys` },
     { path: `${T}/flow/executions` },
     { path: `${S}/${ids.subject}/credentials` },

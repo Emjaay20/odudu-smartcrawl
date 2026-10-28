@@ -119,7 +119,10 @@ export function createDatabaseMessageOverrides(deps: {
       ),
     now: () => systemClock.now().getTime(),
     log: ({ scope, reason }) => {
-      deps.logger.warn({ scope, reason }, 'message overrides were not applied, the catalogue is shown');
+      deps.logger.warn(
+        { scope, reason },
+        'message overrides were not applied, the catalogue is shown',
+      );
     },
   });
 }

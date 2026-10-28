@@ -263,11 +263,14 @@ describe('another tenant', () => {
     const tenantA = newId();
     await withTenant(app.db, tenantA, (tx) => seedOne(tx, tenantA));
     const tenantB = await newTenant();
-    await expect(
-      withTenant(app.db, tenantB, (tx) =>
-        repo(tx).put({ tenantId: tenantA, locale: 'fr', key: 'login.title', message: 'taken' }),
-      ),
-    ).rejects.toMatchObject({ cause: { message: expect.stringMatching(/row-level security/) } });
+    const refused = await withTenant(app.db, tenantB, (tx) =>
+      repo(tx).put({ tenantId: tenantA, locale: 'fr', key: 'login.title', message: 'taken' }),
+    ).then(
+      () => null,
+      (error: unknown) => error,
+    );
+    expect(refused).toBeInstanceOf(Error);
+    expect(refused instanceof Error && String(refused.cause)).toMatch(/row-level security/);
     await withTenant(app.db, tenantA, (tx) => stillThere(tx, tenantA));
   });
 });

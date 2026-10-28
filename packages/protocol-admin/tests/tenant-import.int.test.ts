@@ -295,6 +295,49 @@ describe('POST /admin/tenant-imports', () => {
     expect(withoutRenamedFields(reexported)).toEqual(withoutRenamedFields(expected));
   });
 
+  it('carries a tenant’s languages and default across, and refuses a default outside the list', async () => {
+    const source = await fixture.createTenant(`lang-src-${newId()}`);
+    const tenantToken = await fixture.adminToken(source.name, ['manage-tenant']);
+    const patched = await fixture.http.inject({
+      method: 'PATCH',
+      url: `/admin/tenants/${source.name}/settings`,
+      headers: { authorization: `Bearer ${tenantToken}`, 'content-type': 'application/json' },
+      payload: { supported_locales: ['en', 'fr-CA', 'ar'], default_locale: 'fr-CA' },
+    });
+    expect(patched.statusCode, patched.payload).toBe(200);
+    const token = await operatorToken();
+    const original = await exportOf(token, source.name);
+    expect(original.settings).toMatchObject({
+      supported_locales: ['en', 'fr-CA', 'ar'],
+      default_locale: 'fr-CA',
+    });
+
+    const name = `lang-${newId()}`;
+    const imported = await postImport(token, { name, document: original });
+    expect(imported.statusCode, imported.payload).toBe(201);
+    expect((await exportOf(token, name)).settings).toMatchObject({
+      supported_locales: ['en', 'fr-CA', 'ar'],
+      default_locale: 'fr-CA',
+    });
+
+    const refused = await postImport(token, {
+      name: `lang-bad-${newId()}`,
+      document: {
+        ...original,
+        settings: {
+          ...original.settings,
+          supported_locales: ['en', 'en_US'],
+          default_locale: 'de',
+        },
+      },
+    });
+    expect(refused.statusCode).toBe(400);
+    expect((refused.json<ImportRefusal>().errors ?? []).map((error) => error.path).sort()).toEqual([
+      'document.settings.default_locale',
+      'document.settings.supported_locales',
+    ]);
+  });
+
   it('answers each confidential client a fresh secret that authenticates at /token', async () => {
     const source = await seededSource();
     const token = await operatorToken();
