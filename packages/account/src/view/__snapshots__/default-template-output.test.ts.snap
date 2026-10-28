@@ -7,7 +7,7 @@ exports[`the registration pages under the default template > renders the form by
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>Create account</title>
+<title>إنشاء حساب</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
 <link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
@@ -16,18 +16,18 @@ exports[`the registration pages under the default template > renders the form by
 <main class="page">
 <p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
 <header class="intro">
-<h1>Create account</h1>
+<h1>إنشاء حساب</h1>
 <p class="tenant"><bdi>acme</bdi></p>
 </header>
 <form method="post" action="/tenants/acme/login-actions/registration">
-  <label>Username <input type="text" name="username" autocomplete="username"></label>
-  <label>Email <input type="email" name="email" autocomplete="email"></label>
-  <label>Password <input type="password" name="password" autocomplete="new-password" id="password" minlength="12" spellcheck="false" autocapitalize="off" autocorrect="off" aria-describedby="password-rules-list"></label>
-  <div class="rules hint" id="password-rules" data-min="12" data-summary="{met} of {total} rules met">
-    <p class="rules-head"><span>Your password needs:</span> <button type="button" class="quiet" hidden aria-controls="password" aria-pressed="false">Show password</button> <span role="status"></span></p>
+  <label>اسم المستخدم <input type="text" name="username" autocomplete="username"></label>
+  <label>البريد الإلكتروني <input type="email" name="email" autocomplete="email"></label>
+  <label>كلمة المرور <input type="password" name="password" autocomplete="new-password" id="password" minlength="12" spellcheck="false" autocapitalize="off" autocorrect="off" aria-describedby="password-rules-list"></label>
+  <div class="rules hint" id="password-rules" data-min="12" data-summary="استُوفي {met} من أصل {total} من القواعد">
+    <p class="rules-head"><span>تتطلب كلمة المرور:</span> <button type="button" class="quiet" hidden aria-controls="password" aria-pressed="false">إظهار كلمة المرور</button> <span role="status"></span></p>
     <ul id="password-rules-list">
-      <li data-rule="length">At least 12 characters</li>
-      <li>Not a common password</li>
+      <li data-rule="length">12 من الأحرف على الأقل</li>
+      <li>ألا تكون كلمة مرور شائعة</li>
     </ul>
   </div>
   <script nonce="NONCE">(function () {
@@ -68,7 +68,7 @@ exports[`the registration pages under the default template > renders the form by
     toggle.setAttribute('aria-pressed', String(show));
   });
 })();</script>
-  <label>Confirm password <input type="password" name="password_confirm" id="password-confirm" autocomplete="new-password" spellcheck="false" autocapitalize="off" autocorrect="off"></label>
+  <label>تأكيد كلمة المرور <input type="password" name="password_confirm" id="password-confirm" autocomplete="new-password" spellcheck="false" autocapitalize="off" autocorrect="off"></label>
   <script nonce="NONCE">(function () {
   var first = document.getElementById('password');
   var again = document.getElementById('password-confirm');
@@ -76,7 +76,7 @@ exports[`the registration pages under the default template > renders the form by
   if (!first || !again || !toggle) return;
   toggle.addEventListener('click', function () { again.type = first.type; });
 })();</script>
-  <button type="submit">Create account</button>
+  <button type="submit">إنشاء حساب</button>
 </form>
 </main>
 </body>
@@ -1216,7 +1216,7 @@ exports[`the registration pages under the default template > renders the outcome
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>Your account is ready</title>
+<title>حسابك جاهز</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
 <link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
@@ -1224,9 +1224,9 @@ exports[`the registration pages under the default template > renders the outcome
 <body>
 <main class="page">
 <p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
-<h1>Your account is ready</h1>
+<h1>حسابك جاهز</h1>
 <p class="links">
-<a href="/tenants/acme/protocol/openid-connect/auth?response_type=code&amp;client_id=a&amp;state=1">Continue to sign in</a>
+<a href="/tenants/acme/protocol/openid-connect/auth?response_type=code&amp;client_id=a&amp;state=1">المتابعة إلى تسجيل الدخول</a>
 </p>
 </main>
 </body>
@@ -1494,7 +1494,7 @@ exports[`the required-actions pages under the default template > renders the for
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>Update your account</title>
+<title>حدّث حسابك</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
 <link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
@@ -1503,16 +1503,16 @@ exports[`the required-actions pages under the default template > renders the for
 <main class="page">
 <p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
 <header class="intro">
-<h1>Update your account</h1>
+<h1>حدّث حسابك</h1>
 <p class="tenant"><bdi>acme</bdi></p>
 </header>
-<p>Your administrator asks you to:</p>
+<p>يطلب منك المسؤول ما يلي:</p>
 <ul>
-<li>Set up an authenticator app</li>
+<li>إعداد تطبيق مصادقة</li>
 </ul>
 <form method="post" action="/tenants/acme/login-actions/action-token">
   <input type="hidden" name="key" value="key-1">
-  <button type="submit">Continue</button>
+  <button type="submit">متابعة</button>
 </form>
 </main>
 </body>
@@ -1689,7 +1689,7 @@ exports[`the required-actions pages under the default template > renders the out
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>Account updated</title>
+<title>تم تحديث الحساب</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
 <link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
@@ -1697,13 +1697,13 @@ exports[`the required-actions pages under the default template > renders the out
 <body>
 <main class="page">
 <p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
-<h1>Your account is updated</h1>
-<p>Sign in to the application to finish:</p>
+<h1>تم تحديث حسابك</h1>
+<p>سجّل الدخول إلى التطبيق لإكمال العملية:</p>
 <ul>
 <li><bdi>&lt;i&gt;rotate&lt;/i&gt;</bdi></li>
 </ul>
 <p class="links">
-<a href="/tenants/acme/protocol/openid-connect/auth?response_type=code&amp;client_id=a&amp;state=1">Continue to sign in</a>
+<a href="/tenants/acme/protocol/openid-connect/auth?response_type=code&amp;client_id=a&amp;state=1">المتابعة إلى تسجيل الدخول</a>
 </p>
 </main>
 </body>
@@ -1870,7 +1870,7 @@ exports[`the reset pages under the default template > renders the outcome pages 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>Password reset</title>
+<title>تمت إعادة تعيين كلمة المرور</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
 <link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
@@ -1878,10 +1878,10 @@ exports[`the reset pages under the default template > renders the outcome pages 
 <body>
 <main class="page">
 <p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
-<h1>Your password has been reset</h1>
-<p>Sign in with your new password.</p>
+<h1>تمت إعادة تعيين كلمة مرورك</h1>
+<p>سجّل الدخول بكلمة مرورك الجديدة.</p>
 <p class="links">
-<a href="/tenants/acme/protocol/openid-connect/auth?response_type=code&amp;client_id=a&amp;state=1">Continue to sign in</a>
+<a href="/tenants/acme/protocol/openid-connect/auth?response_type=code&amp;client_id=a&amp;state=1">المتابعة إلى تسجيل الدخول</a>
 </p>
 </main>
 </body>
@@ -1981,7 +1981,7 @@ exports[`the reset pages under the default template > renders the password form 
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>Choose a new password</title>
+<title>اختر كلمة مرور جديدة</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
 <link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
@@ -1990,17 +1990,17 @@ exports[`the reset pages under the default template > renders the password form 
 <main class="page">
 <p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
 <header class="intro">
-<h1>Choose a new password</h1>
+<h1>اختر كلمة مرور جديدة</h1>
 <p class="tenant"><bdi>acme</bdi></p>
 </header>
 <form method="post" action="/tenants/acme/login-actions/action-token">
   <input type="hidden" name="key" value="key-1">
-  <label>New password <input type="password" name="password" autocomplete="new-password" id="password" minlength="12" spellcheck="false" autocapitalize="off" autocorrect="off" aria-describedby="password-rules-list"></label>
-  <div class="rules hint" id="password-rules" data-min="12" data-summary="{met} of {total} rules met">
-    <p class="rules-head"><span>Your password needs:</span> <button type="button" class="quiet" hidden aria-controls="password" aria-pressed="false">Show password</button> <span role="status"></span></p>
+  <label>كلمة المرور الجديدة <input type="password" name="password" autocomplete="new-password" id="password" minlength="12" spellcheck="false" autocapitalize="off" autocorrect="off" aria-describedby="password-rules-list"></label>
+  <div class="rules hint" id="password-rules" data-min="12" data-summary="استُوفي {met} من أصل {total} من القواعد">
+    <p class="rules-head"><span>تتطلب كلمة المرور:</span> <button type="button" class="quiet" hidden aria-controls="password" aria-pressed="false">إظهار كلمة المرور</button> <span role="status"></span></p>
     <ul id="password-rules-list">
-      <li data-rule="length">At least 12 characters</li>
-      <li>Not a common password</li>
+      <li data-rule="length">12 من الأحرف على الأقل</li>
+      <li>ألا تكون كلمة مرور شائعة</li>
     </ul>
   </div>
   <script nonce="NONCE">(function () {
@@ -2041,7 +2041,7 @@ exports[`the reset pages under the default template > renders the password form 
     toggle.setAttribute('aria-pressed', String(show));
   });
 })();</script>
-  <button type="submit">Reset password</button>
+  <button type="submit">إعادة تعيين كلمة المرور</button>
 </form>
 </main>
 </body>
@@ -2445,7 +2445,7 @@ exports[`the reset pages under the default template > renders the request form b
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>Forgot your password?</title>
+<title>هل نسيت كلمة المرور؟</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
 <link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
@@ -2454,12 +2454,12 @@ exports[`the reset pages under the default template > renders the request form b
 <main class="page">
 <p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
 <header class="intro">
-<h1>Forgot your password?</h1>
+<h1>هل نسيت كلمة المرور؟</h1>
 <p class="tenant"><bdi>acme</bdi></p>
 </header>
 <form method="post" action="/tenants/acme/login-actions/reset-password">
-  <label>Email <input type="email" name="email" autocomplete="email"></label>
-  <button type="submit">Send reset link</button>
+  <label>البريد الإلكتروني <input type="email" name="email" autocomplete="email"></label>
+  <button type="submit">إرسال رابط إعادة التعيين</button>
 </form>
 </main>
 </body>
@@ -2599,7 +2599,7 @@ exports[`the verification pages under the default template > renders the confirm
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>Confirm your email address</title>
+<title>أكّد عنوان بريدك الإلكتروني</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
 <link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
@@ -2607,11 +2607,11 @@ exports[`the verification pages under the default template > renders the confirm
 <body>
 <main class="page">
 <p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
-<h1>Confirm your email address</h1>
-<p>Press the button to confirm this address.</p>
+<h1>أكّد عنوان بريدك الإلكتروني</h1>
+<p>اضغط على الزر لتأكيد هذا العنوان.</p>
 <form method="post" action="/tenants/acme/login-actions/action-token">
   <input type="hidden" name="key" value="key-1">
-  <button type="submit">Confirm my email</button>
+  <button type="submit">تأكيد بريدي الإلكتروني</button>
 </form>
 </main>
 </body>
@@ -2771,7 +2771,7 @@ exports[`the verification pages under the default template > renders the succeed
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>Can&#39;t verify this link</title>
+<title>تعذّر التحقق من هذا الرابط</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
 <link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
@@ -2779,10 +2779,10 @@ exports[`the verification pages under the default template > renders the succeed
 <body>
 <main class="page">
 <p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
-<h1>This link can&#39;t be used</h1>
-<p>It may have already been used, expired, or no longer matches your email address. Request a new verification email and try again.</p>
+<h1>لا يمكن استخدام هذا الرابط</h1>
+<p>قد يكون استُخدم من قبل، أو انتهت صلاحيته، أو لم يعد يطابق عنوان بريدك الإلكتروني. اطلب رسالة تحقق جديدة وحاول مرة أخرى.</p>
 <p class="links">
-<a href="/tenants/acme/protocol/openid-connect/auth?response_type=code&amp;client_id=a&amp;state=1">Back to sign in</a>
+<a href="/tenants/acme/protocol/openid-connect/auth?response_type=code&amp;client_id=a&amp;state=1">العودة إلى تسجيل الدخول</a>
 </p>
 </main>
 </body>
@@ -2797,7 +2797,7 @@ exports[`the verification pages under the default template > renders the succeed
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>Email confirmed</title>
+<title>تم تأكيد البريد الإلكتروني</title>
 <link rel="stylesheet" href="/instrument/instrument.css">
 <link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
@@ -2805,8 +2805,8 @@ exports[`the verification pages under the default template > renders the succeed
 <body>
 <main class="page">
 <p class="brand"><svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="16" cy="6" r="4"/><path d="M16 10V30"/><path d="M12 14H20"/></svg><span class="wordmark">odudu</span></p>
-<h1>Your email address is confirmed</h1>
-<p>Return to the application you were signing in to and sign in again.</p>
+<h1>تم تأكيد عنوان بريدك الإلكتروني</h1>
+<p>عد إلى التطبيق الذي كنت تسجّل الدخول إليه وسجّل الدخول مرة أخرى.</p>
 </main>
 </body>
 </html>"

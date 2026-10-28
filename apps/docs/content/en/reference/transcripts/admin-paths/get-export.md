@@ -22,6 +22,10 @@ the document means the same thing in whichever tenant it is imported into.
 travel under `registration_policy`; every other tenant setting is under
 `settings`.
 
+`settings.supported_locales`, `settings.default_locale` and `message_overrides`
+(a tenant's own wording, at most 500, each `locale`, `key` and `message`) travel
+with it.
+
 No secret is in it: no client secret, SMTP password, password hash, TOTP seed,
 passkey, recovery code or private signing key, and no session, consent, grant,
 registration token or audit row. Each secret a reader would expect is named

@@ -2,7 +2,14 @@ import { assetPath } from '@odudu/domain-theme';
 import { describe, expect, it } from 'vitest';
 import { base64Length, usedImages } from '#/service/theme-preview';
 
-const IMAGE = { id: 'i', sha256: 'a'.repeat(64), mime: 'image/png', size: 300 };
+const IMAGE = {
+  id: 'i',
+  sha256: 'a'.repeat(64),
+  mime: 'image/png',
+  width: 64,
+  height: 32,
+  size: 300,
+};
 const PATH = assetPath('acme', IMAGE.sha256, IMAGE.mime) ?? '';
 
 describe('usedImages', () => {

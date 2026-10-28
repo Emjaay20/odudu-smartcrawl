@@ -73,13 +73,121 @@ That client is guarded on the admin API like every field outside
   setting appearing through an import is visible in the new tenant's clients and
   not in its trail.
 
+## Localised client and scope metadata
+
+- **Migration `0109_i18n_metadata.sql`** adds `clients.name_i18n` and
+  `description_i18n` and `client_scopes.description_i18n` and `consent_text_i18n`, each
+  `jsonb NOT NULL DEFAULT '{}'`, with a CHECK for an object of at most 128 KiB. The
+  application holds the rest: keys through `canonicalLocale`, each once, at most 32,
+  each in the tenant's `supported_locales` on a write, each value at the base column's
+  limit (client name 256, which the name column itself does not have; description 1000;
+  consent text 500) and free of bidirectional controls.
+- **A PATCH replaces the whole map**, as it does a list field, and a PATCH naming a
+  client's map must carry `If-Match` (428 otherwise). A scope's is optional, as every
+  scope amendment's is. An empty object clears. A language dropped from the tenant's
+  list later leaves its stored text alone; no page asks for it.
+- **Lookup** is RFC 4647 §3.4 on the page's negotiated tag (`lookupLocalised`,
+  `@odudu/contracts`), then the base column. The consent page and the sign-in page's
+  client name use it. The text is the client's own metadata, as the base name is, and
+  carries the same trust: it is escaped by `tHtml` and isolated in `<bdi>` like the base.
+- **Dynamic registration** reads `client_name#<tag>` members: a well-formed tag the
+  tenant does not offer is dropped and not echoed, a malformed tag, a tag written twice,
+  a bad value or more than 32 members is refused as `invalid_client_metadata` without
+  repeating the member's name. The 201 echoes what was kept.
+- **The tenant document carries all four maps**, defaulting to empty, so an earlier
+  document still imports; an import checks them against its own `supported_locales`.
+- **Base bounds.** The base client name is now held to 256 characters on the write doors
+  (registration, admin create and PATCH) and a scope's description to 1000 (create, PATCH).
+  **Import does not bound them**: a legacy row the seed CLI wrote exports as it is, and an
+  import that refused what an export emits could not restore its own tenant; the document's
+  character checks (no bidirectional controls) still apply, and the per-language maps stay
+  bounded on import. Export does not clip, so the round trip returns the value unchanged. A value already stored that is longer passes when sent back unchanged, as with
+  bidirectional controls, so no old row blocks an unrelated edit. No CHECK was added: it would
+  fail the migration on any existing long row and bound the seed CLI's names, and the
+  application's write checks are where every other text limit of a client is held.
+- **Only `client_name#<tag>` is read.** `client_uri#fr`, `logo_uri#fr`, `policy_uri#fr` and
+  `tos_uri#fr` are ignored and not echoed (RFC 7591 §2.2 lets a server ignore them); the
+  localised pages a client links are a later request if one is made.
+- **A scope PATCH leaves `If-Match` optional**, as every scope amendment does: scopes have no
+  list field that forces it, and the console always sends one. A client's maps require it
+  because the client already requires it for its whole-replaced lists.
+- **Row weight.** The four maps ride on the rows a client or scope read already selects: up to
+  about 40 KB a client at the worst case (32 entries of 256 and 1000 characters), so a
+  list of 200 clients can be several megabytes. A list read cannot leave them out cheaply,
+  since the list item is the client's wire shape and the contract makes the maps required
+  members of it; the plan volume holds full maps on every client and scope and the statement
+  counts stay constant, but bytes per page grow. Dropping them from list items is a contract
+  change left for whoever measures a need.
+- **Attacker text.** An anonymous registration persists up to 32 x 256 characters of the
+  registrant's text per client in `name_i18n`, the same exposure as the base name, bounded by
+  `max_clients` and escaped wherever it is shown.
+- **No extra query**: the maps are columns on rows already read, so a list read and the
+  consent context make the statements they made before.
+
+## Arabic
+
+- **Drafted, unreviewed.** Every Arabic sentence of the five catalogues
+  (`messages.ar.ts` in account, authn-flows, console-gateway and protocol-oidc, and
+  `packages/email/src/service/messages.ar.ts`) was drafted in Modern Standard Arabic by the
+  implementer, with no reader of Arabic. `SHIPPED_LOCALES` is `['en', 'ar']`; a tenant still
+  offers a language only by listing it in `supported_locales`, which defaults to `en`.
+- **Completeness is checked, quality is not.** `tests/lint/arabic-catalogues.test.ts` fails on a
+  missing or extra key, on an argument whose name, kind or number skeleton differs from
+  English, on a select with different arms, and on a plural without all six forms Arabic
+  needs (`zero`, `one`, `two`, `few`, `many`, `other`). The one plural, `throttled.retryAfter`,
+  has them all.
+- **Counts avoid agreement.** Arabic number-noun agreement changes with the number, so a count
+  of characters or rules reads "N من الأحرف" and "N من أصل M من القواعد", which is grammatical
+  for every N. Digits are Latin: `Intl` formats `ar` with Latin digits, as the codes and
+  keys on the same pages are.
+- **Layout.** The page stylesheet already used only logical properties; the check is now a
+  word search that refuses any `left` or `right`, `translateX`, `scaleX` and
+  `background-position` (`packages/instrument/src/service/build.test.ts`). The two things
+  it permits are named there: the 404 drawing's rotation, which is art and not mirrored,
+  and `letter-spacing` on the Latin wordmark only, because spacing breaks the joining of
+  Arabic letters. Mail clients do not read logical properties, so a right-to-left mail sets
+  `dir="rtl"` and an explicit `text-align:right`, and keeps its Latin link `dir="ltr"`.
+- **Isolation.** Every placeholder that can carry a client, account or label name is isolated
+  in a `<bdi>` at its call site; the two passkey failure messages wrap `{reason}`, which the
+  page script fills in with a browser message, in first-strong isolates (U+2068, U+2069) in
+  the Arabic text. `arabic-isolation.test.ts` in each package holds this.
+- **Browser proof.** `apps/admin-console/e2e/server-pages-arabic.spec.ts` reaches every kind of
+  page with `Accept-Language: ar`, asserts `lang`, `dir` and the computed direction, and runs
+  the same axe scan in both colour schemes, the phone width and the card width. It runs in CI.
+
+## Themed mail
+
+The logo is a hosted address, not an attachment (ADR 0046's amendment): a queued row
+holds one URL where a CID image would hold up to 341 KiB. The brand route serves an image
+only while a published version names it, so a mail queued before a publish that drops its
+logo, and any such mail opened later, shows the alt text in the box its `width` and
+`height` hold. `themed-mail.int.test.ts` pins this: it queues a mail, publishes a
+replacement, sends, and then fetches both addresses.
+
+A mail is themed in the transaction it is queued in. The resolver the pages use reads
+through its own connection, which a burst of mail inside open transactions could starve,
+so `resolveMailBranding` reads the tenant's layer through the caller's transaction and
+fills the same cache the pages read. The reset request and the registration read the theme
+and the tenant's default language before they look the address up, so a known address
+and an unknown one cost the same (`branding-wiring.int.test.ts` asks for the theme on both paths).
+
+A scheme whose palette fails the theme's contrast rules at build time is dropped for the
+mail's own colours; the roles a mail draws (ink and muted on page, panel and sunken, the
+link ink on all three, the button's ink on its fill) are all pairs the validator holds.
+
 ## Owed at phase close
 
-| Owed                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Owner   | Why not yet                                                                                                                                                                                                |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| A transcript of the public brand route: the stylesheet and logo a themed page links, fetched on a live stack and re-run against the build.                                                                                                                                                                                                                                                                                                                                | Task 26 | No route publishes a theme until the admin API exists, so there is nothing to serve.                                                                                                                       |
-| Captured transcripts of the fourteen theme routes (draft, preview, publish, versions, restore, reset, for the tenant and for a client) and the image upload and delete, re-run on a live stack, with the admin-paths page `get-theme-put-theme-and-the-theme-routes.md` rewritten around them. The page now says it holds no output.                                                                                                                                      | Task 26 | The stack that captures these pages was not run with a theme.                                                                                                                                              |
-| The OpenAPI transcript's `content-length`, its path count and its KB figure were set from the generated document, and its `Date` and `x-request-id` are from the earlier capture. Re-capture `GET /admin/openapi.json` with the rest.                                                                                                                                                                                                                                     | Task 26 | Same stack. The figures are what `buildAdminOpenApiDocument` serialises to, which the test derives.                                                                                                        |
-| The console frame of the draft preview must be proven in a real browser: the shell's policy needs `frame-src 'self'`, and a frame sandboxed without `allow-same-origin` has an opaque origin, so whether `style-src 'self'` and `font-src 'self'` still load the Instrument stylesheet and fonts there is unproven; they may need CORS headers on `/instrument`. The preview is reached at `/console/api/admin/tenants/{tenant}/theme/preview`.                           | Task 23 | The Branding area does not exist yet; the route answers a frame today (`apps/server/tests/theme-preview.int.test.ts`), but no browser has framed it.                                                       |
-| The preview's sign-in sample ignores the tenant's settings (remember me, passkey, registration and reset links), so it shows a fixed arrangement.                                                                                                                                                                                                                                                                                                                         | Task 23 | The preview route takes no tenant settings; the console decides whether to pass them.                                                                                                                      |
-| The admin router validates a body before it authenticates (the image upload is the exception: it authenticates and checks its size in `onRequest`, before the body is read), so an unauthenticated caller makes the server buffer and validate up to 4 MiB on a theme `PUT` (16 MiB on a tenant import) and reads schema details in a `400` where a `401` belongs (`packages/protocol-admin/src/view/routes/router.ts`). Proposed owner: P11, with the other load bounds. | P11     | Not placed in `docs/NEXT.md`: a placement there must have its roadmap line and section 11 criterion, and `tests/docs/roadmap-section-11.test.ts` fails without them; adding P11 scope is the owner's call. |
+| Owed                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Owner         | Why not yet                                                                                                                                                                                                |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A transcript of the public brand route: the stylesheet and logo a themed page links, fetched on a live stack and re-run against the build.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Task 26       | No route publishes a theme until the admin API exists, so there is nothing to serve.                                                                                                                       |
+| Captured transcripts of the fourteen theme routes (draft, preview, publish, versions, restore, reset, for the tenant and for a client) and the image upload and delete, re-run on a live stack, with the admin-paths page `get-theme-put-theme-and-the-theme-routes.md` rewritten around them. The page now says it holds no output.                                                                                                                                                                                                                                                                                                          | Task 26       | The stack that captures these pages was not run with a theme.                                                                                                                                              |
+| The OpenAPI transcript's `content-length`, its path count and its KB figure were set from the generated document, and its `Date` and `x-request-id` are from the earlier capture. Re-capture `GET /admin/openapi.json` with the rest.                                                                                                                                                                                                                                                                                                                                                                                                         | Task 26       | Same stack. The figures are what `buildAdminOpenApiDocument` serialises to, which the test derives.                                                                                                        |
+| The console frame of the draft preview must be proven in a real browser: the shell's policy needs `frame-src 'self'`, and a frame sandboxed without `allow-same-origin` has an opaque origin, so whether `style-src 'self'` and `font-src 'self'` still load the Instrument stylesheet and fonts there is unproven; they may need CORS headers on `/instrument`. The preview is reached at `/console/api/admin/tenants/{tenant}/theme/preview`.                                                                                                                                                                                               | Task 23       | The Branding area does not exist yet; the route answers a frame today (`apps/server/tests/theme-preview.int.test.ts`), but no browser has framed it.                                                       |
+| The preview's sign-in sample ignores the tenant's settings (remember me, passkey, registration and reset links), so it shows a fixed arrangement.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | Task 23       | The preview route takes no tenant settings; the console decides whether to pass them.                                                                                                                      |
+| The admin router validates a body before it authenticates (the image upload is the exception: it authenticates and checks its size in `onRequest`, before the body is read), so an unauthenticated caller makes the server buffer and validate up to 4 MiB on a theme `PUT` (16 MiB on a tenant import) and reads schema details in a `400` where a `401` belongs (`packages/protocol-admin/src/view/routes/router.ts`). Proposed owner: P11, with the other load bounds.                                                                                                                                                                     | P11           | Not placed in `docs/NEXT.md`: a placement there must have its roadmap line and section 11 criterion, and `tests/docs/roadmap-section-11.test.ts` fails without them; adding P11 scope is the owner's call. |
+| Captured transcripts of `GET`, `PUT` and `DELETE /message-overrides…`, re-run on a live stack, with the admin-paths page `get-message-overrides-put-message-overrides-and-delete-message-overrides.md` rewritten around them. The page now says it holds no output. The OpenAPI transcript's figures were moved again, to 92 paths and 593231 bytes, from the generated document.                                                                                                                                                                                                                                                             | Task 26       | Same stack: it has not been run with an override.                                                                                                                                                          |
+| The `GET /settings`, `PATCH /settings` and `GET /export` transcripts, and the unknown-setting list in the first, predate `supported_locales`, `default_locale` and `message_overrides`: their bodies lack them and the first `ETag` is the old record's. Re-run them.                                                                                                                                                                                                                                                                                                                                                                         | Task 26       | Same stack. Editing the bodies by hand would show output nobody produced.                                                                                                                                  |
+| The transcripts that show a client or a scope (`GET/POST /clients`, `GET /clients/{id}`, `PATCH /clients/{id}`, the scope routes, `GET /export`, the audit transcript that diffs a client) lack `name_i18n`, `description_i18n` and `consent_text_i18n`, and the registration transcript has no `client_name#fr`. Re-run them.                                                                                                                                                                                                                                                                                                                | Task 26       | Same stack. Editing the bodies by hand would show output nobody produced.                                                                                                                                  |
+| The console names `Branding, Languages` as the home of `supported_locales` and `default_locale` (`PLACED_ELSEWHERE`), and `tests/lint/console-covers-admin-routes.test.ts` lists the three message override routes as pending; both entries go with the Languages tab, which fails the lint the moment a screen calls them.                                                                                                                                                                                                                                                                                                                   | Task 24       | The Languages tab is Task 24's.                                                                                                                                                                            |
+| A tenant's own wording does not reach mail. A mail's language is now the recipient's `users.locale`, else the tenant's `default_locale`, else English, but its keys are not overridable: `isOverridableMessageKey` names the page catalogues only, so an override of a mail key is refused, and `packages/email/src/service/templates.ts` reads none. Decide at close whether a mail key may be overridden (it would need the override resolver passed into the same transaction the mail is queued in, as the theme is) or the spec's "wording" for mail means only the shipped catalogues.                                                  | Task 22       | Themed mail ships the tenant's colours, logo and default language. Mail wording stays the catalogue's by decision of the increment, which the table row above could not make.                              |
+| A reader of Arabic reviews every `messages.ar.ts` and a rendered page and mail of each kind, and fixes what they find, before any release. The text is a draft: nothing here says it is correct, only that it is complete. No Arabic font is in the Instrument font stack (`IBM Plex Sans`, then `system-ui`), so rendering relies on the system's fallback, which axe does not cover. Wording nits for the reader: `reset.reason` and the other mail `.reason` lines are awkward constructions; `error.unknownTenant` says `مستأجر` (a literal rendering of tenant); `consent.allow` is the noun `سماح` where an imperative may read better. | Project owner | No reader of Arabic took part in the draft; `RELEASING.md` makes the review a step before every stable release.                                                                                            |

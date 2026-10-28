@@ -23,6 +23,7 @@ let owner: DatabaseHandle;
 let appDb: DatabaseHandle;
 let app: FastifyInstance;
 const asked: BrandingScope[] = [];
+const askedForMail: { tenantId: string; tenantName: string }[] = [];
 
 const KEK = Buffer.alloc(32, 7);
 const REDIRECT_URI = 'https://app.example/callback';
@@ -48,7 +49,7 @@ beforeAll(async () => {
   });
   await owner.db
     .update(tenants)
-    .set({ registrationAllowed: true, resetPasswordAllowed: true })
+    .set({ registrationAllowed: true, resetPasswordAllowed: true, verifyEmail: true })
     .where(eq(tenants.id, seeded.tenantId));
   app = buildApp({
     database: appDb,
@@ -61,6 +62,10 @@ beforeAll(async () => {
     branding: {
       resolveBranding: (scope) => {
         asked.push(scope);
+        return Promise.resolve(null);
+      },
+      resolveMailBranding: (_tx, scope) => {
+        askedForMail.push(scope);
         return Promise.resolve(null);
       },
       isClientOfTenant: () => Promise.resolve(false),
@@ -153,5 +158,47 @@ describe('every route that renders a themeable page asks for its theme', () => {
     const scopes = await asks(run);
     expect(scopes.length).toBeGreaterThan(0);
     expect(scopes.every((scope) => scope.tenantName === name)).toBe(true);
+  });
+});
+
+describe('every route that queues a mail asks for its theme', () => {
+  const ask = async (run: () => Promise<unknown>) => {
+    askedForMail.length = 0;
+    await run();
+    return [...askedForMail];
+  };
+
+  it('registration', async () => {
+    const asked = await ask(() =>
+      app.inject({
+        method: 'POST',
+        url: `/tenants/${name}/login-actions/registration`,
+        payload: new URLSearchParams({
+          username: `new-${newId()}`,
+          email: `new-${newId()}@example.test`,
+          password: 'correct horse battery staple',
+          password_confirm: 'correct horse battery staple',
+        }).toString(),
+        headers: FORM,
+      }),
+    );
+    expect(asked.map((scope) => scope.tenantName)).toEqual([name]);
+  });
+
+  it('reset password, whether or not the address has an account', async () => {
+    for (const email of ['nobody@example.test', 'user@example.test']) {
+      const asked = await ask(() =>
+        app.inject({
+          method: 'POST',
+          url: `/tenants/${name}/login-actions/reset-password`,
+          payload: new URLSearchParams({ email }).toString(),
+          headers: FORM,
+        }),
+      );
+      expect(
+        asked.map((scope) => scope.tenantName),
+        email,
+      ).toEqual([name]);
+    }
   });
 });

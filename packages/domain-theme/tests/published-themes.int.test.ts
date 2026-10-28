@@ -175,7 +175,13 @@ describe('publishedThemeRepository.forRender', () => {
     const kept = await storeAsset(tenantId, 'kept');
     await publish({ tenantId, clientId: null }, body('with-logo', kept.id));
     expect((await layersOf(tenantId, null)).tenant?.assets).toEqual([
-      { id: kept.id, sha256: kept.sha256, mime: 'image/png' },
+      {
+        id: kept.id,
+        sha256: kept.sha256,
+        mime: 'image/png',
+        width: 4,
+        height: 3,
+      },
     ]);
 
     await owner.db.delete(themeAssets).where(eq(themeAssets.id, kept.id));

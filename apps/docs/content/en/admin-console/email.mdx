@@ -40,6 +40,12 @@ Under **Test message**, enter an address in **Send to** and choose **Send test m
 
 The **Delivery** list shows the latest mail the tenant sent or tried to send, newest first. Use **Show** to look at only **Queued**, **Retrying**, **Failed** or **Sent** messages, and **Refresh** to read it again. A message is failed once every attempt is spent. The list never shows a message's body, because it carries a link that signs somebody in.
 
+## 5. Know how the mail looks
+
+Mail wears the tenant's published theme, as the tenant's pages do: its light and dark colours, and its logo and dark logo. It is the tenant's own theme only, never a client's, since a mail is not sent from any one app. A tenant with no published theme, or with a palette and no logo, sends Odudu's own look; a logo that fails to load shows its alt text, and the tenant's name is always written beside it. Many mail apps hold back remote images until the reader allows them, so the name and the alt text carry the brand on their own.
+
+The look is fixed when the mail is queued. A theme published afterwards shows in the next mail and not in one already waiting, and a mail opened after the tenant replaces its logo shows the old one as alt text, because the server serves a logo only while a published version names it. The language of a mail is the person's own language, else the tenant's default language, else English. A tenant's own wording changes pages and not mail.
+
 ## Things that cannot be undone
 
 **Remove the relay** deletes the tenant's own relay, and with it the stored password. The tenant then falls back to the deployment's sender, or to logging only. You confirm first, and you can save a relay again at any time, though you will need the password again.

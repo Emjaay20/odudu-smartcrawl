@@ -7,7 +7,7 @@ import { errorRedirect } from '#/usecase/login-submission';
 import { renderAuthorizeErrorPage, type WayOn } from '#/view/authorize-html';
 import { sendHtml } from '#/view/html-response';
 import { t } from '#/view/messages';
-import { type ContinuationDeps } from '#/view/routes/continuation';
+import { tenantNegotiation, type ContinuationDeps } from '#/view/routes/continuation';
 import { issuerBaseFor } from '#/view/issuer';
 import { type AuthorizationErrorCode } from '#/service/oauth-errors';
 
@@ -68,7 +68,7 @@ export async function sendSignInExpired(
       negotiatePageLocale({
         uiLocales: pending?.uiLocales ?? [],
         acceptLanguage: reply.request.headers['accept-language'],
-        ...(deps.pageLocales === undefined ? {} : { supported: deps.pageLocales }),
+        ...tenantNegotiation(tenant),
       }),
       reply.request.headers.cookie,
     ),
@@ -76,6 +76,7 @@ export async function sendSignInExpired(
     tenant === null
       ? null
       : { tenantId: tenant.id, tenantName, clientId: pending?.clientId ?? null },
+    deps.resolveOverrides,
   );
   return sendHtml(
     reply,

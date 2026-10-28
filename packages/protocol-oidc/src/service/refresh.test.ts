@@ -18,6 +18,8 @@ const client: ClientRecord = {
   registrationOrigin: 'seeded',
   builtinAdmin: false,
   skipLogoutConfirmation: false,
+  nameI18n: {},
+  descriptionI18n: {},
   description: null,
   previousSecretHash: null,
   previousSecretExpiresAt: null,

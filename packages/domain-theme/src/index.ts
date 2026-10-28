@@ -54,6 +54,7 @@ export {
   type StylesheetIssueCode,
   type StylesheetOptions,
 } from '#/service/stylesheet';
+export { buildMailBranding, fitLogo, MAIL_LOGO_BOX } from '#/service/mail-branding';
 export { buildBranding, type BuildInput, type BuildOutcome } from '#/service/build-branding';
 export {
   brandingCache,
@@ -76,7 +77,10 @@ export {
   MAX_BRANDING_READS_IN_FLIGHT,
   MAX_LOGGED_BRANDING_PROBLEMS,
   resolveBranding,
+  resolveMailBranding,
   type BrandingProblem,
+  type MailScope,
+  type ReadTenantLayer,
   type ResolveBrandingDeps,
 } from '#/usecase/resolve-branding';
 export {

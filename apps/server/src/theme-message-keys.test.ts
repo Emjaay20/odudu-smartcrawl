@@ -1,6 +1,6 @@
 import { PAGE_KINDS, type PageKind } from '@odudu/kernel';
 import { describe, expect, it } from 'vitest';
-import { isThemeMessageKey, pageKindOwners } from '#/theme-message-keys';
+import { isOverridableMessageKey, isThemeMessageKey, pageKindOwners } from '#/theme-message-keys';
 
 const KINDS = Object.keys(PAGE_KINDS) as PageKind[];
 
@@ -18,5 +18,20 @@ describe('isThemeMessageKey', () => {
     expect(isThemeMessageKey('sign-in', 'login.nonesuch')).toBe(false);
     expect(isThemeMessageKey('sign-in', 'constructor')).toBe(false);
     expect(isThemeMessageKey('sign-in', '__proto__')).toBe(false);
+  });
+});
+
+describe('isOverridableMessageKey', () => {
+  it('accepts a key of any page catalogue', () => {
+    expect(isOverridableMessageKey('login.title')).toBe(true);
+    expect(isOverridableMessageKey('updatePassword.rule.maxLength')).toBe(true);
+    expect(isOverridableMessageKey('verification.succeeded.title')).toBe(true);
+  });
+
+  it('refuses a key in none, and Object.prototype names', () => {
+    expect(isOverridableMessageKey('login.nonesuch')).toBe(false);
+    expect(isOverridableMessageKey('')).toBe(false);
+    expect(isOverridableMessageKey('constructor')).toBe(false);
+    expect(isOverridableMessageKey('__proto__')).toBe(false);
   });
 });

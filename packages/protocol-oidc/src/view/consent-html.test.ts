@@ -234,4 +234,50 @@ describe('renderConsentPage', () => {
       expect(page.html.match(/<\/bdi>/gu)).toHaveLength(page.html.match(/<bdi>/gu)?.length ?? 0);
     }
   });
+  describe('text in the page language', () => {
+    const I18N = {
+      clientName: { fr: 'Tableau Acme' },
+      scopeLabels: { profile: { fr: 'Votre profil' }, email: { fr: 'Votre <adresse>' } },
+    };
+
+    it('shows the French client name and scope text for a fr page', () => {
+      const page = renderConsentPage(
+        { ...BASE, scopeLabels: { profile: 'Your profile' }, i18n: I18N },
+        FRENCH,
+      );
+      expect(page.body).toContain('<h1><bdi>Tableau Acme</bdi> demande l’accès</h1>');
+      expect(page.body).toContain('<li><bdi>Votre profil</bdi></li>');
+      expect(page.body).not.toContain('Acme Dashboard');
+    });
+
+    it('uses the base text for a locale with no entry', () => {
+      const page = renderConsentPage(
+        { ...BASE, scopeLabels: { profile: 'Your profile' }, i18n: I18N },
+        DEFAULT_PAGE_LOCALE,
+      );
+      expect(page.body).toContain('<bdi>Acme Dashboard</bdi>');
+      expect(page.body).toContain('<li><bdi>Your profile</bdi></li>');
+      expect(page.body).not.toContain('Tableau');
+    });
+
+    it('matches a regional page to the language by lookup', () => {
+      const page = renderConsentPage({ ...BASE, i18n: I18N }, { tag: 'fr-CA', dir: 'ltr' });
+      expect(page.body).toContain('<bdi>Tableau Acme</bdi>');
+    });
+
+    it('escapes a localised name and scope text like every other value', () => {
+      const hostile = '</bdi><img src=x onerror=1><script>1</script>';
+      const page = renderConsentPage(
+        {
+          ...BASE,
+          clientPages: { clientUri: 'https://a.example/', policyUri: null, tosUri: null },
+          i18n: { clientName: { fr: hostile }, scopeLabels: { email: { fr: hostile } } },
+        },
+        FRENCH,
+      );
+      expect(page.html).not.toMatch(/<img|<script/u);
+      expect(page.html).toContain('&lt;img src=x onerror=1&gt;');
+      expect(page.html.match(/<\/bdi>/gu)).toHaveLength(page.html.match(/<bdi>/gu)?.length ?? 0);
+    });
+  });
 });

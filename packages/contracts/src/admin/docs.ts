@@ -130,6 +130,13 @@ import {
   tenantSettingsDocumentSchema,
 } from '#/admin/tenant-document';
 import {
+  exportedMessageOverrideSchema,
+  listMessageOverridesQuerySchema,
+  listMessageOverridesResponseSchema,
+  messageOverrideSchema,
+  putMessageOverrideRequestSchema,
+} from '#/admin/message-overrides';
+import {
   countTenantsQuerySchema,
   createTenantRequestSchema,
   listTenantsQuerySchema,
@@ -254,6 +261,10 @@ describeFields(clientFieldsSchema, {
     'The `client_id` the application sends to the authorization and token endpoints. Chosen when the client is created and unique within the tenant.',
   name: 'A display name for people, shown for example on the consent screen.',
   description: 'Free text for administrators, or null when none was set.',
+  name_i18n:
+    'The name in other languages, by language tag, such as `fr` or `pt-BR`: at most 32, each of the tenant’s `supported_locales`, each at most 256 characters. A language with no entry shows `name`. A PATCH replaces the whole map.',
+  description_i18n:
+    'The description in other languages, by language tag, under the same rules as `name_i18n`, each at most 1000 characters.',
   type: '`public` for an application that cannot keep a secret (a single-page or native app), which must use PKCE; `confidential` for one that authenticates at the token endpoint.',
   enabled:
     'A disabled client cannot start a sign-in or obtain tokens, and tokens already issued to it stop being accepted.',
@@ -530,6 +541,10 @@ describeFields(clientScopeSchema, {
   default_client_assignment:
     'How every new client gets this scope: `default`, `optional`, or null for neither.',
   consent_text: 'The sentence the consent screen shows for this scope, or null to use its name.',
+  description_i18n:
+    'The description in other languages, by language tag: at most 32, each of the tenant’s `supported_locales`, each at most 1000 characters. A language with no entry shows `description`. A PATCH replaces the whole map.',
+  consent_text_i18n:
+    'The consent sentence in other languages, by language tag, under the same rules, each at most 500 characters. The consent screen takes the page’s language by RFC 4647 lookup (`fr-CA` finds `fr`), then `consent_text`, then the scope’s name.',
   display_order: 'Where the scope sorts on the consent screen; lowest first.',
   created_at: 'When the scope was created.',
 });
@@ -540,6 +555,10 @@ describeFields(createScopeRequestSchema, {
   include_in_access_token: 'Whether its claims appear in the access token.',
   default_client_assignment: 'Assign it to every new client as `default` or `optional`.',
   consent_text: 'The sentence the consent screen shows for it.',
+  description_i18n:
+    'The description in other languages, by language tag: at most 32, each of the tenant’s `supported_locales`, each at most 1000 characters. A language with no entry shows `description`. A PATCH replaces the whole map.',
+  consent_text_i18n:
+    'The consent sentence in other languages, by language tag, under the same rules, each at most 500 characters. The consent screen takes the page’s language by RFC 4647 lookup (`fr-CA` finds `fr`), then `consent_text`, then the scope’s name.',
   display_order: 'Where it sorts on the consent screen; lowest first.',
 });
 describeFields(scopeClientSchema, {
@@ -723,6 +742,10 @@ describeFields(exportedClientSchema, {
     'The `client_id` the application sends to the authorization and token endpoints. Chosen when the client is created and unique within the tenant.',
   name: 'A display name for people, shown for example on the consent screen.',
   description: 'Free text for administrators, or null when none was set.',
+  name_i18n:
+    'The name in other languages, by language tag, such as `fr` or `pt-BR`: at most 32, each of the tenant’s `supported_locales`, each at most 256 characters. A language with no entry shows `name`. A PATCH replaces the whole map.',
+  description_i18n:
+    'The description in other languages, by language tag, under the same rules as `name_i18n`, each at most 1000 characters.',
   type: '`public` for an application that cannot keep a secret (a single-page or native app), which must use PKCE; `confidential` for one that authenticates at the token endpoint.',
   enabled:
     'A disabled client cannot start a sign-in or obtain tokens, and tokens already issued to it stop being accepted.',
@@ -809,6 +832,10 @@ describeFields(exportedScopeSchema, {
   include_in_access_token: 'Whether its claims appear in the access token.',
   default_client_assignment: 'How every new client gets the scope, or null for neither.',
   consent_text: 'The sentence the consent screen shows for it, or null.',
+  description_i18n:
+    'The description in other languages, by language tag: at most 32, each of the tenant’s `supported_locales`, each at most 1000 characters. A language with no entry shows `description`. A PATCH replaces the whole map.',
+  consent_text_i18n:
+    'The consent sentence in other languages, by language tag, under the same rules, each at most 500 characters. The consent screen takes the page’s language by RFC 4647 lookup (`fr-CA` finds `fr`), then `consent_text`, then the scope’s name.',
   display_order: 'Where it sorts on the consent screen; lowest first.',
   builtin: 'True for a scope every tenant has.',
   roles: 'The roles the scope carries into tokens.',
@@ -859,6 +886,8 @@ describeFields(tenantDocumentSchema, {
   scopes: 'The tenant’s client scopes.',
   registration_policy: 'Who may register themselves and register clients.',
   smtp: 'The tenant’s mail relay, or null when it has none.',
+  message_overrides:
+    'The tenant’s own wording for page messages, at most 500, in locale and key order. Absent from a document exported before overrides existed, which imports with none.',
   subjects: 'The tenant’s users, only when requested with `include=subjects`.',
   omitted: 'What the document leaves out on purpose, such as secrets and credentials.',
 });
@@ -900,6 +929,10 @@ describeFields(tenantSettingsDocumentSchema, {
   reset_password_ttl_seconds: 'How long a mailed password-reset link works.',
   login_with_email: 'Whether a user may sign in with the email address instead of the username.',
   audit_event_types: 'The audit event types the tenant stores.',
+  supported_locales:
+    'The language tags the tenant’s pages are offered in, 1 to 32, each such as `fr` or `zh-Hant-TW`; discovery advertises them as `ui_locales_supported`.',
+  default_locale:
+    'The language a page is shown in ahead of the browser’s preference, when the request names none; one of `supported_locales`. Null when the browser decides.',
 });
 describeFields(createTenantRequestSchema, {
   name: 'The tenant name, used in every address of the tenant (`/tenants/{name}/...`). 1 to 63 lowercase letters, digits or hyphens, not starting or ending with a hyphen.',
@@ -1134,6 +1167,29 @@ describeFields(themeAssetSchema, {
 });
 describeFields(listThemeVersionsResponseSchema, {
   items: 'At most 20 versions, newest first, without their bodies.',
+});
+
+describeFields(messageOverrideSchema, {
+  locale: 'The language tag the text is for, spelled `fr`, `fr-CA` or `zh-Hant-TW`.',
+  key: 'The key of the page message it replaces, such as `login.title`.',
+  message:
+    'The text shown in place of the catalogue’s. Placeholders such as `{name}` and plural arms are kept; markup is shown as text, never rendered.',
+  updated_at: 'When the override was last written.',
+});
+describeFields(exportedMessageOverrideSchema, {
+  locale: 'The language tag the text is for.',
+  key: 'The key of the page message it replaces.',
+  message: 'The text shown in place of the catalogue’s.',
+});
+describeFields(putMessageOverrideRequestSchema, {
+  message:
+    'The replacement text, 1 to 2,000 characters. It may use the placeholders the catalogue message uses; a placeholder a page does not supply makes the page show the catalogue’s text instead.',
+});
+describeFields(listMessageOverridesQuerySchema, {
+  locale: 'The language tag whose overrides to list.',
+});
+describeFields(listMessageOverridesResponseSchema, {
+  items: 'The overrides of the locale in key order.',
 });
 
 // Words for a field of this name wherever it appears and nothing says otherwise.

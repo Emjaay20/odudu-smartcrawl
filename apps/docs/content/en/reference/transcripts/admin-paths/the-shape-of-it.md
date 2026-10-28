@@ -146,6 +146,9 @@ shown once — a registration token, a client secret, a one-time password.
 | `DELETE` | `/admin/tenants/{tenant}/sessions`                                      | End every session in the tenant            |
 | `GET`    | `/admin/tenants/{tenant}/settings`                                      | Read a tenant's settings                   |
 | `PATCH`  | `/admin/tenants/{tenant}/settings`                                      | Amend a tenant's settings                  |
+| `GET`    | `/admin/tenants/{tenant}/message-overrides`                             | List a locale's message overrides          |
+| `PUT`    | `/admin/tenants/{tenant}/message-overrides/:locale/:key`                | Set a message override                     |
+| `DELETE` | `/admin/tenants/{tenant}/message-overrides/:locale/:key`                | Remove a message override                  |
 | `GET`    | `/admin/tenants/{tenant}/theme`                                         | Read a tenant's draft and published theme  |
 | `PUT`    | `/admin/tenants/{tenant}/theme`                                         | Save a tenant's draft theme                |
 | `DELETE` | `/admin/tenants/{tenant}/theme`                                         | Reset a tenant's theme to the default      |

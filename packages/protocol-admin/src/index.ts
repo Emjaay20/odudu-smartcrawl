@@ -1,3 +1,4 @@
+import { type MailBrandingResolver } from '@odudu/email';
 import { sessionRepository } from '@odudu/authn-flows';
 import { signingKeyRepository } from '@odudu/crypto';
 import { type DatabaseHandle, type TenantScopedDatabase, withTenant } from '@odudu/db';
@@ -32,6 +33,7 @@ import { type Audit as ScopeAudit } from '#/usecase/scopes';
 import { type Audit as ScopeMapperAudit } from '#/usecase/scope-mappers';
 import { type Audit as SettingsAudit } from '#/usecase/settings';
 import { type Audit as ThemeAudit } from '#/usecase/theme';
+import { type Audit as MessageOverrideAudit } from '#/usecase/message-overrides';
 import { type Audit as ThemeAssetAudit } from '#/usecase/theme-assets';
 import { type Audit as TenantExportAudit } from '#/usecase/tenant-export';
 import { type Audit as TenantImportAudit } from '#/usecase/tenant-import';
@@ -162,6 +164,12 @@ import {
   type SettingsRouteDeps,
 } from '#/view/routes/settings';
 import { themeHandlers, type ThemeRouteDeps } from '#/view/routes/theme';
+import {
+  deleteMessageOverrideHandler,
+  listMessageOverridesHandler,
+  putMessageOverrideHandler,
+  type MessageOverridesRouteDeps,
+} from '#/view/routes/message-overrides';
 import { themeAssetHandlers, type ThemeAssetRouteDeps } from '#/view/routes/theme-assets';
 import { themePreviewHandler } from '#/view/routes/theme-preview';
 import { type ThemePreviewDeps } from '#/usecase/theme-preview';
@@ -291,6 +299,9 @@ export interface AdminRoutesDeps {
   // its mail, the write @odudu/account's own doors make; wired at the
   // composition root with the public base URL a link is addressed under.
   sendAccountLink: SendAccountLink;
+  // The tenant's theme as its mail wears it, for the notices this package
+  // queues itself; wired at the composition root beside the page resolver.
+  resolveMailBranding: MailBrandingResolver;
   // `ODUDU_OUTBOX_MAX_ATTEMPTS`, the attempts the mail sender makes before it
   // stops offering a message: what `GET …/mail` reports as `failed`.
   outboxMaxAttempts: number;
@@ -301,6 +312,15 @@ export interface AdminRoutesDeps {
   // catalogue its page is filled from, which the packages that render
   // pages own.
   isThemeMessageKey: (kind: PageKind, key: string) => boolean;
+  // What a tenant's message overrides are checked against, which the packages
+  // that own the page catalogues answer: whether a key names a message, and
+  // what is wrong with a text as a message. `invalidate` drops a tenant's
+  // cached overrides in this process once a write has committed.
+  messageOverrides: {
+    isKnownKey: (key: string) => boolean;
+    messageProblem: (message: string) => string | null;
+    invalidate: (tenantId: string) => void;
+  };
   // Each page kind rendered by its own package's renderer with sample values,
   // for the draft preview; the packages that render pages own them.
   themePreviewPages: ThemePreviewDeps['pages'];
@@ -393,6 +413,7 @@ function buildAdminRoutes(
     const smtpAudit: SmtpAudit = recordAudit;
     const settingsAudit: SettingsAudit = recordAudit;
     const themeAudit: ThemeAudit = recordAudit;
+    const messageOverrideAudit: MessageOverrideAudit = recordAudit;
     const themeAssetAudit: ThemeAssetAudit = recordAudit;
     const tenantExportAudit: TenantExportAudit = recordAudit;
     const tenantImportAudit: TenantImportAudit = recordAudit;
@@ -417,6 +438,7 @@ function buildAdminRoutes(
       cursorKey: deps.cursorKey,
       audit: subjectAudit,
       now: () => clock.now(),
+      resolveMailBranding: deps.resolveMailBranding,
       callerCapabilities,
     };
     const rolesDeps: RolesRouteDeps = {
@@ -489,6 +511,7 @@ function buildAdminRoutes(
       consoleClientJwks: deps.consoleClientJwks,
       hashClientSecret: hashPassword,
       tlsClientAuthEnabled: deps.trustProxy ?? false,
+      messageOverrides: deps.messageOverrides,
       claimMappers: deps.claimMappers,
       tenantNameTaken: async (name) =>
         (await tenantLookupRepository(deps.ownerDatabase.db).byName(name)) !== null,
@@ -506,6 +529,14 @@ function buildAdminRoutes(
       audit: themeAudit,
       isMessageKey: deps.isThemeMessageKey,
       invalidateTenant: deps.invalidateTheme,
+    };
+    const messageOverridesDeps: MessageOverridesRouteDeps = {
+      database: deps.database.db,
+      cursorKey: deps.cursorKey,
+      audit: messageOverrideAudit,
+      isKnownKey: deps.messageOverrides.isKnownKey,
+      messageProblem: deps.messageOverrides.messageProblem,
+      invalidate: deps.messageOverrides.invalidate,
     };
     const tenantTheme = themeHandlers(themeDeps, 'tenant');
     const clientTheme = themeHandlers(themeDeps, 'client');
@@ -595,6 +626,7 @@ function buildAdminRoutes(
       audit: accountRecoveryAudit,
       callerCapabilities,
       retireResetLinks: deps.retireResetLinks,
+      resolveMailBranding: deps.resolveMailBranding,
       now: () => clock.now(),
     };
     const auditDeps: AuditRouteDeps = {
@@ -686,6 +718,12 @@ function buildAdminRoutes(
       'GET /admin/tenants/:tenant/theme/preview': tenantPreview,
       'GET /admin/tenants/:tenant/theme/versions': tenantTheme.versions,
       'POST /admin/tenants/:tenant/theme/versions/:versionId/restore': tenantTheme.restore,
+      'GET /admin/tenants/:tenant/message-overrides':
+        listMessageOverridesHandler(messageOverridesDeps),
+      'PUT /admin/tenants/:tenant/message-overrides/:locale/:key':
+        putMessageOverrideHandler(messageOverridesDeps),
+      'DELETE /admin/tenants/:tenant/message-overrides/:locale/:key':
+        deleteMessageOverrideHandler(messageOverridesDeps),
       'GET /admin/tenants/:tenant/clients/:id/theme': clientTheme.read,
       'PUT /admin/tenants/:tenant/clients/:id/theme': clientTheme.put,
       'DELETE /admin/tenants/:tenant/clients/:id/theme': clientTheme.reset,

@@ -19,6 +19,8 @@ export {
   idSchema,
   createdAtSchema,
   etagSchema,
+  CLIENT_NAME_MAX,
+  localisedTextSchema,
   DESCRIPTION_MAX,
 } from '#/admin/shared';
 export {
@@ -468,3 +470,19 @@ export {
   type ThemeView,
   type UploadThemeAssetQuery,
 } from '#/admin/theme';
+export {
+  MESSAGE_OVERRIDE_LIMIT,
+  exportedMessageOverrideSchema,
+  type ExportedMessageOverride,
+  MESSAGE_OVERRIDE_MAX_LENGTH,
+  listMessageOverridesQuerySchema,
+  listMessageOverridesResponseSchema,
+  messageOverrideKeySchema,
+  messageOverrideLocaleSchema,
+  messageOverrideSchema,
+  putMessageOverrideRequestSchema,
+  type ListMessageOverridesQuery,
+  type ListMessageOverridesResponse,
+  type MessageOverride,
+  type PutMessageOverrideRequest,
+} from '#/admin/message-overrides';

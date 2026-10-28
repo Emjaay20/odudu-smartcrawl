@@ -22,3 +22,9 @@ export function isThemeMessageKey(kind: PageKind, key: string): boolean {
 export function pageKindOwners(kind: PageKind): number {
   return OWNERS.filter((owner) => Object.hasOwn(owner.kinds, kind)).length;
 }
+
+// Whether a key is an entry of the English catalogue of any page, which is
+// what a tenant's message override may name.
+export function isOverridableMessageKey(key: string): boolean {
+  return OWNERS.some((owner) => owner.has(key));
+}

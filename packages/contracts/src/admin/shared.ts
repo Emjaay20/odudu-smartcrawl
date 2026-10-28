@@ -122,4 +122,16 @@ export const etagSchema = z.string();
 /** The longest description a group, role or client holds, by its CHECK. */
 export const DESCRIPTION_MAX = 1000;
 
+/**
+ * The longest name a client holds in one language. The name column itself
+ * has no CHECK; this is the bound each language's text is given.
+ */
+export const CLIENT_NAME_MAX = 256;
+
+/**
+ * Text by language tag, as a read returns it. A write is checked by
+ * `checkLocalisedText` against the tenant's languages, which a shape cannot know.
+ */
+export const localisedTextSchema = z.record(z.string(), z.string());
+
 export const descriptionSchema = noBidiControls(z.string().min(1).max(DESCRIPTION_MAX));

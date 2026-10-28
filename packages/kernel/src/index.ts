@@ -94,8 +94,17 @@ export {
   MAX_CLIENT_ID_LENGTH,
   type BrandingResolver,
   type BrandingScope,
+  type OverridesResolver,
   type PageBranding,
 } from '#/branding-resolver';
+export {
+  MAIL_LOGO_MAX_SIDE,
+  mailColoursProblem,
+  mailLogoProblem,
+  type MailBranding,
+  type MailColours,
+  type MailLogo,
+} from '#/mail-branding';
 export { PAGE_KINDS, type PageKind, type PageManifest } from '#/page-kinds';
 export {
   CLIENT_RULES,

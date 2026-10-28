@@ -118,3 +118,34 @@ which can carry script and external references. The server holds up to
 - **A pure-JavaScript decoder.** It avoids a native binary, but none handles all
   three formats, and decoding untrusted images in JavaScript is slower and no
   safer than libvips.
+
+## Amendment, 2026-10-28: a mail names its logo, it does not carry it
+
+A mail's logo is a hosted `<img>` pointing at the same content-addressed brand
+URL a page uses, not an inline (CID) attachment.
+
+- The outbox row stores the rendered markup, so the logo address is decided
+  when the mail is queued and adds one URL (under 300 bytes) to the row. A
+  CID image would add up to 341 KiB of base64 (256 KiB, the logo limit) to every
+  row and every message, for every mail of a tenant.
+- The route serves an image only while a published version names it. A mail
+  queued, or already delivered, under a theme that a later publish replaced
+  therefore shows its logo's alt text and the tenant's name, in the box the
+  `width` and `height` attributes hold, never a broken layout. A mail
+  opened after the tenant changes its logo loses the old one for good; a
+  tenant that wants old mail to keep it keeps the logo's hash in a published
+  version. Serving archived versions' images too would lift this, at the cost
+  of keeping every superseded image reachable, and is left to a decision.
+- Many clients block remote images until the reader allows them, so the alt
+  text and the tenant name carry the brand without the image. The Odudu mark,
+  which no tenant theme replaces, stays an inline attachment and is drawn
+  when the theme sets no logo.
+- Mail is themed from the tenant's layer only: no flow gains a stored client.
+- The markup is rendered when the mail is queued and stored as it is; the
+  sender does not revalidate it. What reaches the row has already passed the
+  shell's checks (address shape, whole-number sizes, `#rrggbb`, escaping), so
+  altering it needs a write to `email_outbox`, which is not a threat this
+  design adds to.
+- A theme that cannot be read or built never stops a mail: the read runs in a
+  savepoint (`withSavepoint`, two extra statements on a cache miss only), the
+  failure is logged once, and the mail goes out unthemed.

@@ -32,6 +32,9 @@ export interface PageLocale {
   // Told when a template of the branding could not be filled and the default
   // was used instead; whoever resolved the branding knows its scope to log.
   readonly templateFallback?: (kind: PageKind, reason: string) => void;
+  // The tenant's own text for catalogue keys in `tag`, which a translator
+  // reads before the catalogue; absent when the tenant wrote none.
+  readonly overrides?: Readonly<Record<string, string>>;
 }
 
 // What a resolved theme hands a page. Every URL is a same-origin absolute
@@ -244,9 +247,12 @@ export function withBranding(
   templateFallback?: PageLocale['templateFallback'],
 ): PageLocale {
   if (branding === null) {
-    return locale.theme === undefined
-      ? { tag: locale.tag, dir: locale.dir }
-      : { tag: locale.tag, dir: locale.dir, theme: locale.theme };
+    return {
+      tag: locale.tag,
+      dir: locale.dir,
+      ...(locale.theme === undefined ? {} : { theme: locale.theme }),
+      ...(locale.overrides === undefined ? {} : { overrides: locale.overrides }),
+    };
   }
   return templateFallback === undefined
     ? { ...locale, branding }

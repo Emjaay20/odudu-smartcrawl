@@ -93,7 +93,7 @@ describe('resolveBranding', () => {
           assets: { logo: { assetId: ASSET_ID, alt: 'Acme' } },
         }),
         3,
-        [{ id: ASSET_ID, sha256: SHA, mime: 'image/png' }],
+        [{ id: ASSET_ID, sha256: SHA, mime: 'image/png', width: 300, height: 100 }],
       ),
       client: null,
     });
@@ -431,7 +431,7 @@ describe('resolveBranding', () => {
   it('refuses an image of a type no upload produces', async () => {
     const w = world({
       tenant: layer(body({ assets: { logo: { assetId: ASSET_ID, alt: 'x' } } }), 1, [
-        { id: ASSET_ID, sha256: SHA, mime: 'image/svg+xml' },
+        { id: ASSET_ID, sha256: SHA, mime: 'image/svg+xml', width: 300, height: 100 },
       ]),
       client: null,
     });
@@ -441,7 +441,7 @@ describe('resolveBranding', () => {
   it('does not use an image the version does not name', async () => {
     const w = world({
       tenant: layer(body({ assets: { logo: { assetId: ASSET_ID, alt: 'x' } } }), 1, [
-        { id: OTHER_ASSET_ID, sha256: SHA, mime: 'image/png' },
+        { id: OTHER_ASSET_ID, sha256: SHA, mime: 'image/png', width: 300, height: 100 },
       ]),
       client: null,
     });

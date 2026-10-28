@@ -20,6 +20,8 @@ const FOREIGN: TenantLookup = {
   resetPasswordAllowed: false,
   maxSessionsPerBrowser: 5,
   clientRegistrationPolicy: 'disabled',
+  supportedLocales: ['en'],
+  defaultLocale: null,
   passwordRules: {
     minLength: 15,
     requireDigit: false,

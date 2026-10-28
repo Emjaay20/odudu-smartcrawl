@@ -1521,6 +1521,7 @@ error and config tables from `@odudu/kernel`, the audit vocabulary from
 | `keys`                | 30        | 31     |
 | `lockouts`            | 3         | 3      |
 | `mail`                | 12        | 15     |
+| `message-overrides`   | 14        | 14     |
 | `registration-tokens` | 14        | 14     |
 | `roles`               | 65        | 65     |
 | `scopes`              | 78        | 85     |
@@ -1531,7 +1532,7 @@ error and config tables from `@odudu/kernel`, the audit vocabulary from
 | `subject-access`      | 43        | 44     |
 | `subject-sessions`    | 31        | 31     |
 | `subject-sign-in`     | 12        | 17     |
-| `tenants`             | 175       | 202    |
+| `tenants`             | 182       | 209    |
 | `theme`               | 219       | 219    |
 | `whoami`              | 4         | 4      |
 

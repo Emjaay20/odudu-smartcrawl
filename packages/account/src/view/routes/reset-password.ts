@@ -1,4 +1,5 @@
 import { type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
+import { type MailBrandingResolver } from '@odudu/email';
 import { type FastifyInstance } from 'fastify';
 import { signInPath } from '#/service/sign-in-path';
 import { referenceToResume, type FindHeldSignIn } from '#/service/sign-in-resume';
@@ -14,6 +15,8 @@ import { brandedLocale, type BrandedLocaleDeps } from '#/view/request-locale';
 
 export interface ResetPasswordTenantLookup {
   readonly id: string;
+  readonly supportedLocales: readonly string[];
+  readonly defaultLocale: string | null;
   readonly name: string;
   readonly displayName: string | null;
   readonly enabled: boolean;
@@ -21,8 +24,6 @@ export interface ResetPasswordTenantLookup {
 }
 
 export interface ResetPasswordRouteDeps extends BrandedLocaleDeps {
-  // The tags a page can be shown in; defaults to what the server ships.
-  pageLocales?: readonly string[];
   readonly database: DatabaseHandle;
   readonly findTenant: (name: string) => Promise<ResetPasswordTenantLookup | null>;
   // Operator configuration (ODUDU_PUBLIC_BASE_URL), never anything read off
@@ -35,6 +36,9 @@ export interface ResetPasswordRouteDeps extends BrandedLocaleDeps {
   readonly findHeldSignIn: FindHeldSignIn;
   // The clock a mail's send time comes from.
   readonly now: () => Date;
+  // Reads the tenant's theme for the mail this route queues, as it does for
+  // the page: a route cannot queue a mail without being handed it.
+  readonly resolveMailBranding: MailBrandingResolver;
   readonly findByEmail: (
     tx: TenantScopedDatabase,
     email: string,
@@ -122,6 +126,7 @@ export function registerResetPasswordRoute(
         tenantDisplayName: tenant.displayName ?? tenant.name,
         issuerBase: deps.publicBaseUrl,
         now: deps.now,
+        resolveMailBranding: deps.resolveMailBranding,
         authenticationSessionId: referenceToResume(held, returnTo),
         findByEmail: deps.findByEmail,
         mailGate: deps.mailGate,

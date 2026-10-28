@@ -299,6 +299,7 @@ const THROTTLED_NAME = `${PROJECT}-throttled`;
 // request, because every other test shares the origin budget of the stack
 // and a throttled page cannot be reached there without starving them.
 export function startThrottledServer(port: number): void {
+  stopThrottledServer();
   compose([
     'run',
     '-d',

@@ -1,4 +1,5 @@
 import { type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
+import { type MailBrandingResolver } from '@odudu/email';
 import { requestContextFrom } from '@odudu/domain-audit';
 import { PASSWORD_TOO_LONG, readPasswordField } from '@odudu/kernel';
 import { type FastifyInstance, type FastifyReply } from 'fastify';
@@ -26,6 +27,8 @@ import { brandedLocale, type BrandedLocaleDeps } from '#/view/request-locale';
 
 export interface RegistrationTenantLookup {
   readonly id: string;
+  readonly supportedLocales: readonly string[];
+  readonly defaultLocale: string | null;
   readonly name: string;
   readonly displayName: string | null;
   readonly enabled: boolean;
@@ -37,8 +40,6 @@ export interface RegistrationTenantLookup {
 }
 
 export interface RegistrationRouteDeps extends BrandedLocaleDeps {
-  // The tags a page can be shown in; defaults to what the server ships.
-  pageLocales?: readonly string[];
   readonly database: DatabaseHandle;
   readonly findTenant: (name: string) => Promise<RegistrationTenantLookup | null>;
   // Operator configuration (ODUDU_PUBLIC_BASE_URL), never anything read off
@@ -54,6 +55,9 @@ export interface RegistrationRouteDeps extends BrandedLocaleDeps {
   readonly findHeldSignIn: FindHeldSignIn;
   // The clock a mail's send time comes from.
   readonly now: () => Date;
+  // Reads the tenant's theme for the mail this route queues, as it does for
+  // the page: a route cannot queue a mail without being handed it.
+  readonly resolveMailBranding: MailBrandingResolver;
   readonly createAccount: (
     tx: TenantScopedDatabase,
     tenantId: string,
@@ -200,6 +204,7 @@ export function registerRegistrationRoute(app: FastifyInstance, deps: Registrati
         resetPasswordAllowed: tenant.resetPasswordAllowed,
         authenticationSessionId: referenceToResume(held, returnTo),
         now: deps.now,
+        resolveMailBranding: deps.resolveMailBranding,
         createAccount: deps.createAccount,
         lockAddress: deps.lockAddress,
         findTaken: deps.findTaken,

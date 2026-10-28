@@ -7,6 +7,7 @@ import {
   cursorQuerySchema,
   enabledFilterSchema,
   idSchema,
+  localisedTextSchema,
   searchPrefixSchema,
 } from '#/admin/shared';
 
@@ -19,6 +20,10 @@ export const clientFieldsSchema = z.object({
   client_id: z.string(),
   name: z.string(),
   description: z.string().nullable(),
+  // Replaced whole by a PATCH; the base `name` and `description` answer a
+  // language with no entry.
+  name_i18n: localisedTextSchema,
+  description_i18n: localisedTextSchema,
   type: clientTypeSchema,
   enabled: z.boolean(),
   full_scope_allowed: z.boolean(),

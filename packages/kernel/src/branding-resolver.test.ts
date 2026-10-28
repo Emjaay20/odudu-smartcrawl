@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
-import { brandLocale, clientFromReturnTo, type BrandingResolver } from '#/branding-resolver';
+import {
+  brandLocale,
+  clientFromReturnTo,
+  type BrandingResolver,
+  type OverridesResolver,
+} from '#/branding-resolver';
 import { DEFAULT_PAGE_LOCALE, type ResolvedBranding } from '#/page';
 
 const BRANDING: ResolvedBranding = {
@@ -30,13 +35,61 @@ describe('brandLocale', () => {
     const templateFallback = vi.fn();
     const locale = await brandLocale(
       { ...DEFAULT_PAGE_LOCALE, theme: 'dark' },
-      () => Promise.resolve({ branding: BRANDING, templateFallback }),
+      () => Promise.resolve({ branding: BRANDING, templateFallback, mail: null }),
       SCOPE,
     );
     expect(locale.branding).toBe(BRANDING);
     expect(locale.theme).toBe('dark');
     locale.templateFallback?.('sign-in', 'why');
     expect(templateFallback).toHaveBeenCalledWith('sign-in', 'why');
+  });
+});
+
+describe('brandLocale with a tenant’s message overrides', () => {
+  it('attaches the overrides for the negotiated tag, beside the branding', async () => {
+    const overrides = vi.fn<OverridesResolver>(() => Promise.resolve({ 'login.title': 'Hi' }));
+    const locale = await brandLocale(
+      { tag: 'fr', dir: 'ltr' },
+      () => Promise.resolve({ branding: BRANDING, templateFallback: vi.fn(), mail: null }),
+      SCOPE,
+      overrides,
+    );
+    expect(overrides).toHaveBeenCalledWith('t1', 'fr');
+    expect(locale.overrides).toEqual({ 'login.title': 'Hi' });
+    expect(locale.branding).toBe(BRANDING);
+  });
+
+  it('attaches them with no theme, and leaves the locale alone when there are none', async () => {
+    const some = await brandLocale(DEFAULT_PAGE_LOCALE, undefined, SCOPE, () =>
+      Promise.resolve({ a: 'b' }),
+    );
+    expect(some.overrides).toEqual({ a: 'b' });
+    const none = await brandLocale(DEFAULT_PAGE_LOCALE, undefined, SCOPE, () =>
+      Promise.resolve({}),
+    );
+    expect(none).toBe(DEFAULT_PAGE_LOCALE);
+  });
+
+  it('asks for nothing without a tenant, and survives a resolver that rejects', async () => {
+    const overrides = vi.fn<OverridesResolver>(() => Promise.resolve({ a: 'b' }));
+    expect(await brandLocale(DEFAULT_PAGE_LOCALE, undefined, null, overrides)).toBe(
+      DEFAULT_PAGE_LOCALE,
+    );
+    expect(overrides).not.toHaveBeenCalled();
+    const broken = await brandLocale(DEFAULT_PAGE_LOCALE, undefined, SCOPE, () =>
+      Promise.reject(new Error('down')),
+    );
+    expect(broken).toBe(DEFAULT_PAGE_LOCALE);
+  });
+
+  it('keeps the overrides when a theme without branding is applied afterwards', async () => {
+    const locale = await brandLocale(
+      DEFAULT_PAGE_LOCALE,
+      () => Promise.resolve(null),
+      SCOPE,
+      () => Promise.resolve({ a: 'b' }),
+    );
+    expect(locale.overrides).toEqual({ a: 'b' });
   });
 });
 

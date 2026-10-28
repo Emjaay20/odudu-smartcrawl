@@ -472,6 +472,7 @@ export async function driveAdminWrites(
     ['retire the key it replaced', { method: 'POST', url: `${T}/keys/{newKey}/retire` }],
     ['delete the retired key', { method: 'DELETE', url: `${T}/keys/{newKey}` }],
     ['delete the tenant’s SMTP', { method: 'DELETE', url: `${T}/smtp` }],
+    ...overrideCalls(T),
     ...themeCalls(T, T, 'the tenant’s theme'),
     ...themeCalls(T, `${T}/clients/${ids.client}`, 'a client’s theme'),
     ...assetCalls(T),
@@ -548,6 +549,17 @@ export async function driveAdminWrites(
       );
     }
   }
+}
+
+// A tenant's wording for one message set, set again, and removed, with the
+// tenant one place short of its 500.
+function overrideCalls(T: string): [string, Call][] {
+  const url = `${T}/message-overrides/en/login.title`;
+  return [
+    ['set a message override', { method: 'PUT', url, body: { message: 'Sign in to Acme' } }],
+    ['set the message override again', { method: 'PUT', url, body: { message: 'Sign in' } }],
+    ['remove the message override', { method: 'DELETE', url }],
+  ];
 }
 
 const PUBLISHED_ID = (answer: unknown): string =>

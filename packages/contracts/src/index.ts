@@ -11,12 +11,22 @@ export { TOKEN_ENDPOINT_AUTH_METHODS_SUPPORTED, type TokenEndpointAuthMethod } f
 export { isTenantName, TENANT_NAME_PATTERN, TENANT_NAME_RULE } from '#/tenant-name';
 export { UNSAFE_RETURN_TO } from '#/return-to';
 export {
+  canonicalLocale,
   isValidBirthdate,
   isValidE164,
   isValidLocale,
   isValidProfileUrl,
+  LOCALE_PATTERN,
   isValidZoneinfo,
 } from '#/profile-claims';
+export {
+  checkLocalisedText,
+  LOCALISED_TEXT_ENTRIES_MAX,
+  lookupLocalised,
+  type LocalisedText,
+  type LocalisedTextCheck,
+  type LocalisedTextOptions,
+} from '#/localised-text';
 export {
   BIDI_FREE_PATTERN,
   BIDI_REFUSED,
