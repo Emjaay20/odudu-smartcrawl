@@ -44,7 +44,8 @@ async function look(page: Page, name: string): Promise<void> {
 async function signIn(page: Page, username: string, password = PASSWORD): Promise<void> {
   await page.locator('input[name="username"]').fill(username);
   await page.locator('input[name="password"]').fill(password);
-  await page.locator('main button[type="submit"]').click();
+  // The passkey option is a second form on the same page, with its own submit.
+  await page.locator('main form:not(#passkey-form) button[type="submit"]').click();
 }
 
 function withArabic(tenant: string): void {
@@ -135,7 +136,7 @@ test('the sign-in form, its refusal and the second-factor pages', async ({ page 
   await page.locator('input[name="code"]').fill('000000');
   await page.locator('main button[type="submit"]').click();
   await expect(page.getByRole('alert')).toBeVisible();
-  const secret = (await page.locator('main code').first().innerText()).trim();
+  const secret = await page.locator('input[name="secret"]').inputValue();
   await look(page, 'totp-enrolment');
 
   await page.locator('input[name="code"]').fill(totp(secret));
