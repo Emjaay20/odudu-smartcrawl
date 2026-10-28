@@ -59,7 +59,14 @@ export {
   type BrandingCache,
   type BrandingCacheOptions,
 } from '#/service/branding-cache';
-export { assetPath, stylesheetPath } from '#/service/branding-urls';
+export {
+  assetExtension,
+  assetPath,
+  isClientRowId,
+  parseBrandFile,
+  stylesheetPath,
+  type BrandFile,
+} from '#/service/branding-urls';
 export { brandingCss, tokensCss } from '#/service/branding-css';
 export {
   BRANDING_BACKOFF_MS,
@@ -105,3 +112,9 @@ export {
   type UploadRefusal,
   type UploadRefusalCode,
 } from '#/usecase/upload-asset';
+export {
+  serveBrand,
+  type BrandContent,
+  type BrandRequest,
+  type ServeBrandDeps,
+} from '#/usecase/serve-brand';

@@ -45,6 +45,8 @@ export interface PublishedAsset {
 // trusted: the reader parses it before use.
 export interface PublishedLayer {
   versionId: string;
+  // The client's row id, null for the tenant's own theme.
+  clientId: string | null;
   version: number;
   body: unknown;
   // The images the version names that still exist.

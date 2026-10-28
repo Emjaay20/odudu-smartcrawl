@@ -42,7 +42,7 @@ function body(parts: Partial<ThemeBody> = {}): ThemeBody {
 }
 
 function layer(themeBody: unknown, version = 1, assets: PublishedAsset[] = []): PublishedLayer {
-  return { versionId: `v${String(version)}`, version, body: themeBody, assets };
+  return { versionId: `v${String(version)}`, clientId: null, version, body: themeBody, assets };
 }
 
 function world(layers: PublishedLayers = { tenant: null, client: null }) {
