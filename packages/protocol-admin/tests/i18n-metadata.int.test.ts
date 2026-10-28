@@ -418,6 +418,63 @@ function postImport(token: string, body: unknown): Promise<LightMyRequestRespons
   });
 }
 
+describe('the base bounds and the tenant document', () => {
+  it('round-trips a legacy long client name and scope description, and bounds the maps', async () => {
+    const t = await fixture.createTenant(`i18n-long-${newId()}`);
+    const client = (await createClient(t, { client_id: 'long' })).json<ClientBody>();
+    const scope = (await createScope(t, { name: 'long:scope' })).json<ScopeBody>();
+    const name = 'n'.repeat(300);
+    const description = 'd'.repeat(1200);
+    await fixture.owner.db.execute(sql`update clients set name = ${name} where id = ${client.id}`);
+    await fixture.owner.db.execute(
+      sql`update client_scopes set description = ${description} where id = ${scope.id}`,
+    );
+    const token = await operatorToken();
+    const document = await exportOf(token, t.name);
+    expect(document.clients.find((c) => c.client_id === 'long')?.name).toBe(name);
+    const copy = `i18n-long-copy-${newId()}`;
+    const res = await postImport(token, { name: copy, document });
+    expect(res.statusCode, res.payload).toBe(201);
+    const again = await exportOf(token, copy);
+    expect(again.clients.find((c) => c.client_id === 'long')?.name).toBe(name);
+    expect(again.scopes.find((s) => s.name === 'long:scope')?.description).toBe(description);
+
+    const tooLong: TenantDocument = {
+      ...document,
+      clients: document.clients.map((c) =>
+        c.client_id === 'long' ? { ...c, name_i18n: { en: 'x'.repeat(257) } } : c,
+      ),
+      scopes: document.scopes.map((s) =>
+        s.name === 'long:scope' ? { ...s, description_i18n: { en: 'x'.repeat(1001) } } : s,
+      ),
+    };
+    const refused = await postImport(token, {
+      name: `i18n-long-bad-${newId()}`,
+      document: tooLong,
+    });
+    expect(refused.statusCode).toBe(400);
+    expect(refused.body).toMatch(/document\.clients\[\d+\]\.name_i18n/u);
+    expect(refused.body).toMatch(/document\.scopes\[\d+\]\.description_i18n/u);
+  });
+
+  it('compares an unchanged name as stored, padding included', async () => {
+    const t = await fixture.createTenant(`i18n-pad-${newId()}`);
+    const client = (await createClient(t)).json<ClientBody>();
+    const padded = `${'p'.repeat(300)}   `;
+    await fixture.owner.db.execute(
+      sql`update clients set name = ${padded} where id = ${client.id}`,
+    );
+    const res = await call(t.name, ['manage-clients'], 'PATCH', `/clients/${client.id}`, {
+      name: padded,
+    });
+    expect(res.statusCode, res.body).toBe(200);
+    const trimmed = await call(t.name, ['manage-clients'], 'PATCH', `/clients/${client.id}`, {
+      name: padded.trim(),
+    });
+    expect(trimmed.statusCode).toBe(400);
+  });
+});
+
 describe('per-language text in the tenant document', () => {
   it('round-trips through export and import', async () => {
     const t = await tenantWith(['en', 'fr', 'pt-BR']);

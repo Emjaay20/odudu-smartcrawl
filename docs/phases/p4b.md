@@ -96,9 +96,12 @@ That client is guarded on the admin API like every field outside
   repeating the member's name. The 201 echoes what was kept.
 - **The tenant document carries all four maps**, defaulting to empty, so an earlier
   document still imports; an import checks them against its own `supported_locales`.
-- **Base bounds.** The base client name is now held to 256 characters on every write door
-  (registration, admin create and PATCH, import) and a scope's description to 1000 (create,
-  PATCH, import). A value already stored that is longer passes when sent back unchanged, as with
+- **Base bounds.** The base client name is now held to 256 characters on the write doors
+  (registration, admin create and PATCH) and a scope's description to 1000 (create, PATCH).
+  **Import does not bound them**: a legacy row the seed CLI wrote exports as it is, and an
+  import that refused what an export emits could not restore its own tenant; the document's
+  character checks (no bidirectional controls) still apply, and the per-language maps stay
+  bounded on import. Export does not clip, so the round trip returns the value unchanged. A value already stored that is longer passes when sent back unchanged, as with
   bidirectional controls, so no old row blocks an unrelated edit. No CHECK was added: it would
   fail the migration on any existing long row and bound the seed CLI's names, and the
   application's write checks are where every other text limit of a client is held.
