@@ -10,8 +10,7 @@ import { join } from 'node:path';
 // self-hosted script and style hashes instead. The hashes are React Aria's
 // two injected styles, usePress's and usePreventScroll's iOS one, which
 // react-aria-style.test.ts recomputes from the pinned source. `frame-src` names
-// what `default-src` already gives, so the Branding preview frame keeps
-// working if the fallback is ever narrowed; it frames its own origin only.
+// what `default-src` gives, so the preview frame survives a narrower fallback.
 export const SHELL_CSP =
   "default-src 'self'; script-src 'self'; " +
   "style-src 'self' 'sha256-38RhXrc7EdReTKsOm23ZPOCUgniTUUcjky8QOOrQx6o=' " +
