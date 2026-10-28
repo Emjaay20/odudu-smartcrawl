@@ -25,11 +25,21 @@ which can carry script and external references. The server holds up to
   stable codes; a library error message is never passed on.
 - **Limits** (`ASSET_LIMITS`): logo, dark logo and favicon at most 256 KiB and
   1024 px on the longest side, background at most 1 MiB and 2560 px, a tenant at
-  most 8 MiB in all. A byte limit applies to the upload, which is refused
-  before it is decoded, and again to the re-encoded file.
+  most 8 MiB in all. The byte limit is on the upload and is checked before it is
+  decoded. The re-encoded file may be up to 1.25 times that limit
+  (`OUTPUT_GROWTH`), so a file under its limit is not refused because the
+  encoder made it a little larger; past that the refusal is `too_large` too. The
+  tenant cap counts the stored, re-encoded bytes. `inspectImage` has no byte
+  limit of its own: callers go through `uploadAsset`.
+- **Pixels.** 16 million decoded pixels (`MAX_DECODED_PIXELS`) is a backstop:
+  every kind's side limit binds first (2560 px is at most 6.6 million pixels, about
+  26 MB as RGBA), and it only matters to a caller that asks for a larger side.
 - **Bounded work.** At most two decodes run at once and sixteen more wait; the
   next is refused as `busy`, so a hundred simultaneous uploads hold two decoded
-  images and sixteen request bodies. libvips's operation cache is off.
+  images and sixteen request bodies. A decode has ten seconds (sharp's own
+  `timeout`, and a deadline in the inspector that frees the slot and refuses as
+  `timeout`), so a stuck libvips call cannot hold both slots. libvips's
+  operation cache is off.
 - **Kept in PostgreSQL**, in `theme_assets` with the bytes in a `bytea` column,
   never selected by a list or a page render, addressed by the SHA-256 of the
   stored bytes with one row per tenant and hash. The tenant cap is checked
@@ -51,7 +61,7 @@ which can carry script and external references. The server holds up to
   without a compiler. libvips inside it is LGPL-3.0-or-later, listed in
   `THIRD-PARTY-NOTICES.md`.
 - Re-encoding changes the bytes and slightly the pixels of a JPEG or WebP
-  (quality 90). A tenant's logo is not byte-identical to what it uploaded.
+  (quality 90) and can make a file larger. A tenant's logo is not byte-identical to what it uploaded.
 - A picture uploaded for two slots is one row, and the tenant cap counts it once.
 
 ## Alternatives rejected
