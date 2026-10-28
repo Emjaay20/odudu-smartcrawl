@@ -14,13 +14,14 @@ vi.mock('#/view/messages', async (importOriginal) => {
 
 async function answer(acceptLanguage?: string) {
   const app = Fastify();
-  const deps = { pageLocales: ['en', 'fr'] };
-  app.get('/p', (_request, reply) => sendRequestError(reply, deps, 400, 'error.unknownTenant'));
+  const deps = { pageLocales: ['en', 'fr'], findTenant: () => Promise.resolve(null) };
+  app.get('/p', (_request, reply) =>
+    sendRequestError(reply, deps, 'acme', 400, 'error.unknownTenant'),
+  );
   app.get('/e', (_request, reply) =>
     sendSignInExpired(
       reply,
       {
-        findTenant: () => Promise.resolve(null),
         loadPendingRequest: () => Promise.resolve(null),
         recoverPendingRequest: () => Promise.resolve(null),
         redirectStillRegistered: () => Promise.resolve(true),

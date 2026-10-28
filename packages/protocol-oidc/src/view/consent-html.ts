@@ -1,5 +1,6 @@
 import { type PageLocale, type RenderedPage } from '@odudu/kernel';
 import { escapeHtml, intro, page } from '#/view/document';
+import { fillPage } from '#/view/template';
 import { bdi, t, tHtml } from '#/view/messages';
 
 export interface ConsentPageInput {
@@ -87,16 +88,27 @@ export function renderConsentPage(input: ConsentPageInput, locale: PageLocale): 
     .join('\n  ');
   return page(
     t(locale, 'consent.title'),
-    `${intro(tHtml(locale, 'consent.heading', {}, { client: input.clientName }), input.tenant)}${renderPageLinks(input.clientPages, input.clientName, locale)}
-<form method="post" action="${action}">
-  <input type="hidden" name="auth_session_id" value="${escapeHtml(input.authSessionId)}">
-  <ul>
+    fillPage(
+      'consent',
+      {
+        client: intro(
+          tHtml(locale, 'consent.heading', {}, { client: input.clientName }),
+          input.tenant,
+        ),
+        links: renderPageLinks(input.clientPages, input.clientName, locale),
+        error: '',
+        'form.open': `<form method="post" action="${action}">
+  <input type="hidden" name="auth_session_id" value="${escapeHtml(input.authSessionId)}">`,
+        scopes: `<ul>
   ${defaultList}
   </ul>
-  ${optionalList}
-  <button type="submit" name="decision" value="allow">${tHtml(locale, 'consent.allow')}</button>
-  <button type="submit" name="decision" value="deny" class="secondary">${tHtml(locale, 'consent.deny')}</button>
-</form>`,
+  ${optionalList}`,
+        'submit.allow': `<button type="submit" name="decision" value="allow">${tHtml(locale, 'consent.allow')}</button>`,
+        'submit.deny': `<button type="submit" name="decision" value="deny" class="secondary">${tHtml(locale, 'consent.deny')}</button>`,
+        'form.close': '</form>',
+      },
+      locale,
+    ),
     null,
     [],
     locale,

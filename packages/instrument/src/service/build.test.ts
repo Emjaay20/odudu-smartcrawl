@@ -80,14 +80,25 @@ describe('buildInstrument', () => {
     for (const pattern of physical) expect(pagesCss).not.toMatch(pattern);
   });
 
+  it('hides only the logo variant not in use, and never shows the other', () => {
+    const rules = [...pagesCss.matchAll(/[^{}]*\.logo\.logo-(?:dark|light)[^{}]*\{([^}]*)\}/gu)];
+    expect(rules).toHaveLength(4);
+    for (const [, body] of rules) expect((body ?? '').trim()).toBe('display: none;');
+    expect(pagesCss).toMatch(/\.logo \{[^}]*max-block-size: 2\.5rem;[^}]*object-fit: contain;/u);
+  });
+
+  it('never styles a logo variant by its own class alone, so a later .logo rule cannot win', () => {
+    expect(pagesCss).not.toMatch(/(^|[\s,}])\.logo-(dark|light)\b/mu);
+  });
+
   it('stays inside the size budget', () => {
     const { css } = built();
     expect(Buffer.byteLength(css)).toBeLessThan(64 * 1024);
     expect(gzipSync(css).byteLength).toBeLessThan(12 * 1024);
   });
 
-  it('keeps the page rules to 600 lines', () => {
-    expect(pagesCss.split('\n').length).toBeLessThanOrEqual(600);
+  it('keeps the page rules to 640 lines', () => {
+    expect(pagesCss.split('\n').length).toBeLessThanOrEqual(640);
   });
 
   it('contains no remote url()', () => {

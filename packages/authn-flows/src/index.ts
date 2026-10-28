@@ -150,3 +150,4 @@ export { nextRequiredAction } from '#/usecase/required-actions';
 export { requiredActionRepository } from '#/repository/required-actions';
 export { userRequiredActions, type RequiredAction } from '#/schema/required-action';
 export { renderRequiredActionPage } from '#/view/required-action-html';
+export { DEFAULT_TEMPLATES } from '#/view/templates/index';

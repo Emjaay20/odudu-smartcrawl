@@ -17,9 +17,12 @@ const PACKAGES = join(import.meta.dirname, '..', '..', '..');
 const UNTHEMED = new Set(['packages/protocol-oidc/src/view/lost-art.ts']);
 
 // Every class a server view renders, found in the sources: the view
-// layers, and the password-rules markup the kernel shares with them.
+// layers, and the password-rules and brand-line markup the kernel shares with them.
 const sources = (): string[] => {
-  const files: string[] = [join(PACKAGES, 'kernel', 'src', 'password-hints.ts')];
+  const files: string[] = [
+    join(PACKAGES, 'kernel', 'src', 'password-hints.ts'),
+    join(PACKAGES, 'kernel', 'src', 'page.ts'),
+  ];
   for (const pkg of readdirSync(PACKAGES)) {
     const dir = join(PACKAGES, pkg, 'src', 'view');
     let names: string[];
@@ -62,6 +65,9 @@ describe('CSS hooks', () => {
       'hint',
       'intro',
       'links',
+      'logo',
+      'logo-dark',
+      'logo-light',
       'mark',
       'page',
       'quiet',
@@ -86,6 +92,7 @@ describe('CSS hooks', () => {
       'page-authorize-error',
       'page-email-unverified',
       'page-logged-out',
+      'page-notice',
     ]);
   });
 
@@ -101,7 +108,7 @@ describe('CSS hooks', () => {
   it('lists only the page-<kind> hooks as not yet emitted', () => {
     const text = sources().join('\n');
     const rest = CSS_HOOKS.filter((name) => !RENDERED_HOOKS.includes(name));
-    expect(rest).toHaveLength(16);
+    expect(rest).toHaveLength(17);
     for (const name of rest) {
       expect(name.startsWith('page-'), name).toBe(true);
       expect(text.includes(name), name).toBe(false);
@@ -114,9 +121,9 @@ describe('CSS hooks', () => {
     for (const name of rendered) expect(CSS_HOOKS, name).toContain(name);
   });
 
-  it('carries a page- hook for each of the 16 page kinds', () => {
+  it('carries a page- hook for each of the 17 page kinds', () => {
     const kinds = Object.keys(PAGE_KINDS);
-    expect(kinds).toHaveLength(16);
+    expect(kinds).toHaveLength(17);
     for (const kind of kinds) expect(CSS_HOOKS).toContain(`page-${kind}`);
   });
 

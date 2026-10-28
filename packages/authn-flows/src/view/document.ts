@@ -1,7 +1,8 @@
 import {
   DEFAULT_PAGE_LOCALE,
   INSTRUMENT_STYLESHEET,
-  PRODUCT_NAME,
+  brandMarkup,
+  brandingHead,
   isPageTheme,
   type PageLocale,
   type PageScript,
@@ -77,12 +78,11 @@ export function page(
 <meta name="color-scheme" content="light dark">
 <title>${escapeHtml(title)}</title>
 <link rel="stylesheet" href="${INSTRUMENT_STYLESHEET}">
-<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
-<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
+${brandingHead(locale)}
 </head>
 <body>
 <main class="page">
-<p class="brand">${MARK}<span class="wordmark">${PRODUCT_NAME}</span></p>
+${brandMarkup(locale, MARK)}
 ${body}
 </main>
 </body>

@@ -1,8 +1,9 @@
 import { type PendingRequest } from '@odudu/authn-flows';
 import Fastify from 'fastify';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   continuation,
+  lookingUpTenantOnce,
   requestLocale,
   type ContinuationDeps,
   type PageSubject,
@@ -217,5 +218,24 @@ describe('continuation signInPath', () => {
         }),
       ),
     ).toBeNull();
+  });
+});
+
+describe('lookingUpTenantOnce', () => {
+  it('asks for a tenant once per name and answers the second ask from the first', async () => {
+    const findTenant = vi.fn((name: string) => Promise.resolve({ id: `id-${name}` }));
+    const deps = lookingUpTenantOnce({ findTenant, other: 1 });
+    expect(await deps.findTenant('acme')).toEqual({ id: 'id-acme' });
+    expect(await deps.findTenant('acme')).toEqual({ id: 'id-acme' });
+    expect(await deps.findTenant('rival')).toEqual({ id: 'id-rival' });
+    expect(findTenant).toHaveBeenCalledTimes(2);
+    expect(deps.other).toBe(1);
+  });
+
+  it('does not carry an answer from one request to the next', async () => {
+    const findTenant = vi.fn((name: string) => Promise.resolve(name === '' ? { id: '' } : null));
+    await lookingUpTenantOnce({ findTenant }).findTenant('acme');
+    await lookingUpTenantOnce({ findTenant }).findTenant('acme');
+    expect(findTenant).toHaveBeenCalledTimes(2);
   });
 });

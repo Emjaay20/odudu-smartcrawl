@@ -163,9 +163,11 @@ takes its client from the stored authorization session, server-side, never
 from a parameter the user can edit. A page reached from a mailed or linked
 address (registration, verification, reset) takes it from `return_to` where the
 flow already carries one, accepted only when it names a registered client of
-the same tenant; otherwise, and for a hintless logout and every error page, it
-uses the tenant's theme. Mail uses the tenant's theme only. No flow gains a
-stored client id.
+the same tenant; otherwise, and for a hintless logout and every error page that has a
+tenant in scope, it uses the tenant's theme. A logout takes a client only from an `id_token_hint`
+verified for a registered, enabled client of the tenant, carried to the
+confirmation POST by the form token; a `client_id` parameter alone never.
+Mail uses the tenant's theme only. No flow gains a stored client id.
 
 **A page that needs a script** (passkey enrolment) gets it as a required
 server-emitted slot, `{{script}}`, in that page kind's manifest, carrying the
@@ -217,6 +219,13 @@ asset and stylesheet URLs explicitly instead of `'self'`, so a page can load
 only what its own theme owns. `pageHeaders` takes the list from the
 `RenderedPage` the way it takes a script nonce, and a page with no theme is
 unchanged.
+
+A branded page's CSP lists the theme's own URLs as origin + path. `origin`
+must equal the origin the page is served from (the configured public base
+URL); a mismatch fails closed, the page loading unstyled while forms still
+work. A URL ending in `/` is refused, since a trailing slash is a prefix match
+in a CSP, and `//` or a dot segment never matches a request path. The resolver checks `brandingProblems` and falls back to the default
+theme, logging the reason (ADR 0030's amendment).
 
 ## 7. Uploads
 

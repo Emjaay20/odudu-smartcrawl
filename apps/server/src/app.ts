@@ -16,6 +16,7 @@ import {
   type MailGate,
 } from '@odudu/account';
 import { type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
+import { createBranding, type Branding } from '#/branding';
 import { requiredActionRepository } from '@odudu/authn-flows';
 import { consoleGateway } from '@odudu/console-gateway';
 import { instrumentRoutes } from '@odudu/instrument';
@@ -90,6 +91,9 @@ export interface AppDeps {
    */
   readonly kek: Uint8Array;
   readonly logger: PinoLogger;
+  // How pages get their theme; a test passes its own. Defaults to the
+  // process's resolver over `database`.
+  readonly branding?: Branding;
   /**
    * The base a mailed verification link is built from, and the only source
    * of the WebAuthn relying party id — never derived from a request, since
@@ -505,8 +509,16 @@ export function buildApp(deps: AppDeps): FastifyInstance {
       },
     }),
   );
+  const branding =
+    deps.branding ??
+    createBranding({
+      database: deps.database,
+      logger: deps.logger,
+      publicBaseUrl: deps.publicBaseUrl,
+    });
   app.register(
     oidcRoutes({
+      resolveBranding: branding.resolveBranding,
       database: deps.database,
       ownerDatabase: deps.ownerDatabase,
       kek: deps.kek,
@@ -531,7 +543,13 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   const findHeldSignIn = findHeldSignInIn(deps.database, tls);
   const mailGate = deps.mailGate ?? createMailGate(() => systemClock.now());
 
+  const themed = {
+    resolveBranding: branding.resolveBranding,
+    isClientOfTenant: branding.isClientOfTenant,
+  };
+
   registerActionTokenRoute(app, {
+    ...themed,
     database: deps.database,
     findHeldSignIn,
     now: () => systemClock.now(),
@@ -601,6 +619,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   });
 
   registerRegistrationRoute(app, {
+    ...themed,
     database: deps.database,
     findHeldSignIn,
     findTenant: (name) => tenantSettingsRepository(deps.ownerDatabase.db).byName(name),
@@ -616,6 +635,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   });
 
   registerResetPasswordRoute(app, {
+    ...themed,
     database: deps.database,
     findHeldSignIn,
     findTenant: (name) => tenantSettingsRepository(deps.ownerDatabase.db).byName(name),

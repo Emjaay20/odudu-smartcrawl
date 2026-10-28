@@ -10,7 +10,7 @@ import {
   renderResetRequestForm,
   sendResetHtml,
 } from '#/view/reset-html';
-import { requestLocale } from '#/view/request-locale';
+import { brandedLocale, type BrandedLocaleDeps } from '#/view/request-locale';
 
 export interface ResetPasswordTenantLookup {
   readonly id: string;
@@ -20,7 +20,7 @@ export interface ResetPasswordTenantLookup {
   readonly resetPasswordAllowed: boolean;
 }
 
-export interface ResetPasswordRouteDeps {
+export interface ResetPasswordRouteDeps extends BrandedLocaleDeps {
   // The tags a page can be shown in; defaults to what the server ships.
   pageLocales?: readonly string[];
   readonly database: DatabaseHandle;
@@ -69,19 +69,16 @@ export function registerResetPasswordRoute(
     Params: { tenant: string };
     Querystring: Record<string, string | string[] | undefined>;
   }>('/tenants/:tenant/login-actions/reset-password', async (request, reply) => {
-    const locale = requestLocale(request, deps);
     const tenant = await deps.findTenant(request.params.tenant);
     if (!tenantIsOpenForReset(tenant)) {
       return reply.code(404).send();
     }
+    const returnTo = signInPath(request.params.tenant, request.query.return_to);
+    const locale = await brandedLocale(request, deps, tenant, returnTo);
     return sendResetHtml(
       reply,
       200,
-      renderResetRequestForm(
-        request.params.tenant,
-        { signInPath: signInPath(request.params.tenant, request.query.return_to) },
-        locale,
-      ),
+      renderResetRequestForm(request.params.tenant, { signInPath: returnTo }, locale),
     );
   });
 
@@ -89,7 +86,6 @@ export function registerResetPasswordRoute(
     Params: { tenant: string };
     Body: Record<string, string | string[] | undefined>;
   }>('/tenants/:tenant/login-actions/reset-password', async (request, reply) => {
-    const locale = requestLocale(request, deps);
     const tenant = await deps.findTenant(request.params.tenant);
     if (!tenantIsOpenForReset(tenant)) {
       return reply.code(404).send();
@@ -97,6 +93,7 @@ export function registerResetPasswordRoute(
 
     const email = firstNonEmptyString(request.body.email);
     const returnTo = signInPath(request.params.tenant, request.body.return_to);
+    const locale = await brandedLocale(request, deps, tenant, returnTo);
     if (email === undefined) {
       return sendResetHtml(
         reply,

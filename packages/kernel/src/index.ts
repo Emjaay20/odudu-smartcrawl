@@ -12,6 +12,11 @@ export {
   type PasswordHintText,
   type PasswordRules,
 } from '#/password-hints';
+export {
+  createFallbackReporter,
+  MAX_REPORTED_FALLBACKS,
+  type TemplateFallback,
+} from '#/template-fallback';
 export { type Clock, systemClock, FakeClock } from '#/clock';
 export { isUuid, newId, scriptNonce } from '#/ids';
 export {
@@ -22,8 +27,15 @@ export {
   type PageLocale,
   type PageScript,
   type RenderedPage,
+  type ResolvedBranding,
+  MAX_BRANDING_URLS,
+  brandMarkup,
+  brandingHead,
+  brandingProblems,
+  isSameOriginPath,
   pageHeaders,
   reloadOnRestore,
+  withBranding,
   withPageTheme,
 } from '#/page';
 export {
@@ -66,4 +78,19 @@ export {
   scanSlots,
   type Slot,
 } from '#/slots';
+export { createPageFiller, fillPageTemplate, type PageFillerOptions } from '#/page-template';
+export {
+  brandLocale,
+  clientFromReturnTo,
+  MAX_CLIENT_ID_LENGTH,
+  type BrandingResolver,
+  type BrandingScope,
+  type PageBranding,
+} from '#/branding-resolver';
 export { PAGE_KINDS, type PageKind, type PageManifest } from '#/page-kinds';
+export {
+  CLIENT_RULES,
+  NO_TENANT_IN_SCOPE,
+  type ClientRule,
+  type ClientSource,
+} from '#/page-kinds-registry';

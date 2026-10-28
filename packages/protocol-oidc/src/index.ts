@@ -45,7 +45,12 @@ import {
   consentRepository,
 } from '@odudu/domain-tenant';
 import { SHIPPED_LOCALES } from '@odudu/i18n';
-import { systemClock, type ClaimMapperRegistry, type Clock } from '@odudu/kernel';
+import {
+  systemClock,
+  type BrandingResolver,
+  type ClaimMapperRegistry,
+  type Clock,
+} from '@odudu/kernel';
 import { type FastifyPluginAsync } from 'fastify';
 import { type ClientKeySet } from '#/repository/client-keys';
 import { loadClaimContextIn } from '#/usecase/evaluate-claims';
@@ -153,6 +158,10 @@ export interface OidcRoutesDeps {
   // `ui_locales_supported`, so the two cannot disagree. Defaults to the
   // locales the server ships.
   pageLocales?: readonly string[];
+  // How a page asks for its tenant's or client's theme; the server wires the
+  // theme package's resolver here because protocol packages cannot import it.
+  // None means every page is the default.
+  resolveBranding?: BrandingResolver;
 }
 
 // The plugin apps/server registers. Discovery and JWKS both read the
@@ -322,6 +331,8 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
     // without it there is nothing behind one.
     const passkeyLogin = { passkeyLogin: deps.publicBaseUrl !== undefined };
     const pageLocales = deps.pageLocales ?? SHIPPED_LOCALES;
+    const branding =
+      deps.resolveBranding === undefined ? {} : { resolveBranding: deps.resolveBranding };
     // Read only for a page shown after the first factor was verified, and
     // through the tenant context like every other tenant row.
     const subjectLocale = (tenantId: string, subjectId: string) =>
@@ -672,6 +683,7 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
       tls,
       ...passkeyLogin,
       pageLocales,
+      ...branding,
       subjectLocale,
       listPublishableKeys,
       scopesNamed,
@@ -778,6 +790,7 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
       tls,
       ...passkeyLogin,
       pageLocales,
+      ...branding,
       subjectLocale,
       beginTotpEnrolment: startTotpEnrolment,
       beginRecoveryCodes: startRecoveryCodes,
@@ -864,6 +877,7 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
       beginRecoveryCodes: startRecoveryCodes,
       ...passkeyEnrolment,
       pageLocales,
+      ...branding,
       subjectLocale,
       resolveClientId,
       consentContext,
@@ -878,6 +892,7 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
       findTenant,
       tls,
       pageLocales,
+      ...branding,
       listPublishableKeys,
       now: () => clock.now(),
       // Resolved from the OAuth client_id to that client's own registered
@@ -1081,3 +1096,5 @@ export {
   type EvaluateClaimsInput,
   type EvaluateClaimsOutcome,
 } from '#/usecase/evaluate-claims';
+export { DEFAULT_TEMPLATES } from '#/view/templates/index';
+export { renderLoggedOutRedirectPage } from '#/view/logout-html';
