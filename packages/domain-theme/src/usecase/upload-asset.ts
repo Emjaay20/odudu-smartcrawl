@@ -4,6 +4,7 @@ import {
   inspectLimitsFor,
   TENANT_ASSET_CAP_BYTES,
   withinByteLimit,
+  withinOutputLimit,
   type AssetKind,
 } from '#/service/asset-limits';
 import { inspectImage, isImageRefusal, type ImageRefusalCode } from '#/service/image';
@@ -17,6 +18,8 @@ export interface UploadRefusal {
 }
 
 export interface UploadAssetDeps {
+  // The image inspector; the default is the bounded one in service/image.
+  inspect?: typeof inspectImage;
   // Runs in the tenant's transaction; the repository holds the tenant lock
   // that makes the cap check race-safe.
   store(asset: NewAsset): Promise<AssetRef | 'over_cap'>;
@@ -37,11 +40,12 @@ function refuse(code: UploadRefusalCode): UploadRefusal {
 export function uploadAsset(
   deps: UploadAssetDeps,
 ): (input: UploadAssetInput) => Promise<AssetRef | UploadRefusal> {
+  const inspect = deps.inspect ?? inspectImage;
   return async ({ tenantId, bytes, kind }) => {
     if (!withinByteLimit(kind, bytes.length)) return refuse('too_large');
-    const image = await inspectImage(bytes, inspectLimitsFor(kind));
+    const image = await inspect(bytes, inspectLimitsFor(kind));
     if (isImageRefusal(image)) return refuse(image.code);
-    if (!withinByteLimit(kind, image.bytes.length)) return refuse('too_large');
+    if (!withinOutputLimit(kind, image.bytes.length)) return refuse('too_large');
     const stored = await deps.store({
       tenantId,
       sha256: createHash('sha256').update(image.bytes).digest('hex'),

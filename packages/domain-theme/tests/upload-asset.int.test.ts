@@ -126,6 +126,44 @@ describe('uploadAsset', () => {
     expect(await rowCount(tenantId)).toBe(1);
   });
 
+  it('accepts exactly up to the tenant cap, refuses one byte more, and still takes a re-upload', async () => {
+    const bytes = await noise(40);
+    const image = await inspectImage(bytes);
+    if (isImageRefusal(image)) throw new Error('refused');
+    const size = image.bytes.length;
+    const fill = async (tenantId: string, filler: number) => {
+      await owner.sql`
+        insert into theme_assets (id, tenant_id, sha256, mime, width, height, bytes)
+        values (gen_random_uuid(), ${tenantId}, repeat('c', 64), 'image/png', 1, 1,
+                decode(repeat('00', ${filler}), 'hex'))`;
+    };
+    const exact = await freshTenant();
+    await fill(exact, TENANT_ASSET_CAP_BYTES - size);
+    const first = stored(await upload(exact)({ tenantId: exact, bytes, kind: 'logo' }));
+    const again = stored(await upload(exact)({ tenantId: exact, bytes, kind: 'logo' }));
+    expect(again.id).toBe(first.id);
+    expect(await rowCount(exact)).toBe(2);
+
+    const over = await freshTenant();
+    await fill(over, TENANT_ASSET_CAP_BYTES - size + 1);
+    expect(refusal(await upload(over)({ tenantId: over, bytes, kind: 'logo' }))).toBe('over_cap');
+  });
+
+  it('a polyglot and the clean copy of one picture are one hash and one row', async () => {
+    const tenantId = await freshTenant();
+    const clean = await sharp({
+      create: { width: 16, height: 16, channels: 3, background: 'teal' },
+    })
+      .png()
+      .toBuffer();
+    const polyglot = Buffer.concat([clean, Buffer.from('<script>alert(1)</script>')]);
+    const a = stored(await upload(tenantId)({ tenantId, bytes: clean, kind: 'logo' }));
+    const b = stored(await upload(tenantId)({ tenantId, bytes: polyglot, kind: 'logo' }));
+    expect(b.sha256).toBe(a.sha256);
+    expect(b.id).toBe(a.id);
+    expect(await rowCount(tenantId)).toBe(1);
+  });
+
   it('two uploads racing for the last room cannot both pass the cap', async () => {
     const tenantId = await freshTenant();
     const images = await Promise.all(Array.from({ length: 6 }, () => noise(100)));

@@ -3,7 +3,8 @@ import { MAX_DECODED_PIXELS, type InspectLimits } from '#/service/image';
 export type AssetKind = 'logo' | 'darkLogo' | 'favicon' | 'background';
 
 export interface AssetLimits {
-  // Applied to the upload and again to the re-encoded image.
+  // The upload's size, checked before anything is decoded. The re-encoded
+  // file may be up to OUTPUT_GROWTH times this (see withinOutputLimit).
   maxBytes: number;
   maxSide: number;
 }
@@ -22,6 +23,14 @@ export const TENANT_ASSET_CAP_BYTES = 8 * 1024 * 1024;
 
 export function inspectLimitsFor(kind: AssetKind): InspectLimits {
   return { maxPixels: MAX_DECODED_PIXELS, maxSide: ASSET_LIMITS[kind].maxSide };
+}
+
+// A re-encode can come out a little larger than a well-compressed upload; a
+// file under its limit is not refused for that unless it grows past this.
+export const OUTPUT_GROWTH = 1.25;
+
+export function withinOutputLimit(kind: AssetKind, length: number): boolean {
+  return length <= Math.floor(ASSET_LIMITS[kind].maxBytes * OUTPUT_GROWTH);
 }
 
 export function withinByteLimit(kind: AssetKind, length: number): boolean {

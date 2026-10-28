@@ -3,7 +3,14 @@ import sharp from 'sharp';
 export type ImageMime = 'image/png' | 'image/jpeg' | 'image/webp';
 
 export type ImageRefusalCode =
-  'unsupported_type' | 'animated' | 'corrupt' | 'empty' | 'too_many_pixels' | 'too_wide' | 'busy';
+  | 'unsupported_type'
+  | 'animated'
+  | 'corrupt'
+  | 'empty'
+  | 'too_many_pixels'
+  | 'too_wide'
+  | 'busy'
+  | 'timeout';
 
 export interface ImageRefusal {
   kind: 'refused';
@@ -23,14 +30,18 @@ export interface InspectLimits {
   maxSide: number;
 }
 
-// Decoded pixels: RGBA at 4 bytes is 64 MB for one image in flight.
+// A backstop: every kind's side limit (2560 px, 6.6 MP at most) binds first
+// through uploadAsset, so a decode never holds more than about 26 MB RGBA.
 export const MAX_DECODED_PIXELS = 16_000_000;
 export const MAX_IMAGE_SIDE = 2560;
 // ADR 0041: at most this many decodes run at once, and at most this many more
-// wait, so 100 simultaneous uploads hold two decoded images (about 128 MB)
+// wait, so 100 simultaneous uploads hold two decoded images (about 52 MB)
 // and the queued request bodies, never a hundred decodes.
 export const MAX_CONCURRENT_INSPECTIONS = 2;
 export const MAX_QUEUED_INSPECTIONS = 16;
+// A decode that has not finished by then is abandoned (sharp stops it at the
+// same bound) and its slot is freed, so a stuck libvips call cannot hold both.
+export const DECODE_TIMEOUT_SECONDS = 10;
 // Encoder quality for the two lossy formats; the re-encode is deterministic.
 const QUALITY = 90;
 
@@ -68,7 +79,8 @@ function isAnimatedPng(bytes: Uint8Array): boolean {
   return false;
 }
 
-async function inspect(
+// One unbounded inspection; createImageInspector adds the slots and deadline.
+export async function decodeImage(
   bytes: Uint8Array,
   limits: InspectLimits,
 ): Promise<InspectedImage | ImageRefusal> {
@@ -78,7 +90,9 @@ async function inspect(
   try {
     // The header alone: the pixel limit is off here so an oversize image
     // reports its size instead of failing, and nothing is decoded.
-    const header = await sharp(bytes, { limitInputPixels: false }).metadata();
+    const header = await sharp(bytes, { limitInputPixels: false })
+      .timeout({ seconds: DECODE_TIMEOUT_SECONDS })
+      .metadata();
     if (header.format !== kind.format) return { kind: 'refused', code: 'unsupported_type' };
     if ((header.pages ?? 1) > 1) return { kind: 'refused', code: 'animated' };
     const { width, height } = header;
@@ -89,7 +103,9 @@ async function inspect(
     if (Math.max(width, height) > limits.maxSide) return { kind: 'refused', code: 'too_wide' };
     // Orientation is applied, then dropped with every other tag: sharp keeps
     // no metadata unless asked, so EXIF, XMP, ICC and any trailer are gone.
-    const pipeline = sharp(bytes, { limitInputPixels: limits.maxPixels, failOn: 'error' }).rotate();
+    const pipeline = sharp(bytes, { limitInputPixels: limits.maxPixels, failOn: 'error' })
+      .timeout({ seconds: DECODE_TIMEOUT_SECONDS })
+      .rotate();
     const encoded =
       kind.format === 'png'
         ? pipeline.png({ compressionLevel: 9 })
@@ -103,9 +119,38 @@ async function inspect(
   }
 }
 
+export type InspectRun = (
+  bytes: Uint8Array,
+  limits: InspectLimits,
+) => Promise<InspectedImage | ImageRefusal>;
+
+export interface InspectorOptions {
+  run?: InspectRun;
+  timeoutMs?: number;
+}
+
+function withDeadline(
+  work: Promise<InspectedImage | ImageRefusal>,
+  ms: number,
+): Promise<InspectedImage | ImageRefusal> {
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      resolve({ kind: 'refused', code: 'timeout' });
+    }, ms);
+    const settle = (result: InspectedImage | ImageRefusal) => {
+      clearTimeout(timer);
+      resolve(result);
+    };
+    work.then(settle, () => {
+      settle({ kind: 'refused', code: 'corrupt' });
+    });
+  });
+}
+
 export function createImageInspector(
   concurrency: number,
   queueLimit: number,
+  { run = decodeImage, timeoutMs = DECODE_TIMEOUT_SECONDS * 1000 + 2000 }: InspectorOptions = {},
 ): (bytes: Uint8Array, limits?: InspectLimits) => Promise<InspectedImage | ImageRefusal> {
   let running = 0;
   const waiting: (() => void)[] = [];
@@ -129,7 +174,10 @@ export function createImageInspector(
   return async (bytes, limits = { maxPixels: MAX_DECODED_PIXELS, maxSide: MAX_IMAGE_SIDE }) => {
     if (!(await slot())) return { kind: 'refused', code: 'busy' };
     try {
-      return await inspect(bytes, limits);
+      return await withDeadline(
+        Promise.resolve().then(() => run(bytes, limits)),
+        timeoutMs,
+      );
     } finally {
       release();
     }

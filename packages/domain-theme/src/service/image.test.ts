@@ -1,9 +1,10 @@
 import { crc32 } from 'node:zlib';
 import sharp from 'sharp';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   createImageInspector,
   inspectImage,
+  decodeImage,
   isImageRefusal,
   MAX_DECODED_PIXELS,
   type ImageRefusal,
@@ -50,7 +51,7 @@ function refusedWith(result: InspectedImage | ImageRefusal): string {
 }
 
 describe('inspectImage', () => {
-  it('refuses a polyglot PNG with HTML appended, and the output has no trailer', async () => {
+  it('accepts a polyglot PNG with HTML appended only after re-encoding, and the output has no trailer', async () => {
     const png = await solid(8, 8).png().toBuffer();
     const polyglot = Buffer.concat([png, Buffer.from('<html><script>alert(1)</script></html>')]);
     const out = accepted(await inspectImage(polyglot));
@@ -216,5 +217,54 @@ describe('inspectImage', () => {
     expect(codes.filter((code) => code === 'accepted')).toHaveLength(3);
     expect(codes.filter((code) => code === 'busy')).toHaveLength(3);
     expect(refusedWith(await inspector(png))).toBe('accepted');
+  });
+
+  it('never has more decodes in flight than its limit, and frees a slot after one throws', async () => {
+    const png = await solid(8, 8).png().toBuffer();
+    let inFlight = 0;
+    let peak = 0;
+    let calls = 0;
+    const inspector = createImageInspector(2, 50, {
+      run: async (bytes, limits) => {
+        calls += 1;
+        const mine = calls;
+        inFlight += 1;
+        peak = Math.max(peak, inFlight);
+        try {
+          await new Promise((resolve) => setTimeout(resolve, 5));
+          if (mine === 1) throw new Error('decoder fault');
+          return await decodeImage(bytes, limits);
+        } finally {
+          inFlight -= 1;
+        }
+      },
+    });
+    const results = await Promise.all(Array.from({ length: 20 }, () => inspector(png)));
+    expect(peak).toBe(2);
+    expect(results.map(refusedWith).filter((code) => code === 'corrupt')).toHaveLength(1);
+    expect(results.map(refusedWith).filter((code) => code === 'accepted')).toHaveLength(19);
+  });
+
+  it('refuses a decode that never finishes and frees its slot', async () => {
+    vi.useFakeTimers();
+    try {
+      const png = await solid(8, 8).png().toBuffer();
+      let calls = 0;
+      const inspector = createImageInspector(1, 4, {
+        timeoutMs: 1000,
+        run: (bytes, limits) => {
+          calls += 1;
+          return calls === 1 ? new Promise(() => undefined) : decodeImage(bytes, limits);
+        },
+      });
+      const stuck = inspector(png);
+      const next = inspector(png);
+      await vi.advanceTimersByTimeAsync(1000);
+      expect(refusedWith(await stuck)).toBe('timeout');
+      await vi.advanceTimersByTimeAsync(0);
+      expect(refusedWith(await next)).toBe('accepted');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
