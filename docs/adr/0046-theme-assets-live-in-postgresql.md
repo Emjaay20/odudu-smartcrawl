@@ -45,8 +45,25 @@ which can carry script and external references. The server holds up to
   stored bytes with one row per tenant and hash. The tenant cap is checked
   under a per-tenant advisory lock, so two uploads cannot both take the last
   room. Row-level security keeps a tenant's images its own.
+- **Served by hash, to anyone, from the database alone.**
+  `GET /tenants/:tenant/brand/<sha256>.<png|jpg|webp>` answers while a
+  published version of that tenant names the image, under the stored type, with
+  `Cache-Control: public, max-age=31536000, immutable`, `nosniff`, an `ETag`
+  of the hash and no cookie. A draft's image, another tenant's hash, an
+  archived version's, a deleted one, a wrong extension and an unknown tenant
+  all answer the same bare `404` (`no-store`); a name that is not 64 lowercase
+  hex and an extension costs no read. The hashed stylesheet is not stored: its
+  URL (`/brand/<sha256>.css`, or `/brand/c/<client row id>/<sha256>.css` when a
+  client's theme is one of its layers) names the layers it is made from, the
+  route reads them again through the resolver's own build and serves the
+  result only if it hashes to the URL. No process memory is involved, so any
+  replica answers for a page another rendered. After a publish the previous
+  hash no longer matches and answers `404`: a page another replica rendered
+  from its cache in the last 30 seconds shows no theme until its next
+  render. Per request the work is a tenant lookup and one indexed read; no
+  bytes are cached in process, HTTP caching and any CDN do that.
 - **The store is a seam.** Everything reaches images through `assetRepository`
-  (`put`, `get`, `referencedBy`, `delete`, `bytesUsed`); moving the bytes to
+  (`put`, `get`, `getPublished`, `referencedBy`, `delete`, `bytesUsed`); moving the bytes to
   object storage later changes that module and a migration, not the upload, the
   resolver or the console.
 

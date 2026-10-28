@@ -247,6 +247,42 @@ describe('the pages a tenant theme reaches without a parked request', () => {
   });
 });
 
+// A brand file is a tenant lookup and one read of its own, nothing for a name
+// that cannot be a hash, and the read has a plan that uses the index even
+// where a table is small enough for the planner to prefer scanning it.
+describe('a brand file', () => {
+  it('costs a tenant lookup and one read, and nothing for a malformed name', () => {
+    expect(workOf(BRANDING_PATHS.brandNothing)).toEqual([]);
+    for (const path of [BRANDING_PATHS.brandImage, BRANDING_PATHS.brandStylesheet]) {
+      const work = workOf(path);
+      expect(tenantLookups(work), path).toBe(1);
+      expect(work.length, path).toBe(2);
+    }
+  });
+
+  it('reads an image and the stylesheet layers by index, even where scanning is allowed to lose', async () => {
+    const image = workOf(BRANDING_PATHS.brandImage).find((s) => s.query.includes('"theme_assets"'));
+    const layers = workOf(BRANDING_PATHS.brandStylesheet).find((s) =>
+      s.query.includes('"theme_versions"'),
+    );
+    expect(image).toBeDefined();
+    expect(layers).toBeDefined();
+    for (const [statement, table] of [
+      [image, 'theme_assets'],
+      [layers, 'theme_versions'],
+    ] as const) {
+      if (statement === undefined) continue;
+      const plan = await planned(statement, { settings: ['enable_seqscan = off'] });
+      const own = scansOf(plan).filter((scan) => scan.relation === table);
+      expect(own.length, table).toBeGreaterThan(0);
+      expect(
+        own.filter((scan) => scan.node === 'Seq Scan'),
+        table,
+      ).toEqual([]);
+    }
+  });
+});
+
 describe('every foreign key', () => {
   it('is found by an index, so a parent row can be deleted without reading its children whole', async () => {
     expect(await unindexedForeignKeys(world.owner)).toEqual([]);
