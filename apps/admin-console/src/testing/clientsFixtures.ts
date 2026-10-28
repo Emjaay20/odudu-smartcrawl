@@ -45,6 +45,8 @@ export interface ClientAnswer {
   previous_secret_expires_at: string | null;
   builtin_admin: boolean;
   skip_logout_confirmation: boolean;
+  name_i18n: Record<string, string>;
+  description_i18n: Record<string, string>;
   service_subject_id: string | null;
   service_account_admin_reach: readonly string[];
   scopes: readonly { id: string; name: string; assignment: 'default' | 'optional' }[];
@@ -102,6 +104,8 @@ export function client(
     previous_secret_expires_at: null,
     builtin_admin: false,
     skip_logout_confirmation: false,
+    name_i18n: {},
+    description_i18n: {},
     service_subject_id: serviceAccountOf(id),
     service_account_admin_reach: [],
     scopes: [],
