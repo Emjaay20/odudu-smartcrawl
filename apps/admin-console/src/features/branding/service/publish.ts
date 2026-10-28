@@ -30,6 +30,13 @@ export function publishedText(view: ThemeView): string {
   return `Version ${String(view.published.version)} is published.`;
 }
 
+// The short word beside the sentence, since a tag does not wrap.
+export function publishedTag(view: ThemeView): { text: string; tone: 'active' | 'neutral' } {
+  return view.published === null
+    ? { text: 'Not published', tone: 'neutral' }
+    : { text: 'Published', tone: 'active' };
+}
+
 export function draftText(view: ThemeView): string {
   return view.draft === null ? 'No draft.' : 'A saved draft is waiting to be published.';
 }

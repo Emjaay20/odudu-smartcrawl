@@ -7,6 +7,7 @@ import {
   PUBLISH_LABEL,
   PUBLISH_TITLE,
   PUBLISHING,
+  publishedTag,
   publishedText,
   RESET_CONFIRM,
   RESET_LABEL,
@@ -44,12 +45,11 @@ import { StatusTag } from '#/shared/view/StatusTag';
 import styles from '#/features/branding/view/PublicationPanels/PublicationPanels.module.css';
 
 export function StatusPanel({ view }: { view: ThemeView }) {
+  const tag = publishedTag(view);
   return (
     <Panel title={STATUS_TITLE}>
       <p className={recordTab.text}>
-        <StatusTag tone={view.published === null ? 'neutral' : 'active'}>
-          {publishedText(view)}
-        </StatusTag>
+        <StatusTag tone={tag.tone}>{tag.text}</StatusTag> {publishedText(view)}
       </p>
       <p className={recordTab.rule}>{draftText(view)}</p>
     </Panel>
