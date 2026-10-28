@@ -71,6 +71,14 @@ export {
   type ResolveBrandingDeps,
 } from '#/usecase/resolve-branding';
 export {
+  ASSET_LIMITS,
+  TENANT_ASSET_CAP_BYTES,
+  inspectLimitsFor,
+  withinByteLimit,
+  type AssetKind,
+  type AssetLimits,
+} from '#/service/asset-limits';
+export {
   MAX_CONCURRENT_INSPECTIONS,
   MAX_DECODED_PIXELS,
   MAX_IMAGE_SIDE,
@@ -84,3 +92,10 @@ export {
   type InspectLimits,
   type InspectedImage,
 } from '#/service/image';
+export {
+  uploadAsset,
+  type UploadAssetDeps,
+  type UploadAssetInput,
+  type UploadRefusal,
+  type UploadRefusalCode,
+} from '#/usecase/upload-asset';
