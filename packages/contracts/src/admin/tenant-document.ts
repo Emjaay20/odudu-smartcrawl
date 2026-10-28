@@ -84,6 +84,8 @@ export const tenantSettingsDocumentSchema = z.strictObject({
   reset_password_ttl_seconds: count,
   login_with_email: z.boolean(),
   audit_event_types: z.array(z.string()),
+  supported_locales: z.array(z.string()),
+  default_locale: z.string(),
 });
 export type TenantSettingsDocument = z.infer<typeof tenantSettingsDocumentSchema>;
 

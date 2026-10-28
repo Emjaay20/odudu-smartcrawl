@@ -11,6 +11,7 @@ export { TOKEN_ENDPOINT_AUTH_METHODS_SUPPORTED, type TokenEndpointAuthMethod } f
 export { isTenantName, TENANT_NAME_PATTERN, TENANT_NAME_RULE } from '#/tenant-name';
 export { UNSAFE_RETURN_TO } from '#/return-to';
 export {
+  canonicalLocale,
   isValidBirthdate,
   isValidE164,
   isValidLocale,

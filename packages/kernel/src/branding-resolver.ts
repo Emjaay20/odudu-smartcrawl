@@ -31,16 +31,34 @@ export interface PageBranding {
 // page with no theme and never rejects.
 export type BrandingResolver = (scope: BrandingScope) => Promise<PageBranding | null>;
 
+// A tenant's own text for the catalogue keys of one locale, as a map from
+// key to message; empty when it wrote none. Never rejects.
+export type OverridesResolver = (
+  tenantId: string,
+  locale: string,
+) => Promise<Readonly<Record<string, string>>>;
+
 // Every page whose tenant is known takes its locale through here, so a route
-// cannot render a themeable page without asking for its theme.
+// cannot render a themeable page without asking for its theme and its
+// tenant's own wording.
 export async function brandLocale(
   locale: PageLocale,
   resolve: BrandingResolver | undefined,
   scope: BrandingScope | null,
+  resolveOverrides?: OverridesResolver,
 ): Promise<PageLocale> {
-  if (resolve === undefined || scope === null) return locale;
-  const found = await resolve(scope);
-  return found === null ? locale : withBranding(locale, found.branding, found.templateFallback);
+  if (scope === null) return locale;
+  const [found, overrides] = await Promise.all([
+    resolve === undefined ? null : resolve(scope),
+    resolveOverrides === undefined
+      ? null
+      : resolveOverrides(scope.tenantId, locale.tag).catch(() => null),
+  ]);
+  const branded =
+    found === null ? locale : withBranding(locale, found.branding, found.templateFallback);
+  return overrides === null || Object.keys(overrides).length === 0
+    ? branded
+    : { ...branded, overrides };
 }
 
 // The client an account page was reached for: the one its `return_to`

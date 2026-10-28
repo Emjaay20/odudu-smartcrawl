@@ -900,6 +900,10 @@ describeFields(tenantSettingsDocumentSchema, {
   reset_password_ttl_seconds: 'How long a mailed password-reset link works.',
   login_with_email: 'Whether a user may sign in with the email address instead of the username.',
   audit_event_types: 'The audit event types the tenant stores.',
+  supported_locales:
+    'The language tags the tenant’s pages are offered in, 1 to 32, each such as `fr` or `zh-Hant-TW`; discovery advertises them as `ui_locales_supported`.',
+  default_locale:
+    'The language a page is shown in when the request names none of the supported ones; one of `supported_locales`.',
 });
 describeFields(createTenantRequestSchema, {
   name: 'The tenant name, used in every address of the tenant (`/tenants/{name}/...`). 1 to 63 lowercase letters, digits or hyphens, not starting or ending with a hyphen.',

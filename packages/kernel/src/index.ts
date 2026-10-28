@@ -94,6 +94,7 @@ export {
   MAX_CLIENT_ID_LENGTH,
   type BrandingResolver,
   type BrandingScope,
+  type OverridesResolver,
   type PageBranding,
 } from '#/branding-resolver';
 export { PAGE_KINDS, type PageKind, type PageManifest } from '#/page-kinds';

@@ -38,6 +38,20 @@ export function isValidLocale(value: string): boolean {
   return LOCALE.test(value);
 }
 
+// The spelling RFC 5646 §2.1.1 recommends: the language in lower case, a
+// script in title case, a region in upper case. Null when `isValidLocale`
+// refuses the tag, so a stored tag has one spelling whatever was typed.
+export function canonicalLocale(value: string): string | null {
+  if (!LOCALE.test(value)) return null;
+  const [language = '', ...rest] = value.split('-');
+  const subtags = rest.map((subtag) => {
+    if (subtag.length === 4)
+      return subtag.slice(0, 1).toUpperCase() + subtag.slice(1).toLowerCase();
+    return subtag.toUpperCase();
+  });
+  return [language.toLowerCase(), ...subtags].join('-');
+}
+
 export function isValidProfileUrl(value: string): boolean {
   return HTTP_URL.test(value);
 }
