@@ -60,9 +60,10 @@ every library below, with its patches and build scripts, is sharp-libvips
 **Replacing it.** The library is a package, not part of Odudu's code. To run
 with another build, point the `@img/sharp-libvips-<platform>` entry of the
 lockfile at a package built from that source with a pnpm `overrides` entry and
-reinstall, or build sharp against a system libvips (`SHARP_FORCE_GLOBAL_LIBVIPS`,
-read by sharp's build step in `dist/libvips.cjs`). Nothing in Odudu depends on
-which build loads.
+reinstall, or build sharp against a system libvips. `SHARP_FORCE_GLOBAL_LIBVIPS`
+is read only when sharp is built from source (`pnpm rebuild sharp`, in
+`dist/libvips.cjs`), not when it loads at run time, so setting it on a running
+server changes nothing. Nothing in Odudu depends on which build loads.
 
 The LGPL packages in the lockfile are: `@img/sharp-libvips-darwin-arm64`,
 `@img/sharp-libvips-darwin-x64`, `@img/sharp-libvips-linux-arm`,
@@ -79,7 +80,11 @@ installed in the image. The other `@img` packages are Apache-2.0
 (`@img/colour`).
 
 The libraries in the libvips build, with the versions in the package's
-`versions.json` and the licences its README gives:
+`versions.json` and the licences its README gives. The table was compared with
+the installed `@img/sharp-libvips-darwin-arm64` 1.3.4 (all 28 versions agree);
+the `linuxmusl` packages of the image were not installed where this was
+checked, so their own `versions.json` and README were not read, and they come
+from the same sharp-libvips 1.3.4 release:
 
 | Library       | Version | Licence                                         |
 | ------------- | ------- | ----------------------------------------------- |

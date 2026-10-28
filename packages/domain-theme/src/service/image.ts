@@ -90,9 +90,9 @@ export async function decodeImage(
   try {
     // The header alone: the pixel limit is off here so an oversize image
     // reports its size instead of failing, and nothing is decoded.
-    const header = await sharp(bytes, { limitInputPixels: false })
-      .timeout({ seconds: DECODE_TIMEOUT_SECONDS })
-      .metadata();
+    // sharp's timeout applies to the pipeline only, not to this read, which
+    // is bounded by the upload's size.
+    const header = await sharp(bytes, { limitInputPixels: false }).metadata();
     if (header.format !== kind.format) return { kind: 'refused', code: 'unsupported_type' };
     if ((header.pages ?? 1) > 1) return { kind: 'refused', code: 'animated' };
     const { width, height } = header;
