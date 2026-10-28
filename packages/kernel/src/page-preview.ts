@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { stylesheetLink, type PageLocale, type RenderedPage } from '#/page';
+import { STOCK_FAVICON_LINKS, stylesheetLink, type PageLocale, type RenderedPage } from '#/page';
 
 // What a package renders a kind with for the theme preview: its own renderer,
 // handed fixed sample values, so the page is the one a person would be sent.
@@ -44,10 +44,14 @@ function withoutScript(page: RenderedPage): { html: string; omitted: boolean } {
 // The page as `page` rendered it, with the theme's own files carried inside
 // it, so nothing the draft holds needs a public URL. A stylesheet that
 // contains `<` is left out: the sanitiser refuses one, and a policy hash
-// cannot make an element that closes early safe.
+// cannot make an element that closes early safe. The stock icon links go too:
+// a framed page has no tab, and the policy loads no image but a `data:` one.
 export function inlinePreview(page: RenderedPage, inline: PreviewInline): InlinedPreview {
   const stripped = withoutScript(page);
-  let html = stripped.html;
+  let html = STOCK_FAVICON_LINKS.reduce(
+    (text, link) => replaceAll(text, `${link}\n`, ''),
+    stripped.html,
+  );
   let styleSha256: string | null = null;
   if (inline.stylesheetUrl !== null) {
     let css = inline.css;
