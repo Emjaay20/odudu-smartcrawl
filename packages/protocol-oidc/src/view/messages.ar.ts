@@ -46,7 +46,8 @@ export const ar: Readonly<Record<string, string>> = {
   'login.passkey.submit': 'تسجيل الدخول بمفتاح مرور',
   'login.passkey.needsScript':
     'يتطلب تسجيل الدخول بمفتاح مرور تفعيل JavaScript، لأن المتصفح وحده يستطيع التواصل مع أداة المصادقة لديك. استخدم اسم المستخدم وكلمة المرور أعلاه.',
-  'login.passkey.failed': 'لم يُكمل جهازك تسجيل الدخول — {reason}. يمكنك المحاولة مرة أخرى.',
+  'login.passkey.failed':
+    'لم يُكمل جهازك تسجيل الدخول — \u2068{reason}\u2069. يمكنك المحاولة مرة أخرى.',
   'login.passkey.cancelled': 'أُلغي الطلب',
   'login.passkey.notOffered': 'هذا الخادم لا يوفّر مفاتيح المرور',
   'login.link.forgotPassword': 'نسيت كلمة المرور؟',

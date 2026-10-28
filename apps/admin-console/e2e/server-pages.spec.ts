@@ -4,7 +4,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { z } from 'zod';
 import { expect, forgive, test } from './fixtures';
-import { authorize, client, LANDING, mailKey, ROOT, totp } from './page-flows';
+import { authorize, client, LANDING, LONG_NAME, mailKey, ROOT, totp } from './page-flows';
 import { BASE, COMMON_PASSWORD, forgiveRefusals, inspect } from './page-inspection';
 import { inTenant, psql, seed } from './stack';
 import type { Page } from '@playwright/test';
@@ -16,8 +16,6 @@ import { randomPassword } from './password';
 
 const run = randomBytes(3).toString('hex');
 const PASSWORD = randomPassword('Visual-');
-const LONG_NAME =
-  'The International Consortium of Extraordinarily Long Named Organisations and Their Subsidiary Applications Incorporated';
 // Every scope the consent clients are assigned, so the page lists defaults and options.
 const ALL_SCOPES = [
   'openid',

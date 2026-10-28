@@ -14,6 +14,22 @@ describe('the page catalogue', () => {
   });
 });
 
+describe('the Arabic wait', () => {
+  const arabic = { tag: 'ar', dir: 'rtl' } as const;
+  it.each([
+    [0, '0 ثانية'],
+    [1, 'ثانية واحدة'],
+    [2, 'ثانيتين'],
+    [3, '3 ثوانٍ'],
+    [10, '10 ثوانٍ'],
+    [11, '11 ثانية'],
+    [99, '99 ثانية'],
+    [100, '100 ثانية'],
+  ])('says %i in the form its count takes', (seconds, said) => {
+    expect(t(arabic, 'throttled.retryAfter', { seconds })).toBe(`حاول مرة أخرى بعد ${said}.`);
+  });
+});
+
 describe('tHtml', () => {
   it('escapes a plain value once, inside the sentence', () => {
     expect(tHtml(DEFAULT_PAGE_LOCALE, 'login.unsupportedStep', { form: '<b>&' })).toBe(

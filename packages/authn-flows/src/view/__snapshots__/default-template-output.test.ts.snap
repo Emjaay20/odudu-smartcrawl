@@ -278,7 +278,7 @@ exports[`the passkey enrolment page under the default template > renders byte-id
 <p class="tenant"><bdi>acme</bdi></p>
 </header>
 <p>سيطلب منك جهازك التأكيد. لن يُحفظ أي شيء حتى تؤكد.</p>
-<form method="post" action="/tenants/acme/login-actions/required-action?action=configure-passkey" id="passkey-form" data-failed="لم يُكمل جهازك إضافة مفتاح المرور — {reason}. يمكنك المحاولة مرة أخرى." data-cancelled="أُلغي الطلب">
+<form method="post" action="/tenants/acme/login-actions/required-action?action=configure-passkey" id="passkey-form" data-failed="لم يُكمل جهازك إضافة مفتاح المرور — ⁨{reason}⁩. يمكنك المحاولة مرة أخرى." data-cancelled="أُلغي الطلب">
   <input type="hidden" name="auth_session_id" value="sess-1">
   <input type="hidden" name="credential" id="passkey-credential">
   <label>اسم مفتاح المرور <input type="text" name="label" placeholder="مفتاح المرور" maxlength="64"></label>
@@ -502,7 +502,7 @@ exports[`the passkey enrolment page under the default template > renders hostile
 </ul>
 </div>
 <p>سيطلب منك جهازك التأكيد. لن يُحفظ أي شيء حتى تؤكد.</p>
-<form method="post" action="/tenants/%3Cscript%3Ealert(%22x%22)%3C%2Fscript%3E&#39;o&#39;%20%26%20co/login-actions/required-action?action=configure-passkey" id="passkey-form" data-failed="لم يُكمل جهازك إضافة مفتاح المرور — {reason}. يمكنك المحاولة مرة أخرى." data-cancelled="أُلغي الطلب">
+<form method="post" action="/tenants/%3Cscript%3Ealert(%22x%22)%3C%2Fscript%3E&#39;o&#39;%20%26%20co/login-actions/required-action?action=configure-passkey" id="passkey-form" data-failed="لم يُكمل جهازك إضافة مفتاح المرور — ⁨{reason}⁩. يمكنك المحاولة مرة أخرى." data-cancelled="أُلغي الطلب">
   <input type="hidden" name="auth_session_id" value="&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;&#39;o&#39; &amp; co">
   <input type="hidden" name="credential" id="passkey-credential">
   <label>اسم مفتاح المرور <input type="text" name="label" placeholder="مفتاح المرور" maxlength="64"></label>

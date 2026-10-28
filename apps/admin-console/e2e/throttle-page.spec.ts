@@ -46,3 +46,37 @@ test('the throttled sign-in page names the wait and passes axe in both themes', 
   await inspect(page, 'throttle');
   forgive(problems, '/throttled-view');
 });
+
+// Arabic has six plural categories, so the wait is said in the form its count
+// takes; the form for each count is held by the catalogue's own tests.
+const ARABIC_WAIT: Record<string, (seconds: number) => string> = {
+  zero: (n) => `${String(n)} ثانية`,
+  one: () => 'ثانية واحدة',
+  two: () => 'ثانيتين',
+  few: (n) => `${String(n)} ثوانٍ`,
+  many: (n) => `${String(n)} ثانية`,
+  other: (n) => `${String(n)} ثانية`,
+};
+
+test('the throttled page in Arabic names the wait in its plural form', async ({
+  page,
+  request,
+  problems,
+}) => {
+  const url = `${ORIGIN}/tenants/anything/login-actions/reset-password`;
+  const headers = { 'accept-language': 'ar' };
+  await request.post(url, { form: { email: 'nobody@example.test' }, headers });
+  const refused = await request.post(url, { form: { email: 'nobody@example.test' }, headers });
+
+  expect(refused.status()).toBe(429);
+  const wait = Number(refused.headers()['retry-after']);
+  const view = `${ORIGIN}/throttled-view-ar`;
+  await page.route(view, (route) => route.fulfill({ response: refused }));
+  await page.goto(view);
+  await expect(page.locator('html')).toHaveAttribute('lang', 'ar');
+  await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+  const form = ARABIC_WAIT[new Intl.PluralRules('ar').select(wait)];
+  await expect(page.getByText(`حاول مرة أخرى بعد ${form?.(wait) ?? ''}.`)).toBeVisible();
+  await inspect(page, 'ar-throttle');
+  forgive(problems, '/throttled-view-ar');
+});

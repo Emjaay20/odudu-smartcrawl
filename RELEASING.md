@@ -21,30 +21,25 @@ Release marked as a pre-release, and nothing that follows `latest` moves.
 
 ## Cut a release
 
-1. Have a reader of Arabic review the catalogue. Arabic is shipped, and the
-   text was drafted without one: every file `messages.ar.ts` (account,
-   authn-flows, console-gateway, protocol-oidc and email) is read in a
-   rendered page and mail before any release, and the owner records who read
-   it and when in `docs/phases/p4b.md`.
-2. Write the changelog first. In `CHANGELOG.md`, give the changes under
+1. Write the changelog first. In `CHANGELOG.md`, give the changes under
    `Unreleased` a heading `## [X.Y.Z] - YYYY-MM-DD` and update the links at the
    foot. The date is a real `YYYY-MM-DD` in UTC, the day GitHub shows for the
    release; a test checks the form. The workflow
    takes the release notes from that section and stops without it.
-3. Merge to `main` and wait for the `gate` check to pass on that commit. The
+2. Merge to `main` and wait for the `gate` check to pass on that commit. The
    workflow refuses a commit it has not passed on. A stable tag must point at
    a commit on `main`, and the workflow refuses one that does not. A release
    candidate can be tagged on a pull request's head instead.
-4. Tag the commit and push the tag:
+3. Tag the commit and push the tag:
 
    ```text
    git tag -s v0.1.0 -m "Odudu 0.1.0"
    git push origin v0.1.0
    ```
 
-5. Watch the `release` workflow. It takes a while: the arm64 half is built
+4. Watch the `release` workflow. It takes a while: the arm64 half is built
    under emulation.
-6. Verify the image you published (below).
+5. Verify the image you published (below).
 
 To run everything except the publishing, start the `release` workflow by hand
 from the Actions tab and give it a version. It builds both architectures and
@@ -156,6 +151,12 @@ These are settings only the owner can change. They are done:
    branch, and that your own pull request and Dependabot's pass without
    signing. Write down the status name the pull request shows. Only then add
    `cla` to the required checks.
+3. **Have a reader of Arabic review the catalogue.** Arabic is shipped and its
+   text was drafted without one. Every `messages.ar.ts` (account, authn-flows,
+   console-gateway, protocol-oidc and the email one) is read in a rendered
+   page and mail of each kind, and the owner records who read it and when in
+   `docs/phases/p4b.md`. This gates a stable release only; a release
+   candidate may go ahead without it.
 
 ## Moving the site to a domain
 

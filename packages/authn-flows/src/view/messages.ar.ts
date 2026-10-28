@@ -11,7 +11,8 @@ export const ar: Readonly<Record<string, string>> = {
   'passkey.submit': 'إضافة مفتاح المرور',
   'passkey.needsScript':
     'تتطلب إضافة مفتاح المرور تفعيل JavaScript، لأن المتصفح وحده يستطيع التواصل مع أداة المصادقة لديك.',
-  'passkey.failed': 'لم يُكمل جهازك إضافة مفتاح المرور — {reason}. يمكنك المحاولة مرة أخرى.',
+  'passkey.failed':
+    'لم يُكمل جهازك إضافة مفتاح المرور — \u2068{reason}\u2069. يمكنك المحاولة مرة أخرى.',
   'passkey.cancelled': 'أُلغي الطلب',
   'recoveryCodes.title': 'احفظ رموز الاسترداد',
   'recoveryCodes.use':

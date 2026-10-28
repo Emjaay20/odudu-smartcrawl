@@ -45,26 +45,36 @@ function withoutLocation(value: unknown): unknown {
   );
 }
 
-// Each argument a message reads, as `name:kind[:style]`, with a plural's or a
-// select's arms listed separately so their forms can be compared.
-function shape(
-  nodes: AstNode[],
-  found = new Set<string>(),
-  arms = new Map<string, { plural: boolean; keys: string[] }>(),
-) {
+// Each argument a message reads, as `name:kind[:style]`. `top` lists those
+// outside any plural or select arm, once per occurrence, so a message that
+// drops or repeats one is caught; `inArms` is the set read inside arms, which
+// Arabic may spread over more arms than English. `pound` says whether `#` is used.
+interface Shape {
+  top: string[];
+  inArms: Set<string>;
+  pound: boolean;
+  arms: Map<string, { plural: boolean; keys: string[] }>;
+}
+
+function shape(nodes: AstNode[], inside = false, out?: Shape): Shape {
+  const into: Shape = out ?? { top: [], inArms: new Set(), pound: false, arms: new Map() };
   for (const node of nodes) {
+    if (node.type === TYPE.pound) into.pound = true;
     if (node.type === TYPE.literal || node.type === TYPE.pound) continue;
     const name = node.value ?? '';
-    found.add(
-      `${name}:${String(node.type)}:${JSON.stringify(withoutLocation(node.style ?? null))}`,
-    );
+    const key = `${name}:${String(node.type)}:${JSON.stringify(withoutLocation(node.style ?? null))}`;
+    if (inside) into.inArms.add(key);
+    else into.top.push(key);
     if (node.type === TYPE.plural || node.type === TYPE.select) {
-      arms.set(name, { plural: node.type === TYPE.plural, keys: Object.keys(node.options ?? {}) });
+      into.arms.set(name, {
+        plural: node.type === TYPE.plural,
+        keys: Object.keys(node.options ?? {}),
+      });
     }
-    for (const arm of Object.values(node.options ?? {})) shape(arm.value, found, arms);
-    shape(node.children ?? [], found, arms);
+    for (const arm of Object.values(node.options ?? {})) shape(arm.value, true, into);
+    shape(node.children ?? [], inside, into);
   }
-  return { found, arms };
+  return into;
 }
 
 async function cataloguesInSource(): Promise<string[]> {
@@ -81,6 +91,9 @@ async function cataloguesInSource(): Promise<string[]> {
   }
   return found.sort();
 }
+
+// Names and addresses that stay as they are in every language.
+const BRAND = /\b[Oo]dudu\b|https?:\/\/\S+/gu;
 
 const ARABIC_CATEGORIES = new Intl.PluralRules('ar').resolvedOptions().pluralCategories;
 
@@ -115,9 +128,18 @@ describe('Arabic is shipped and complete', () => {
       for (const [id, source] of Object.entries(en)) {
         const english = shape(new Format(source, 'en').getAst());
         const arabic = shape(new Format(ar[id] ?? '', 'ar').getAst());
-        const same = (a: Set<string>, b: Set<string>): boolean =>
-          a.size === b.size && [...a].every((entry) => b.has(entry));
-        if (!same(english.found, arabic.found)) problems.push(`${file} ${id}: arguments differ`);
+        if ([...english.top].sort().join('|') !== [...arabic.top].sort().join('|')) {
+          problems.push(`${file} ${id}: arguments differ`);
+        }
+        const armsOf = (set: Set<string>): string => [...set].sort().join('|');
+        if (armsOf(english.inArms) !== armsOf(arabic.inArms)) {
+          problems.push(`${file} ${id}: arguments read inside arms differ`);
+        }
+        if (english.pound !== arabic.pound) problems.push(`${file} ${id}: # used differently`);
+        if (ar[id]?.includes("'")) problems.push(`${file} ${id}: literal apostrophe`);
+        for (const token of source.match(BRAND) ?? []) {
+          if (!ar[id]?.includes(token)) problems.push(`${file} ${id}: ${token} not kept`);
+        }
         for (const [name, englishArms] of english.arms) {
           const arabicArms = arabic.arms.get(name)?.keys ?? [];
           if (englishArms.plural) {

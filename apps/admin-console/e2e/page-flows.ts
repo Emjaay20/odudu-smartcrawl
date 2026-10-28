@@ -8,6 +8,9 @@ const CHALLENGE = 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM';
 // A path the stack answers, so a finished sign-in lands somewhere that loads.
 export const ROOT = path.resolve(import.meta.dirname, '../../..');
 
+export const LONG_NAME =
+  'The International Consortium of Extraordinarily Long Named Organisations and Their Subsidiary Applications Incorporated';
+
 export const LANDING = `${BASE}/health/ready`;
 
 export function authorize(

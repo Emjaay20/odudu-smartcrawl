@@ -87,12 +87,75 @@ describe('buildInstrument', () => {
     expect(code).not.toMatch(/\bbackground-position(-x)?\s*:/u);
   });
 
-  it('keeps every direction-sensitive rule to the two that are neutral', () => {
+  // The 404 picture is drawn, not set, and its keyframe steps are not rules
+  // about direction, so neither is held to the direction checks below.
+  const rulesOutsideArt = (): { selector: string; declarations: [string, string][] }[] => {
+    const code = pagesCss.replace(/\/\*[\s\S]*?\*\//gu, '');
+    return [...code.matchAll(/([^{}]+)\{([^{}]*)\}/gu)]
+      .map(([, selector, body]) => ({
+        selector: (selector ?? '').trim(),
+        declarations: (body ?? '')
+          .split(';')
+          .map((line): [string, string] => {
+            const at = line.indexOf(':');
+            return [line.slice(0, at).trim(), line.slice(at + 1).trim()];
+          })
+          .filter(([name]) => name !== ''),
+      }))
+      .filter(({ selector }) => !/\.lost-|^((from|to|\d+%)[\s,]*)+$/u.test(selector));
+  };
+
+  const valuesOf = (value: string): string[] => {
+    const parts: string[] = [];
+    let depth = 0;
+    let current = '';
+    for (const char of value) {
+      if (char === '(') depth += 1;
+      if (char === ')') depth -= 1;
+      if (/\s/u.test(char) && depth === 0) {
+        if (current !== '') parts.push(current);
+        current = '';
+      } else current += char;
+    }
+    return current === '' ? parts : [...parts, current];
+  };
+
+  it('gives a shorthand the same start and end, so it reads the same mirrored', () => {
+    const sided = /^(margin|padding|inset|border-width|border-color|border-style)$/u;
+    for (const { selector, declarations } of rulesOutsideArt()) {
+      for (const [name, value] of declarations) {
+        const parts = valuesOf(value);
+        if (sided.test(name) && parts.length === 4) {
+          expect(parts[1], `${selector} ${name}`).toBe(parts[3]);
+        }
+        if (name === 'border-radius' && !value.includes('/')) {
+          const corners = parts.length === 1 ? 0 : new Set(parts).size - 1;
+          expect(corners, `${selector} border-radius has unequal corners`).toBe(0);
+        }
+      }
+    }
+  });
+
+  it('positions nothing by an offset that has a side', () => {
+    for (const { selector, declarations } of rulesOutsideArt()) {
+      for (const [name, value] of declarations) {
+        expect(name, selector).not.toMatch(
+          /^(background-position(-x)?|object-position|mask-position|translate|transform-origin)$/u,
+        );
+        if (name === 'transform') expect(value, selector).not.toMatch(/translate\(/u);
+        if (name === 'background') expect(value, selector).not.toMatch(/\d(%|px|rem)\s+\d/u);
+      }
+    }
+  });
+
+  it('keeps every other direction-sensitive rule to the two that are neutral', () => {
     const code = pagesCss.replace(/\/\*[\s\S]*?\*\//gu, '');
     const rules = [...code.matchAll(/([^{}]+)\{([^{}]*)\}/gu)];
     // A rotation belongs to the 404 page's picture (its rules and keyframes).
     const rotated = rules.filter(([, , body]) => /\brotate\(/u.test(body ?? ''));
-    for (const [, selector] of rotated) expect(selector).toMatch(/\.lost-|^\s*\d+%/u);
+    for (const [, selector] of rotated) {
+      expect((selector ?? '').trim()).toMatch(/\.lost-|^((from|to|\d+%)[\s,]*)+$/u);
+    }
     // Letter-spacing breaks the joining of Arabic letters, so only the Latin
     // brand name may carry it.
     const spaced = rules.filter(([, , body]) => /letter-spacing\s*:/u.test(body ?? ''));
