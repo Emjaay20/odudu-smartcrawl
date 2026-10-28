@@ -60,6 +60,11 @@ any check at render time falls back to the layer below.
   chooses a theme, and the confirmation POST wears the client only when the
   form's token was minted under a purpose that records the first contact
   verified it: a `client_id` the form merely carries gives the tenant theme.
+  "Verified" means signature, issuer and a registered, enabled client of this
+  tenant; the hint's `exp` and `sid` are deliberately not judged (RP-Initiated
+  Logout allows expired hints), so any ID token ever issued to a client can make
+  that client's own theme appear. That selects only a theme the tenant's admin
+  published for that client and grants nothing else.
   It costs no query beyond the theme read the page already makes.
 
 - `form.open` carries every hidden field the form posts, the proof included,

@@ -163,8 +163,8 @@ takes its client from the stored authorization session, server-side, never
 from a parameter the user can edit. A page reached from a mailed or linked
 address (registration, verification, reset) takes it from `return_to` where the
 flow already carries one, accepted only when it names a registered client of
-the same tenant; otherwise, and for a hintless logout and every error page, it
-uses the tenant's theme. A logout takes a client only from an `id_token_hint`
+the same tenant; otherwise, and for a hintless logout and every error page that has a
+tenant in scope, it uses the tenant's theme. A logout takes a client only from an `id_token_hint`
 verified for a registered, enabled client of the tenant, carried to the
 confirmation POST by the form token; a `client_id` parameter alone never.
 Mail uses the tenant's theme only. No flow gains a stored client id.

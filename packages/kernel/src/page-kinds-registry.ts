@@ -8,7 +8,7 @@ export const NO_TENANT_IN_SCOPE: Record<string, string> = {
   'packages/protocol-oidc/src/view/server-error-html.ts':
     'answers a failure that may have happened before the tenant was known, and must not depend on a theme read',
   'packages/protocol-oidc/src/view/throttled-html.ts':
-    'answers a request refused before the tenant lookup, so refusing costs nothing',
+    'the request path names the tenant, but the throttle answers before any tenant lookup by design, so a refusal costs no query (a cost choice)',
   'packages/console-gateway/src/view/refusal-html.ts':
     "the console's own sign-in refusal: the console belongs to the system tenant, not to a tenant that themes pages",
 };
