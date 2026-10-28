@@ -152,12 +152,14 @@ shown once — a registration token, a client secret, a one-time password.
 | `POST`   | `/admin/tenants/{tenant}/theme/publish`                                 | Publish a tenant's draft theme             |
 | `POST`   | `/admin/tenants/{tenant}/theme/assets`                                  | Upload an image for a tenant's themes      |
 | `DELETE` | `/admin/tenants/{tenant}/theme/assets/:assetId`                         | Delete an uploaded image                   |
+| `GET`    | `/admin/tenants/{tenant}/theme/preview`                                 | Preview a page of a tenant's draft theme   |
 | `GET`    | `/admin/tenants/{tenant}/theme/versions`                                | List a tenant's theme versions             |
 | `POST`   | `/admin/tenants/{tenant}/theme/versions/:versionId/restore`             | Restore a tenant's earlier theme           |
 | `GET`    | `/admin/tenants/{tenant}/clients/:id/theme`                             | Read a client's draft and published theme  |
 | `PUT`    | `/admin/tenants/{tenant}/clients/:id/theme`                             | Save a client's draft theme                |
 | `DELETE` | `/admin/tenants/{tenant}/clients/:id/theme`                             | Reset a client's theme to its tenant's     |
 | `POST`   | `/admin/tenants/{tenant}/clients/:id/theme/publish`                     | Publish a client's draft theme             |
+| `GET`    | `/admin/tenants/{tenant}/clients/:id/theme/preview`                     | Preview a page of a client's draft theme   |
 | `GET`    | `/admin/tenants/{tenant}/clients/:id/theme/versions`                    | List a client's theme versions             |
 | `POST`   | `/admin/tenants/{tenant}/clients/:id/theme/versions/:versionId/restore` | Restore a client's earlier theme           |
 | `GET`    | `/admin/tenants/{tenant}/clients`                                       | List clients                               |

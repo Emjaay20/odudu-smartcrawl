@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import formbody from '@fastify/formbody';
 import {
+  ACCOUNT_PREVIEW_PAGES,
   actionTokenRepository,
   enqueueActionsLink,
   enqueueResetLink,
@@ -21,7 +22,12 @@ import {
   type DatabaseHandle,
   type TenantScopedDatabase,
 } from '@odudu/db';
-import { provisionTenant, SessionEntry, sessionRepository } from '@odudu/authn-flows';
+import {
+  AUTHN_PREVIEW_PAGES,
+  provisionTenant,
+  SessionEntry,
+  sessionRepository,
+} from '@odudu/authn-flows';
 import { roleRepository, subjectRoles } from '@odudu/domain-authz';
 import { hashPassword, subjectRepository, userRepository } from '@odudu/domain-identity';
 import {
@@ -39,6 +45,7 @@ import { DEFAULT_OUTBOX_MAX_ATTEMPTS, FakeClock, newId, type PageKind } from '@o
 import {
   clientOidcConfigRepository,
   isOidcMessageKey,
+  OIDC_PREVIEW_PAGES,
   NO_CLIENT_KEY_FETCHER,
   oidcRoutes,
   provisionAdminClient,
@@ -290,6 +297,11 @@ export async function startAdminFixture(options: AdminFixtureOptions = {}): Prom
         outboxMaxAttempts: DEFAULT_OUTBOX_MAX_ATTEMPTS,
         invalidateTheme: (tenantId) => {
           invalidatedThemes.push(tenantId);
+        },
+        themePreviewPages: {
+          ...OIDC_PREVIEW_PAGES,
+          ...AUTHN_PREVIEW_PAGES,
+          ...ACCOUNT_PREVIEW_PAGES,
         },
         isThemeMessageKey: (kind, key) =>
           (options.themeMessageKeys ?? defaultMessageKey)(kind, key),

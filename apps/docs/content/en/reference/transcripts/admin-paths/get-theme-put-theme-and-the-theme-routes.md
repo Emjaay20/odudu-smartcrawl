@@ -5,7 +5,7 @@ description: 'A tenant’s branding, and a client’s over it, saved as a draft 
 
 # Theme: draft, publish, versions, restore, reset
 
-This page covers `GET /theme`, `PUT /theme`, `POST /theme/publish`, `GET /theme/versions`, `POST /theme/versions/{versionId}/restore`, `DELETE /theme`, `GET /clients/:id/theme`, `PUT /clients/:id/theme`, `POST /clients/:id/theme/publish`, `GET /clients/:id/theme/versions`, `POST /clients/:id/theme/versions/{versionId}/restore` and `DELETE /clients/:id/theme`, and the tenant's image routes `POST /theme/assets` and `DELETE /theme/assets/{assetId}`.
+This page covers `GET /theme`, `PUT /theme`, `POST /theme/publish`, `GET /theme/versions`, `POST /theme/versions/{versionId}/restore`, `DELETE /theme`, `GET /theme/preview`, `GET /clients/:id/theme`, `PUT /clients/:id/theme`, `POST /clients/:id/theme/publish`, `GET /clients/:id/theme/versions`, `POST /clients/:id/theme/versions/{versionId}/restore`, `DELETE /clients/:id/theme` and `GET /clients/:id/theme/preview`, and the tenant's image routes `POST /theme/assets` and `DELETE /theme/assets/{assetId}`.
 
 **No captured output yet.** The theme API is built and tested against a real
 database, but a transcript of it needs a published theme to render against, and
@@ -40,6 +40,21 @@ one of another tenant, or that does not exist, answers `404`.
 - `POST /theme/versions/{versionId}/restore` publishes a copy of an earlier
   version, whole, and leaves the draft alone. Refused with `409`
   (`about:blank#theme-assets-missing`) when an image it names has been deleted.
+- `GET /theme/preview?kind=&scheme=` (and `GET /clients/:id/theme/preview`) answers one
+  page of the draft as an HTML document: the page kind (`sign-in` when left out)
+  rendered by the same code users are sent, with sample values, in the `light`
+  or `dark` palette if `scheme` asks. A client's draft is shown over its tenant's
+  published theme, and a scope with no draft shows what is below it. The
+  stylesheet and the images the page shows are inside the document as `data:`
+  addresses, so an image that no public address serves still appears; together
+  they may come to 1 MiB, past which the answer is `422`
+  (`about:blank#theme-preview-too-large`). The response is meant for a frame
+  whose parent is the same origin: its policy allows no script, so a page that
+  needs one (`passkey-enrolment`) is rendered without it and the response says
+  `X-Odudu-Preview-Script: omitted`. Through the console it is
+  `/console/api/admin/tenants/{tenant}/theme/preview`, which the admin's session
+  cookie authorises. An unknown `kind` or `scheme` is `400`. It reads the draft
+  and writes nothing.
 - `DELETE /theme` deletes the draft and archives the published version, so the
   tenant shows the default and a client shows its tenant's theme. History is kept.
 

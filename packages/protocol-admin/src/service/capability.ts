@@ -128,6 +128,7 @@ import {
   importTenantResponseSchema,
   TENANT_IMPORT_BODY_LIMIT,
   THEME_ASSET_BODY_LIMIT,
+  previewThemeQuerySchema,
   THEME_BODY_LIMIT,
   listThemeVersionsResponseSchema,
   themeAssetSchema,
@@ -238,7 +239,7 @@ const THEME_DRAFT =
   '`*`, and with `412` when it no longer matches, leaving the draft as it was. The first draft ' +
   'of a scope needs none.';
 
-// The six routes that make up a scope's theme, under the tenant or under one
+// The seven routes that make up a scope's theme, under the tenant or under one
 // client. The tenant's own theme needs `manage-tenant`, a client's
 // `manage-clients`, the capability every other client write needs.
 function themeRoutes(
@@ -303,6 +304,25 @@ function themeRoutes(
         'Publishes a copy of an earlier version, whole, as the next version; the draft is ' +
         'left as it is. Refused with `409` (`about:blank#theme-assets-missing`) when an image ' +
         `the version names has been deleted, \`errors\` naming each. ${THEME_CACHE}`,
+    },
+    {
+      method: 'GET',
+      pattern: `${base}/theme/preview`,
+      capability,
+      responseSchema: z.string(),
+      successMediaType: 'text/html',
+      querystringSchema: previewThemeQuerySchema,
+      description:
+        `A page of the ${noun}\u2019s draft theme, rendered by the same code users are sent, ` +
+        `with sample values${noun === 'client' ? ', over its tenant\u2019s published theme' : ''}. ` +
+        'The answer is a whole HTML document under a policy of its own, for a frame whose ' +
+        'parent is this origin: the stylesheet and images are carried inside it, so a draft ' +
+        'image that no address serves still shows, and nothing in it needs a script. A page ' +
+        'whose kind needs one (`passkey-enrolment`) is rendered without it, which the ' +
+        '`X-Odudu-Preview-Script: omitted` header says. A scope with no draft shows what is ' +
+        'below it. Refused with `422` (`about:blank#theme-preview-too-large`) when the ' +
+        'stylesheet and the images the page shows come to over 1 MiB once inlined. Reads ' +
+        'the draft only: nothing is saved and nothing is published.',
     },
     {
       method: 'DELETE',

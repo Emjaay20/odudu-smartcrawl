@@ -163,6 +163,8 @@ import {
 } from '#/view/routes/settings';
 import { themeHandlers, type ThemeRouteDeps } from '#/view/routes/theme';
 import { themeAssetHandlers, type ThemeAssetRouteDeps } from '#/view/routes/theme-assets';
+import { themePreviewHandler } from '#/view/routes/theme-preview';
+import { type ThemePreviewDeps } from '#/usecase/theme-preview';
 import { exportTenantHandler, type TenantExportRouteDeps } from '#/view/routes/tenant-export';
 import { importTenantHandler, type TenantImportRouteDeps } from '#/view/routes/tenant-import';
 import {
@@ -299,6 +301,9 @@ export interface AdminRoutesDeps {
   // catalogue its page is filled from, which the packages that render
   // pages own.
   isThemeMessageKey: (kind: PageKind, key: string) => boolean;
+  // Each page kind rendered by its own package's renderer with sample values,
+  // for the draft preview; the packages that render pages own them.
+  themePreviewPages: ThemePreviewDeps['pages'];
   // The image inspector an upload runs; the bounded process-wide one when
   // omitted, which is what production uses. Tests give one that is busy.
   inspectImage?: typeof inspectImage;
@@ -510,6 +515,9 @@ function buildAdminRoutes(
       ...(deps.inspectImage === undefined ? {} : { inspect: deps.inspectImage }),
     };
     const themeAssets = themeAssetHandlers(assetDeps);
+    const previewDeps = { database: deps.database.db, pages: deps.themePreviewPages };
+    const tenantPreview = themePreviewHandler(previewDeps, 'tenant');
+    const clientPreview = themePreviewHandler(previewDeps, 'client');
     const clientsDeps: ClientsRouteDeps = {
       database: deps.database.db,
       cursorKey: deps.cursorKey,
@@ -675,12 +683,14 @@ function buildAdminRoutes(
       'POST /admin/tenants/:tenant/theme/publish': tenantTheme.publish,
       'POST /admin/tenants/:tenant/theme/assets': themeAssets.upload,
       'DELETE /admin/tenants/:tenant/theme/assets/:assetId': themeAssets.remove,
+      'GET /admin/tenants/:tenant/theme/preview': tenantPreview,
       'GET /admin/tenants/:tenant/theme/versions': tenantTheme.versions,
       'POST /admin/tenants/:tenant/theme/versions/:versionId/restore': tenantTheme.restore,
       'GET /admin/tenants/:tenant/clients/:id/theme': clientTheme.read,
       'PUT /admin/tenants/:tenant/clients/:id/theme': clientTheme.put,
       'DELETE /admin/tenants/:tenant/clients/:id/theme': clientTheme.reset,
       'POST /admin/tenants/:tenant/clients/:id/theme/publish': clientTheme.publish,
+      'GET /admin/tenants/:tenant/clients/:id/theme/preview': clientPreview,
       'GET /admin/tenants/:tenant/clients/:id/theme/versions': clientTheme.versions,
       'POST /admin/tenants/:tenant/clients/:id/theme/versions/:versionId/restore':
         clientTheme.restore,

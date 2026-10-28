@@ -139,6 +139,7 @@ import {
   listThemeVersionsResponseSchema,
   publishedThemeSchema,
   themeAssetSchema,
+  previewThemeQuerySchema,
   uploadThemeAssetQuerySchema,
   themeVersionSchema,
   themeViewSchema,
@@ -1112,6 +1113,11 @@ describeFields(themeVersionSchema, {
   state: '`published` for the one users see, `archived` for an earlier one.',
   created_at: 'When the version was first saved as a draft.',
   published_at: 'When it was published.',
+});
+describeFields(previewThemeQuerySchema, {
+  kind: 'The page to render, one of the kinds a theme has a template for; `sign-in` when left out.',
+  scheme:
+    'Render in the `light` or the `dark` palette; the viewer\u2019s own colour scheme when left out.',
 });
 describeFields(uploadThemeAssetQuerySchema, {
   kind: 'The slot the image is for, which sets its limits: `logo`, `darkLogo` and `favicon` at most 256 KiB and 1024 pixels on the longer side, `background` at most 1 MiB and 2560 pixels.',

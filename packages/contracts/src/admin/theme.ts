@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { dateTimeSchema, idSchema } from '#/admin/shared';
-import { themeBodyRequestSchema, themeBodySchema } from '#/theme-body';
+import { THEME_PAGE_KINDS, themeBodyRequestSchema, themeBodySchema } from '#/theme-body';
 
 // The most a theme write may carry: the largest theme (a template for each of
 // the seventeen page kinds and a stylesheet) with room for JSON escaping.
@@ -58,6 +58,14 @@ export const listThemeVersionsResponseSchema = z.object({
   items: z.array(themeVersionSchema),
 });
 export type ListThemeVersionsResponse = z.infer<typeof listThemeVersionsResponseSchema>;
+
+// What the preview renders: one page kind, in the light or dark scheme (the
+// operating system's when none is asked for). A kind left out is `sign-in`.
+export const previewThemeQuerySchema = z.strictObject({
+  kind: z.enum(THEME_PAGE_KINDS).optional(),
+  scheme: z.enum(['light', 'dark']).optional(),
+});
+export type PreviewThemeQuery = z.infer<typeof previewThemeQuerySchema>;
 
 // The slots an uploaded image may fill; the theme package keeps each one's
 // limits, and a test holds the two lists equal.

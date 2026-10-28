@@ -43,12 +43,13 @@ function pendingBrandingRoutes(): Record<string, string> {
     ['PUT', '/theme'],
     ['DELETE', '/theme'],
     ['POST', '/theme/publish'],
+    ['GET', '/theme/preview'],
     ['GET', '/theme/versions'],
     ['POST', '/theme/versions/:versionId/restore'],
   ];
   const entries: [string, string][] = [
     ...['/admin/tenants/:tenant', '/admin/tenants/:tenant/clients/:id'].flatMap((base) =>
-      tails.map(([method, tail]) => [`${method} ${base}${tail}`, reason]),
+      tails.map(([method, tail]): [string, string] => [`${method} ${base}${tail}`, reason]),
     ),
     ['POST /admin/tenants/:tenant/theme/assets', reason],
     ['DELETE /admin/tenants/:tenant/theme/assets/:assetId', reason],

@@ -181,6 +181,13 @@ export const ADMIN_PROBLEM_TYPES: Readonly<Record<string, AdminProblemType>> = {
       'they are now, so restoring it would show the default for that piece. `errors` lists ' +
       'them. Save a corrected draft and publish it instead.',
   },
+  'theme-preview-too-large': {
+    status: 422,
+    summary:
+      'The preview of a draft is not rendered because its stylesheet and the images the page ' +
+      'shows come to over 1 MiB once inlined. Use smaller images, or preview a page that ' +
+      'shows fewer of them.',
+  },
   'theme-no-draft': {
     status: 409,
     summary:

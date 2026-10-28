@@ -553,7 +553,7 @@ export async function driveAdminWrites(
 const PUBLISHED_ID = (answer: unknown): string =>
   (answer as { published: { id: string } }).published.id;
 
-// A scope's theme through its life: a draft saved and saved again, published,
+// A scope's theme through its life: a draft saved and saved again and previewed, published,
 // published again over it, the first restored, then reset and read.
 function themeCalls(T: string, base: string, what: string): [string, Call][] {
   const theme = `${base}/theme`;
@@ -563,6 +563,7 @@ function themeCalls(T: string, base: string, what: string): [string, Call][] {
   return [
     [`save ${what} as a draft`, { method: 'PUT', url: theme, body }],
     [`save ${what} again`, { method: 'PUT', url: theme, body: edited, etagFrom: theme }],
+    [`preview the draft of ${what}`, { method: 'GET', url: `${theme}/preview?kind=sign-in` }],
     [
       `publish ${what}`,
       { method: 'POST', url: `${theme}/publish`, saveAs: key, saveWith: PUBLISHED_ID },
@@ -595,6 +596,7 @@ function assetCalls(T: string): [string, Call][] {
         body: { assets: { logo: { assetId: '{asset}', alt: 'Logo' } } },
       },
     ],
+    ['preview the draft that names the image', { method: 'GET', url: `${T}/theme/preview` }],
     ['delete the image a draft names', { method: 'DELETE', url: `${T}/theme/assets/{asset}` }],
     ['reset the theme', { method: 'DELETE', url: `${T}/theme` }],
     ['delete the image', { method: 'DELETE', url: `${T}/theme/assets/{asset}` }],

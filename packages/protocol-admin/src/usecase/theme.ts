@@ -92,7 +92,10 @@ function scopeOf(target: ThemeTarget): ThemeScope {
   return { tenantId: target.tenantId, clientId: target.clientRowId };
 }
 
-async function clientExists(tx: TenantScopedDatabase, target: ThemeTarget): Promise<boolean> {
+export async function clientExists(
+  tx: TenantScopedDatabase,
+  target: ThemeTarget,
+): Promise<boolean> {
   if (target.clientRowId === null) return true;
   return (await clientRepository(tx).byId(target.clientRowId)) !== null;
 }
