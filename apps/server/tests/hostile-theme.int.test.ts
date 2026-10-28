@@ -665,6 +665,12 @@ interface Run {
   final: LightMyRequestResponse;
 }
 
+function flowOf(kind: PageKind): Flow {
+  const flow = FLOWS[kind];
+  if (flow === undefined) throw new Error(`no flow for ${kind}`);
+  return flow;
+}
+
 async function run(
   kind: PageKind,
   w: World,
@@ -834,8 +840,8 @@ describe('a nonce a page names is the one its script carries', () => {
 describe('a hostile theme published for a client', () => {
   const VERIFIER = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
   const CLIENT_FLOWS: Partial<Record<PageKind, Flow>> = {
-    'sign-in': FLOWS['sign-in'],
-    consent: FLOWS.consent,
+    'sign-in': flowOf('sign-in'),
+    consent: flowOf('consent'),
     'logout-confirm': async (w, { themed }) => {
       const user = await addUser(w);
       const browser = new Browser();
