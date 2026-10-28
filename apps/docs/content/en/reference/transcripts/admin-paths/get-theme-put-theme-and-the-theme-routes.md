@@ -44,7 +44,8 @@ one of another tenant, or that does not exist, answers `404`.
   tenant shows the default and a client shows its tenant's theme. History is kept.
 
 - `POST /theme/assets?kind=logo|darkLogo|favicon|background` uploads an image
-  for the tenant's themes (`manage-tenant`). The body is the image itself, not
+  for the tenant's themes (`manage-tenant`, or `manage-clients`, since a client's
+  theme names tenant images). The body is the image itself, not
   JSON; a declared type other than `image/png`, `image/jpeg`, `image/webp` or
   `application/octet-stream` is `415`, and none is trusted: the bytes decide.
   The image is decoded and stored re-encoded, so its metadata and anything
@@ -58,7 +59,7 @@ one of another tenant, or that does not exist, answers `404`.
   `asset-dimensions`, `asset-timeout`, `413` `asset-too-large`, and `503`
   `asset-busy` with `Retry-After` while the server decodes as many images as it
   will. An uploaded image is not served until a published theme names it.
-- `DELETE /theme/assets/{assetId}` answers `204`, or `409`
+- `DELETE /theme/assets/{assetId}` (the same two capabilities) answers `204`, or `409`
   (`about:blank#asset-in-use`) while a draft or published theme of the tenant or
   of a client names the image, `errors` listing the first 20 by path and
   version. `404` for an image that does not exist or is another tenant's.

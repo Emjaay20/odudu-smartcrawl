@@ -151,8 +151,8 @@ export interface AdminRoute {
   readonly pattern: string;
   readonly capability: AdminCapability | null;
   // Further capabilities that admit this route besides `capability`, each
-  // with whatever composes it. Only a read carries any: a list another
-  // capability's writes pick from.
+  // with whatever composes it. A read carries one for a list another
+  // capability's writes pick from; the image routes admit `manage-clients`.
   readonly alsoAdmits?: readonly AdminCapability[];
   // The shape of a successful response, published at /admin/openapi.json.
   // Required, not optional: a route with no schema is a type error, not a
@@ -870,6 +870,7 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     method: 'POST',
     pattern: '/admin/tenants/:tenant/theme/assets',
     capability: 'manage-tenant',
+    alsoAdmits: ['manage-clients'],
     responseSchema: themeAssetSchema,
     successStatus: 201,
     querystringSchema: uploadThemeAssetQuerySchema,
@@ -879,7 +880,7 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
       limitFor: uploadLimitFor,
     },
     description:
-      'Uploads an image for the tenant\u2019s themes: the request body is the image itself, ' +
+      'Needs `manage-tenant`, or `manage-clients` since a client\u2019s theme names tenant images. Uploads an image for the tenant\u2019s themes: the request body is the image itself, ' +
       'not JSON, and `kind` says which slot it is for. A declared `Content-Type` other than ' +
       '`image/png`, `image/jpeg`, `image/webp` or `application/octet-stream` is refused with ' +
       '`415`, and none of them is trusted: PNG, JPEG and WebP are told by the bytes. The ' +
@@ -899,10 +900,11 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     method: 'DELETE',
     pattern: '/admin/tenants/:tenant/theme/assets/:assetId',
     capability: 'manage-tenant',
+    alsoAdmits: ['manage-clients'],
     responseSchema: z.void(),
     successStatus: 204,
     description:
-      'Deletes an uploaded image. Refused with `409` (`about:blank#asset-in-use`) while a ' +
+      'Needs `manage-tenant`, or `manage-clients`. Deletes an uploaded image. Refused with `409` (`about:blank#asset-in-use`) while a ' +
       'draft or a published theme of the tenant or of any of its clients names it, `errors` ' +
       'listing the first 20 by the theme\u2019s path and version; an archived version does ' +
       'not hold it, so restoring one that names a deleted image is refused. `404` for an ' +

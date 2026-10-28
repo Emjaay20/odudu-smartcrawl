@@ -1124,7 +1124,7 @@ describeFields(themeAssetSchema, {
   height: 'The height in pixels.',
   bytes:
     'The stored size in bytes, after the image was re-encoded; this is what counts against the tenant\u2019s 8 MiB.',
-  kind: 'The slot the upload was checked as.',
+  kind: 'The slot this upload was checked as, echoing the request; the same image may be uploaded as another kind, so it is not a stored fact.',
 });
 describeFields(listThemeVersionsResponseSchema, {
   items: 'At most 20 versions, newest first, without their bodies.',

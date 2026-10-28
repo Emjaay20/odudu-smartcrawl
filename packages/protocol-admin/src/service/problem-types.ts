@@ -124,7 +124,7 @@ export const ADMIN_PROBLEM_TYPES: Readonly<Record<string, AdminProblemType>> = {
     summary:
       'An uploaded image is not deleted while a draft or a published theme of the tenant or ' +
       'of one of its clients names it. `errors` lists the first 20, each by the theme\u2019s ' +
-      'path and the version that names it; save or publish a theme without the image first.',
+      'path (`clients/<uuid>/theme` is the client\u2019s row `id`) and the version that names it; save or publish a theme without the image first.',
   },
   'asset-cap': {
     status: 409,

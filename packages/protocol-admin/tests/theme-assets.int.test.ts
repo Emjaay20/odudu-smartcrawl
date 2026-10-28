@@ -2,13 +2,20 @@ import { request as httpRequest } from 'node:http';
 import { type AddressInfo } from 'node:net';
 import { withTenant } from '@odudu/db';
 import { auditEvents } from '@odudu/domain-audit';
-import { ASSET_LIMITS, createImageInspector, decodeImage } from '@odudu/domain-theme';
+import {
+  ASSET_LIMITS,
+  assetRepository,
+  createImageInspector,
+  decodeImage,
+  themeRepository,
+} from '@odudu/domain-theme';
 import { newId } from '@odudu/kernel';
 import { makeApng, makePng } from '@odudu/testkit';
 import { type LightMyRequestResponse } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { ADMIN_ROUTES } from '#/service/capability';
 import { startAdminFixture, type AdminFixture } from '#/testing/admin-fixture';
+import { deleteThemeAsset } from '#/usecase/theme-assets';
 
 let fixtureHandle: AdminFixture | undefined;
 let fixture: AdminFixture;
@@ -278,14 +285,23 @@ describe('who may upload and delete', () => {
     expect(res.statusCode).toBe(401);
   });
 
-  it('refuses a read-only role and a manage-clients-only role with 403', async () => {
+  it('refuses roles with neither manage-tenant nor manage-clients with 403', async () => {
     const ctx = await tenantCtx();
-    for (const capability of ['view-users', 'manage-clients']) {
+    for (const capability of ['view-users', 'manage-users', 'manage-keys']) {
       const token = await fixture.adminToken(ctx.tenant.name, [capability]);
       const res = await upload(ctx, 'logo', makePng(), { token });
       expect(res.statusCode, capability).toBe(403);
       expect((await remove(ctx, newId(), token)).statusCode, capability).toBe(403);
     }
+  });
+
+  it('admits manage-clients alone, since a client’s theme names tenant images', async () => {
+    const ctx = await tenantCtx();
+    const token = await fixture.adminToken(ctx.tenant.name, ['manage-clients']);
+    const res = await upload(ctx, 'logo', makePng({ rgb: [3, 4, 5] }), { token });
+    expect(res.statusCode, res.body).toBe(201);
+    const removed = await remove(ctx, res.json<{ id: string }>().id, token);
+    expect(removed.statusCode).toBe(204);
   });
 
   it('answers a tenant that does not exist as it answers no token', async () => {
@@ -404,6 +420,60 @@ describe('DELETE /theme/assets/:assetId', () => {
   });
 });
 
+describe('a delete racing a save that names the image', () => {
+  it('waits for the save to commit, then finds the reference', async () => {
+    const ctx = await tenantCtx();
+    const image = await stored(ctx, [31, 31, 31]);
+    const actor = { actorSubjectId: newId(), actorTenantId: ctx.tenant.id, actorClientId: newId() };
+    let release: () => void = () => undefined;
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    let saving: () => void = () => undefined;
+    const saveStarted = new Promise<void>((resolve) => {
+      saving = resolve;
+    });
+
+    // The save holds the image and writes the draft that names it, and keeps
+    // its transaction open.
+    const save = withTenant(fixture.app.db, ctx.tenant.id, async (tx) => {
+      const found = await assetRepository(tx).hold(ctx.tenant.id, [image.id]);
+      expect(found).toHaveLength(1);
+      await themeRepository(tx).saveDraft(
+        { tenantId: ctx.tenant.id, clientId: null },
+        {
+          tokens: {},
+          stylesheet: null,
+          templates: {},
+          assets: { logo: { assetId: image.id, alt: 'Logo' } },
+        },
+        null,
+      );
+      saving();
+      await held;
+    });
+    await saveStarted;
+
+    let settled = false;
+    const deleting = withTenant(fixture.app.db, ctx.tenant.id, (tx) =>
+      deleteThemeAsset(tx, { audit: () => Promise.resolve() }, actor, {
+        tenantId: ctx.tenant.id,
+        assetId: image.id,
+      }),
+    ).then((outcome) => {
+      settled = true;
+      return outcome;
+    });
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    expect(settled, 'the delete is blocked by the save').toBe(false);
+
+    release();
+    await save;
+    expect(await deleting).toMatchObject({ kind: 'in_use' });
+    expect((await remove(ctx, image.id)).statusCode).toBe(409);
+  });
+});
+
 describe('audit', () => {
   it('records an upload and a delete with ids, hash, kind and size, and never the bytes', async () => {
     const ctx = await tenantCtx();
@@ -487,6 +557,75 @@ describe('before the body is read', () => {
       `127.0.0.1:${String(port)}`,
     );
     expect(await declaredButUnsent(ctx, '?kind=logo', 1024 * 1024, token)).toBe(403);
+  });
+
+  // Sends `chunks` and never ends the request: an answer at all means the
+  // route stopped reading on its own.
+  function streamed(
+    ctx: Ctx,
+    token: string,
+    headers: Record<string, string>,
+    chunks: Buffer[],
+  ): Promise<number | 'closed'> {
+    return new Promise((resolve, reject) => {
+      const req = httpRequest(
+        {
+          host: '127.0.0.1',
+          port,
+          method: 'POST',
+          path: `/admin/tenants/${ctx.tenant.name}/theme/assets?kind=logo`,
+          headers: { 'content-type': 'image/png', authorization: `Bearer ${token}`, ...headers },
+        },
+        (res) => {
+          res.resume();
+          resolve(res.statusCode ?? 0);
+          req.destroy();
+        },
+      );
+      req.on('error', () => {
+        resolve('closed');
+      });
+      const timer = setTimeout(() => {
+        req.destroy();
+        reject(new Error('no answer while the body was still arriving'));
+      }, 4000);
+      req.on('close', () => {
+        clearTimeout(timer);
+      });
+      for (const chunk of chunks) req.write(chunk);
+    });
+  }
+
+  it('stops a chunked body at the kind’s limit with 413, though it declares no length', async () => {
+    const ctx = await tenantCtx();
+    const token = await fixture.adminTokenAt(
+      ctx.tenant.name,
+      ['manage-tenant'],
+      `127.0.0.1:${String(port)}`,
+    );
+    const chunk = Buffer.alloc(64 * 1024, 1);
+    const status = await streamed(ctx, token, { 'transfer-encoding': 'chunked' }, [
+      chunk,
+      chunk,
+      chunk,
+      chunk,
+      chunk,
+    ]);
+    expect(status).toBe(413);
+  });
+
+  it('never reads past a declared length that is shorter than what is sent', async () => {
+    const ctx = await tenantCtx();
+    const token = await fixture.adminTokenAt(
+      ctx.tenant.name,
+      ['manage-tenant'],
+      `127.0.0.1:${String(port)}`,
+    );
+    const status = await streamed(ctx, token, { 'content-length': '100' }, [
+      Buffer.alloc(300 * 1024, 1),
+    ]);
+    // The first 100 bytes are a truncated image; the rest is not part of it.
+    expect([400, 422, 'closed']).toContain(status);
   });
 
   it('answers 413 for a declared length over the kind’s limit without the body', async () => {

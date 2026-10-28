@@ -47,10 +47,12 @@ export function assetRepository(tx: TenantScopedDatabase) {
     // counts nothing against the cap.
     async put(asset: NewAsset): Promise<AssetRef | 'over_cap'> {
       await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${asset.tenantId}, 0))`);
+      // Shared, like `hold`, so a delete cannot remove the image just returned.
       const [held] = await tx
         .select(REF)
         .from(themeAssets)
-        .where(and(eq(themeAssets.tenantId, asset.tenantId), eq(themeAssets.sha256, asset.sha256)));
+        .where(and(eq(themeAssets.tenantId, asset.tenantId), eq(themeAssets.sha256, asset.sha256)))
+        .for('share');
       if (held !== undefined) return held;
       if ((await bytesUsed(asset.tenantId)) + asset.bytes.length > asset.tenantCapBytes) {
         return 'over_cap';

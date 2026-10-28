@@ -154,7 +154,8 @@ export const ADMIN_MUTATION_ACTION_DOCS: Record<AdminMutationAction, string> = {
   'tenant.smtp_set': 'A tenant’s SMTP relay was set.',
   'tenant.smtp_test': 'A test message was sent through a tenant’s SMTP relay.',
   'theme.asset_deleted': 'An image uploaded for a tenant’s themes was deleted.',
-  'theme.asset_uploaded': 'An image was uploaded for a tenant’s themes.',
+  'theme.asset_uploaded':
+    'An image was uploaded for a tenant’s themes, including bytes the tenant already stored.',
   'theme.draft_saved': 'The draft of a tenant’s or a client’s theme was saved.',
   'theme.published': 'The draft of a tenant’s or a client’s theme was published.',
   'theme.reset': 'A tenant’s theme was reset to the default, or a client’s to its tenant’s.',
