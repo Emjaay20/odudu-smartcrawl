@@ -119,6 +119,18 @@ export const ADMIN_PROBLEM_TYPES: Readonly<Record<string, AdminProblemType>> = {
       'The tenant was disabled, but ending its sessions did not finish. Repeat the request to ' +
       'finish it.',
   },
+  'theme-assets-missing': {
+    status: 409,
+    summary:
+      'An earlier version of a theme names an image that has since been deleted, so it cannot ' +
+      'be restored whole. `errors` names each image by the slot that holds it.',
+  },
+  'theme-no-draft': {
+    status: 409,
+    summary:
+      'There is no draft to publish: none was saved, or another request has already published ' +
+      'it. Save a draft again.',
+  },
   'tenant-enabled': {
     status: 409,
     summary:

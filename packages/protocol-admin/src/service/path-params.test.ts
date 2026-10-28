@@ -39,6 +39,7 @@ describe('paramsSchemaFor', () => {
       'id',
       'sid',
       'tenant',
+      'versionId',
     ]);
   });
 });

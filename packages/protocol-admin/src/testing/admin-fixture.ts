@@ -35,9 +35,10 @@ import {
   TENANT_CAPABILITIES,
   type ClientRecord,
 } from '@odudu/domain-tenant';
-import { DEFAULT_OUTBOX_MAX_ATTEMPTS, FakeClock, newId } from '@odudu/kernel';
+import { DEFAULT_OUTBOX_MAX_ATTEMPTS, FakeClock, newId, type PageKind } from '@odudu/kernel';
 import {
   clientOidcConfigRepository,
+  isOidcMessageKey,
   NO_CLIENT_KEY_FETCHER,
   oidcRoutes,
   provisionAdminClient,
@@ -79,6 +80,8 @@ export interface AdminFixture {
   readonly http: FastifyInstance;
   readonly clock: FakeClock;
   readonly systemTenantId: string;
+  /** The tenants whose cached themes the routes asked to drop, in order. */
+  readonly invalidatedThemes: string[];
 
   /** Creates a tenant, provisions its flow and its admin client, mints a key. */
   createTenant(name: string): Promise<{ id: string; name: string }>;
@@ -215,7 +218,11 @@ export interface AdminFixtureOptions {
   readonly publicBaseUrl?: boolean;
   /** Shortens how long an audit read may run before it is refused as too broad. */
   readonly auditReadTimeoutMs?: number;
+  /** Which `{{t "key"}}` a theme template may name; the oidc catalogue's keys by default. */
+  readonly themeMessageKeys?: (kind: PageKind, key: string) => boolean;
 }
+
+const defaultMessageKey = (_kind: PageKind, key: string): boolean => isOidcMessageKey(key);
 
 export async function startAdminFixture(options: AdminFixtureOptions = {}): Promise<AdminFixture> {
   const container: TestDatabase = await startTestDatabase();
@@ -239,6 +246,7 @@ export async function startAdminFixture(options: AdminFixtureOptions = {}): Prom
   // mapper through the admin API and see it reach issuance, and so
   // GET /scopes/:id/mappers can never list a name issuance itself would not
   // recognise.
+  const invalidatedThemes: string[] = [];
   const claimMappers = standardClaimMappers();
   // Same request-id wiring as apps/server/src/app.ts, so an audit row's
   // request_id/ip can be tested here against a header this fixture actually
@@ -277,6 +285,11 @@ export async function startAdminFixture(options: AdminFixtureOptions = {}): Prom
         claimMappers,
         deploymentSmtp: options.deploymentSmtp ?? false,
         outboxMaxAttempts: DEFAULT_OUTBOX_MAX_ATTEMPTS,
+        invalidateTheme: (tenantId) => {
+          invalidatedThemes.push(tenantId);
+        },
+        isThemeMessageKey: (kind, key) =>
+          (options.themeMessageKeys ?? defaultMessageKey)(kind, key),
         ...(options.auditReadTimeoutMs === undefined
           ? {}
           : { auditReadTimeoutMs: options.auditReadTimeoutMs }),
@@ -883,6 +896,7 @@ export async function startAdminFixture(options: AdminFixtureOptions = {}): Prom
     http,
     clock,
     systemTenantId: systemTenant.id,
+    invalidatedThemes,
     createTenant,
     stop,
     adminToken,

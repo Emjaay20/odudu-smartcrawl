@@ -127,6 +127,11 @@ import {
   importTenantRequestSchema,
   importTenantResponseSchema,
   TENANT_IMPORT_BODY_LIMIT,
+  THEME_BODY_LIMIT,
+  listThemeVersionsResponseSchema,
+  publishThemeResponseSchema,
+  putThemeRequestSchema,
+  themeViewSchema,
 } from '@odudu/contracts/admin';
 import { MANAGE_TENANTS, type TenantCapability } from '@odudu/domain-tenant';
 import { z } from 'zod';
@@ -209,6 +214,96 @@ const CLIENT_LIST_BOUND =
 const SERVICE_ACCOUNT_CEILING =
   'Refused with `403` when the client\u2019s service account holds an admin capability ' +
   'the caller does not (the target ceiling).';
+
+// What every theme route says about the cache and the draft, once.
+const THEME_CACHE =
+  'The pages of this process show a publish, a restore or a reset at once; another replica ' +
+  'shows the previous theme for at most 30 seconds, the lifetime of its cache.';
+
+const THEME_DRAFT =
+  'Users never see a draft. `GET` answers the draft\u2019s `ETag` when there is one, and a write ' +
+  'to an existing draft must send it as `If-Match`: refused with `428` when it is missing or ' +
+  '`*`, and with `412` when it no longer matches, leaving the draft as it was. The first draft ' +
+  'of a scope needs none.';
+
+// The six routes that make up a scope's theme, under the tenant or under one
+// client. The tenant's own theme needs `manage-tenant`, a client's
+// `manage-clients`, the capability every other client write needs.
+function themeRoutes(
+  base: string,
+  capability: 'manage-tenant' | 'manage-clients',
+  noun: string,
+): readonly AdminRoute[] {
+  return [
+    {
+      method: 'GET',
+      pattern: `${base}/theme`,
+      capability,
+      responseSchema: themeViewSchema,
+      description:
+        `The ${noun}\u2019s draft and published theme, and for each piece the layer that ` +
+        `supplies it (\`client\`, \`tenant\` or \`default\`). ${THEME_DRAFT}`,
+    },
+    {
+      method: 'PUT',
+      pattern: `${base}/theme`,
+      capability,
+      responseSchema: themeViewSchema,
+      bodySchema: putThemeRequestSchema,
+      bodyLimit: THEME_BODY_LIMIT,
+      description:
+        `Saves the whole draft of the ${noun}\u2019s theme: a part left out is absent, not kept. ` +
+        'The templates, the stylesheet and the images are checked as they are on publish, ' +
+        'except contrast, which only publishing checks; a refusal is `400` with `errors`, ' +
+        'each naming its piece and, for a template or stylesheet, the line and column. A ' +
+        'template may use only `{{t "key"}}` keys of the catalogue its page is filled from. ' +
+        `A body over 4 MiB is refused with \`413\` before it is read. ${THEME_DRAFT}`,
+    },
+    {
+      method: 'POST',
+      pattern: `${base}/theme/publish`,
+      capability,
+      responseSchema: publishThemeResponseSchema,
+      description:
+        'Publishes the draft as the next version, which users see, and keeps the previous ' +
+        'ones (at most 20 versions). Every check runs again, and a failing text or UI ' +
+        'contrast pair is refused as a `400` naming the colour. A stylesheet or a template ' +
+        'cannot be proven accessible, so each earns an entry in `warnings`, which does not ' +
+        'block. `409` (`about:blank#theme-no-draft`) when there is no draft, which is also ' +
+        'what the second of two simultaneous publishes of one draft receives. `If-Match` is ' +
+        `optional here and, when sent, must name the draft being published. ${THEME_CACHE}`,
+    },
+    {
+      method: 'GET',
+      pattern: `${base}/theme/versions`,
+      capability,
+      responseSchema: listThemeVersionsResponseSchema,
+      description:
+        'The published version and the archived ones, newest first, at most 20, without ' +
+        'their bodies.',
+    },
+    {
+      method: 'POST',
+      pattern: `${base}/theme/versions/:versionId/restore`,
+      capability,
+      responseSchema: themeViewSchema,
+      description:
+        'Publishes a copy of an earlier version, whole, as the next version; the draft is ' +
+        'left as it is. Refused with `409` (`about:blank#theme-assets-missing`) when an image ' +
+        `the version names has been deleted, \`errors\` naming each. ${THEME_CACHE}`,
+    },
+    {
+      method: 'DELETE',
+      pattern: `${base}/theme`,
+      capability,
+      responseSchema: themeViewSchema,
+      description:
+        `Resets the ${noun} to ${noun === 'client' ? 'its tenant\u2019s theme' : 'the default'}: ` +
+        'the draft is deleted and the published version archived, where restore can bring ' +
+        `it back. Answers the theme as it now is. ${THEME_CACHE}`,
+    },
+  ];
+}
 
 // The single list the router registers from (view/routes/router.ts): a
 // route with no entry here fails at startup rather than shipping
@@ -758,6 +853,7 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
       '`enabled: false` ends every live session in the tenant, after the change has ' +
       'committed and in batches, as `PATCH /admin/tenants/{tenant}` does.',
   },
+  ...themeRoutes('/admin/tenants/:tenant', 'manage-tenant', 'tenant'),
   // No `view-clients`: client metadata is configuration rather than a
   // population to browse, so every route below requires `manage-clients`.
   {
@@ -825,6 +921,7 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
       'secret it replaces authenticating that long beside it, and the response states ' +
       `when it stops in \`previous_secret_expires_at\`. ${SERVICE_ACCOUNT_CEILING}`,
   },
+  ...themeRoutes('/admin/tenants/:tenant/clients/:id', 'manage-clients', 'client'),
   {
     method: 'GET',
     pattern: '/admin/tenants/:tenant/clients/:id/logout-deliveries',

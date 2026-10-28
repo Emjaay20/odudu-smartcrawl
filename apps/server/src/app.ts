@@ -17,6 +17,7 @@ import {
 } from '@odudu/account';
 import { type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
 import { createBranding, type Branding } from '#/branding';
+import { isThemeMessageKey } from '#/theme-message-keys';
 import { brandRoutes, frameworkError } from '#/brand-routes';
 import { requiredActionRepository } from '@odudu/authn-flows';
 import { consoleGateway } from '@odudu/console-gateway';
@@ -487,8 +488,19 @@ export function buildApp(deps: AppDeps): FastifyInstance {
       }),
     );
   }
+  // One cache for the process, shared by the pages that read a theme and the
+  // admin routes that change one, so a publish reaches the next render here.
+  const branding =
+    deps.branding ??
+    createBranding({
+      database: deps.database,
+      logger: deps.logger,
+      publicBaseUrl: deps.publicBaseUrl,
+    });
   app.register(
     adminRoutes({
+      invalidateTheme: branding.invalidateTenant,
+      isThemeMessageKey,
       database: deps.database,
       ownerDatabase: deps.ownerDatabase,
       logger: deps.logger,
@@ -518,13 +530,6 @@ export function buildApp(deps: AppDeps): FastifyInstance {
       },
     }),
   );
-  const branding =
-    deps.branding ??
-    createBranding({
-      database: deps.database,
-      logger: deps.logger,
-      publicBaseUrl: deps.publicBaseUrl,
-    });
   app.register(
     oidcRoutes({
       resolveBranding: branding.resolveBranding,
