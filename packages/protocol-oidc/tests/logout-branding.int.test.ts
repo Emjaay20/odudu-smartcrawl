@@ -22,7 +22,7 @@ import { NO_CLIENT_KEY_FETCHER } from '#/repository/client-keys';
 import { UNLIMITED_CLIENT_SECRET_LIMITER } from '#/service/client-secret-throttle';
 import { clientOidcConfigRepository } from '#/repository/client-oidc-config';
 import { UNLIMITED_AUDIT_REFUSAL_BUDGET } from '#/service/audit-refusal-budget';
-import { confirmLogoutPage } from '#/testing/logout-confirmation';
+import { confirmationFields, confirmLogoutPage } from '#/testing/logout-confirmation';
 
 // Which client's theme a logout page wears. The `client_id` of a logout
 // request is a parameter anyone can write, so only a client the
@@ -355,5 +355,120 @@ describe('the client a logout page wears', () => {
     expect(forged.clients).toEqual([null]);
     expect(forged.page.statusCode).toBe(400);
     expect(forged.page.body).toContain('class="tenant-theme"');
+  });
+});
+
+describe('a hint or a token that proves nothing wears no client', () => {
+  const asGet = (name: string, cookie: string, hint: string) =>
+    clientsAsked(() =>
+      http.inject({ url: logoutUrl(name, { id_token_hint: hint }), headers: { cookie } }),
+    );
+
+  it("ignores a hint another tenant's key signed", async () => {
+    const name = `logout-brand-${newId()}`;
+    const other = `logout-brand-${newId()}`;
+    await setupTenant(name);
+    await setupTenant(other);
+    const { cookie, sessionId } = await signIn(name);
+    const foreign = await mintIdToken(other, sessionId);
+    expect((await asGet(name, cookie, foreign)).clients).toEqual([null]);
+  });
+
+  it('ignores a hint with a tampered signature', async () => {
+    const name = `logout-brand-${newId()}`;
+    await setupTenant(name);
+    const { cookie, sessionId } = await signIn(name);
+    const hint = await mintIdToken(name, sessionId);
+    const flipped = hint.endsWith('A') ? `${hint.slice(0, -1)}B` : `${hint.slice(0, -1)}A`;
+    expect((await asGet(name, cookie, flipped)).clients).toEqual([null]);
+  });
+
+  it('ignores an unsigned hint', async () => {
+    const name = `logout-brand-${newId()}`;
+    await setupTenant(name);
+    const { cookie, sessionId } = await signIn(name);
+    const real = await mintIdToken(name, sessionId);
+    const claims = real.split('.')[1] ?? '';
+    const header = Buffer.from('{"alg":"none","typ":"JWT"}').toString('base64url');
+    expect((await asGet(name, cookie, `${header}.${claims}.`)).clients).toEqual([null]);
+  });
+
+  describe('a branded token replayed', () => {
+    async function branded() {
+      const name = `logout-brand-${newId()}`;
+      await setupTenant(name);
+      const { cookie, sessionId } = await signIn(name);
+      const hint = await mintIdToken(name, sessionId);
+      const first = await http.inject({
+        url: logoutUrl(name, {
+          id_token_hint: hint,
+          post_logout_redirect_uri: POST_LOGOUT,
+          state: 'abc',
+        }),
+        headers: { cookie },
+      });
+      expect(first.body).toContain('class="client-theme"');
+      return { name, cookie, fields: confirmationFields(first) };
+    }
+
+    const post = (name: string, cookie: string, fields: Record<string, string>) =>
+      clientsAsked(() =>
+        http.inject({
+          method: 'POST',
+          url: `/tenants/${name}/protocol/openid-connect/logout`,
+          payload: new URLSearchParams(fields).toString(),
+          headers: { 'content-type': 'application/x-www-form-urlencoded', cookie },
+        }),
+      );
+
+    it.each([
+      ['another client_id', { client_id: 'someone-else' }],
+      ['an empty client_id', { client_id: '' }],
+      ['a changed state', { state: 'other' }],
+      ['a changed post_logout_redirect_uri', { post_logout_redirect_uri: 'https://evil.example/' }],
+    ])('with %s is refused and wears the tenant theme', async (_label, change) => {
+      const { name, cookie, fields } = await branded();
+      const replay = await post(name, cookie, { ...fields, ...change });
+      expect(replay.page.statusCode).toBe(400);
+      expect(replay.clients).toEqual([null]);
+      expect(replay.page.body).toContain('class="tenant-theme"');
+    });
+  });
+
+  it('wears no client for a plain token on a form that carries a verified client_id', async () => {
+    const name = `logout-brand-${newId()}`;
+    await setupTenant(name);
+    const { cookie, sessionId } = await signIn(name);
+    const plain = confirmationFields(
+      await http.inject({ url: logoutUrl(name, { client_id: CLIENT_ID }), headers: { cookie } }),
+    );
+    const hint = await mintIdToken(name, sessionId);
+    const verified = confirmationFields(
+      await http.inject({ url: logoutUrl(name, { id_token_hint: hint }), headers: { cookie } }),
+    );
+    expect(verified.client_id).toBe(CLIENT_ID);
+    expect(plain.csrf).not.toBe(verified.csrf);
+    const replay = await clientsAsked(() =>
+      http.inject({
+        method: 'POST',
+        url: `/tenants/${name}/protocol/openid-connect/logout`,
+        payload: new URLSearchParams({ ...verified, csrf: plain.csrf ?? '' }).toString(),
+        headers: { 'content-type': 'application/x-www-form-urlencoded', cookie },
+      }),
+    );
+    expect(replay.page.statusCode).toBe(200);
+    expect(replay.clients).toEqual([null]);
+    expect(replay.page.body).toContain('class="tenant-theme"');
+  });
+
+  it('shows a victim client_id without a hint exactly as a nonexistent one', async () => {
+    const name = `logout-brand-${newId()}`;
+    await setupTenant(name);
+    const { cookie } = await signIn(name);
+    const masked = async (clientId: string): Promise<string> =>
+      (
+        await http.inject({ url: logoutUrl(name, { client_id: clientId }), headers: { cookie } })
+      ).body.replace(/value="[^"]*"/gu, 'value="_"');
+    expect(await masked(CLIENT_ID)).toBe(await masked('ghost'));
   });
 });
