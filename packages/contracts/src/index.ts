@@ -26,3 +26,23 @@ export {
   refusesBidi,
   stripBidiControls,
 } from '#/bidi';
+export {
+  FONT_CHOICES,
+  MAX_ALT_LENGTH,
+  MAX_STYLESHEET_BYTES,
+  MAX_TEMPLATE_BYTES,
+  PALETTE_KEYS,
+  THEME_PAGE_KINDS,
+  paletteSchema,
+  themeAssetsSchema,
+  themeBodyRequestSchema,
+  themeBodySchema,
+  themeImageSchema,
+  themeLogoSchema,
+  themeStylesheetSchema,
+  themeTemplatesSchema,
+  themeTokensSchema,
+  type FontChoice,
+  type ThemeBodyRequest,
+  type ThemeBodyWire,
+} from '#/theme-body';

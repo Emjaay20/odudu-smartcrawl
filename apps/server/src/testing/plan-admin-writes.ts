@@ -1,19 +1,24 @@
 import { newId } from '@odudu/kernel';
+import { makePng } from '@odudu/testkit';
 import { type LightMyRequestResponse } from 'fastify';
 import { type AdminIds, type AdminTokens } from '#/testing/plan-admin-drives';
 import { type Capture } from '#/testing/plan-paths';
 import { TARGET_TENANT, type PlanWorld } from '#/testing/plan-world';
 
 interface Call {
-  readonly method: 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  readonly method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   readonly url: string;
   readonly body?: unknown;
+  // An image sent as the raw request body, which is how an upload is made.
+  readonly image?: Buffer;
   // Fetched first, and sent as If-Match, for the routes that refuse without it.
   readonly etagFrom?: string;
   readonly system?: boolean;
   readonly as?: 'usersOnly' | 'sessionsOnly';
   // The `id` of this call's answer, kept to fill `{name}` in a later call's url.
   readonly saveAs?: string;
+  // Reads the id to keep from the answer, where it is not the answer's own `id`.
+  readonly saveWith?: (answer: unknown) => string;
   // A body made from what another route answers, for a replacement of a set
   // the tenant already holds.
   readonly bodyFrom?: { readonly url: string; readonly make: (answer: unknown) => unknown };
@@ -467,6 +472,9 @@ export async function driveAdminWrites(
     ['retire the key it replaced', { method: 'POST', url: `${T}/keys/{newKey}/retire` }],
     ['delete the retired key', { method: 'DELETE', url: `${T}/keys/{newKey}` }],
     ['delete the tenant’s SMTP', { method: 'DELETE', url: `${T}/smtp` }],
+    ...themeCalls(T, T, 'the tenant’s theme'),
+    ...themeCalls(T, `${T}/clients/${ids.client}`, 'a client’s theme'),
+    ...assetCalls(T),
     [
       'replace the sign-in flow',
       {
@@ -501,7 +509,8 @@ export async function driveAdminWrites(
       const from = await world.http.inject({ url: call.bodyFrom.url, headers });
       body = call.bodyFrom.make(from.json());
     }
-    if (body !== undefined) headers['content-type'] = 'application/json';
+    if (call.image !== undefined) headers['content-type'] = 'image/png';
+    else if (body !== undefined) headers['content-type'] = 'application/json';
     if (call.etagFrom !== undefined) {
       const current = await world.http.inject({ url: call.etagFrom, headers });
       headers['if-match'] = String(current.headers.etag);
@@ -514,11 +523,22 @@ export async function driveAdminWrites(
           method: call.method,
           url,
           headers,
-          ...(body === undefined ? {} : { payload: JSON.stringify(body) }),
+          ...(call.image === undefined ? {} : { payload: call.image }),
+          ...(body === undefined || call.image !== undefined
+            ? {}
+            : {
+                payload: JSON.stringify(body).replace(
+                  /\{(\w+)\}/gu,
+                  (_, name: string) => saved.get(name) ?? name,
+                ),
+              }),
         }),
     );
     if (call.saveAs !== undefined) {
-      saved.set(call.saveAs, res.json<{ id: string }>().id);
+      saved.set(
+        call.saveAs,
+        call.saveWith === undefined ? res.json<{ id: string }>().id : call.saveWith(res.json()),
+      );
     }
     if (res.statusCode >= 300)
       console.warn(`${call.method} ${url}: ${String(res.statusCode)} ${res.body.slice(0, 300)}`);
@@ -528,4 +548,57 @@ export async function driveAdminWrites(
       );
     }
   }
+}
+
+const PUBLISHED_ID = (answer: unknown): string =>
+  (answer as { published: { id: string } }).published.id;
+
+// A scope's theme through its life: a draft saved and saved again and previewed, published,
+// published again over it, the first restored, then reset and read.
+function themeCalls(T: string, base: string, what: string): [string, Call][] {
+  const theme = `${base}/theme`;
+  const key = base === T ? 'tenantTheme' : 'clientTheme';
+  const body = { stylesheet: '.page { color: #111111; }' };
+  const edited = { stylesheet: '.page { color: #222222; }' };
+  return [
+    [`save ${what} as a draft`, { method: 'PUT', url: theme, body }],
+    [`save ${what} again`, { method: 'PUT', url: theme, body: edited, etagFrom: theme }],
+    [`preview the draft of ${what}`, { method: 'GET', url: `${theme}/preview?kind=sign-in` }],
+    [
+      `publish ${what}`,
+      { method: 'POST', url: `${theme}/publish`, saveAs: key, saveWith: PUBLISHED_ID },
+    ],
+    [`save ${what} over it`, { method: 'PUT', url: theme, body }],
+    [`publish ${what} again`, { method: 'POST', url: `${theme}/publish` }],
+    [
+      `restore the first version of ${what}`,
+      { method: 'POST', url: `${theme}/versions/{${key}}/restore` },
+    ],
+    [`read ${what}`, { method: 'GET', url: theme }],
+    [`list the versions of ${what}`, { method: 'GET', url: `${theme}/versions` }],
+    [`reset ${what}`, { method: 'DELETE', url: theme }],
+  ];
+}
+
+// An image uploaded, stored again, named by a draft, refused deletion while it
+// is, and deleted once the draft is gone.
+function assetCalls(T: string): [string, Call][] {
+  const png = makePng({ width: 16, height: 16, rgb: [10, 120, 200] });
+  const upload = `${T}/theme/assets?kind=logo`;
+  return [
+    ['upload an image', { method: 'POST', url: upload, image: png, saveAs: 'asset' }],
+    ['upload the same image again', { method: 'POST', url: upload, image: png }],
+    [
+      'save a draft that names the image',
+      {
+        method: 'PUT',
+        url: `${T}/theme`,
+        body: { assets: { logo: { assetId: '{asset}', alt: 'Logo' } } },
+      },
+    ],
+    ['preview the draft that names the image', { method: 'GET', url: `${T}/theme/preview` }],
+    ['delete the image a draft names', { method: 'DELETE', url: `${T}/theme/assets/{asset}` }],
+    ['reset the theme', { method: 'DELETE', url: `${T}/theme` }],
+    ['delete the image', { method: 'DELETE', url: `${T}/theme/assets/{asset}` }],
+  ];
 }

@@ -146,6 +146,17 @@ describe('checkTemplate', () => {
     expect(codes(withFragment('}}'))).toContain('malformed-slot');
   });
 
+  it('refuses a message key the page catalogue lacks when told which it holds', () => {
+    const template = SIGN_IN.replace('login.title', 'login.nonesuch');
+    const options = { isMessageKey: (key: string) => key === 'login.title' };
+    expect(codes(SIGN_IN, options)).toEqual([]);
+    expect(codes(template, options)).toEqual(['unknown-message-key']);
+    const [issue] = checkTemplate('sign-in', template, options);
+    expect(issue).toMatchObject({ detail: 'login.nonesuch', line: 1, column: 23 });
+    // Without the option a key is not looked up, as at render time.
+    expect(codes(template)).toEqual([]);
+  });
+
   it('refuses a slot inside a raw-text element', () => {
     for (const tag of ['title', 'textarea', 'style', 'script', 'noscript', 'xmp', 'iframe']) {
       expect(codes(withFragment(`<${tag}>{{links}}</${tag}>`)), tag).toContain('slot-in-raw-text');

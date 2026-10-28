@@ -259,6 +259,12 @@ function attribute(value: string): string {
   return value.replace(/&/gu, '&amp;').replace(/"/gu, '&quot;').replace(/</gu, '&lt;');
 }
 
+// The element that links the tenant's stylesheet, one place so the preview
+// can find the very markup the page was given.
+export function stylesheetLink(url: string): string {
+  return `<link rel="stylesheet" href="${attribute(url)}">`;
+}
+
 // The head markup that follows the Instrument stylesheet link: the tenant
 // stylesheet after it so its rules win, and the favicon links.
 export function brandingHead(locale: PageLocale): string {
@@ -268,7 +274,7 @@ export function brandingHead(locale: PageLocale): string {
   const branding = locale.branding === undefined ? null : validBranding(locale.branding);
   const lines: string[] = [];
   if (branding?.stylesheetUrl) {
-    lines.push(`<link rel="stylesheet" href="${attribute(branding.stylesheetUrl)}">`);
+    lines.push(stylesheetLink(branding.stylesheetUrl));
   }
   if (branding?.faviconUrl) {
     lines.push(`<link rel="icon" href="${attribute(branding.faviconUrl)}">`);

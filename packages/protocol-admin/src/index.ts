@@ -5,7 +5,14 @@ import { auditRepository, type AdminMutationAction } from '@odudu/domain-audit';
 import { effectiveRoles } from '@odudu/domain-authz';
 import { hashPassword, subjectIsEnabled, subjectRepository } from '@odudu/domain-identity';
 import { ADMIN_CLIENT_ID, clientRepository } from '@odudu/domain-tenant';
-import { type ClaimMapperRegistry, type Clock, type Logger, systemClock } from '@odudu/kernel';
+import { type inspectImage } from '@odudu/domain-theme';
+import {
+  type ClaimMapperRegistry,
+  type Clock,
+  type Logger,
+  type PageKind,
+  systemClock,
+} from '@odudu/kernel';
 import {
   tenantLookupRepository,
   tokenGrantRepository,
@@ -24,6 +31,8 @@ import { type Audit as RoleAudit } from '#/usecase/roles';
 import { type Audit as ScopeAudit } from '#/usecase/scopes';
 import { type Audit as ScopeMapperAudit } from '#/usecase/scope-mappers';
 import { type Audit as SettingsAudit } from '#/usecase/settings';
+import { type Audit as ThemeAudit } from '#/usecase/theme';
+import { type Audit as ThemeAssetAudit } from '#/usecase/theme-assets';
 import { type Audit as TenantExportAudit } from '#/usecase/tenant-export';
 import { type Audit as TenantImportAudit } from '#/usecase/tenant-import';
 import { type Audit as SmtpAudit } from '#/usecase/smtp';
@@ -152,6 +161,10 @@ import {
   getSettingsHandler,
   type SettingsRouteDeps,
 } from '#/view/routes/settings';
+import { themeHandlers, type ThemeRouteDeps } from '#/view/routes/theme';
+import { themeAssetHandlers, type ThemeAssetRouteDeps } from '#/view/routes/theme-assets';
+import { themePreviewHandler } from '#/view/routes/theme-preview';
+import { type ThemePreviewDeps } from '#/usecase/theme-preview';
 import { exportTenantHandler, type TenantExportRouteDeps } from '#/view/routes/tenant-export';
 import { importTenantHandler, type TenantImportRouteDeps } from '#/view/routes/tenant-import';
 import {
@@ -281,6 +294,19 @@ export interface AdminRoutesDeps {
   // `ODUDU_OUTBOX_MAX_ATTEMPTS`, the attempts the mail sender makes before it
   // stops offering a message: what `GET …/mail` reports as `failed`.
   outboxMaxAttempts: number;
+  // Drops a tenant's cached themes in this process: called once a publish, a
+  // restore or a reset has committed, and when a client or a tenant is deleted.
+  invalidateTheme: (tenantId: string) => void;
+  // Whether `{{t "key"}}` in a template of `kind` names an entry of the
+  // catalogue its page is filled from, which the packages that render
+  // pages own.
+  isThemeMessageKey: (kind: PageKind, key: string) => boolean;
+  // Each page kind rendered by its own package's renderer with sample values,
+  // for the draft preview; the packages that render pages own them.
+  themePreviewPages: ThemePreviewDeps['pages'];
+  // The image inspector an upload runs; the bounded process-wide one when
+  // omitted, which is what production uses. Tests give one that is busy.
+  inspectImage?: typeof inspectImage;
   // How long an audit read may run before it is refused as too broad;
   // `AUDIT_READ_TIMEOUT_MS` unless a test shortens it.
   auditReadTimeoutMs?: number;
@@ -366,6 +392,8 @@ function buildAdminRoutes(
     const scopeMapperAudit: ScopeMapperAudit = recordAudit;
     const smtpAudit: SmtpAudit = recordAudit;
     const settingsAudit: SettingsAudit = recordAudit;
+    const themeAudit: ThemeAudit = recordAudit;
+    const themeAssetAudit: ThemeAssetAudit = recordAudit;
     const tenantExportAudit: TenantExportAudit = recordAudit;
     const tenantImportAudit: TenantImportAudit = recordAudit;
     // Same call `authzDeps.effectiveRoles` makes below, scoped to whichever
@@ -446,6 +474,7 @@ function buildAdminRoutes(
       callerCapabilities,
       now: () => clock.now(),
       sessionsAudit: tenantSessionsAudit,
+      invalidateTheme: deps.invalidateTheme,
     };
     const tenantExportDeps: TenantExportRouteDeps = {
       database: deps.database.db,
@@ -472,6 +501,23 @@ function buildAdminRoutes(
       now: () => clock.now(),
       sessionsAudit: tenantSessionsAudit,
     };
+    const themeDeps: ThemeRouteDeps = {
+      database: deps.database.db,
+      audit: themeAudit,
+      isMessageKey: deps.isThemeMessageKey,
+      invalidateTenant: deps.invalidateTheme,
+    };
+    const tenantTheme = themeHandlers(themeDeps, 'tenant');
+    const clientTheme = themeHandlers(themeDeps, 'client');
+    const assetDeps: ThemeAssetRouteDeps = {
+      database: deps.database.db,
+      audit: themeAssetAudit,
+      ...(deps.inspectImage === undefined ? {} : { inspect: deps.inspectImage }),
+    };
+    const themeAssets = themeAssetHandlers(assetDeps);
+    const previewDeps = { database: deps.database.db, pages: deps.themePreviewPages };
+    const tenantPreview = themePreviewHandler(previewDeps, 'tenant');
+    const clientPreview = themePreviewHandler(previewDeps, 'client');
     const clientsDeps: ClientsRouteDeps = {
       database: deps.database.db,
       cursorKey: deps.cursorKey,
@@ -479,6 +525,7 @@ function buildAdminRoutes(
       tlsClientAuthEnabled: deps.trustProxy ?? false,
       audit: clientAudit,
       now: () => clock.now(),
+      invalidateTheme: deps.invalidateTheme,
       callerCapabilities,
     };
     const registrationTokensDeps: RegistrationTokensRouteDeps = {
@@ -630,6 +677,23 @@ function buildAdminRoutes(
       'GET /admin/tenants/:tenant/export': exportTenantHandler(tenantExportDeps),
       'GET /admin/tenants/:tenant/settings': getSettingsHandler(settingsDeps),
       'PATCH /admin/tenants/:tenant/settings': amendSettingsHandler(settingsDeps),
+      'GET /admin/tenants/:tenant/theme': tenantTheme.read,
+      'PUT /admin/tenants/:tenant/theme': tenantTheme.put,
+      'DELETE /admin/tenants/:tenant/theme': tenantTheme.reset,
+      'POST /admin/tenants/:tenant/theme/publish': tenantTheme.publish,
+      'POST /admin/tenants/:tenant/theme/assets': themeAssets.upload,
+      'DELETE /admin/tenants/:tenant/theme/assets/:assetId': themeAssets.remove,
+      'GET /admin/tenants/:tenant/theme/preview': tenantPreview,
+      'GET /admin/tenants/:tenant/theme/versions': tenantTheme.versions,
+      'POST /admin/tenants/:tenant/theme/versions/:versionId/restore': tenantTheme.restore,
+      'GET /admin/tenants/:tenant/clients/:id/theme': clientTheme.read,
+      'PUT /admin/tenants/:tenant/clients/:id/theme': clientTheme.put,
+      'DELETE /admin/tenants/:tenant/clients/:id/theme': clientTheme.reset,
+      'POST /admin/tenants/:tenant/clients/:id/theme/publish': clientTheme.publish,
+      'GET /admin/tenants/:tenant/clients/:id/theme/preview': clientPreview,
+      'GET /admin/tenants/:tenant/clients/:id/theme/versions': clientTheme.versions,
+      'POST /admin/tenants/:tenant/clients/:id/theme/versions/:versionId/restore':
+        clientTheme.restore,
       'GET /admin/tenants/:tenant/clients': listClientsHandler(clientsDeps),
       'GET /admin/tenants/:tenant/clients/count': countClientsHandler(countsDeps),
       'POST /admin/tenants/:tenant/clients': createClientHandler(clientsDeps),

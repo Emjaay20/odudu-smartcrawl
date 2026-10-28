@@ -46,6 +46,9 @@ export interface ClientsRouteDeps {
   readonly tlsClientAuthEnabled: boolean;
   readonly audit: Audit;
   readonly now: () => Date;
+  // Drops the tenant's cached themes in this process: a deleted client's
+  // theme is cached under its id.
+  readonly invalidateTheme: (tenantId: string) => void;
   /** See `SubjectsRouteDeps.callerCapabilities` (#/view/routes/subjects.ts) — the same ceiling. */
   readonly callerCapabilities: (
     issuerTenantId: string,
@@ -380,6 +383,7 @@ export function deleteClientHandler(deps: ClientsRouteDeps): AdminRouteHandler {
       case 'capability_ceiling':
         return sendProblem(reply, request, ceilingProblem(outcome.requested, outcome.removed));
       case 'deleted':
+        deps.invalidateTheme(targetTenantId);
         return reply.code(204).send();
     }
   };

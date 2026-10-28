@@ -180,9 +180,12 @@ function collect(
   rows: Row[],
   root: OpenApiDocument,
   unknown: string[],
+  seen: Map<string, string>,
 ): void {
-  const resolved = resolveRef(schema, root);
-  const { schema: inner, nullable } = unwrapNullable(resolved);
+  const ref = refOf(schema);
+  const unwrapped = unwrapNullable(resolveRef(schema, root));
+  const inner = resolveRef(unwrapped.schema, root);
+  const nullable = unwrapped.nullable;
   const properties = record(inner.properties);
   const items = record(inner.items);
   const isObject = properties !== undefined;
@@ -202,6 +205,19 @@ function collect(
     });
     unknown.push(...own);
   }
+  // A shape named by a component is listed where it first occurs.
+  if (ref !== undefined && path !== '') {
+    const first = seen.get(ref);
+    if (first !== undefined) {
+      const last = rows.at(-1);
+      if (last !== undefined) {
+        const details = `${last.details} The same fields as ${code(first)}, not listed again.`;
+        rows[rows.length - 1] = { ...last, details: details.trim() };
+      }
+      return;
+    }
+    seen.set(ref, path);
+  }
   if (depth >= MAX_DEPTH) return;
   if (isObject) {
     const requiredNames = new Set(list(inner.required).map(scalar));
@@ -215,10 +231,11 @@ function collect(
         rows,
         root,
         unknown,
+        seen,
       );
     }
   } else if (items !== undefined && record(resolveRef(items, root).properties) !== undefined) {
-    collect(items, `${path === '' ? '' : path}[]`, true, depth + 1, rows, root, unknown);
+    collect(items, `${path === '' ? '' : path}[]`, true, depth + 1, rows, root, unknown, seen);
   }
 }
 
@@ -227,12 +244,23 @@ function resolveRef(schema: Json, root: OpenApiDocument): Json {
   const prefix = '#/components/schemas/';
   if (ref?.startsWith(prefix) !== true) return schema;
   const target = record((root.components.schemas as Json)[ref.slice(prefix.length)]);
-  return target ?? schema;
+  if (target === undefined) return schema;
+  const description = str(schema.description);
+  return description === undefined ? target : { ...target, description };
+}
+
+// The name of the component a field refers to, however it is wrapped in a
+// nullable `anyOf`.
+function refOf(schema: Json): string | undefined {
+  const direct = str(schema.$ref);
+  if (direct !== undefined) return direct;
+  const named = variantsOf(schema).map((variant) => str(variant.$ref));
+  return named.find((name) => name !== undefined);
 }
 
 export function fieldRows(schema: Json, root: OpenApiDocument, unknown: string[]): Row[] {
   const rows: Row[] = [];
-  collect(schema, '', true, 0, rows, root, unknown);
+  collect(schema, '', true, 0, rows, root, unknown, new Map());
   return rows;
 }
 
@@ -431,11 +459,12 @@ function responseBlocks(operation: Json, ctx: Context): string[] {
 
 // A pattern the generator cannot put in words is shown as the contract states it.
 function patternBlock(patterns: readonly string[]): string {
-  const items = [...new Set(patterns)].map((pattern) => `<li>${codeHtml(pattern)}</li>`);
+  // No list tags: the agent copies strip block tags, and a copy that differs
+  // from its source in what it says is refused.
   return [
     '<details>',
     '<summary>Patterns this operation applies</summary>',
-    `<ul>${items.join('')}</ul>`,
+    ...[...new Set(patterns)].map((pattern) => codeHtml(pattern)),
     '</details>',
     '',
   ].join('\n');

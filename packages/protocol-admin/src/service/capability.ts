@@ -127,9 +127,19 @@ import {
   importTenantRequestSchema,
   importTenantResponseSchema,
   TENANT_IMPORT_BODY_LIMIT,
+  THEME_ASSET_BODY_LIMIT,
+  previewThemeQuerySchema,
+  THEME_BODY_LIMIT,
+  listThemeVersionsResponseSchema,
+  themeAssetSchema,
+  uploadThemeAssetQuerySchema,
+  publishThemeResponseSchema,
+  putThemeRequestSchema,
+  themeViewSchema,
 } from '@odudu/contracts/admin';
 import { MANAGE_TENANTS, type TenantCapability } from '@odudu/domain-tenant';
 import { z } from 'zod';
+import { uploadLimitFor } from '#/service/theme-assets';
 
 // `manage-tenants` reaches every tenant and is provisioned only in the
 // system tenant (@odudu/domain-tenant's admin-capabilities.ts), so it is
@@ -142,8 +152,8 @@ export interface AdminRoute {
   readonly pattern: string;
   readonly capability: AdminCapability | null;
   // Further capabilities that admit this route besides `capability`, each
-  // with whatever composes it. Only a read carries any: a list another
-  // capability's writes pick from.
+  // with whatever composes it. A read carries one for a list another
+  // capability's writes pick from; the image routes admit `manage-clients`.
   readonly alsoAdmits?: readonly AdminCapability[];
   // The shape of a successful response, published at /admin/openapi.json.
   // Required, not optional: a route with no schema is a type error, not a
@@ -165,6 +175,14 @@ export interface AdminRoute {
   readonly bodySchema?: z.ZodType;
   // Fastify's per-route body limit, in bytes — omitted, the server's own.
   readonly bodyLimit?: number;
+  // A body that is raw bytes, not JSON, read only by this route: the router
+  // authenticates the caller and checks the limit `limitFor` names for this
+  // query before it reads any of it, and a declared type outside
+  // `contentTypes` is refused. Replaces `bodySchema`.
+  readonly rawBody?: {
+    readonly contentTypes: readonly string[];
+    readonly limitFor: (query: unknown) => number | null;
+  };
   // Extra prose `/admin/openapi.json` carries beside the generated
   // capability summary — for a caveat a generated client's user needs
   // without reading this repository's own docs.
@@ -209,6 +227,116 @@ const CLIENT_LIST_BOUND =
 const SERVICE_ACCOUNT_CEILING =
   'Refused with `403` when the client\u2019s service account holds an admin capability ' +
   'the caller does not (the target ceiling).';
+
+// What every theme route says about the cache and the draft, once.
+const THEME_CACHE =
+  'The pages of this process show a publish, a restore or a reset at once; another replica ' +
+  'shows the previous theme for at most 30 seconds, the lifetime of its cache.';
+
+const THEME_DRAFT =
+  'Users never see a draft. `GET` answers the draft\u2019s `ETag` when there is one, and a write ' +
+  'to an existing draft must send it as `If-Match`: refused with `428` when it is missing or ' +
+  '`*`, and with `412` when it no longer matches, leaving the draft as it was. The first draft ' +
+  'of a scope needs none.';
+
+// The seven routes that make up a scope's theme, under the tenant or under one
+// client. The tenant's own theme needs `manage-tenant`, a client's
+// `manage-clients`, the capability every other client write needs.
+function themeRoutes(
+  base: string,
+  capability: 'manage-tenant' | 'manage-clients',
+  noun: string,
+): readonly AdminRoute[] {
+  return [
+    {
+      method: 'GET',
+      pattern: `${base}/theme`,
+      capability,
+      responseSchema: themeViewSchema,
+      description:
+        `The ${noun}\u2019s draft and published theme, and for each piece the layer that ` +
+        `supplies it (\`client\`, \`tenant\` or \`default\`). ${THEME_DRAFT}`,
+    },
+    {
+      method: 'PUT',
+      pattern: `${base}/theme`,
+      capability,
+      responseSchema: themeViewSchema,
+      bodySchema: putThemeRequestSchema,
+      bodyLimit: THEME_BODY_LIMIT,
+      description:
+        `Saves the whole draft of the ${noun}\u2019s theme: a part left out is absent, not kept. ` +
+        'The templates, the stylesheet and the images are checked as they are on publish, ' +
+        'except contrast, which only publishing checks; a refusal is `400` with `errors`, ' +
+        'each naming its piece and, for a template or stylesheet, the line and column. A ' +
+        'template may use only `{{t "key"}}` keys of the catalogue its page is filled from. ' +
+        `A body over 4 MiB is refused with \`413\` before it is read. ${THEME_DRAFT}`,
+    },
+    {
+      method: 'POST',
+      pattern: `${base}/theme/publish`,
+      capability,
+      responseSchema: publishThemeResponseSchema,
+      description:
+        'Publishes the draft as the next version, which users see, and keeps the previous ' +
+        'ones (at most 20 versions). Every check runs again, and a failing text or UI ' +
+        'contrast pair is refused as a `400` naming the colour. A stylesheet or a template ' +
+        'cannot be proven accessible, so each earns an entry in `warnings`, which does not ' +
+        'block. `409` (`about:blank#theme-no-draft`) when there is no draft, which is also ' +
+        'what the second of two simultaneous publishes of one draft receives. `If-Match` is ' +
+        `optional here and, when sent, must name the draft being published. ${THEME_CACHE}`,
+    },
+    {
+      method: 'GET',
+      pattern: `${base}/theme/versions`,
+      capability,
+      responseSchema: listThemeVersionsResponseSchema,
+      description:
+        'The published version and the archived ones, newest first, at most 20, without ' +
+        'their bodies.',
+    },
+    {
+      method: 'POST',
+      pattern: `${base}/theme/versions/:versionId/restore`,
+      capability,
+      responseSchema: themeViewSchema,
+      description:
+        'Publishes a copy of an earlier version, whole, as the next version; the draft is ' +
+        'left as it is. Refused with `409` (`about:blank#theme-assets-missing`) when an image ' +
+        `the version names has been deleted, \`errors\` naming each. ${THEME_CACHE}`,
+    },
+    {
+      method: 'GET',
+      pattern: `${base}/theme/preview`,
+      capability,
+      responseSchema: z.string(),
+      successMediaType: 'text/html',
+      querystringSchema: previewThemeQuerySchema,
+      description:
+        `A page of the ${noun}\u2019s draft theme, rendered by the same code users are sent, ` +
+        `with sample values${noun === 'client' ? ', over its tenant\u2019s published theme' : ''}. ` +
+        'The answer is a whole HTML document under a policy of its own, for a frame whose ' +
+        'parent is this origin: the stylesheet and images are carried inside it, so a draft ' +
+        'image that no address serves still shows, and nothing in it needs a script. A page ' +
+        'whose kind needs one (`passkey-enrolment`) is rendered without it, which the ' +
+        '`X-Odudu-Preview-Script: omitted` header says. A scope with no draft shows its own ' +
+        'published theme, then what is below it. A template that cannot be filled shows the default ' +
+        'page, and `X-Odudu-Preview-Fallback` lists the kinds. Refused with `422` (`about:blank#theme-preview-too-large`) when the ' +
+        'stylesheet and the images the page shows come to over 1 MiB once inlined. Reads ' +
+        'the draft only: nothing is saved and nothing is published.',
+    },
+    {
+      method: 'DELETE',
+      pattern: `${base}/theme`,
+      capability,
+      responseSchema: themeViewSchema,
+      description:
+        `Resets the ${noun} to ${noun === 'client' ? 'its tenant\u2019s theme' : 'the default'}: ` +
+        'the draft is deleted and the published version archived, where restore can bring ' +
+        `it back. Answers the theme as it now is. ${THEME_CACHE}`,
+    },
+  ];
+}
 
 // The single list the router registers from (view/routes/router.ts): a
 // route with no entry here fails at startup rather than shipping
@@ -758,6 +886,51 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
       '`enabled: false` ends every live session in the tenant, after the change has ' +
       'committed and in batches, as `PATCH /admin/tenants/{tenant}` does.',
   },
+  ...themeRoutes('/admin/tenants/:tenant', 'manage-tenant', 'tenant'),
+  {
+    method: 'POST',
+    pattern: '/admin/tenants/:tenant/theme/assets',
+    capability: 'manage-tenant',
+    alsoAdmits: ['manage-clients'],
+    responseSchema: themeAssetSchema,
+    successStatus: 201,
+    querystringSchema: uploadThemeAssetQuerySchema,
+    bodyLimit: THEME_ASSET_BODY_LIMIT,
+    rawBody: {
+      contentTypes: ['image/png', 'image/jpeg', 'image/webp', 'application/octet-stream'],
+      limitFor: uploadLimitFor,
+    },
+    description:
+      'Needs `manage-tenant`, or `manage-clients` since a client\u2019s theme names tenant images. Uploads an image for the tenant\u2019s themes: the request body is the image itself, ' +
+      'not JSON, and `kind` says which slot it is for. A declared `Content-Type` other than ' +
+      '`image/png`, `image/jpeg`, `image/webp` or `application/octet-stream` is refused with ' +
+      '`415`, and none of them is trusted: PNG, JPEG and WebP are told by the bytes. The ' +
+      'image is decoded and stored re-encoded, which drops its metadata and anything ' +
+      'appended, so `bytes` and `sha256` are the stored ones; the same picture uploaded ' +
+      'twice is one image. An uploaded image is not served until a published theme names ' +
+      'it. The caller is authenticated and the size checked before the body is read: `413` ' +
+      'for a body over the kind\u2019s limit, `400` for a `kind` that is missing or unknown. ' +
+      'Refused with `415` (`about:blank#asset-unsupported-type`) for bytes that are not one ' +
+      'of the three, `422` (`about:blank#asset-animated`, `asset-corrupt`, ' +
+      '`asset-dimensions`, `asset-timeout`), `413` (`about:blank#asset-too-large`) for an ' +
+      'image whose stored size is over the limit, `409` (`about:blank#asset-cap`) when the ' +
+      'tenant\u2019s stored images would pass 8 MiB, and `503` (`about:blank#asset-busy`) ' +
+      'with `Retry-After` when the server is decoding as many images as it will at once.',
+  },
+  {
+    method: 'DELETE',
+    pattern: '/admin/tenants/:tenant/theme/assets/:assetId',
+    capability: 'manage-tenant',
+    alsoAdmits: ['manage-clients'],
+    responseSchema: z.void(),
+    successStatus: 204,
+    description:
+      'Needs `manage-tenant`, or `manage-clients`. Deletes an uploaded image. Refused with `409` (`about:blank#asset-in-use`) while a ' +
+      'draft or a published theme of the tenant or of any of its clients names it, `errors` ' +
+      'listing the first 20 by the theme\u2019s path and version; an archived version does ' +
+      'not hold it, so restoring one that names a deleted image is refused. `404` for an ' +
+      'image that does not exist or is another tenant\u2019s.',
+  },
   // No `view-clients`: client metadata is configuration rather than a
   // population to browse, so every route below requires `manage-clients`.
   {
@@ -825,6 +998,7 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
       'secret it replaces authenticating that long beside it, and the response states ' +
       `when it stops in \`previous_secret_expires_at\`. ${SERVICE_ACCOUNT_CEILING}`,
   },
+  ...themeRoutes('/admin/tenants/:tenant/clients/:id', 'manage-clients', 'client'),
   {
     method: 'GET',
     pattern: '/admin/tenants/:tenant/clients/:id/logout-deliveries',

@@ -684,6 +684,9 @@ importers:
 
   packages/domain-theme:
     dependencies:
+      '@odudu/contracts':
+        specifier: workspace:*
+        version: link:../contracts
       '@odudu/db':
         specifier: workspace:*
         version: link:../db
@@ -826,6 +829,9 @@ importers:
       '@odudu/domain-tenant':
         specifier: workspace:*
         version: link:../domain-tenant
+      '@odudu/domain-theme':
+        specifier: workspace:*
+        version: link:../domain-theme
       '@odudu/email':
         specifier: workspace:*
         version: link:../email

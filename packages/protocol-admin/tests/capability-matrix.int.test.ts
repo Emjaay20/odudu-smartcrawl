@@ -282,11 +282,15 @@ describe('the capability matrix', () => {
   // its path and method already say, independent of what any route
   // actually declares.
   describe('a route names a capability its own path and method already imply', () => {
-    it('admits a further capability on a read alone', () => {
+    // Beside two reads, the image routes, which a client's theme needs and a
+    // `manage-clients` holder may therefore use.
+    it('admits a further capability on a read, or on an image route', () => {
       const widened = tenantScopedRoutes.filter((route) => route.alsoAdmits !== undefined);
       expect(widened.map(routeKey).sort()).toEqual([
+        'DELETE /admin/tenants/:tenant/theme/assets/:assetId',
         'GET /admin/tenants/:tenant/groups',
         'GET /admin/tenants/:tenant/roles',
+        'POST /admin/tenants/:tenant/theme/assets',
       ]);
     });
 

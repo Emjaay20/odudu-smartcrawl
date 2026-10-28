@@ -1,3 +1,5 @@
+import { THEME_PAGE_KINDS } from '@odudu/contracts';
+import { PAGE_KINDS } from '@odudu/kernel';
 import { describe, expect, it } from 'vitest';
 
 import { FONT_CHOICES, assetIdsOf, parseThemeBody } from '#/service/body';
@@ -145,5 +147,11 @@ describe('assetIdsOf', () => {
   it('lists each asset once however many slots name it', () => {
     expect(assetIdsOf({})).toEqual([]);
     expect(assetIdsOf({ logo: { assetId: ID, alt: 'a' }, favicon: { assetId: ID } })).toEqual([ID]);
+  });
+});
+
+describe('the contract the body is parsed against', () => {
+  it('lists exactly the page kinds the kernel manifest does', () => {
+    expect([...THEME_PAGE_KINDS].sort()).toEqual(Object.keys(PAGE_KINDS).sort());
   });
 });

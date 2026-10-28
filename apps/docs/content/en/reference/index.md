@@ -53,6 +53,7 @@ The operations of the admin API, grouped by area, with one page for each operati
 - [Subject sessions](./generated/admin-api/subject-sessions/index.md)
 - [Subject sign-in](./generated/admin-api/subject-sign-in/index.md)
 - [Tenants](./generated/admin-api/tenants/index.md)
+- [Theme](./generated/admin-api/theme/index.md)
 - [Whoami](./generated/admin-api/whoami/index.md)
 
 ## Transcripts

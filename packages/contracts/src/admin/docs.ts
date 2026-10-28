@@ -135,7 +135,26 @@ import {
   listTenantsQuerySchema,
   tenantSchema,
 } from '#/admin/tenants';
+import {
+  listThemeVersionsResponseSchema,
+  publishedThemeSchema,
+  themeAssetSchema,
+  previewThemeQuerySchema,
+  uploadThemeAssetQuerySchema,
+  themeVersionSchema,
+  themeViewSchema,
+  themeWarningSchema,
+  publishThemeResponseSchema,
+} from '#/admin/theme';
 import { whoamiResponseSchema } from '#/admin/whoami';
+import {
+  paletteSchema,
+  themeAssetsSchema,
+  themeBodyRequestSchema,
+  themeImageSchema,
+  themeLogoSchema,
+  themeTokensSchema,
+} from '#/theme-body';
 
 function fingerprint(names: readonly string[]): string {
   return [...names].sort().join(',');
@@ -1019,6 +1038,102 @@ describeFields(whoamiResponseSchema, {
     'The admin capabilities the caller holds in its own tenant, directly, through a group or nested in a role. A composite such as `tenant-admin` is reported as the capabilities it carries.',
   crossTenant:
     'True when the caller’s tenant is not the tenant in the path, which only a holder of `manage-tenants` may be.',
+});
+
+describeFields(themeBodyRequestSchema, {
+  tokens:
+    'The colours and font, as groups that each replace the layer below whole: `light`, `dark` and `font`.',
+  stylesheet:
+    'One stylesheet of at most 128 KiB, checked against an allowlist of properties, values and the page class hooks, or null for none.',
+  templates:
+    'A template per page kind, by kind name, each at most 64 KiB: HTML with the server’s own slots such as `{{form.open}}` and `{{t "login.title"}}`. A kind left out uses the layer below.',
+  assets:
+    'The images: `logo` and `darkLogo` with alt text, `favicon` and `background`, each naming an uploaded image of this tenant by its id.',
+});
+describeFields(themeTokensSchema, {
+  light: 'The colours of the light scheme, all eleven or none.',
+  dark: 'The colours of the dark scheme, all eleven or none.',
+  font: 'The font family, one of the two Instrument serves itself.',
+});
+describeFields(paletteSchema, {
+  surfacePage: 'The page background, as `#rrggbb`.',
+  surfacePanel: 'The card or panel background.',
+  surfaceSunken: 'The background of an input or a recessed area.',
+  inkPrimary: 'The body text colour.',
+  inkMuted: 'The secondary text colour.',
+  signalActive: 'The primary button background.',
+  signalActiveInk: 'The text on the primary button, and on the page and panel.',
+  signalDanger: 'The destructive button background.',
+  signalDangerInk: 'The text on the destructive button, and the error text.',
+  borderStrong: 'The border of an input and a panel.',
+  focusRing: 'The focus outline.',
+});
+describeFields(themeAssetsSchema, {
+  logo: 'The logo and its alt text, which is required.',
+  darkLogo: 'The logo shown under the dark scheme, with its own alt text.',
+  favicon: 'The icon the browser tab shows.',
+  background: 'The page background image.',
+});
+describeFields(themeLogoSchema, {
+  assetId: 'The image, as the id an upload answered. It must belong to this tenant.',
+  alt: 'The text a screen reader says for the logo, at most 200 characters and not blank.',
+});
+describeFields(themeImageSchema, {
+  assetId: 'The image, as the id an upload answered. It must belong to this tenant.',
+});
+describeFields(themeViewSchema, {
+  scope: '`tenant` for the tenant’s own theme, `client` for one client’s.',
+  draft:
+    'The saved draft, or null when there is none. Users never see a draft. Its `ETag` is the response’s, and the next write must send it as `If-Match`.',
+  published:
+    'The version users see, or null when the scope has none and its pieces come from below.',
+  sources:
+    'For each piece of the published theme, the layer that supplies it: `client`, `tenant` or `default` (Instrument). A client with no theme of its own shows `tenant` for every piece the tenant sets.',
+  draft_sources:
+    'The same for the draft as it would be if published, or null when there is no draft.',
+});
+describeFields(publishedThemeSchema, {
+  id: 'The version’s identifier, which `restore` names.',
+  version: 'The version number, which grows with each publish or restore.',
+  published_at: 'When it was published.',
+  body: 'The theme as it was published.',
+});
+describeFields(publishThemeResponseSchema, {
+  warnings:
+    'What publishing cannot prove: a stylesheet or a template may break the contrast or the layout the checked pieces guarantee. A warning does not block.',
+});
+describeFields(themeWarningSchema, {
+  piece: 'The piece the warning is about: `stylesheet` or `templates.<kind>`.',
+  code: '`stylesheet-unverified` or `template-unverified`.',
+  message: 'What cannot be checked and who is responsible for it.',
+});
+describeFields(themeVersionSchema, {
+  id: 'The version’s identifier, which `restore` names.',
+  version: 'The version number.',
+  state: '`published` for the one users see, `archived` for an earlier one.',
+  created_at: 'When the version was first saved as a draft.',
+  published_at: 'When it was published.',
+});
+describeFields(previewThemeQuerySchema, {
+  kind: 'The page to render, one of the kinds a theme has a template for; `sign-in` when left out.',
+  scheme:
+    'Render in the `light` or the `dark` palette; the viewer\u2019s own colour scheme when left out.',
+});
+describeFields(uploadThemeAssetQuerySchema, {
+  kind: 'The slot the image is for, which sets its limits: `logo`, `darkLogo` and `favicon` at most 256 KiB and 1024 pixels on the longer side, `background` at most 1 MiB and 2560 pixels.',
+});
+describeFields(themeAssetSchema, {
+  id: 'The image\u2019s identifier, which a theme names as `assetId`.',
+  sha256: 'The SHA-256 of the stored image, the hash its public address carries.',
+  mime: 'The stored type: `image/png`, `image/jpeg` or `image/webp`, as the bytes are and never as the request declared.',
+  width: 'The width in pixels.',
+  height: 'The height in pixels.',
+  bytes:
+    'The stored size in bytes, after the image was re-encoded; this is what counts against the tenant\u2019s 8 MiB.',
+  kind: 'The slot this upload was checked as, echoing the request; the same image may be uploaded as another kind, so it is not a stored fact.',
+});
+describeFields(listThemeVersionsResponseSchema, {
+  items: 'At most 20 versions, newest first, without their bodies.',
 });
 
 // Words for a field of this name wherever it appears and nothing says otherwise.

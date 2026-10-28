@@ -11,6 +11,8 @@ cannot drift. It takes no `{tenant}` — it describes the API rather than reachi
 into one — and is served without authentication, since a client that cannot read
 it cannot generate against it.
 
+The `content-length`, the path count and the size below were derived from the generated document rather than from a fresh run, and the `Date` and request id belong to an earlier run; the block is run again when the documentation is closed.
+
 ```bash
 curl -sS -D - -o openapi.json http://localhost:3197/admin/openapi.json
 jq '.paths | length' openapi.json
@@ -21,15 +23,15 @@ HTTP/1.1 200 OK
 x-request-id: 01a17d3a-0eac-7866-a52b-cbe602ff1565
 access-control-allow-origin: *
 content-type: application/json; charset=utf-8
-content-length: 435400
+content-length: 572420
 Date: Tue, 27 Oct 2026 11:58:39 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-78
+90
 ```
 
-425 KB and 78 paths, which is the whole route table. It is the one admin
+559 KB and 90 paths, which is the whole route table. It is the one admin
 response readable from any origin, so a viewer served from another port can load
 it — the local stack's optional Swagger UI does exactly that (see [Browsing the
 admin API](../../../contributing/run-from-a-checkout.md)). No admin route carries that header, so a page on
@@ -54,7 +56,7 @@ grep -o '"securitySchemes":{"bearerAuth":{[^}]*}}' openapi.json
 ```
 
 `security` is declared once at the top level, so every path inherits it
-rather than repeating it. `/admin/openapi.json` is not among those 78
+rather than repeating it. `/admin/openapi.json` is not among those 86
 paths: the document does not describe itself, which is why serving it
 unauthenticated does not contradict the blanket `security` above.
 
