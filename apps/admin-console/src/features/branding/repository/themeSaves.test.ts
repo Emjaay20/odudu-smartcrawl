@@ -45,9 +45,9 @@ it('each section saves the whole draft, its own part as edited', async () => {
   });
   const [colours, images, templates] = sent.map((s) => s.body as Record<string, unknown>);
   expect(colours).toMatchObject({ tokens: {} });
-  expect(Object.keys((colours?.assets ?? {}))).toEqual(['logo']);
+  expect(Object.keys(colours?.assets ?? {})).toEqual(['logo']);
   expect(images).toMatchObject({ assets: {} });
-  expect(Object.keys((images?.tokens ?? {}))).toEqual(['light']);
+  expect(Object.keys(images?.tokens ?? {})).toEqual(['light']);
   expect(templates).toMatchObject({ templates: { notice: '{{message}}' } });
 });
 

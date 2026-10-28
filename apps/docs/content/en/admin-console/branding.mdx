@@ -1,0 +1,33 @@
+---
+title: Branding in the console
+description: Give a tenant's sign-in and account pages its own colours, logo and layout, preview them, and publish them.
+sidebar_position: 13
+---
+
+# Branding in the console
+
+A tenant's users meet Odudu's pages when they sign in, consent, reset a password or set up a second factor. **Branding** is where the tenant makes those pages its own. It needs the `manage-tenant` capability; the menu entry is **Branding** under **TENANT**.
+
+Nothing you change is seen until you publish it. Edits are saved as a draft, the preview shows the draft drawn by the real page, and **Publish** makes it what people see.
+
+## 1. Set the colours and images
+
+On the **Theme** tab, **Colours and font** holds a light palette and a dark palette. Each is used whole: turn on **Use my own light colours** and every colour in that scheme is yours, starting from Instrument's own. A scheme you leave alone keeps Instrument's colours. Under **Images**, upload a logo (with the alt text it needs), a logo for the dark scheme, a favicon and a background image. PNG, JPEG and WebP are accepted, and each slot states its size limit beside it.
+
+The **Contrast** panel checks every pair of colours as you type. Text must reach 4.5:1 against what it sits on, and borders and the focus ring 3:1. **Publish** is held while a pair falls short, and the panel names it.
+
+## 2. Change a page's layout
+
+On the **Pages** tab, choose a page and edit its template. The parts the server fills in, such as the form and its fields, are listed beside the editor; a template places them and may not add scripts, styles or forms. A refused template says what is wrong and where.
+
+## 3. Preview, publish, restore
+
+The preview beside the editor frames the real page for the saved draft, in the light or the dark scheme. **Publish** makes the saved draft the published theme and keeps the version it replaces, up to twenty. **Versions** lists them; **Restore** publishes a copy of an earlier one and leaves the draft alone.
+
+## Things that cannot be undone
+
+**Reset to default** deletes the draft and unpublishes the theme, so people see Instrument's own pages again. The version that was published stays under **Versions**. **Delete image** removes a stored image, and is refused while any theme still names it.
+
+## Do the same through the API
+
+The calls are in the [theme](../reference/generated/admin-api/theme/index.md) area of the admin API: reading and saving the draft, publishing, versions and restore, reset, image upload and delete, and the preview.

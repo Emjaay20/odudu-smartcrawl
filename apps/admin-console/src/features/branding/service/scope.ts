@@ -17,9 +17,6 @@ export function scopeKeyPart(scope: ThemeScope): string {
   return scope.kind === 'tenant' ? 'tenant' : `client:${scope.id}`;
 }
 
-// Images belong to the tenant, a client's theme naming the tenant's.
-export const ASSET_PARTS: readonly string[] = ['theme', 'assets'];
-
 // The tag a theme with no draft is held under: the server sends none, and a
 // first save must then carry no If-Match at all.
 export const NO_DRAFT_TAG = '"no-draft"';

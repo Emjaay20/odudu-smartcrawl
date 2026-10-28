@@ -156,6 +156,7 @@ export const DEFINED: Readonly<Record<string, Defined>> = {
     feature(ACCESS, "title: 'Sessions'"),
   ),
   Settings: rail('settings', 'Settings'),
+  Branding: rail('branding', 'Branding'),
   Email: several(
     rail('email', 'Email'),
     feature('subjects/view/NewSubjectPage/NewSubjectPage.tsx', 'label="Email"'),
@@ -525,6 +526,22 @@ export const DEFINED: Readonly<Record<string, Defined>> = {
   'not sent': feature('email/service/effective.ts', "return 'not sent'"),
   'deployment sender': feature('email/service/effective.ts', "return 'deployment sender'"),
   'own relay': feature('email/service/effective.ts', "return 'own relay'"),
+
+  // Branding.
+  Theme: tab('branding', 'theme', 'Theme'),
+  Pages: tab('branding', 'pages', 'Pages'),
+  'Colours and font': feature('branding/service/fields.ts', "COLOURS_TITLE = 'Colours and font'"),
+  'Use my own light colours': template(
+    [inFeature('branding/service/copy.ts', 'Use my own ${scheme} colours')],
+    'Use my own ${scheme} colours',
+    { scheme: 'light' },
+  ),
+  Images: feature('branding/service/fields.ts', "IMAGES_TITLE = 'Images'"),
+  Contrast: feature('branding/service/copy.ts', "CONTRAST_TITLE = 'Contrast'"),
+  Publish: feature('branding/service/publish.ts', "PUBLISH_TITLE = 'Publish'"),
+  Versions: feature('branding/service/versions.ts', "VERSIONS_TITLE = 'Versions'"),
+  'Reset to default': feature('branding/service/versions.ts', "RESET_TITLE = 'Reset to default'"),
+  'Delete image': feature('branding/service/copy.ts', "DELETE_LABEL = 'Delete image'"),
 
   // The audit trail.
   'Event type': feature(FILTERS, 'label="Event type"'),

@@ -12,7 +12,6 @@ import {
 import { adminCall, nothing, segment } from '#/shared/adapter/route';
 import { GATEWAY_BASE, type Gateway, type GatewayResult } from '#/shared/transport/gateway';
 import {
-  ASSET_PARTS,
   ifMatchOf,
   tagOf,
   themeParts,
@@ -32,8 +31,11 @@ export async function readTheme(
   tenant: string,
   scope: ThemeScope,
 ): Promise<GatewayResult<ThemeView>> {
+  const schema = themeViewSchema;
   return tagged(
-    await adminCall(gateway, 'GET', tenant, themeParts(scope), { schema: themeViewSchema }),
+    scope.kind === 'tenant'
+      ? await adminCall(gateway, 'GET', tenant, ['theme'], { schema })
+      : await adminCall(gateway, 'GET', tenant, ['clients', scope.id, 'theme'], { schema }),
   );
 }
 
@@ -46,12 +48,15 @@ export async function putTheme(
   tag: string,
 ): Promise<GatewayResult<ThemeView>> {
   const ifMatch = ifMatchOf(tag);
+  const options = {
+    body,
+    ...(ifMatch === undefined ? {} : { ifMatch }),
+    schema: themeViewSchema,
+  };
   return tagged(
-    await adminCall(gateway, 'PUT', tenant, themeParts(scope), {
-      body,
-      ...(ifMatch === undefined ? {} : { ifMatch }),
-      schema: themeViewSchema,
-    }),
+    scope.kind === 'tenant'
+      ? await adminCall(gateway, 'PUT', tenant, ['theme'], options)
+      : await adminCall(gateway, 'PUT', tenant, ['clients', scope.id, 'theme'], options),
   );
 }
 
@@ -62,11 +67,20 @@ export async function publishTheme(
   tag: string,
 ): Promise<GatewayResult<PublishThemeResponse>> {
   const ifMatch = ifMatchOf(tag);
+  const options = {
+    ...(ifMatch === undefined ? {} : { ifMatch }),
+    schema: publishThemeResponseSchema,
+  };
   return tagged(
-    await adminCall(gateway, 'POST', tenant, [...themeParts(scope), 'publish'], {
-      ...(ifMatch === undefined ? {} : { ifMatch }),
-      schema: publishThemeResponseSchema,
-    }),
+    scope.kind === 'tenant'
+      ? await adminCall(gateway, 'POST', tenant, ['theme', 'publish'], options)
+      : await adminCall(
+          gateway,
+          'POST',
+          tenant,
+          ['clients', scope.id, 'theme', 'publish'],
+          options,
+        ),
   );
 }
 
@@ -75,8 +89,11 @@ export async function resetTheme(
   tenant: string,
   scope: ThemeScope,
 ): Promise<GatewayResult<ThemeView>> {
+  const schema = themeViewSchema;
   return tagged(
-    await adminCall(gateway, 'DELETE', tenant, themeParts(scope), { schema: themeViewSchema }),
+    scope.kind === 'tenant'
+      ? await adminCall(gateway, 'DELETE', tenant, ['theme'], { schema })
+      : await adminCall(gateway, 'DELETE', tenant, ['clients', scope.id, 'theme'], { schema }),
   );
 }
 
@@ -85,9 +102,10 @@ export function readVersions(
   tenant: string,
   scope: ThemeScope,
 ): Promise<GatewayResult<ListThemeVersionsResponse>> {
-  return adminCall(gateway, 'GET', tenant, [...themeParts(scope), 'versions'], {
-    schema: listThemeVersionsResponseSchema,
-  });
+  const schema = listThemeVersionsResponseSchema;
+  return scope.kind === 'tenant'
+    ? adminCall(gateway, 'GET', tenant, ['theme', 'versions'], { schema })
+    : adminCall(gateway, 'GET', tenant, ['clients', scope.id, 'theme', 'versions'], { schema });
 }
 
 export async function restoreVersion(
@@ -96,14 +114,19 @@ export async function restoreVersion(
   scope: ThemeScope,
   versionId: string,
 ): Promise<GatewayResult<ThemeView>> {
+  const schema = themeViewSchema;
   return tagged(
-    await adminCall(
-      gateway,
-      'POST',
-      tenant,
-      [...themeParts(scope), 'versions', versionId, 'restore'],
-      { schema: themeViewSchema },
-    ),
+    scope.kind === 'tenant'
+      ? await adminCall(gateway, 'POST', tenant, ['theme', 'versions', versionId, 'restore'], {
+          schema,
+        })
+      : await adminCall(
+          gateway,
+          'POST',
+          tenant,
+          ['clients', scope.id, 'theme', 'versions', versionId, 'restore'],
+          { schema },
+        ),
   );
 }
 
@@ -114,7 +137,7 @@ export function uploadAsset(
   kind: string,
   file: Blob,
 ): Promise<GatewayResult<ThemeAsset>> {
-  return adminCall(gateway, 'POST', tenant, ASSET_PARTS, {
+  return adminCall(gateway, 'POST', tenant, ['theme', 'assets'], {
     query: new URLSearchParams({ kind }),
     file,
     schema: themeAssetSchema,
@@ -126,7 +149,7 @@ export function deleteAsset(
   tenant: string,
   assetId: string,
 ): Promise<GatewayResult<undefined>> {
-  return adminCall(gateway, 'DELETE', tenant, [...ASSET_PARTS, assetId], { schema: nothing });
+  return adminCall(gateway, 'DELETE', tenant, ['theme', 'assets', assetId], { schema: nothing });
 }
 
 // The page the frame shows: the real renderer's answer for the saved draft,
