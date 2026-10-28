@@ -445,6 +445,18 @@ export {
   TENANT_IMPORT_BODY_LIMIT,
 } from '#/admin/tenant-document';
 export {
+  MAIL_PREVIEW_KINDS,
+  MAIL_PREVIEW_LOCALES,
+  mailBrandingViewSchema,
+  mailColoursSchema,
+  mailLogoSchema,
+  mailSchemeSchema,
+  previewMailQuerySchema,
+  type MailBrandingView,
+  type MailColoursView,
+  type PreviewMailQuery,
+} from '#/admin/mail-preview';
+export {
   THEME_ASSET_BODY_LIMIT,
   THEME_ASSET_KINDS,
   THEME_BODY_LIMIT,

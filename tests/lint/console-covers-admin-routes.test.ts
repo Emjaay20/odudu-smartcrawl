@@ -42,6 +42,11 @@ function pendingBrandingRoutes(): Record<string, string> {
   const entries: [string, string][] = [
     ['GET /admin/tenants/:tenant/theme/preview', framed],
     ['GET /admin/tenants/:tenant/clients/:id/theme/preview', framed],
+    ['GET /admin/tenants/:tenant/mail/preview', framed],
+    [
+      'GET /admin/tenants/:tenant/mail/branding',
+      'The console has no Mail tab yet; the branding route is called by it when it lands.',
+    ],
     ...[
       'GET /admin/tenants/:tenant/message-overrides',
       'PUT /admin/tenants/:tenant/message-overrides/:locale/:key',

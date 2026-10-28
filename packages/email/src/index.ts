@@ -36,3 +36,9 @@ export {
   type MailContext,
   type MailTenantScope,
 } from '#/usecase/mail-context';
+export {
+  brandingInScheme,
+  inlineMark,
+  mailSchemeColours,
+  type SchemeColours,
+} from '#/service/preview';

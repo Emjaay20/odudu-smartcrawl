@@ -156,6 +156,8 @@ shown once — a registration token, a client secret, a one-time password.
 | `POST`   | `/admin/tenants/{tenant}/theme/assets`                                  | Upload an image for a tenant's themes      |
 | `DELETE` | `/admin/tenants/{tenant}/theme/assets/:assetId`                         | Delete an uploaded image                   |
 | `GET`    | `/admin/tenants/{tenant}/theme/preview`                                 | Preview a page of a tenant's draft theme   |
+| `GET`    | `/admin/tenants/{tenant}/mail/preview`                                  | Preview the verification mail              |
+| `GET`    | `/admin/tenants/{tenant}/mail/branding`                                 | Read the branding a mail inherits          |
 | `GET`    | `/admin/tenants/{tenant}/theme/versions`                                | List a tenant's theme versions             |
 | `POST`   | `/admin/tenants/{tenant}/theme/versions/:versionId/restore`             | Restore a tenant's earlier theme           |
 | `GET`    | `/admin/tenants/{tenant}/clients/:id/theme`                             | Read a client's draft and published theme  |

@@ -153,6 +153,13 @@ import {
   themeWarningSchema,
   publishThemeResponseSchema,
 } from '#/admin/theme';
+import {
+  mailBrandingViewSchema,
+  mailColoursSchema,
+  mailLogoSchema,
+  mailSchemeSchema,
+  previewMailQuerySchema,
+} from '#/admin/mail-preview';
 import { whoamiResponseSchema } from '#/admin/whoami';
 import {
   paletteSchema,
@@ -1151,6 +1158,42 @@ describeFields(previewThemeQuerySchema, {
   kind: 'The page to render, one of the kinds a theme has a template for; `sign-in` when left out.',
   scheme:
     'Render in the `light` or the `dark` palette; the viewer\u2019s own colour scheme when left out.',
+});
+describeFields(previewMailQuerySchema, {
+  kind: 'The mail to render; `verify-email`, the address-verification mail, when left out.',
+  scheme:
+    'Render in the `light` or the `dark` palette and logo. A mail client chooses by its own setting, so the preview fixes one; `light` when left out.',
+  locale:
+    'The language of the mail, one of the languages a mail catalogue exists for; the tenant\u2019s `default_locale`, then English, when left out.',
+});
+describeFields(mailBrandingViewSchema, {
+  light:
+    'The nine colours a mail is drawn in under a light scheme, and whether the tenant\u2019s published theme or Odudu\u2019s own supplies them.',
+  dark: 'The same under a dark scheme.',
+  logo: 'The logo in the mail\u2019s header, or null when the mail carries Odudu\u2019s own mark.',
+  dark_logo:
+    'The logo a dark scheme swaps in, or null when the light one is shown in both schemes.',
+});
+describeFields(mailSchemeSchema, {
+  source: '`tenant` when the published theme sets this scheme\u2019s palette, else `default`.',
+  colours: 'The colours as `#rrggbb`, which is how a mail client takes them.',
+});
+describeFields(mailColoursSchema, {
+  page: 'The background around the message.',
+  panel: 'The background of the message itself.',
+  sunken: 'The background of a code or an address shown inside it.',
+  border: 'The outline of the message and of what is shown inside it.',
+  ink: 'The text.',
+  muted: 'The quieter text of the footer and the notes.',
+  link: 'A link.',
+  button: 'The background of the button.',
+  button_ink: 'The text on the button.',
+});
+describeFields(mailLogoSchema, {
+  src: 'The absolute address a mail client fetches the image from, on this server\u2019s public origin.',
+  alt: 'The text a mail client shows where it does not load the image.',
+  width: 'The width in pixels the mail draws it at.',
+  height: 'The height in pixels the mail draws it at.',
 });
 describeFields(uploadThemeAssetQuerySchema, {
   kind: 'The slot the image is for, which sets its limits: `logo`, `darkLogo` and `favicon` at most 256 KiB and 1024 pixels on the longer side, `background` at most 1 MiB and 2560 pixels.',

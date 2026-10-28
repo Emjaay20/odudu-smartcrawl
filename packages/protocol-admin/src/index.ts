@@ -172,6 +172,7 @@ import {
 } from '#/view/routes/message-overrides';
 import { themeAssetHandlers, type ThemeAssetRouteDeps } from '#/view/routes/theme-assets';
 import { themePreviewHandler } from '#/view/routes/theme-preview';
+import { mailBrandingHandler, mailPreviewHandler } from '#/view/routes/mail-preview';
 import { type ThemePreviewDeps } from '#/usecase/theme-preview';
 import { exportTenantHandler, type TenantExportRouteDeps } from '#/view/routes/tenant-export';
 import { importTenantHandler, type TenantImportRouteDeps } from '#/view/routes/tenant-import';
@@ -549,6 +550,11 @@ function buildAdminRoutes(
     const previewDeps = { database: deps.database.db, pages: deps.themePreviewPages };
     const tenantPreview = themePreviewHandler(previewDeps, 'tenant');
     const clientPreview = themePreviewHandler(previewDeps, 'client');
+    const mailDeps = {
+      database: deps.database.db,
+      resolveMailBranding: deps.resolveMailBranding,
+      now: () => clock.now(),
+    };
     const clientsDeps: ClientsRouteDeps = {
       database: deps.database.db,
       cursorKey: deps.cursorKey,
@@ -716,6 +722,8 @@ function buildAdminRoutes(
       'POST /admin/tenants/:tenant/theme/assets': themeAssets.upload,
       'DELETE /admin/tenants/:tenant/theme/assets/:assetId': themeAssets.remove,
       'GET /admin/tenants/:tenant/theme/preview': tenantPreview,
+      'GET /admin/tenants/:tenant/mail/preview': mailPreviewHandler(mailDeps),
+      'GET /admin/tenants/:tenant/mail/branding': mailBrandingHandler(mailDeps),
       'GET /admin/tenants/:tenant/theme/versions': tenantTheme.versions,
       'POST /admin/tenants/:tenant/theme/versions/:versionId/restore': tenantTheme.restore,
       'GET /admin/tenants/:tenant/message-overrides':

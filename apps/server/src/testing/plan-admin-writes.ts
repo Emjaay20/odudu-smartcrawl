@@ -609,6 +609,8 @@ function assetCalls(T: string): [string, Call][] {
       },
     ],
     ['preview the draft that names the image', { method: 'GET', url: `${T}/theme/preview` }],
+    ['preview the verification mail', { method: 'GET', url: `${T}/mail/preview` }],
+    ['read the branding a mail inherits', { method: 'GET', url: `${T}/mail/branding` }],
     ['delete the image a draft names', { method: 'DELETE', url: `${T}/theme/assets/{asset}` }],
     ['reset the theme', { method: 'DELETE', url: `${T}/theme` }],
     ['delete the image', { method: 'DELETE', url: `${T}/theme/assets/{asset}` }],
