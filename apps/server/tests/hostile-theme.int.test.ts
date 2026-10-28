@@ -15,6 +15,7 @@ import {
   subjectRepository,
   userRepository,
 } from '@odudu/domain-identity';
+import { clients } from '@odudu/domain-tenant';
 import { assetRepository, themeRepository, type ThemeBody } from '@odudu/domain-theme';
 import { emailOutbox } from '@odudu/email';
 import { PAGE_KINDS, newId, type PageKind } from '@odudu/kernel';
@@ -24,7 +25,7 @@ import {
   startTestDatabase,
   type TestDatabase,
 } from '@odudu/testkit';
-import { desc, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import { type FastifyInstance, type LightMyRequestResponse } from 'fastify';
 import { parse } from 'parse5';
 import { pino } from 'pino';
@@ -649,10 +650,10 @@ function bodyOf(kind: PageKind, hostile: Hostile): ThemeBody {
   };
 }
 
-async function publish(w: World, body: ThemeBody): Promise<void> {
+async function publish(w: World, body: ThemeBody, clientId: string | null = null): Promise<void> {
   await withTenant(appDb.db, w.tenantId, async (tx) => {
     const themes = themeRepository(tx);
-    const scope = { tenantId: w.tenantId, clientId: null };
+    const scope = { tenantId: w.tenantId, clientId };
     await themes.saveDraft(scope, body, (await themes.draft(scope))?.etag ?? null);
     await themes.publish(scope);
   });
@@ -664,8 +665,12 @@ interface Run {
   final: LightMyRequestResponse;
 }
 
-async function run(kind: PageKind, w: World): Promise<Run> {
-  const flow = FLOWS[kind];
+async function run(
+  kind: PageKind,
+  w: World,
+  flows: Partial<Record<PageKind, Flow>> = FLOWS,
+): Promise<Run> {
+  const flow = flows[kind];
   if (flow === undefined) throw new Error(`no flow for ${kind}`);
   const pages: LightMyRequestResponse[] = [];
   const final = await flow(w, {
@@ -684,8 +689,12 @@ interface Baseline {
 
 // The flow as the default look runs it: what each page's form is, and how it
 // ends.
-async function controlOf(kind: PageKind, w: World): Promise<Baseline> {
-  const baseline = await run(kind, w);
+async function controlOf(
+  kind: PageKind,
+  w: World,
+  flows: Partial<Record<PageKind, Flow>> = FLOWS,
+): Promise<Baseline> {
+  const baseline = await run(kind, w, flows);
   expect(baseline.pages.length).toBeGreaterThan(0);
   expect([200, 201, 302]).toContain(baseline.final.statusCode);
   return {
@@ -817,4 +826,75 @@ describe('a nonce a page names is the one its script carries', () => {
       }
     }
   }, 120_000);
+});
+
+// A client's own theme is layered over the tenant's, so the same hostile
+// templates are held to the same account at that level. Logout wears the
+// client only for a hint that verified, so its flow carries one.
+describe('a hostile theme published for a client', () => {
+  const VERIFIER = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
+  const CLIENT_FLOWS: Partial<Record<PageKind, Flow>> = {
+    'sign-in': FLOWS['sign-in'],
+    consent: FLOWS.consent,
+    'logout-confirm': async (w, { themed }) => {
+      const user = await addUser(w);
+      const browser = new Browser();
+      const signedIn = await signInAs(w, user, browser);
+      const code = new URL(String(signedIn.headers.location)).searchParams.get('code') ?? '';
+      const token = await app.inject({
+        method: 'POST',
+        url: `/tenants/${w.name}/protocol/openid-connect/token`,
+        payload: new URLSearchParams({
+          grant_type: 'authorization_code',
+          code,
+          redirect_uri: REDIRECT_URI,
+          code_verifier: VERIFIER,
+          client_id: 'portal',
+        }).toString(),
+        headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      });
+      const hint = token.json<{ id_token: string }>().id_token;
+      const confirm = themed(
+        await browser.get(
+          `/tenants/${w.name}/protocol/openid-connect/logout?${new URLSearchParams({ id_token_hint: hint }).toString()}`,
+        ),
+      );
+      return browser.submit(confirm);
+    },
+  };
+  const SPOT = HOSTILE.filter((h) =>
+    ['ok', 'reordered', 'duplicated', 'form-tags', 'script', 'huge'].includes(h.name),
+  );
+
+  describe.each(Object.keys(CLIENT_FLOWS) as PageKind[])('%s', (kind) => {
+    let w: World;
+    let clientUuid: string;
+    let control: Baseline;
+
+    beforeAll(async () => {
+      w = await world();
+      const [row] = await owner.db
+        .select({ id: clients.id })
+        .from(clients)
+        .where(and(eq(clients.tenantId, w.tenantId), eq(clients.clientId, 'portal')));
+      clientUuid = row?.id ?? '';
+      control = await controlOf(kind, w, CLIENT_FLOWS);
+    }, 120_000);
+
+    it.each(SPOT.map((h) => [h.name, h] as const))(
+      'a %s template is refused or worn with the form intact',
+      async (_name, hostile) => {
+        await publish(w, bodyOf(kind, hostile), clientUuid);
+        const outcome = await run(kind, w, CLIENT_FLOWS);
+        expect(outcome.pages).toHaveLength(control.pages.length);
+        outcome.pages.forEach((page, index) => {
+          expectIntact(page, kind, w.name, control.pages[index] ?? { shape: '', scripts: 0 });
+        });
+        expect(signature(outcome.final)).toBe(control.final);
+        const worn = outcome.pages.some((page) => page.body.includes(`class="t-${hostile.name}"`));
+        expect(worn, 'worn exactly when the template is acceptable').toBe(!hostile.refused);
+      },
+      60_000,
+    );
+  });
 });
