@@ -90,6 +90,8 @@ export interface AdminFixture {
   readonly systemTenantId: string;
   /** The tenants whose cached themes the routes asked to drop, in order. */
   readonly invalidatedThemes: string[];
+  /** The tenants whose cached message overrides the routes asked to drop, in order. */
+  readonly invalidatedOverrides: string[];
 
   /** Creates a tenant, provisions its flow and its admin client, mints a key. */
   createTenant(name: string): Promise<{ id: string; name: string }>;
@@ -228,6 +230,8 @@ export interface AdminFixtureOptions {
   readonly auditReadTimeoutMs?: number;
   /** Which `{{t "key"}}` a theme template may name; the oidc catalogue's keys by default. */
   readonly themeMessageKeys?: (kind: PageKind, key: string) => boolean;
+  /** Which keys a message override may name; the oidc catalogue's keys by default. */
+  readonly messageKeys?: (key: string) => boolean;
   /** The image inspector an upload runs, where a test needs it refused or slow. */
   readonly inspectImage?: typeof inspectImage;
 }
@@ -257,6 +261,7 @@ export async function startAdminFixture(options: AdminFixtureOptions = {}): Prom
   // GET /scopes/:id/mappers can never list a name issuance itself would not
   // recognise.
   const invalidatedThemes: string[] = [];
+  const invalidatedOverrides: string[] = [];
   const claimMappers = standardClaimMappers();
   // Same request-id wiring as apps/server/src/app.ts, so an audit row's
   // request_id/ip can be tested here against a header this fixture actually
@@ -302,6 +307,18 @@ export async function startAdminFixture(options: AdminFixtureOptions = {}): Prom
           ...OIDC_PREVIEW_PAGES,
           ...AUTHN_PREVIEW_PAGES,
           ...ACCOUNT_PREVIEW_PAGES,
+        },
+        messageOverrides: {
+          isKnownKey: (key) => (options.messageKeys ?? isOidcMessageKey)(key),
+          // The real check parses the message syntax; a balanced-braces test is
+          // all a route-level test needs to see a refusal answered.
+          messageProblem: (message) =>
+            message.split('{').length === message.split('}').length
+              ? null
+              : 'is not a valid message',
+          invalidate: (tenantId) => {
+            invalidatedOverrides.push(tenantId);
+          },
         },
         isThemeMessageKey: (kind, key) =>
           (options.themeMessageKeys ?? defaultMessageKey)(kind, key),
@@ -913,6 +930,7 @@ export async function startAdminFixture(options: AdminFixtureOptions = {}): Prom
     clock,
     systemTenantId: systemTenant.id,
     invalidatedThemes,
+    invalidatedOverrides,
     createTenant,
     stop,
     adminToken,

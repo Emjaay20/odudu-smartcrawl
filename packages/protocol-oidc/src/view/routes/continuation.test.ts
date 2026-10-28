@@ -23,11 +23,11 @@ const PENDING: PendingRequest = {
 
 function deps(overrides: Partial<ContinuationDeps> = {}): ContinuationDeps {
   return {
-    findTenant: () => Promise.resolve({ id: 't1' }),
+    findTenant: () =>
+      Promise.resolve({ id: 't1', supportedLocales: ['en', 'fr', 'es'], defaultLocale: null }),
     loadPendingRequest: () => Promise.resolve(PENDING),
     recoverPendingRequest: () => Promise.resolve(PENDING),
     redirectStillRegistered: () => Promise.resolve(true),
-    pageLocales: ['en', 'fr', 'es'],
     subjectLocale: () => Promise.resolve('es'),
     authenticatedSubject: () => Promise.resolve('s1'),
     ...overrides,
@@ -82,6 +82,26 @@ describe('continuation', () => {
     expect(await localeFor(undefined, noPreference, { subject: 's1' })).toBe('es');
     expect(await localeFor(undefined, noPreference, 'authenticated')).toBe('es');
     expect(await localeFor(undefined, deps(), { subject: 's1' })).toBe('fr');
+  });
+
+  it('uses the tenant default after the subject and before Accept-Language', async () => {
+    const noPreference = deps({
+      loadPendingRequest: () => Promise.resolve({ ...PENDING, uiLocales: [] }),
+      findTenant: () =>
+        Promise.resolve({ id: 't1', supportedLocales: ['en', 'fr', 'es'], defaultLocale: 'fr' }),
+    });
+    expect(await localeFor('es', noPreference)).toBe('fr');
+    expect(await localeFor(undefined, noPreference)).toBe('fr');
+    expect(await localeFor(undefined, noPreference, { subject: 's1' })).toBe('es');
+  });
+
+  it('offers only what the tenant lists, whatever the browser asks for', async () => {
+    const englishOnly = deps({
+      loadPendingRequest: () => Promise.resolve({ ...PENDING, uiLocales: ['fr'] }),
+      findTenant: () =>
+        Promise.resolve({ id: 't1', supportedLocales: ['en'], defaultLocale: null }),
+    });
+    expect(await localeFor('fr', englishOnly)).toBe('en');
   });
 
   it('asks for no locale when no subject was bound', async () => {

@@ -202,6 +202,15 @@ describe('the locale settings', () => {
     });
   });
 
+  it('clears the default with an empty value, and accepts none in the record', () => {
+    expect(coerceTenantSetting('default_locale', '')).toEqual({
+      kind: 'coerced',
+      column: 'defaultLocale',
+      value: null,
+    });
+    expect(names({ supported_locales: ['en'], default_locale: null })).toEqual([]);
+  });
+
   it('accepts a list with a default drawn from it', () => {
     expect(names(settings(['en', 'fr', 'ar'], 'fr'))).toEqual([]);
   });

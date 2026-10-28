@@ -130,6 +130,10 @@ import {
   THEME_ASSET_BODY_LIMIT,
   previewThemeQuerySchema,
   THEME_BODY_LIMIT,
+  listMessageOverridesQuerySchema,
+  listMessageOverridesResponseSchema,
+  messageOverrideSchema,
+  putMessageOverrideRequestSchema,
   listThemeVersionsResponseSchema,
   themeAssetSchema,
   uploadThemeAssetQuerySchema,
@@ -887,6 +891,42 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
       'committed and in batches, as `PATCH /admin/tenants/{tenant}` does.',
   },
   ...themeRoutes('/admin/tenants/:tenant', 'manage-tenant', 'tenant'),
+  // A tenant's own wording for the messages its pages show, per language. The
+  // languages themselves are the `supported_locales` and `default_locale`
+  // settings above.
+  {
+    method: 'GET',
+    pattern: '/admin/tenants/:tenant/message-overrides',
+    capability: 'manage-tenant',
+    responseSchema: listMessageOverridesResponseSchema,
+    querystringSchema: listMessageOverridesQuerySchema,
+    description:
+      'The overrides of one `locale`, in key order. A tenant holds at most 500 across every ' +
+      'locale, so a locale is listed in at most three pages of 200.',
+  },
+  {
+    method: 'PUT',
+    pattern: '/admin/tenants/:tenant/message-overrides/:locale/:key',
+    capability: 'manage-tenant',
+    responseSchema: messageOverrideSchema,
+    bodySchema: putMessageOverrideRequestSchema,
+    description:
+      'Sets the text a page shows in `locale` for the message `key`, replacing any earlier ' +
+      'one. `key` must be the key of a page message, such as `login.title`, else `400`; the ' +
+      'text is checked as a message, so an unbalanced brace is refused with `400`. Markup in ' +
+      'it is shown as text, never rendered. `409` (`about:blank#message-overrides-full`) when ' +
+      'the tenant already holds 500, though changing one that exists is always allowed. ' +
+      'Pages in this process show the change at once; another replica shows the previous text ' +
+      'for at most 30 seconds, the lifetime of its cache.',
+  },
+  {
+    method: 'DELETE',
+    pattern: '/admin/tenants/:tenant/message-overrides/:locale/:key',
+    capability: 'manage-tenant',
+    responseSchema: z.void(),
+    successStatus: 204,
+    description: 'Removes the override, so the page shows the catalogue\u2019s text again.',
+  },
   {
     method: 'POST',
     pattern: '/admin/tenants/:tenant/theme/assets',

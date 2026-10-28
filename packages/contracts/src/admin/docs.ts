@@ -130,6 +130,12 @@ import {
   tenantSettingsDocumentSchema,
 } from '#/admin/tenant-document';
 import {
+  listMessageOverridesQuerySchema,
+  listMessageOverridesResponseSchema,
+  messageOverrideSchema,
+  putMessageOverrideRequestSchema,
+} from '#/admin/message-overrides';
+import {
   countTenantsQuerySchema,
   createTenantRequestSchema,
   listTenantsQuerySchema,
@@ -1138,6 +1144,24 @@ describeFields(themeAssetSchema, {
 });
 describeFields(listThemeVersionsResponseSchema, {
   items: 'At most 20 versions, newest first, without their bodies.',
+});
+
+describeFields(messageOverrideSchema, {
+  locale: 'The language tag the text is for, spelled `fr`, `fr-CA` or `zh-Hant-TW`.',
+  key: 'The key of the page message it replaces, such as `login.title`.',
+  message:
+    'The text shown in place of the catalogue’s. Placeholders such as `{name}` and plural arms are kept; markup is shown as text, never rendered.',
+  updated_at: 'When the override was last written.',
+});
+describeFields(putMessageOverrideRequestSchema, {
+  message:
+    'The replacement text, 1 to 2,000 characters. It may use the placeholders the catalogue message uses; a placeholder a page does not supply makes the page show the catalogue’s text instead.',
+});
+describeFields(listMessageOverridesQuerySchema, {
+  locale: 'The language tag whose overrides to list.',
+});
+describeFields(listMessageOverridesResponseSchema, {
+  items: 'The overrides of the locale in key order.',
 });
 
 // Words for a field of this name wherever it appears and nothing says otherwise.

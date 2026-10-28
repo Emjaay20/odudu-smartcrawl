@@ -110,6 +110,8 @@ export const ADMIN_MUTATION_ACTION_DOCS: Record<AdminMutationAction, string> = {
   'key.delete': 'A retired signing key was deleted.',
   'key.promote': 'A signing key was made the active one.',
   'key.retire': 'A signing key was retired.',
+  'message_override.delete': 'A tenant’s own text for a page message was removed.',
+  'message_override.set': 'A tenant’s own text for a page message was set or changed.',
   'registration_token.mint': 'An initial access token for dynamic client registration was minted.',
   'registration_token.revoke': 'A registration token was revoked.',
   'role.amend': 'A role was amended.',

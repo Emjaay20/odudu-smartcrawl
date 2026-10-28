@@ -48,6 +48,8 @@ import { brandedLocale, type BrandedLocaleDeps } from '#/view/request-locale';
 
 export interface ActionTokenTenantLookup {
   readonly id: string;
+  readonly supportedLocales: readonly string[];
+  readonly defaultLocale: string | null;
   readonly enabled: boolean;
   // The kill switch: an operator who turns this off during an incident
   // means every outstanding reset-password link to stop working too, not
@@ -67,8 +69,6 @@ export type IssuerSource = Pick<FastifyRequest, 'protocol' | 'host'> & {
 };
 
 export interface ActionTokenRouteDeps extends BrandedLocaleDeps {
-  // The tags a page can be shown in; defaults to what the server ships.
-  pageLocales?: readonly string[];
   readonly database: DatabaseHandle;
   readonly findTenant: (name: string) => Promise<ActionTokenTenantLookup | null>;
   readonly getCurrentEmail: (tx: TenantScopedDatabase, subjectId: string) => Promise<string | null>;
@@ -319,7 +319,14 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
     const locale = await brandedLocale(
       request,
       deps,
-      tenant === null ? null : { id: tenant.id, name: request.params.tenant },
+      tenant === null
+        ? null
+        : {
+            id: tenant.id,
+            name: request.params.tenant,
+            supportedLocales: tenant.supportedLocales,
+            defaultLocale: tenant.defaultLocale,
+          },
     );
 
     // A disabled tenant refuses here the same way it refuses at /token,
@@ -434,7 +441,14 @@ export function registerActionTokenRoute(app: FastifyInstance, deps: ActionToken
     const locale = await brandedLocale(
       request,
       deps,
-      tenant === null ? null : { id: tenant.id, name: request.params.tenant },
+      tenant === null
+        ? null
+        : {
+            id: tenant.id,
+            name: request.params.tenant,
+            supportedLocales: tenant.supportedLocales,
+            defaultLocale: tenant.defaultLocale,
+          },
     );
 
     if (key === undefined || !tenant?.enabled) {

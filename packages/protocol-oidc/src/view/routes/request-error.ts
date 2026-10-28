@@ -9,7 +9,7 @@ import { brandedRequestLocale, type ContinuationDeps } from '#/view/routes/conti
 // sentence is the catalogue's, in the language the browser asked for.
 export async function sendRequestError(
   reply: FastifyReply,
-  deps: Pick<ContinuationDeps, 'findTenant' | 'pageLocales' | 'resolveBranding'>,
+  deps: Pick<ContinuationDeps, 'findTenant' | 'resolveBranding' | 'resolveOverrides'>,
   tenantName: string,
   status: number,
   messageId: MessageId,

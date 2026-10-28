@@ -1,6 +1,6 @@
 import { clearedSessionCookies } from '@odudu/authn-flows';
 import { requestContextFrom } from '@odudu/domain-audit';
-import { type BrandingResolver, type PageLocale } from '@odudu/kernel';
+import { type BrandingResolver, type OverridesResolver, type PageLocale } from '@odudu/kernel';
 import { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import {
   handleLogoutConfirmation,
@@ -29,8 +29,8 @@ const PATH = '/tenants/:tenant/protocol/openid-connect/logout';
 
 export interface LogoutRouteDeps extends LogoutUsecaseDeps {
   tls: boolean;
-  pageLocales?: readonly string[];
   resolveBranding?: BrandingResolver;
+  resolveOverrides?: OverridesResolver;
 }
 
 // A parameter sent twice arrives as an array, and is dropped rather than
@@ -48,7 +48,7 @@ async function respondToOutcome(
   tenant: string,
   tls: boolean,
   reply: FastifyReply,
-  deps: Pick<ContinuationDeps, 'findTenant' | 'pageLocales' | 'resolveBranding'>,
+  deps: Pick<ContinuationDeps, 'findTenant' | 'resolveBranding' | 'resolveOverrides'>,
 ): Promise<FastifyReply> {
   // Asked for only by a branch that renders a page: a redirect has none. A
   // client's theme is worn only where the outcome says a hint verified it.

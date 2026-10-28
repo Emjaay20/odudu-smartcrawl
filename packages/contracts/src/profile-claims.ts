@@ -16,6 +16,9 @@ const ZONEINFO = /^[A-Za-z][A-Za-z0-9_+-]*(\/[A-Za-z0-9_+-]+)*$/u;
 // an optional 2-letter region or 3-digit region subtag.
 const LOCALE = /^[A-Za-z]{2,3}(-[A-Za-z]{4})?(-([A-Za-z]{2}|[0-9]{3}))?$/u;
 
+// The same shape as a pattern a published schema can carry.
+export const LOCALE_PATTERN = LOCALE.source;
+
 // profile, picture and website are rendered as links by consumers, so they
 // are constrained to the schemes a link can safely use.
 const HTTP_URL = /^https?:\/\//u;

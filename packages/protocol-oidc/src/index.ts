@@ -44,10 +44,10 @@ import {
   clientScopeRepository,
   consentRepository,
 } from '@odudu/domain-tenant';
-import { SHIPPED_LOCALES } from '@odudu/i18n';
 import {
   systemClock,
   type BrandingResolver,
+  type OverridesResolver,
   type ClaimMapperRegistry,
   type Clock,
 } from '@odudu/kernel';
@@ -153,15 +153,13 @@ export interface OidcRoutesDeps {
   // name, so this is never a constant. Defaults to the same value the
   // kernel config schema does.
   tlsClientCertHeader?: string;
-  // The tags the server's pages can be shown in: what negotiation matches a
-  // request's preference against and what discovery advertises as
-  // `ui_locales_supported`, so the two cannot disagree. Defaults to the
-  // locales the server ships.
-  pageLocales?: readonly string[];
   // How a page asks for its tenant's or client's theme; the server wires the
   // theme package's resolver here because protocol packages cannot import it.
   // None means every page is the default.
   resolveBranding?: BrandingResolver;
+  // The tenant's own wording for the language a page is shown in; the server
+  // wires the reader here. None means every page reads the catalogue alone.
+  resolveOverrides?: OverridesResolver;
 }
 
 // The plugin apps/server registers. Discovery and JWKS both read the
@@ -330,9 +328,10 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
     // party id comes from ODUDU_PUBLIC_BASE_URL and nowhere else, so
     // without it there is nothing behind one.
     const passkeyLogin = { passkeyLogin: deps.publicBaseUrl !== undefined };
-    const pageLocales = deps.pageLocales ?? SHIPPED_LOCALES;
-    const branding =
-      deps.resolveBranding === undefined ? {} : { resolveBranding: deps.resolveBranding };
+    const branding = {
+      ...(deps.resolveBranding === undefined ? {} : { resolveBranding: deps.resolveBranding }),
+      ...(deps.resolveOverrides === undefined ? {} : { resolveOverrides: deps.resolveOverrides }),
+    };
     // Read only for a page shown after the first factor was verified, and
     // through the tenant context like every other tenant row.
     const subjectLocale = (tenantId: string, subjectId: string) =>
@@ -495,7 +494,6 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
       userinfoEncryptionAlgSupported: JWE_ALGS_PERMITTED,
       userinfoEncryptionEncSupported: USERINFO_ENCRYPTION_ENCS_PERMITTED,
       trustProxy: deps.trustProxy ?? false,
-      uiLocalesSupported: pageLocales,
     });
     registerJwksRoute(app, { findTenant, listPublishableKeys });
     // Introspection's two grant/session reads, resolved here rather than in
@@ -682,7 +680,6 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
       clientName,
       tls,
       ...passkeyLogin,
-      pageLocales,
       ...branding,
       subjectLocale,
       listPublishableKeys,
@@ -789,7 +786,6 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
       authenticatedSubject: authenticatedSubjectOf,
       tls,
       ...passkeyLogin,
-      pageLocales,
       ...branding,
       subjectLocale,
       beginTotpEnrolment: startTotpEnrolment,
@@ -876,7 +872,6 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
       beginTotpEnrolment: startTotpEnrolment,
       beginRecoveryCodes: startRecoveryCodes,
       ...passkeyEnrolment,
-      pageLocales,
       ...branding,
       subjectLocale,
       resolveClientId,
@@ -891,7 +886,6 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
     registerLogoutRoute(app, {
       findTenant,
       tls,
-      pageLocales,
       ...branding,
       listPublishableKeys,
       now: () => clock.now(),

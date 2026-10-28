@@ -468,3 +468,17 @@ export {
   type ThemeView,
   type UploadThemeAssetQuery,
 } from '#/admin/theme';
+export {
+  MESSAGE_OVERRIDE_LIMIT,
+  MESSAGE_OVERRIDE_MAX_LENGTH,
+  listMessageOverridesQuerySchema,
+  listMessageOverridesResponseSchema,
+  messageOverrideKeySchema,
+  messageOverrideLocaleSchema,
+  messageOverrideSchema,
+  putMessageOverrideRequestSchema,
+  type ListMessageOverridesQuery,
+  type ListMessageOverridesResponse,
+  type MessageOverride,
+  type PutMessageOverrideRequest,
+} from '#/admin/message-overrides';

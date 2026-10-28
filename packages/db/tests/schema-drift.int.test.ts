@@ -159,7 +159,8 @@ const EXPECTED_CHECKS: Record<string, string> = {
   'client_oidc_config.client_oidc_config_default_max_age_range': 'CHECK ((default_max_age >= 0))',
   'clients.clients_previous_secret_pair':
     'CHECK (((previous_secret_hash IS NULL) = (previous_secret_expires_at IS NULL)))',
-  'tenants.tenants_default_locale_supported': 'CHECK ((default_locale = ANY (supported_locales)))',
+  'tenants.tenants_default_locale_supported':
+    'CHECK (((default_locale IS NULL) OR (default_locale = ANY (supported_locales))))',
   'tenants.tenants_supported_locales_bounds':
     'CHECK (((cardinality(supported_locales) >= 1) AND (cardinality(supported_locales) <= 32)))',
   'message_overrides.message_overrides_key_length':

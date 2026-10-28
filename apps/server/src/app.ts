@@ -17,11 +17,13 @@ import {
 } from '@odudu/account';
 import { type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
 import { createBranding, type Branding } from '#/branding';
-import { isThemeMessageKey } from '#/theme-message-keys';
+import { createDatabaseMessageOverrides, type MessageOverrides } from '#/message-overrides';
+import { isOverridableMessageKey, isThemeMessageKey } from '#/theme-message-keys';
 import { THEME_PREVIEW_PAGES } from '#/theme-preview-pages';
 import { brandRoutes, frameworkError } from '#/brand-routes';
 import { requiredActionRepository } from '@odudu/authn-flows';
 import { consoleGateway } from '@odudu/console-gateway';
+import { overrideProblem } from '@odudu/i18n';
 import { instrumentRoutes } from '@odudu/instrument';
 import {
   credentialRepository,
@@ -97,6 +99,7 @@ export interface AppDeps {
   // How pages get their theme; a test passes its own. Defaults to the
   // process's resolver over `database`.
   readonly branding?: Branding;
+  readonly messageOverrides?: MessageOverrides;
   /**
    * The base a mailed verification link is built from, and the only source
    * of the WebAuthn relying party id — never derived from a request, since
@@ -498,10 +501,18 @@ export function buildApp(deps: AppDeps): FastifyInstance {
       logger: deps.logger,
       publicBaseUrl: deps.publicBaseUrl,
     });
+  const messageOverrides =
+    deps.messageOverrides ??
+    createDatabaseMessageOverrides({ database: deps.database, logger: deps.logger });
   app.register(
     adminRoutes({
       invalidateTheme: branding.invalidateTenant,
       isThemeMessageKey,
+      messageOverrides: {
+        isKnownKey: isOverridableMessageKey,
+        messageProblem: overrideProblem,
+        invalidate: messageOverrides.invalidateTenant,
+      },
       themePreviewPages: THEME_PREVIEW_PAGES,
       database: deps.database,
       ownerDatabase: deps.ownerDatabase,
@@ -535,6 +546,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   app.register(
     oidcRoutes({
       resolveBranding: branding.resolveBranding,
+      resolveOverrides: messageOverrides.resolveOverrides,
       database: deps.database,
       ownerDatabase: deps.ownerDatabase,
       kek: deps.kek,
@@ -561,6 +573,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
 
   const themed = {
     resolveBranding: branding.resolveBranding,
+    resolveOverrides: messageOverrides.resolveOverrides,
     isClientOfTenant: branding.isClientOfTenant,
   };
 

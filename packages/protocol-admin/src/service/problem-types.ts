@@ -119,6 +119,12 @@ export const ADMIN_PROBLEM_TYPES: Readonly<Record<string, AdminProblemType>> = {
       'The tenant was disabled, but ending its sessions did not finish. Repeat the request to ' +
       'finish it.',
   },
+  'message-overrides-full': {
+    status: 409,
+    summary:
+      'The tenant already holds 500 message overrides, across every locale, and this one would ' +
+      'be the 501st. Delete one first; changing an override that exists is always allowed.',
+  },
   'asset-in-use': {
     status: 409,
     summary:

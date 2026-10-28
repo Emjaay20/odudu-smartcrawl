@@ -53,6 +53,8 @@ export const SETTINGS = {
     'token',
     'credential',
   ],
+  supported_locales: ['en'],
+  default_locale: null,
 };
 
 export function settingsAnswer(changes: Record<string, unknown> = {}, etag = '"s1"'): Answer {

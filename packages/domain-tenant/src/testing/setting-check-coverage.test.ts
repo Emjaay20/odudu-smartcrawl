@@ -30,7 +30,7 @@ const CURRENT = [
   'CHECK ((sso_session_idle_seconds <= sso_session_max_seconds))',
   "CHECK (((audit_event_types @> ARRAY['admin_mutation'::text, 'admin_access'::text]) AND (audit_event_types <@ ARRAY['admin_mutation'::text, 'admin_access'::text, 'authentication'::text, 'session'::text, 'token'::text, 'credential'::text])))",
   'CHECK (((cardinality(supported_locales) >= 1) AND (cardinality(supported_locales) <= 32)))',
-  'CHECK ((default_locale = ANY (supported_locales)))',
+  'CHECK (((default_locale IS NULL) OR (default_locale = ANY (supported_locales))))',
 ];
 
 describe('readSettingCheck', () => {

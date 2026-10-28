@@ -1,12 +1,13 @@
--- The languages a tenant's pages are offered in, and the one used when a
--- request names none. A tenant that never set them keeps English only.
+-- The languages a tenant's pages are offered in, and the one used before the
+-- browser's preference when it has set one. A tenant that never set them keeps
+-- English only and lets the browser decide.
 ALTER TABLE tenants
   ADD COLUMN supported_locales text[] NOT NULL DEFAULT ARRAY['en'],
-  ADD COLUMN default_locale text NOT NULL DEFAULT 'en',
+  ADD COLUMN default_locale text,
   ADD CONSTRAINT tenants_supported_locales_bounds
     CHECK (cardinality(supported_locales) BETWEEN 1 AND 32),
   ADD CONSTRAINT tenants_default_locale_supported
-    CHECK (default_locale = ANY (supported_locales));
+    CHECK (default_locale IS NULL OR default_locale = ANY (supported_locales));
 
 -- A tenant's own text for one catalogue key in one locale. The count per
 -- tenant is bounded by the repository, which serialises writers per tenant.

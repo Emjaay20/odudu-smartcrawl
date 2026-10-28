@@ -16,6 +16,7 @@ export {
   isValidE164,
   isValidLocale,
   isValidProfileUrl,
+  LOCALE_PATTERN,
   isValidZoneinfo,
 } from '#/profile-claims';
 export {

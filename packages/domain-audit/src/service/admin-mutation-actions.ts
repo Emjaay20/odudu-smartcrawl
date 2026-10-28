@@ -23,6 +23,8 @@ export const ADMIN_MUTATION_ACTIONS = [
   'key.delete',
   'key.promote',
   'key.retire',
+  'message_override.delete',
+  'message_override.set',
   'registration_token.mint',
   'registration_token.revoke',
   'role.amend',

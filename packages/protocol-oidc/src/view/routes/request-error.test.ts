@@ -14,7 +14,10 @@ vi.mock('#/view/messages', async (importOriginal) => {
 
 async function answer(acceptLanguage?: string) {
   const app = Fastify();
-  const deps = { pageLocales: ['en', 'fr'], findTenant: () => Promise.resolve(null) };
+  const deps = {
+    findTenant: () =>
+      Promise.resolve({ id: 't1', supportedLocales: ['en', 'fr'], defaultLocale: null }),
+  };
   app.get('/p', (_request, reply) =>
     sendRequestError(reply, deps, 'acme', 400, 'error.unknownTenant'),
   );

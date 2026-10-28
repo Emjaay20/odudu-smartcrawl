@@ -102,7 +102,7 @@ export const TENANT_SETTING_COLUMNS: readonly TenantSettingColumn[] = Object.ent
 );
 
 export type CoerceOutcome =
-  | { kind: 'coerced'; column: TenantColumn; value: TenantSettingValue }
+  | { kind: 'coerced'; column: TenantColumn; value: TenantSettingValue | null }
   | { kind: 'unknown_setting'; known: readonly string[] }
   | {
       kind: 'invalid_value';
@@ -179,11 +179,15 @@ export function coerceTenantSetting(name: string, raw: string | readonly string[
     if (values !== undefined && !values.includes(raw)) {
       return { kind: 'invalid_value', expected: 'text', values };
     }
-    return {
-      kind: 'coerced',
-      column: setting.column,
-      value: setting.locales === true ? (canonicalLocale(raw) ?? raw) : raw,
-    };
+    if (setting.locales === true) {
+      // Empty clears the setting, so the browser's preference decides again.
+      return {
+        kind: 'coerced',
+        column: setting.column,
+        value: raw.trim() === '' ? null : (canonicalLocale(raw.trim()) ?? raw),
+      };
+    }
+    return { kind: 'coerced', column: setting.column, value: raw };
   }
   const value = setting.type === 'boolean' ? coerceBoolean(raw) : coerceInteger(raw);
   return value === null

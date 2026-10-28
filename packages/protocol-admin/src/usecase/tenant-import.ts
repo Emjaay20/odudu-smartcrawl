@@ -127,7 +127,7 @@ async function writeSettings(
     ...document.settings,
     ...document.registration_policy,
   };
-  const columns: Record<string, TenantSettingValue> = {};
+  const columns: Record<string, TenantSettingValue | null> = {};
   for (const { name, column } of TENANT_SETTING_COLUMNS) {
     const value = values[name];
     if (typeof value === 'boolean' || typeof value === 'number' || typeof value === 'string') {

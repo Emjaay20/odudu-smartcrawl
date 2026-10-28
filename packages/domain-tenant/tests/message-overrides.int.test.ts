@@ -99,8 +99,8 @@ describe('put', () => {
     });
     expect(await put(tenantId, 'es', 'login.title')).toBe('over_bound');
     expect(await put(tenantId, 'fr', 'bulk.0', 'changed')).toBe('ok');
-    const count = await owner.db
-      .$client`select count(*)::int as n from message_overrides where tenant_id = ${tenantId}`;
+    const count =
+      await owner.sql`select count(*)::int as n from message_overrides where tenant_id = ${tenantId}`;
     expect(count[0]?.n).toBe(MAX_MESSAGE_OVERRIDES);
   });
 
@@ -116,8 +116,8 @@ describe('put', () => {
     );
     expect(outcomes.filter((outcome) => outcome === 'ok')).toHaveLength(2);
     expect(outcomes.filter((outcome) => outcome === 'over_bound')).toHaveLength(4);
-    const count = await owner.db
-      .$client`select count(*)::int as n from message_overrides where tenant_id = ${tenantId}`;
+    const count =
+      await owner.sql`select count(*)::int as n from message_overrides where tenant_id = ${tenantId}`;
     expect(count[0]?.n).toBe(MAX_MESSAGE_OVERRIDES);
   });
 
@@ -144,6 +144,23 @@ describe('put', () => {
     expect(held['login.title']).toBe('<script>alert(1)</script>');
     await expect(put(tenantId, 'en', 'login.submit', '')).rejects.toThrow();
     await expect(put(tenantId, 'en', 'login.submit', 'x'.repeat(2001))).rejects.toThrow();
+  });
+});
+
+describe('get', () => {
+  it('reads one override, under the locale spelled canonically', async () => {
+    const tenantId = await newTenant();
+    await put(tenantId, 'fr-CA', 'login.title', 'Allô');
+    const read = (locale: string, key: string) =>
+      withTenant(app.db, tenantId, (tx) => repo(tx).get(tenantId, locale, key));
+    expect(await read('FR-ca', 'login.title')).toMatchObject({
+      locale: 'fr-CA',
+      key: 'login.title',
+      message: 'Allô',
+    });
+    expect(await read('fr-CA', 'login.submit')).toBeNull();
+    expect(await read('de', 'login.title')).toBeNull();
+    expect(await read('not a tag', 'login.title')).toBeNull();
   });
 });
 
@@ -222,9 +239,10 @@ describe('another tenant', () => {
       attempt: async (tx, tenantId) => ({
         listed: await repo(tx).list(tenantId, 'fr', { limit: 10 }),
         rendered: await repo(tx).forRender(tenantId, 'fr'),
+        one: await repo(tx).get(tenantId, 'fr', 'login.title'),
       }),
       expectBlocked: (result) => {
-        expect(result).toEqual({ listed: [], rendered: {} });
+        expect(result).toEqual({ listed: [], rendered: {}, one: null });
       },
     });
   });

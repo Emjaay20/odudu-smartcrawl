@@ -14,6 +14,8 @@ import { brandedLocale, type BrandedLocaleDeps } from '#/view/request-locale';
 
 export interface ResetPasswordTenantLookup {
   readonly id: string;
+  readonly supportedLocales: readonly string[];
+  readonly defaultLocale: string | null;
   readonly name: string;
   readonly displayName: string | null;
   readonly enabled: boolean;
@@ -21,8 +23,6 @@ export interface ResetPasswordTenantLookup {
 }
 
 export interface ResetPasswordRouteDeps extends BrandedLocaleDeps {
-  // The tags a page can be shown in; defaults to what the server ships.
-  pageLocales?: readonly string[];
   readonly database: DatabaseHandle;
   readonly findTenant: (name: string) => Promise<ResetPasswordTenantLookup | null>;
   // Operator configuration (ODUDU_PUBLIC_BASE_URL), never anything read off

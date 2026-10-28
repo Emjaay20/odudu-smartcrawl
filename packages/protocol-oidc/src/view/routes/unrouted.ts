@@ -7,7 +7,6 @@ import { renderServerErrorPage } from '#/view/server-error-html';
 
 export interface UnroutedDeps {
   readonly links: NotFoundLinks;
-  readonly pageLocales?: readonly string[] | undefined;
 }
 
 // A request id the client chose arrives through `x-request-id`, so only one
@@ -48,7 +47,7 @@ export function answerNotFound(
       return sendHtml(
         reply.header('vary', VARY_PAGE),
         404,
-        renderNotFoundPage(deps.links, requestLocale(reply, deps)),
+        renderNotFoundPage(deps.links, requestLocale(reply)),
       );
     } catch {
       // A page that cannot be drawn is still a 404: the problem document below.
@@ -94,7 +93,7 @@ export function answerServerError(
       return sendHtml(
         reply.header('vary', VARY_PAGE),
         500,
-        renderServerErrorPage(id, requestLocale(reply, deps)),
+        renderServerErrorPage(id, requestLocale(reply)),
       );
     } catch {
       // The renderer failed: answer with the fixed document, never the message.
