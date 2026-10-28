@@ -164,6 +164,24 @@ describe('get', () => {
   });
 });
 
+describe('all', () => {
+  it('reads every override of the tenant in locale and key order, and no one else’s', async () => {
+    const tenantId = await newTenant();
+    const other = await newTenant();
+    await put(tenantId, 'fr', 'login.title');
+    await put(tenantId, 'de', 'login.submit');
+    await put(tenantId, 'de', 'login.title');
+    await put(other, 'de', 'consent.title');
+    const rows = await withTenant(app.db, tenantId, (tx) => repo(tx).all(tenantId));
+    expect(rows.map((row) => `${row.locale}/${row.key}`)).toEqual([
+      'de/login.submit',
+      'de/login.title',
+      'fr/login.title',
+    ]);
+    expect(await withTenant(app.db, other, (tx) => repo(tx).all(tenantId))).toEqual([]);
+  });
+});
+
 describe('list', () => {
   it('pages by key under MAX_LIMIT and never returns another locale', async () => {
     const tenantId = await newTenant();

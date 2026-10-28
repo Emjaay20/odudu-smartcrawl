@@ -30,6 +30,7 @@ import {
   coerceTenantSetting,
   type TenantSettingValue,
   tenantSettingsRepository,
+  messageOverrideRepository,
   normalizeDisplayName,
 } from '@odudu/domain-tenant';
 import { newId } from '@odudu/kernel';
@@ -71,6 +72,10 @@ export interface ImportTenantDeps {
   readonly consoleClientJwks?: ClientJwks | undefined;
   readonly hashClientSecret: (secret: string) => Promise<string>;
   readonly tlsClientAuthEnabled: boolean;
+  readonly messageOverrides: {
+    readonly isKnownKey: (key: string) => boolean;
+    readonly messageProblem: (message: string) => string | null;
+  };
   readonly claimMappers: MapperCatalogue;
   /** Through the owner connection: under row-level security no tenant sees another's name. */
   readonly tenantNameTaken: (name: string) => Promise<boolean>;
@@ -413,6 +418,15 @@ async function writeDocument(
       starttls: document.smtp.starttls,
     });
   }
+  const overrides = messageOverrideRepository(tx, {
+    isKnownKey: deps.messageOverrides.isKnownKey,
+  });
+  for (const override of document.message_overrides) {
+    const outcome = await overrides.put({ tenantId, ...override });
+    if (outcome !== 'ok') {
+      throw new Error(`tenant import: a validated message override was refused: ${outcome}`);
+    }
+  }
   await writeSubjects(tx, tenantId, document, roleIds, groupIds);
   return secrets;
 }
@@ -434,6 +448,8 @@ export async function importTenant(
     knownAuthenticators: registeredAuthenticatorNames(),
     tlsClientAuthEnabled: deps.tlsClientAuthEnabled,
     callerCapabilities: input.callerCapabilities,
+    isKnownMessageKey: deps.messageOverrides.isKnownKey,
+    messageProblem: deps.messageOverrides.messageProblem,
   });
   if (validated.kind === 'invalid') return validated;
   if (await deps.tenantNameTaken(input.name)) return { kind: 'name_taken' };

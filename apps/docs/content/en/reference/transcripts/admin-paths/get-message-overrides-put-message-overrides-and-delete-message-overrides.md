@@ -38,6 +38,10 @@ languages a tenant offers, and which one it prefers to the browser's, are the
 - `DELETE /message-overrides/{locale}/{key}` answers `204`, or `404` when there is
   none, and the page shows the catalogue's text again.
 
+A tenant may offer a language through overrides alone: its pages then render
+with `lang` set to that tag and English text for every key it has not
+overridden, since the catalogue holds no other text for it.
+
 A write takes effect on the next page this process renders; another replica shows
 the previous text for at most 30 seconds, the lifetime of its cache. Each write
 is audited as `message_override.set` or `message_override.delete` with the locale

@@ -84,6 +84,22 @@ export function messageOverrideRepository(tx: TenantScopedDatabase, deps: Messag
       return row ?? null;
     },
 
+    // Every override the tenant holds, in locale and key order: at most
+    // MAX_MESSAGE_OVERRIDES rows, by the primary key. What an export carries.
+    async all(tenantId: string): Promise<MessageOverrideRecord[]> {
+      return tx
+        .select({
+          locale: messageOverrides.locale,
+          key: messageOverrides.key,
+          message: messageOverrides.message,
+          updatedAt: messageOverrides.updatedAt,
+        })
+        .from(messageOverrides)
+        .where(eq(messageOverrides.tenantId, tenantId))
+        .orderBy(asc(messageOverrides.locale), asc(messageOverrides.key))
+        .limit(MAX_MESSAGE_OVERRIDES);
+    },
+
     // Every override of one locale as a key-to-message map, which a page
     // render reads: at most MAX_MESSAGE_OVERRIDES rows, by the primary key.
     async forRender(tenantId: string, locale: string): Promise<Record<string, string>> {

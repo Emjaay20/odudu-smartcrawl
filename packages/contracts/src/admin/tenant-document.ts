@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { exportedMessageOverrideSchema, MESSAGE_OVERRIDE_LIMIT } from '#/admin/message-overrides';
 import { noBidiControls } from '#/bidi';
 import { clientTypeSchema, registrationOriginSchema } from '#/admin/clients';
 import { executionRequirementSchema } from '#/admin/flow';
@@ -84,8 +85,10 @@ export const tenantSettingsDocumentSchema = z.strictObject({
   reset_password_ttl_seconds: count,
   login_with_email: z.boolean(),
   audit_event_types: z.array(z.string()),
-  supported_locales: z.array(z.string()),
-  default_locale: z.string().nullable(),
+  // Absent from a document exported before tenants had languages, which
+  // imports as English only with no default.
+  supported_locales: z.array(z.string()).default(['en']),
+  default_locale: z.string().nullable().default(null),
 });
 export type TenantSettingsDocument = z.infer<typeof tenantSettingsDocumentSchema>;
 
@@ -239,6 +242,14 @@ export const tenantDocumentSchema = z.strictObject({
   scopes: z.array(exportedScopeSchema),
   registration_policy: registrationPolicySchema,
   smtp: exportedSmtpSchema.nullable(),
+  // Absent from a document exported before overrides existed: none.
+  message_overrides: z
+    .array(exportedMessageOverrideSchema)
+    .max(MESSAGE_OVERRIDE_LIMIT, {
+      error: (issue) =>
+        `${Array.isArray(issue.input) ? String(issue.input.length) : 'too many'} entries, at most ${String(MESSAGE_OVERRIDE_LIMIT)}`,
+    })
+    .default([]),
   subjects: z.array(exportedSubjectSchema).optional(),
   // The JSON path of each secret a consumer would expect and the document
   // deliberately leaves out, such as `clients[2].secret`, or of a key it

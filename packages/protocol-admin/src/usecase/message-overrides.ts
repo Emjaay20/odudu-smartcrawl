@@ -1,4 +1,5 @@
 import { type ListMessageOverridesQuery, type MessageOverride } from '@odudu/contracts/admin';
+import { canonicalLocale } from '@odudu/contracts';
 import { type TenantScopedDatabase } from '@odudu/db';
 import { messageOverrideRepository, type MessageOverrideRecord } from '@odudu/domain-tenant';
 import { decodeCursor, encodeCursor, filterDigest } from '#/service/cursor';
@@ -152,21 +153,22 @@ export async function deleteMessageOverride(
   tx: TenantScopedDatabase,
   input: DeleteMessageOverrideInput,
 ): Promise<DeleteMessageOverrideOutcome> {
+  const locale = canonicalLocale(input.locale) ?? input.locale;
   const removed = await messageOverrideRepository(tx, { isKnownKey: deps.isKnownKey }).delete(
     input.tenantId,
-    input.locale,
+    locale,
     input.key,
   );
   if (!removed) return { kind: 'not_found' };
   await deps.audit(tx, {
     action: 'message_override.delete',
     resourceType: 'message_override',
-    resourceId: `${input.locale}/${input.key}`,
+    resourceId: `${locale}/${input.key}`,
     actorSubjectId: input.actorSubjectId,
     actorTenantId: input.actorTenantId,
     actorClientId: input.actorClientId,
     outcome: 'allowed',
-    detail: { locale: input.locale, key: input.key },
+    detail: { locale, key: input.key },
   });
   return { kind: 'deleted' };
 }

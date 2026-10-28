@@ -20,6 +20,15 @@ export const messageOverrideSchema = z.object({
 });
 export type MessageOverride = z.infer<typeof messageOverrideSchema>;
 
+// One override as a tenant document carries it, at most MESSAGE_OVERRIDE_LIMIT
+// of them across every locale.
+export const exportedMessageOverrideSchema = z.strictObject({
+  locale: messageOverrideLocaleSchema,
+  key: messageOverrideKeySchema,
+  message: noBidiControls(z.string().min(1).max(MESSAGE_OVERRIDE_MAX_LENGTH)),
+});
+export type ExportedMessageOverride = z.infer<typeof exportedMessageOverrideSchema>;
+
 export const listMessageOverridesQuerySchema = cursorQuerySchema
   .extend({ locale: messageOverrideLocaleSchema })
   .strict();

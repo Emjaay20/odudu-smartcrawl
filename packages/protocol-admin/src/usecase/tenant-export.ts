@@ -34,6 +34,7 @@ import {
   clientScopeMappers,
   clientScopes,
   isBuiltinScopeName,
+  messageOverrideRepository,
   tenantSettingsRepository,
   type ClientRecord,
   type ClientScopeAssignment,
@@ -701,6 +702,9 @@ export async function exportTenant(
     scopes: await exportScopes(tx, tenantId, roleById),
     registration_policy: registrationPolicy,
     smtp: exportSmtp(smtp),
+    message_overrides: (
+      await messageOverrideRepository(tx, { isKnownKey: () => true }).all(tenantId)
+    ).map(({ locale, key, message }) => ({ locale, key, message })),
     omitted,
   };
 

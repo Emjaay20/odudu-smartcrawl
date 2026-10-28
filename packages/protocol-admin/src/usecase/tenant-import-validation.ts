@@ -1,5 +1,5 @@
 import { startsALogin } from '@odudu/authn-flows';
-import { BIDI_REFUSED, BIDI_REFUSED_MESSAGE } from '@odudu/contracts';
+import { BIDI_REFUSED, BIDI_REFUSED_MESSAGE, canonicalLocale } from '@odudu/contracts';
 import {
   ASSIGNMENT_LIMIT,
   CLIENT_SCOPE_LIMIT,
@@ -43,6 +43,9 @@ export interface ImportEnvironment {
   readonly tlsClientAuthEnabled: boolean;
   /** The caller's own admin-client role names, the ceiling on what an import may grant. */
   readonly callerCapabilities: ReadonlySet<string>;
+  /** Whether a key is a page message, and what is wrong with a text as one. */
+  readonly isKnownMessageKey: (key: string) => boolean;
+  readonly messageProblem: (message: string) => string | null;
 }
 
 export type ValidateImportOutcome =
@@ -409,6 +412,27 @@ function subjectProblems(document: TenantDocument, graph: RoleGraph, problems: P
   });
 }
 
+// The checks a single override passes through the admin API, applied to each
+// entry, and a pair named twice however its locale was spelled.
+function messageOverrideProblems(
+  document: TenantDocument,
+  environment: ImportEnvironment,
+  problems: Problems,
+): void {
+  const seen = new Set<string>();
+  document.message_overrides.forEach((override, index) => {
+    const at = `document.message_overrides[${String(index)}]`;
+    if (!environment.isKnownMessageKey(override.key)) {
+      problems.add(`${at}.key`, 'is not the key of any page message');
+    }
+    const problem = environment.messageProblem(override.message);
+    if (problem !== null) problems.add(`${at}.message`, problem);
+    const pair = `${canonicalLocale(override.locale) ?? override.locale}\u0000${override.key}`;
+    if (seen.has(pair)) problems.add(at, 'repeats an earlier override of the same locale and key');
+    seen.add(pair);
+  });
+}
+
 function flowAndSmtpProblems(
   document: TenantDocument,
   environment: ImportEnvironment,
@@ -674,6 +698,7 @@ export function validateTenantImport(
     );
   }
   flowAndSmtpProblems(document, environment, problems);
+  messageOverrideProblems(document, environment, problems);
   const metadata = clientProblems(document, graph, environment, problems);
   invariantProblems(document, graph, environment, problems);
 

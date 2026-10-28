@@ -276,6 +276,20 @@ describe('who may use them, and whose they are', () => {
   });
 });
 
+describe('audit of a delete', () => {
+  it('names the locale in its canonical spelling, as a set does', async () => {
+    const ctx = await tenantCtx();
+    await put(ctx, 'fr-CA', 'login.title', 'a');
+    expect((await call(ctx, 'DELETE', '/FR-ca/login.title')).statusCode).toBe(204);
+    const rows = await withTenant(fixture.app.db, ctx.tenant.id, (tx) =>
+      tx.select().from(auditEvents),
+    );
+    const deleted = rows.find((row) => row.action === 'message_override.delete');
+    expect(deleted?.resourceId).toBe('fr-CA/login.title');
+    expect(deleted?.detail).toMatchObject({ locale: 'fr-CA', key: 'login.title' });
+  });
+});
+
 describe('audit', () => {
   it('records a set and a delete by locale and key, with no text', async () => {
     const ctx = await tenantCtx();

@@ -1532,7 +1532,7 @@ error and config tables from `@odudu/kernel`, the audit vocabulary from
 | `subject-access`      | 43        | 44     |
 | `subject-sessions`    | 31        | 31     |
 | `subject-sign-in`     | 12        | 17     |
-| `tenants`             | 178       | 205    |
+| `tenants`             | 182       | 209    |
 | `theme`               | 219       | 219    |
 | `whoami`              | 4         | 4      |
 

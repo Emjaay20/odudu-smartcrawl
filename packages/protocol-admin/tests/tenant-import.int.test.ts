@@ -338,6 +338,105 @@ describe('POST /admin/tenant-imports', () => {
     ]);
   });
 
+  describe('message overrides', () => {
+    async function sourceWith(
+      overrides: { locale: string; key: string; message: string }[],
+    ): Promise<{ id: string; name: string }> {
+      const t = await fixture.createTenant(`ovr-src-${newId()}`);
+      for (const o of overrides) {
+        await fixture.owner.sql`
+          insert into message_overrides (tenant_id, locale, key, message)
+          values (${t.id}, ${o.locale}, ${o.key}, ${o.message})`;
+      }
+      return t;
+    }
+    const stored = async (tenantId: string) =>
+      fixture.owner.sql<{ locale: string; key: string; message: string }[]>`
+        select locale, key, message from message_overrides
+         where tenant_id = ${tenantId} order by locale, key`;
+
+    it('travel with the document, in locale and key order', async () => {
+      const source = await sourceWith([
+        { locale: 'fr', key: 'login.title', message: 'Connexion' },
+        { locale: 'de', key: 'login.title', message: '<b>Anmelden</b> {x}' },
+      ]);
+      const token = await operatorToken();
+      const original = await exportOf(token, source.name);
+      expect(original.message_overrides).toEqual([
+        { locale: 'de', key: 'login.title', message: '<b>Anmelden</b> {x}' },
+        { locale: 'fr', key: 'login.title', message: 'Connexion' },
+      ]);
+      const name = `ovr-${newId()}`;
+      const res = await postImport(token, { name, document: original });
+      expect(res.statusCode, res.payload).toBe(201);
+      expect((await exportOf(token, name)).message_overrides).toEqual(original.message_overrides);
+      const id = await tenantIdOf(name);
+      expect(await stored(id ?? '')).toHaveLength(2);
+    });
+
+    it('are absent from an older document, which imports with none', async () => {
+      const source = await fixture.createTenant(`old-src-${newId()}`);
+      const token = await operatorToken();
+      const exported = await exportOf(token, source.name);
+      const without = (record: object, ...names: string[]): Record<string, unknown> =>
+        Object.fromEntries(Object.entries(record).filter(([name]) => !names.includes(name)));
+      const name = `old-${newId()}`;
+      const res = await postImport(token, {
+        name,
+        document: {
+          ...without(exported, 'message_overrides'),
+          settings: without(exported.settings, 'supported_locales', 'default_locale'),
+        },
+      });
+      expect(res.statusCode, res.payload).toBe(201);
+      const again = await exportOf(token, name);
+      expect(again.message_overrides).toEqual([]);
+      expect(again.settings).toMatchObject({ supported_locales: ['en'], default_locale: null });
+    });
+
+    it('are each checked as the admin API checks one, all reported with their paths', async () => {
+      const source = await fixture.createTenant(`bad-src-${newId()}`);
+      const token = await operatorToken();
+      const original = await exportOf(token, source.name);
+      const res = await postImport(token, {
+        name: `bad-${newId()}`,
+        document: {
+          ...original,
+          message_overrides: [
+            { locale: 'fr', key: 'login.nonesuch', message: 'x' },
+            { locale: 'fr', key: 'login.title', message: 'Hi {name' },
+            { locale: 'fr', key: 'login.submit', message: 'ok' },
+            { locale: 'FR', key: 'login.submit', message: 'again' },
+          ],
+        },
+      });
+      expect(res.statusCode).toBe(400);
+      expect((res.json<ImportRefusal>().errors ?? []).map((e) => e.path).sort()).toEqual([
+        'document.message_overrides[0].key',
+        'document.message_overrides[1].message',
+        'document.message_overrides[3]',
+      ]);
+    });
+
+    it('carry a full 500 through an export and an import', async () => {
+      const t = await fixture.createTenant(`full-src-${newId()}`);
+      // 100 two-letter locales of five keys each.
+      await fixture.owner.sql`
+        insert into message_overrides (tenant_id, locale, key, message)
+        select ${t.id}::uuid, chr(97 + l / 26) || chr(97 + l % 26), k, 'x'
+          from generate_series(0, 99) l,
+               unnest(array['login.title', 'login.submit', 'login.username',
+                            'login.password', 'login.verify']) k`;
+      const token = await operatorToken();
+      const original = await exportOf(token, t.name);
+      expect(original.message_overrides).toHaveLength(500);
+      const name = `full-${newId()}`;
+      const res = await postImport(token, { name, document: original });
+      expect(res.statusCode, res.payload).toBe(201);
+      expect(await stored((await tenantIdOf(name)) ?? '')).toHaveLength(500);
+    });
+  });
+
   it('answers each confidential client a fresh secret that authenticates at /token', async () => {
     const source = await seededSource();
     const token = await operatorToken();

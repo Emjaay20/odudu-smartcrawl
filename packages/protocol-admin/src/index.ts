@@ -506,6 +506,7 @@ function buildAdminRoutes(
       consoleClientJwks: deps.consoleClientJwks,
       hashClientSecret: hashPassword,
       tlsClientAuthEnabled: deps.trustProxy ?? false,
+      messageOverrides: deps.messageOverrides,
       claimMappers: deps.claimMappers,
       tenantNameTaken: async (name) =>
         (await tenantLookupRepository(deps.ownerDatabase.db).byName(name)) !== null,

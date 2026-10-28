@@ -130,6 +130,7 @@ import {
   tenantSettingsDocumentSchema,
 } from '#/admin/tenant-document';
 import {
+  exportedMessageOverrideSchema,
   listMessageOverridesQuerySchema,
   listMessageOverridesResponseSchema,
   messageOverrideSchema,
@@ -865,6 +866,8 @@ describeFields(tenantDocumentSchema, {
   scopes: 'The tenant’s client scopes.',
   registration_policy: 'Who may register themselves and register clients.',
   smtp: 'The tenant’s mail relay, or null when it has none.',
+  message_overrides:
+    'The tenant’s own wording for page messages, at most 500, in locale and key order. Absent from a document exported before overrides existed, which imports with none.',
   subjects: 'The tenant’s users, only when requested with `include=subjects`.',
   omitted: 'What the document leaves out on purpose, such as secrets and credentials.',
 });
@@ -1152,6 +1155,11 @@ describeFields(messageOverrideSchema, {
   message:
     'The text shown in place of the catalogue’s. Placeholders such as `{name}` and plural arms are kept; markup is shown as text, never rendered.',
   updated_at: 'When the override was last written.',
+});
+describeFields(exportedMessageOverrideSchema, {
+  locale: 'The language tag the text is for.',
+  key: 'The key of the page message it replaces.',
+  message: 'The text shown in place of the catalogue’s.',
 });
 describeFields(putMessageOverrideRequestSchema, {
   message:

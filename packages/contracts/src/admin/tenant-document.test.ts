@@ -129,6 +129,7 @@ const DOCUMENT: TenantDocument = {
     client_registration_policy: 'token',
   },
   smtp: null,
+  message_overrides: [],
   omitted: ['clients[0].secret'],
 };
 
@@ -169,6 +170,31 @@ describe('tenantDocumentSchema', () => {
     const result = tenantDocumentSchema.safeParse({ ...DOCUMENT, clients: [older] });
     expect(result.success).toBe(true);
     expect(result.data?.clients[0]?.skip_logout_confirmation).toBe(false);
+  });
+
+  it('imports a document from before languages and overrides: English only, no default, none', () => {
+    const without = (record: object, ...names: string[]): Record<string, unknown> =>
+      Object.fromEntries(Object.entries(record).filter(([name]) => !names.includes(name)));
+    const result = tenantDocumentSchema.safeParse({
+      ...without(DOCUMENT, 'message_overrides'),
+      settings: without(DOCUMENT.settings, 'supported_locales', 'default_locale'),
+    });
+    expect(result.success).toBe(true);
+    expect(result.data?.settings.supported_locales).toEqual(['en']);
+    expect(result.data?.settings.default_locale).toBeNull();
+    expect(result.data?.message_overrides).toEqual([]);
+  });
+
+  it('holds overrides to 500, and each to the locale, key and message shapes', () => {
+    const one = { locale: 'fr', key: 'login.title', message: 'Connexion' };
+    const parse = (message_overrides: unknown[]) =>
+      tenantDocumentSchema.safeParse({ ...DOCUMENT, message_overrides });
+    expect(parse(Array.from({ length: 500 }, () => one)).success).toBe(true);
+    expect(parse(Array.from({ length: 501 }, () => one)).success).toBe(false);
+    expect(parse([{ ...one, locale: 'en_US' }]).success).toBe(false);
+    expect(parse([{ ...one, message: '' }]).success).toBe(false);
+    expect(parse([{ ...one, message: 'a\u202Eb' }]).success).toBe(false);
+    expect(parse([{ ...one, extra: 1 }]).success).toBe(false);
   });
 
   it('accepts only version 1', () => {
