@@ -42,6 +42,7 @@ The operations of the admin API, grouped by area, with one page for each operati
 - [Keys](./generated/admin-api/keys/index.md)
 - [Lockouts](./generated/admin-api/lockouts/index.md)
 - [Mail](./generated/admin-api/mail/index.md)
+- [Message overrides](./generated/admin-api/message-overrides/index.md)
 - [Registration tokens](./generated/admin-api/registration-tokens/index.md)
 - [Roles](./generated/admin-api/roles/index.md)
 - [Scopes](./generated/admin-api/scopes/index.md)

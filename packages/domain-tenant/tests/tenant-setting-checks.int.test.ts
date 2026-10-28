@@ -215,13 +215,13 @@ describe('the locale settings agree with the CHECK constraints on tenants', () =
     expect(predicate).toBe(database);
   });
 
-  it('gives a tenant that never set them English only', async () => {
+  it('gives a tenant that never set them English only, and no default', async () => {
     const id = newId();
     const held = await withTenant(owner.db, id, async (tx) => {
       await tx.insert(tenants).values({ id, name: `defaults-${id.slice(-12)}` });
       return tenantSettingsRepository(tx).byId(id);
     });
     expect(held?.supported_locales).toEqual(['en']);
-    expect(held?.default_locale).toBe('en');
+    expect(held?.default_locale).toBeNull();
   });
 });
