@@ -345,6 +345,7 @@ function scopeProblems(
     if (!SCOPE_NAME.test(scope.name)) {
       problems.add(`${path}.name`, 'a scope name is an RFC 6749 scope-token');
     }
+    descriptionProblem(scope.description, `${path}.description`, problems);
     const consentText = checkConsentText(scope.consent_text);
     if (consentText.kind === 'invalid') problems.add(`${path}.consent_text`, consentText.message);
     for (const field of ['description_i18n', 'consent_text_i18n'] as const) {
@@ -508,6 +509,9 @@ function clientProblems(
       problems.add(`${path}.client_id`, `${ADMIN_CLIENT_ID} is provisioned by every new tenant`);
     }
     if (client.client_id === '') problems.add(`${path}.client_id`, 'is empty');
+    if (client.name.length > CLIENT_NAME_MAX) {
+      problems.add(`${path}.name`, `must be at most ${String(CLIENT_NAME_MAX)} characters`);
+    }
     for (const [field, max] of [
       ['name_i18n', CLIENT_NAME_MAX],
       ['description_i18n', DESCRIPTION_MAX],

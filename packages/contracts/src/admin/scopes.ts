@@ -7,6 +7,7 @@ import {
   ASSIGNMENT_LIMIT,
   createdAtSchema,
   cursorQuerySchema,
+  DESCRIPTION_MAX,
   idSchema,
   localisedTextSchema,
   searchPrefixSchema,
@@ -54,7 +55,7 @@ export type ListScopesResponse = z.infer<typeof listScopesResponseSchema>;
 
 export const createScopeRequestSchema = z.object({
   name: z.string().min(1),
-  description: noBidiControls(z.string().min(1)).nullable().optional(),
+  description: noBidiControls(z.string().min(1).max(DESCRIPTION_MAX)).nullable().optional(),
   include_in_id_token: z.boolean().optional(),
   include_in_access_token: z.boolean().optional(),
   default_client_assignment: clientScopeAssignmentSchema.nullable().optional(),

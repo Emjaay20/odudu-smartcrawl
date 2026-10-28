@@ -58,6 +58,28 @@ describe('parseLocalisedClientNames', () => {
     expect(outcome).toMatchObject({ kind: 'invalid' });
   });
 
+  it('refuses an unoffered tag written twice, as it does an offered one', () => {
+    const outcome = parseLocalisedClientNames(
+      { 'client_name#DE': 'a', 'client_name#de': 'b' },
+      SUPPORTED,
+    );
+    expect(outcome).toMatchObject({ kind: 'invalid' });
+  });
+
+  it('reads no other language-tagged member', () => {
+    expect(
+      parseLocalisedClientNames(
+        {
+          'client_uri#fr': 'https://x',
+          'logo_uri#fr': 'https://y',
+          'policy_uri#fr': 'z',
+          'tos_uri#fr': 'w',
+        },
+        SUPPORTED,
+      ),
+    ).toEqual({ kind: 'ok', names: {} });
+  });
+
   it.each([1, null, '', ['a'], {}, 'a‮b', 'x'.repeat(257)])('refuses the value %j', (value) => {
     expect(parseLocalisedClientNames({ 'client_name#fr': value }, SUPPORTED)).toMatchObject({
       kind: 'invalid',

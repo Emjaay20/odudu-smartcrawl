@@ -1051,6 +1051,12 @@ function checkedAdminFields(
     if (refusesBidi(checked, stored?.name)) {
       return { field: 'name', description: BIDI_REFUSED_MESSAGE };
     }
+    if (checked.length > CLIENT_NAME_MAX && checked !== stored?.name) {
+      return {
+        field: 'name',
+        description: `name must be at most ${String(CLIENT_NAME_MAX)} characters`,
+      };
+    }
     client.name = checked;
   }
   if ('description' in values) {

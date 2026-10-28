@@ -789,6 +789,33 @@ describe('[RFC7591-2.2] client_name#<language> members', () => {
     expect(body['client_name#fr']).toBe('Boutique');
   });
 
+  it('refuses an unoffered tag written twice', async () => {
+    const tenant = await openTenant(['en', 'fr']);
+    const res = await register(tenant.name, { 'client_name#DE': 'a', 'client_name#de': 'b' });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('reads no other tagged member: client_uri#fr and the like are ignored, nothing echoed', async () => {
+    const tenant = await openTenant(['en', 'fr']);
+    const res = await register(tenant.name, {
+      client_uri: 'https://shop.example',
+      'client_uri#fr': 'https://boutique.example',
+      'logo_uri#fr': 'https://x.example/l.png',
+      'policy_uri#fr': 'https://x.example/p',
+      'tos_uri#fr': 'https://x.example/t',
+    });
+    expect(res.statusCode, res.body).toBe(201);
+    const body = res.json<Record<string, string>>();
+    expect(body.client_uri).toBe('https://shop.example');
+    expect(Object.keys(body).filter((key) => key.includes('#'))).toEqual([]);
+  });
+
+  it('holds the base client_name to 256 characters, as client_name#fr is', async () => {
+    const tenant = await openTenant(['en']);
+    expect((await register(tenant.name, { client_name: 'x'.repeat(257) })).statusCode).toBe(400);
+    expect((await register(tenant.name, { client_name: 'x'.repeat(256) })).statusCode).toBe(201);
+  });
+
   it.each([
     ['a hostile tag', { 'client_name#<script>alert(1)</script>': 'x' }],
     ['an overlong tag', { ['client_name#' + 'a'.repeat(300)]: 'x' }],

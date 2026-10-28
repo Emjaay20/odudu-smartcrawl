@@ -6,6 +6,7 @@ import {
   type ListBuiltinScopesResponse,
   type ScopeClient,
   type ScopeImpact,
+  DESCRIPTION_MAX,
   SCOPE_LIMIT,
   scopeLimitMessage,
 } from '@odudu/contracts/admin';
@@ -441,6 +442,17 @@ export async function amendScope(
         kind: 'invalid_value',
         field: 'description',
         description: 'description must be a string or null',
+      };
+    }
+    if (
+      typeof value === 'string' &&
+      value.length > DESCRIPTION_MAX &&
+      value !== locked.description
+    ) {
+      return {
+        kind: 'invalid_value',
+        field: 'description',
+        description: `description must be at most ${String(DESCRIPTION_MAX)} characters`,
       };
     }
     if (refusesBidi(value, locked.description)) {

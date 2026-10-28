@@ -31,14 +31,16 @@ export function parseLocalisedClientNames(
   }
   const offered = new Set(supported.map((tag) => canonicalLocale(tag) ?? tag));
   const names: Record<string, unknown> = {};
+  const seen = new Set<string>();
   for (const member of members) {
     const tag = canonicalLocale(member.slice(PREFIX.length));
     if (tag === null) {
       return invalid('a client_name#<language> member does not name a language tag');
     }
-    if (Object.hasOwn(names, tag)) {
+    if (seen.has(tag)) {
       return invalid('client_name#<language> names one language more than once');
     }
+    seen.add(tag);
     if (offered.has(tag)) names[tag] = body[member];
   }
   const checked = checkLocalisedText('client_name#<language>', names, { max: CLIENT_NAME_MAX });

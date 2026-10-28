@@ -1,6 +1,7 @@
 import { tenantDocumentSchema, type TenantDocument } from '@odudu/contracts/admin';
 import { newId } from '@odudu/kernel';
 import { type LightMyRequestResponse } from 'fastify';
+import { sql } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { startAdminFixture, type AdminFixture } from '#/testing/admin-fixture';
 
@@ -68,6 +69,42 @@ function problemPaths(res: LightMyRequestResponse): string[] {
   const body = res.json<{ errors?: { path: string }[] }>();
   return (body.errors ?? []).map((e) => e.path);
 }
+
+describe('the base name and description bounds', () => {
+  it('holds a client name to 256 on create and PATCH, and lets a stored longer one stay', async () => {
+    const t = await fixture.createTenant(`i18n-${newId()}`);
+    expect((await createClient(t, { name: 'x'.repeat(257) })).statusCode).toBe(400);
+    const made = await createClient(t, { name: 'x'.repeat(256) });
+    expect(made.statusCode, made.body).toBe(201);
+    const client = made.json<ClientBody>();
+    const patch = async (body: unknown) =>
+      call(t.name, ['manage-clients'], 'PATCH', `/clients/${client.id}`, body);
+    expect((await patch({ name: 'y'.repeat(257) })).statusCode).toBe(400);
+
+    // A name stored before the bound: the same value passes, a longer one does not.
+    const long = 'z'.repeat(300);
+    await fixture.owner.db.execute(sql`update clients set name = ${long} where id = ${client.id}`);
+    expect((await patch({ name: long, enabled: true })).statusCode).toBe(200);
+    expect((await patch({ description: 'unrelated edit' })).statusCode).toBe(200);
+    expect((await patch({ name: long + 'z' })).statusCode).toBe(400);
+  });
+
+  it('holds a scope description to 1000 on create and PATCH, and lets a stored longer one stay', async () => {
+    const t = await fixture.createTenant(`i18n-${newId()}`);
+    expect((await createScope(t, { description: 'x'.repeat(1001) })).statusCode).toBe(400);
+    const scope = (await createScope(t, { description: 'x'.repeat(1000) })).json<ScopeBody>();
+    const patch = (body: unknown) =>
+      call(t.name, ['manage-tenant'], 'PATCH', `/scopes/${scope.id}`, body);
+    expect((await patch({ description: 'x'.repeat(1001) })).statusCode).toBe(400);
+    const long = 'y'.repeat(1200);
+    await fixture.owner.db.execute(
+      sql`update client_scopes set description = ${long} where id = ${scope.id}`,
+    );
+    expect((await patch({ description: long, display_order: 2 })).statusCode).toBe(200);
+    expect((await patch({ display_order: 3 })).statusCode).toBe(200);
+    expect((await patch({ description: long + 'y' })).statusCode).toBe(400);
+  });
+});
 
 describe('per-language client text', () => {
   it('is created, read, listed and exported with the client', async () => {
