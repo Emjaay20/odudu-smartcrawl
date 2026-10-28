@@ -54,6 +54,7 @@ export {
   type StylesheetIssueCode,
   type StylesheetOptions,
 } from '#/service/stylesheet';
+export { buildBranding, type BuildInput, type BuildOutcome } from '#/service/build-branding';
 export {
   brandingCache,
   createBrandingCache,

@@ -160,6 +160,37 @@ export function assetRepository(tx: TenantScopedDatabase) {
       return row?.mime ?? null;
     },
 
+    // The tenant's images among `ids`, each with its stored size and no
+    // bytes: what a preview weighs before it reads any. Not locked; a preview
+    // writes nothing that a deletion could orphan.
+    async sizes(
+      tenantId: string,
+      ids: string[],
+    ): Promise<{ id: string; sha256: string; mime: string; size: number }[]> {
+      if (ids.length === 0) return [];
+      return tx
+        .select({
+          id: themeAssets.id,
+          sha256: themeAssets.sha256,
+          mime: themeAssets.mime,
+          size: sql<number>`octet_length(${themeAssets.bytes})::int`,
+        })
+        .from(themeAssets)
+        .where(and(eq(themeAssets.tenantId, tenantId), inArray(themeAssets.id, ids)));
+    },
+
+    // The bytes of the tenant's images among `ids`, whoever's theme names them.
+    async bytesOf(
+      tenantId: string,
+      ids: string[],
+    ): Promise<{ id: string; mime: string; bytes: Buffer }[]> {
+      if (ids.length === 0) return [];
+      return tx
+        .select({ id: themeAssets.id, mime: themeAssets.mime, bytes: themeAssets.bytes })
+        .from(themeAssets)
+        .where(and(eq(themeAssets.tenantId, tenantId), inArray(themeAssets.id, ids)));
+    },
+
     // Drafts and published versions that name the asset in a slot; archived
     // versions are not counted.
     async referencedBy(tenantId: string, assetId: string): Promise<number> {
