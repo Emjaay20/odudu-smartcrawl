@@ -31,9 +31,14 @@ export interface BuildOutcome {
   problems: string[];
   // Templates dropped for the layer below, or the default.
   refused: TemplateRefused[];
+  // What the hashed stylesheet holds, and the one the page links; empty when
+  // the theme sets no css or is not used.
+  css: string;
 }
 
 interface Kept {
+  // The client's row id when this is a client's layer.
+  clientId: string | null;
   body: ThemeBody;
   urls: Map<string, string>;
 }
@@ -81,7 +86,7 @@ function keepLayer(
     body.stylesheet = null;
     problems.push(`${name} theme version ${String(layer.version)} has a stylesheet that fails`);
   }
-  return { body, urls };
+  return { clientId: layer.clientId, body, urls };
 }
 
 function logoOf(body: ThemeBody, urls: Map<string, string>): ResolvedBranding['logo'] {
@@ -100,11 +105,12 @@ export function buildBranding(input: BuildInput): BuildOutcome {
   const refused: TemplateRefused[] = [];
   const version = (name: string): string =>
     String(input.layers.find((entry) => entry.name === name)?.layer.version ?? 0);
-  const outcome = (branding: ResolvedBranding | null): BuildOutcome => ({
+  const outcome = (branding: ResolvedBranding | null, css = ''): BuildOutcome => ({
     branding,
     version: `${version('tenant')}.${version('client')}`,
     problems,
     refused,
+    css: branding === null ? '' : css,
   });
   const kept = input.layers.flatMap((entry) => {
     const layer = keepLayer(entry.name, input.tenantName, entry.layer, problems, refused);
@@ -114,6 +120,7 @@ export function buildBranding(input: BuildInput): BuildOutcome {
 
   const body = resolvePieces(kept.map((layer) => layer.body));
   const urls = new Map(kept.flatMap((layer) => [...layer.urls]));
+  const clientRowId = kept.find((layer) => layer.clientId !== null)?.clientId ?? null;
   const tokens = tokensCss(body.tokens);
   const css = brandingCss(tokens, body.stylesheet);
   const favicon = body.assets.favicon;
@@ -132,7 +139,7 @@ export function buildBranding(input: BuildInput): BuildOutcome {
     origin: input.origin,
     templates: body.templates,
     tokensCss: tokens,
-    stylesheetUrl: css === '' ? null : stylesheetPath(input.tenantName, css),
+    stylesheetUrl: css === '' ? null : stylesheetPath(input.tenantName, css, clientRowId),
     faviconUrl: urlOf(favicon?.assetId),
     logo,
     assetUrls,
@@ -146,5 +153,5 @@ export function buildBranding(input: BuildInput): BuildOutcome {
     problems.push(...wrong);
     return outcome(null);
   }
-  return outcome(branding);
+  return outcome(branding, css);
 }

@@ -16,6 +16,13 @@ export const BRANDING_PATHS = {
   registrationClientMiss:
     'registration page, return_to names a registered client, theme not cached',
   registrationClient: 'registration page, return_to names a registered client, theme cached',
+  brandImage: 'brand image file of a published theme',
+  brandStylesheetCold:
+    'brand stylesheet of a client theme, a wrong hash, versions not yet remembered',
+  brandStylesheetRandom: 'brand stylesheet of a client theme, a wrong hash, versions remembered',
+  brandStylesheet: 'brand stylesheet file of a client theme',
+  brandImageRevalidate: 'brand image file, conditional request that matches',
+  brandNothing: 'brand file with a name that cannot be a hash',
 } as const;
 
 const SIGN_IN =
@@ -101,7 +108,44 @@ export async function driveBranding(world: PlanWorld, capture: Capture): Promise
   const hit = await capture(BRANDING_PATHS.themedHit, 'oidc', () => http.inject({ url }));
   if (!hit.body.includes('plan-themed')) throw new Error('the cached sign-in was not themed');
 
+  const sheet = /<link rel="stylesheet" href="(\/tenants\/[^"]+\.css)">/u.exec(hit.body)?.[1];
+  if (sheet === undefined) throw new Error('the themed sign-in links no brand stylesheet');
+  await driveBrandFiles(http, sheet, capture);
   await driveOtherPages(world, capture);
+}
+
+// What a themed page links, fetched the way a browser does: an image read by
+// its hash and a stylesheet rebuilt from the layers its URL names.
+async function driveBrandFiles(
+  http: FastifyInstance,
+  sheet: string,
+  capture: Capture,
+): Promise<void> {
+  const image = `/tenants/${TARGET_TENANT}/brand/${'ab'.repeat(32)}.png`;
+  const wrong = sheet.replace(/[0-9a-f]{64}\.css$/u, `${'0'.repeat(64)}.css`);
+  for (const path of [BRANDING_PATHS.brandStylesheetCold, BRANDING_PATHS.brandStylesheetRandom]) {
+    const miss = await capture(path, 'oidc', () => http.inject({ url: wrong }));
+    if (miss.statusCode !== 404)
+      throw new Error(`a wrong brand hash answered ${String(miss.statusCode)}`);
+  }
+  const answers = [
+    await capture(BRANDING_PATHS.brandImage, 'oidc', () => http.inject({ url: image })),
+    await capture(BRANDING_PATHS.brandStylesheet, 'oidc', () => http.inject({ url: sheet })),
+  ];
+  for (const answer of answers) {
+    if (answer.statusCode !== 200)
+      throw new Error(`a brand file answered ${String(answer.statusCode)}`);
+  }
+  const unchanged = await capture(BRANDING_PATHS.brandImageRevalidate, 'oidc', () =>
+    http.inject({ url: image, headers: { 'if-none-match': `"${'ab'.repeat(32)}"` } }),
+  );
+  if (unchanged.statusCode !== 304)
+    throw new Error(`a revalidation answered ${String(unchanged.statusCode)}`);
+  const odd = await capture(BRANDING_PATHS.brandNothing, 'oidc', () =>
+    http.inject({ url: `/tenants/${TARGET_TENANT}/brand/${'AB'.repeat(32)}.png` }),
+  );
+  if (odd.statusCode !== 404)
+    throw new Error(`a malformed brand name answered ${String(odd.statusCode)}`);
 }
 
 // The pages a tenant theme reaches without a parked request: logout, and

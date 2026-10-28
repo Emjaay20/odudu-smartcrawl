@@ -434,7 +434,7 @@ Client rules (spec 6): authorization-session pages use the pending request's `cl
 
 ### Task 26: Transcripts, console pages, concepts, guide
 
-**Files:** Create transcripts under `apps/docs/content/en/reference/transcripts/admin-paths/` for each new route group (copy the shape of `get-mail.md`; add to `order.json`), a branding transcript of a themed sign-in in `request-paths/`; Modify `apps/docs/content/en/admin-console/{branding.mdx,clients.mdx,tour.mdx,index.md}` (`tour.mdx` line 68 TENANT list), `concepts/{sessions,scopes,clients}.mdx`; Create `concepts/branding.mdx`, `guides/brand-a-tenant.md` with `{run}` blocks; Modify `apps/docs/scripts/console-shots/screens.ts` and run `pnpm docs:screenshots` against a stack.
+**Files:** Create transcripts under `apps/docs/content/en/reference/transcripts/admin-paths/` for each new route group (copy the shape of `get-mail.md`; add to `order.json`), a branding transcript of a themed sign-in in `request-paths/` that also fetches the stylesheet and logo it links (the `/brand/` route, which has no transcript until the admin routes can publish a theme); Modify `apps/docs/content/en/admin-console/{branding.mdx,clients.mdx,tour.mdx,index.md}` (`tour.mdx` line 68 TENANT list), `concepts/{sessions,scopes,clients}.mdx`; Create `concepts/branding.mdx`, `guides/brand-a-tenant.md` with `{run}` blocks; Modify `apps/docs/scripts/console-shots/screens.ts` and run `pnpm docs:screenshots` against a stack.
 
 **Interfaces:** Documentation rules in CLAUDE.md "The documentation an increment owns": responses carry no language tag; each transcript says what ran before it; a refusal's precondition is shown; a page's prose names no ADR, path or phase (`console-areas.test.ts`).
 

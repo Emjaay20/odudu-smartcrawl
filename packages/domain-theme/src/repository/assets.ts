@@ -81,6 +81,63 @@ export function assetRepository(tx: TenantScopedDatabase) {
       };
     },
 
+    // The image a published version of the tenant names, by its hash: what a
+    // public URL may serve. A draft's or archived version's image, another
+    // tenant's and a deleted one select nothing. One indexed lookup through
+    // the content key and the asset key, however many versions name it.
+    async getPublished(
+      tenantId: string,
+      sha256: string,
+    ): Promise<{ mime: string; bytes: Buffer } | null> {
+      const [row] = await tx
+        .select({ mime: themeAssets.mime, bytes: themeAssets.bytes })
+        .from(themeAssets)
+        .innerJoin(
+          themeVersionAssets,
+          and(
+            eq(themeVersionAssets.assetId, themeAssets.id),
+            eq(themeVersionAssets.tenantId, themeAssets.tenantId),
+          ),
+        )
+        .innerJoin(themeVersions, eq(themeVersions.id, themeVersionAssets.versionId))
+        .where(
+          and(
+            eq(themeAssets.tenantId, tenantId),
+            eq(themeAssets.sha256, sha256),
+            eq(themeVersions.tenantId, tenantId),
+            eq(themeVersions.state, 'published'),
+          ),
+        )
+        .limit(1);
+      return row ?? null;
+    },
+
+    // Whether `getPublished` would answer, and its type, without the bytes:
+    // what a conditional request needs to be told 304.
+    async publishedMime(tenantId: string, sha256: string): Promise<string | null> {
+      const [row] = await tx
+        .select({ mime: themeAssets.mime })
+        .from(themeAssets)
+        .innerJoin(
+          themeVersionAssets,
+          and(
+            eq(themeVersionAssets.assetId, themeAssets.id),
+            eq(themeVersionAssets.tenantId, themeAssets.tenantId),
+          ),
+        )
+        .innerJoin(themeVersions, eq(themeVersions.id, themeVersionAssets.versionId))
+        .where(
+          and(
+            eq(themeAssets.tenantId, tenantId),
+            eq(themeAssets.sha256, sha256),
+            eq(themeVersions.tenantId, tenantId),
+            eq(themeVersions.state, 'published'),
+          ),
+        )
+        .limit(1);
+      return row?.mime ?? null;
+    },
+
     // Drafts and published versions that name the asset in a slot; archived
     // versions are not counted.
     async referencedBy(tenantId: string, assetId: string): Promise<number> {

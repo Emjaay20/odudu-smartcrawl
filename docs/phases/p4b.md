@@ -72,3 +72,9 @@ That client is guarded on the admin API like every field outside
   only, not as the per-field `client.create` diff the admin API writes, so the
   setting appearing through an import is visible in the new tenant's clients and
   not in its trail.
+
+## Owed at phase close
+
+| Owed                                                                                                                                       | Owner   | Why not yet                                                                          |
+| ------------------------------------------------------------------------------------------------------------------------------------------ | ------- | ------------------------------------------------------------------------------------ |
+| A transcript of the public brand route: the stylesheet and logo a themed page links, fetched on a live stack and re-run against the build. | Task 26 | No route publishes a theme until the admin API exists, so there is nothing to serve. |

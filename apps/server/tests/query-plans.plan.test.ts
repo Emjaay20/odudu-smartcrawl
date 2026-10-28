@@ -247,6 +247,65 @@ describe('the pages a tenant theme reaches without a parked request', () => {
   });
 });
 
+// A brand file is a tenant lookup and one read of its own, nothing for a name
+// that cannot be a hash, and the read has a plan that uses the index even
+// where a table is small enough for the planner to prefer scanning it.
+describe('a brand file', () => {
+  const bodyReads = (statements: Statement[]): number =>
+    statements.filter((s) => s.query.includes('"theme_versions"') && s.query.includes('"body"'))
+      .length;
+  const byteReads = (statements: Statement[]): number =>
+    statements.filter((s) => s.query.includes('"theme_assets"."bytes"')).length;
+
+  it('costs a tenant lookup and one read, and nothing for a malformed name', () => {
+    expect(workOf(BRANDING_PATHS.brandNothing)).toEqual([]);
+    for (const path of [BRANDING_PATHS.brandImage, BRANDING_PATHS.brandStylesheet]) {
+      const work = workOf(path);
+      expect(tenantLookups(work), path).toBe(1);
+      expect(work.length, path).toBe(2);
+    }
+  });
+
+  it('reads no body for a wrong stylesheet hash once the versions are remembered', () => {
+    const cold = workOf(BRANDING_PATHS.brandStylesheetCold);
+    expect(bodyReads(cold)).toBe(1);
+    const remembered = workOf(BRANDING_PATHS.brandStylesheetRandom);
+    expect(tenantLookups(remembered)).toBe(1);
+    expect(remembered.length).toBe(2);
+    expect(bodyReads(remembered)).toBe(0);
+    expect(bodyReads(workOf(BRANDING_PATHS.brandStylesheet))).toBe(0);
+  });
+
+  it('answers a matching conditional request for an image without its bytes', () => {
+    const revalidate = workOf(BRANDING_PATHS.brandImageRevalidate);
+    expect(revalidate.length).toBe(2);
+    expect(byteReads(revalidate)).toBe(0);
+    expect(byteReads(workOf(BRANDING_PATHS.brandImage))).toBe(1);
+  });
+
+  it('reads an image and the stylesheet layers by index, even where scanning is allowed to lose', async () => {
+    const image = workOf(BRANDING_PATHS.brandImage).find((s) => s.query.includes('"theme_assets"'));
+    const layers = workOf(BRANDING_PATHS.brandStylesheetRandom).find((s) =>
+      s.query.includes('"theme_versions"'),
+    );
+    expect(image).toBeDefined();
+    expect(layers).toBeDefined();
+    for (const [statement, table] of [
+      [image, 'theme_assets'],
+      [layers, 'theme_versions'],
+    ] as const) {
+      if (statement === undefined) continue;
+      const plan = await planned(statement, { settings: ['enable_seqscan = off'] });
+      const own = scansOf(plan).filter((scan) => scan.relation === table);
+      expect(own.length, table).toBeGreaterThan(0);
+      expect(
+        own.filter((scan) => scan.node === 'Seq Scan'),
+        table,
+      ).toEqual([]);
+    }
+  });
+});
+
 describe('every foreign key', () => {
   it('is found by an index, so a parent row can be deleted without reading its children whole', async () => {
     expect(await unindexedForeignKeys(world.owner)).toEqual([]);

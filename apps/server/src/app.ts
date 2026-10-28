@@ -17,6 +17,7 @@ import {
 } from '@odudu/account';
 import { type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
 import { createBranding, type Branding } from '#/branding';
+import { brandRoutes, frameworkError } from '#/brand-routes';
 import { requiredActionRepository } from '@odudu/authn-flows';
 import { consoleGateway } from '@odudu/console-gateway';
 import { instrumentRoutes } from '@odudu/instrument';
@@ -352,6 +353,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     loggerInstance: deps.logger,
     genReqId: () => newId(),
     requestIdHeader: 'x-request-id',
+    frameworkErrors: frameworkError,
     trustProxy: deps.trustProxy ?? false,
   });
 
@@ -462,6 +464,13 @@ export function buildApp(deps: AppDeps): FastifyInstance {
 
   registerHealth(app, deps);
   app.register(instrumentRoutes(deps.instrumentDir ?? DEFAULT_INSTRUMENT_DIR));
+  app.register(
+    brandRoutes({
+      database: deps.database,
+      ownerDatabase: deps.ownerDatabase,
+      publicBaseUrl: deps.publicBaseUrl,
+    }),
+  );
   if (deps.docsDir !== undefined) app.register(docsRoutes(deps.docsDir));
   if (deps.consoleBaseUrl !== undefined) {
     if (deps.consoleKeys === undefined) throw missingConsoleKey();
