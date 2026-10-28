@@ -34,7 +34,8 @@ has the reasoning and the alternatives rejected.
 
 The fonts the product serves are IBM Plex Sans and IBM Plex Mono, under the SIL
 Open Font License 1.1. The list of common passwords the server refuses comes
-from SecLists, under the MIT licence.
+from SecLists, under the MIT licence. Uploaded images are decoded with sharp
+(Apache-2.0), which loads a prebuilt libvips under the LGPL-3.0-or-later.
 [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md) lists them with their
 copyright lines, and the documentation site publishes the font licence text
 beside the fonts.

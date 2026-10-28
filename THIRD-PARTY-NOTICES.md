@@ -31,3 +31,19 @@ repository-wide word check refuses, two that hold a backtick, a backslash or a
 dollar sign): 38,446 entries, in `packages/domain-identity/src/service/common-passwords-data.ts`.
 SecLists is licensed under the MIT licence, Copyright (c) 2018 Daniel Miessler;
 the licence text is [`LICENSES/MIT-SecLists.txt`](LICENSES/MIT-SecLists.txt).
+
+## Image decoding
+
+The server decodes and re-encodes every uploaded theme image with
+[sharp](https://sharp.pixelplumbing.com/) 0.35.5 (Apache-2.0, Copyright 2013
+Lovell Fuller and others; text in [`LICENSES/Apache-2.0.txt`](LICENSES/Apache-2.0.txt)),
+pinned in `packages/domain-theme`. sharp loads a prebuilt libvips from the
+`@img/sharp-libvips-*` packages (libvips 8.18.7 with libpng, libwebp and
+mozjpeg), which are licensed under the GNU Lesser General Public License,
+version 3 or later (SPDX `LGPL-3.0-or-later`).
+
+The libvips binary is a separate package that the server loads at run time and
+does not modify, so a deployment can replace it with its own build of libvips.
+The source is at <https://github.com/libvips/libvips> and the build recipe at
+<https://github.com/lovell/sharp-libvips>. Odudu's own code stays under
+AGPL-3.0-only.

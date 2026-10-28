@@ -70,3 +70,17 @@ export {
   type BrandingProblem,
   type ResolveBrandingDeps,
 } from '#/usecase/resolve-branding';
+export {
+  MAX_CONCURRENT_INSPECTIONS,
+  MAX_DECODED_PIXELS,
+  MAX_IMAGE_SIDE,
+  MAX_QUEUED_INSPECTIONS,
+  createImageInspector,
+  inspectImage,
+  isImageRefusal,
+  type ImageMime,
+  type ImageRefusal,
+  type ImageRefusalCode,
+  type InspectLimits,
+  type InspectedImage,
+} from '#/service/image';
