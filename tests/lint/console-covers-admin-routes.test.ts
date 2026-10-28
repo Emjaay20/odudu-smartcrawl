@@ -29,7 +29,29 @@ const NEVER: Readonly<Record<string, string>> = {
     'API-only: acts on up to 100 subjects in one call for scripts and migrations. Every console list and record page acts on one subject at a time and has no multi-select.',
   'GET /admin/tenants/:tenant/audit/count':
     'The audit trail has no count, by design: over a trail that long a capped total would be an estimate the page cannot stand behind, so it says how far back the loaded rows reach instead.',
+  ...pendingBrandingRoutes(),
 };
+
+// The theme routes are the Branding area's: until its screens call them an
+// entry here stands for each, and the entry fails this test the moment a
+// screen does, so it cannot outlive the screen.
+function pendingBrandingRoutes(): Record<string, string> {
+  const reason =
+    'The console has no Branding area yet; the theme routes are called by its Theme and client Branding tabs when they land.';
+  const tails: [string, string][] = [
+    ['GET', '/theme'],
+    ['PUT', '/theme'],
+    ['DELETE', '/theme'],
+    ['POST', '/theme/publish'],
+    ['GET', '/theme/versions'],
+    ['POST', '/theme/versions/:versionId/restore'],
+  ];
+  return Object.fromEntries(
+    ['/admin/tenants/:tenant', '/admin/tenants/:tenant/clients/:id'].flatMap((base) =>
+      tails.map(([method, tail]) => [`${method} ${base}${tail}`, reason]),
+    ),
+  );
+}
 
 function template(pattern: string): string {
   return pattern.replace(/\/:[^/]+/gu, '/:');
