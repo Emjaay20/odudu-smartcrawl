@@ -11,6 +11,8 @@ export type Fetch = (url: string, init: RequestInit) => Promise<Response>;
 
 export interface RequestOptions<T> {
   body?: unknown;
+  // A file sent as the body in place of JSON, under its own media type.
+  file?: Blob;
   ifMatch?: string;
   schema: ZodType<T>;
 }
@@ -156,7 +158,7 @@ export function createGateway(dependencies: GatewayDependencies = {}): Gateway {
   async function exchange(
     method: Method,
     path: string,
-    options: { body?: unknown; ifMatch?: string },
+    options: { body?: unknown; file?: Blob; ifMatch?: string },
   ): Promise<{ ok: true; answer: Answer; where: string } | GatewayFailure> {
     const url = resolve(path);
     const where = `${method} ${url.pathname.slice(BASE.length)}`;
@@ -168,6 +170,10 @@ export function createGateway(dependencies: GatewayDependencies = {}): Gateway {
     if (options.body !== undefined) {
       headers.set('content-type', 'application/json');
       init.body = JSON.stringify(options.body);
+    }
+    if (options.file !== undefined) {
+      headers.set('content-type', options.file.type);
+      init.body = options.file;
     }
 
     const answer = await send(

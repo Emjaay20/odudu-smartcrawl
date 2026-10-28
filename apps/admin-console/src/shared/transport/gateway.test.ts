@@ -586,3 +586,27 @@ describe('gateway.download, a body kept as the bytes the server sent', () => {
     await expect(gateway.download('GET', '../session')).rejects.toThrow(TypeError);
   });
 });
+
+describe('gateway.request, an image as the body', () => {
+  it('sends the file as it is, with its own media type and no JSON content type', async () => {
+    const { gateway, calls } = harness(json(SUBJECT, 201));
+    const file = new Blob([new Uint8Array([137, 80, 78, 71])], { type: 'image/png' });
+
+    await gateway.request('POST', SUBJECT_PATH, { file, schema: subjectSchema });
+
+    const headers = headersOf(calls[0]);
+    expect(calls[0]?.init.body).toBe(file);
+    expect(headers.get('content-type')).toBe('image/png');
+    expect(headers.get('x-odudu-console')).toBe('1');
+  });
+
+  it('is never repeated, since the upload may have landed', async () => {
+    const { gateway, calls } = harness(new Error('lost'), json(SUBJECT, 201));
+    const file = new Blob([new Uint8Array([1])], { type: 'image/webp' });
+
+    const result = await gateway.request('POST', SUBJECT_PATH, { file, schema: subjectSchema });
+
+    expect(result).toEqual({ ok: false, kind: 'network' });
+    expect(calls).toHaveLength(1);
+  });
+});
