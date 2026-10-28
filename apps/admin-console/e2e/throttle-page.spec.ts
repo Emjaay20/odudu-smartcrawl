@@ -2,6 +2,11 @@ import { expect, forgive, test } from './fixtures';
 import { inspect } from './page-inspection';
 import { startThrottledServer, stopThrottledServer } from './stack';
 
+// Both tests share one container with a fixed name and port, so they must share
+// one worker: fullyParallel would give each its own beforeAll, and the second
+// one's failure to start (name in use) would remove the first one's server.
+test.describe.configure({ mode: 'serial' });
+
 const PORT = 3981;
 const ORIGIN = `http://127.0.0.1:${String(PORT)}`;
 
