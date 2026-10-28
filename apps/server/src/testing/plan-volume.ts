@@ -70,6 +70,9 @@ function volumeStatements(target: VolumeTarget): string[] {
   const v = asText(PLAN_VOLUME);
   const t = `'${target.tenantId}'`;
   const c0 = `'${target.clientDbId}'`;
+  // The most a client's or scope's per-language map holds: 32 entries.
+  const FULL_TEXT =
+    "(select jsonb_object_agg('x' || chr(97 + g % 26) || chr(97 + g / 26), 'Text ' || g) from generate_series(0, 31) g)";
 
   const script = `
 insert into tenants (id, name, display_name)
@@ -135,8 +138,8 @@ insert into user_credentials (id, tenant_id, subject_id, type, secret_data)
 select gen_random_uuid(), ${t}, id, 'password', '{"hash":"x"}'::jsonb
   from vol_subjects;
 
-insert into clients (id, tenant_id, client_id, name, type)
-select gen_random_uuid(), ${t}, 'app-' || g, 'Application ' || g, 'public'
+insert into clients (id, tenant_id, client_id, name, type, name_i18n, description_i18n)
+select gen_random_uuid(), ${t}, 'app-' || g, 'Application ' || g, 'public', ${FULL_TEXT}, ${FULL_TEXT}
   from generate_series(1, ${v.clients}) g;
 create temp table vol_clients as
   select row_number() over (order by id) n, id from clients
@@ -189,8 +192,8 @@ select gen_random_uuid(), ${t}, c.id, 'crole-' || g
   from vol_clients c cross join generate_series(1, ${v.clientRoles} / 100) g where c.n <= 100;
 insert into groups (id, tenant_id, name, path)
 select gen_random_uuid(), ${t}, 'group-' || g, '/group-' || g from generate_series(1, ${v.groups}) g;
-insert into client_scopes (id, tenant_id, name)
-select gen_random_uuid(), ${t}, 'scope-' || g from generate_series(1, ${v.scopes}) g;
+insert into client_scopes (id, tenant_id, name, description_i18n, consent_text_i18n)
+select gen_random_uuid(), ${t}, 'scope-' || g, ${FULL_TEXT}, ${FULL_TEXT} from generate_series(1, ${v.scopes}) g;
 create temp table vol_roles as
   select row_number() over (order by name) n, id from roles where tenant_id = ${t} and name like 'role-%';
 create temp table vol_groups as

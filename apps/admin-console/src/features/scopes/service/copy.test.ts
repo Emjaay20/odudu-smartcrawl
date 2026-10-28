@@ -28,6 +28,8 @@ const SCOPE = {
   include_in_access_token: false,
   default_client_assignment: 'optional' as const,
   consent_text: 'Read invoices',
+  description_i18n: {},
+  consent_text_i18n: {},
   display_order: 4,
   created_at: '2026-09-28T08:41:53.858Z',
 };

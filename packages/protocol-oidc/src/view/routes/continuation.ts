@@ -34,7 +34,7 @@ export interface ContinuationDeps {
   ): Promise<boolean>;
   // The name of a client in its tenant, or null when there is none. Read only
   // by a page that says whom the person is signing in to.
-  clientName?(tenantId: string, oauthClientId: string): Promise<string | null>;
+  clientName?(tenantId: string, oauthClientId: string, localeTag: string): Promise<string | null>;
   // The `locale` attribute of a subject, read only for a page shown after
   // the first factor was verified (ADR 0043, step 2).
   subjectLocale?(tenantId: string, subjectId: string): Promise<string | null>;
@@ -184,6 +184,6 @@ export async function continuation(
     clientName: async () =>
       tenant === null || pending === null
         ? undefined
-        : ((await deps.clientName?.(tenant.id, pending.clientId)) ?? undefined),
+        : ((await deps.clientName?.(tenant.id, pending.clientId, locale.tag)) ?? undefined),
   };
 }

@@ -11,6 +11,8 @@ const CLIENT: ExportedClient = {
   client_id: 'billing-app',
   name: 'Billing',
   description: null,
+  name_i18n: {},
+  description_i18n: {},
   type: 'confidential',
   enabled: true,
   full_scope_allowed: false,
@@ -116,6 +118,8 @@ const DOCUMENT: TenantDocument = {
       include_in_access_token: false,
       default_client_assignment: 'default',
       consent_text: null,
+      description_i18n: {},
+      consent_text_i18n: {},
       display_order: 0,
       builtin: true,
       roles: [],
@@ -183,6 +187,24 @@ describe('tenantDocumentSchema', () => {
     expect(result.data?.settings.supported_locales).toEqual(['en']);
     expect(result.data?.settings.default_locale).toBeNull();
     expect(result.data?.message_overrides).toEqual([]);
+  });
+
+  it('imports a client and a scope from before per-language text with every map empty', () => {
+    const olderClient: Record<string, unknown> = { ...CLIENT };
+    delete olderClient.name_i18n;
+    delete olderClient.description_i18n;
+    const [scope] = DOCUMENT.scopes;
+    const olderScope: Record<string, unknown> = { ...scope };
+    delete olderScope.description_i18n;
+    delete olderScope.consent_text_i18n;
+    const result = tenantDocumentSchema.safeParse({
+      ...DOCUMENT,
+      clients: [olderClient],
+      scopes: [olderScope],
+    });
+    expect(result.success).toBe(true);
+    expect(result.data?.clients[0]).toMatchObject({ name_i18n: {}, description_i18n: {} });
+    expect(result.data?.scopes[0]).toMatchObject({ description_i18n: {}, consent_text_i18n: {} });
   });
 
   it('holds overrides to 500, and each to the locale, key and message shapes', () => {

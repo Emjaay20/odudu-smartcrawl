@@ -19,6 +19,8 @@ const confidential = {
   builtinAdmin: false,
   skipLogoutConfirmation: false,
   description: null,
+  nameI18n: {},
+  descriptionI18n: {},
   previousSecretHash: null,
   previousSecretExpiresAt: null,
 };

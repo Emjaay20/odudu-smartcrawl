@@ -10,6 +10,8 @@ const ALLOWLISTS: Record<string, ResourceAllowlist> = {
   client: {
     name: 'value',
     description: 'value',
+    name_i18n: 'value',
+    description_i18n: 'value',
     enabled: 'value',
     type: 'value',
     full_scope_allowed: 'value',
@@ -64,6 +66,8 @@ const ALLOWLISTS: Record<string, ResourceAllowlist> = {
     name: 'value',
     default_client_assignment: 'value',
     consent_text: 'value',
+    description_i18n: 'value',
+    consent_text_i18n: 'value',
     display_order: 'value',
   },
   signing_key: {

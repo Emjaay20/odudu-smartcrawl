@@ -739,3 +739,70 @@ describe('[ODUDU-CLIENT-REGISTRATION-JWKS-URI-01] a registered jwks_uri', () => 
     });
   });
 });
+
+describe('[RFC7591-2.2] client_name#<language> members', () => {
+  async function openTenant(locales: string[]): Promise<{ name: string; id: string }> {
+    const name = `lang-${newId()}`;
+    const id = newId();
+    await withTenant(app.db, id, async (tx) => {
+      await seedTenant(tx, id, { name, policy: 'open' });
+      await tx.update(tenants).set({ supportedLocales: locales }).where(eq(tenants.id, id));
+    });
+    return { name, id };
+  }
+
+  const register = (tenant: string, payload: Record<string, unknown>) =>
+    http.inject({ method: 'POST', url: URL_FOR(tenant), payload: { ...MINIMAL, ...payload } });
+
+  it('stores client_name#fr in name_i18n and echoes it', async () => {
+    const tenant = await openTenant(['en', 'fr', 'pt-BR']);
+    const res = await register(tenant.name, {
+      client_name: 'Shop',
+      'client_name#fr': 'Boutique',
+      'client_name#pt-br': 'Loja',
+    });
+    expect(res.statusCode).toBe(201);
+    const body = res.json<Record<string, string>>();
+    expect(body['client_name#fr']).toBe('Boutique');
+    expect(body['client_name#pt-BR']).toBe('Loja');
+    expect(body.client_name).toBe('Shop');
+
+    await withTenant(app.db, tenant.id, async (tx) => {
+      const [row] = await tx
+        .select()
+        .from(clients)
+        .where(eq(clients.clientId, body.client_id ?? ''));
+      expect(row?.name).toBe('Shop');
+      expect(row?.nameI18n).toEqual({ fr: 'Boutique', 'pt-BR': 'Loja' });
+    });
+  });
+
+  it('leaves out, and does not echo, a language the tenant does not offer', async () => {
+    const tenant = await openTenant(['en', 'fr']);
+    const res = await register(tenant.name, {
+      'client_name#fr': 'Boutique',
+      'client_name#ja': 'x',
+    });
+    expect(res.statusCode).toBe(201);
+    const body = res.json<Record<string, string>>();
+    expect(body['client_name#ja']).toBeUndefined();
+    expect(body['client_name#fr']).toBe('Boutique');
+  });
+
+  it.each([
+    ['a hostile tag', { 'client_name#<script>alert(1)</script>': 'x' }],
+    ['an overlong tag', { ['client_name#' + 'a'.repeat(300)]: 'x' }],
+    ['one tag spelled twice', { 'client_name#fr-ca': 'a', 'client_name#fr-CA': 'b' }],
+    ['a bidirectional control', { 'client_name#fr': `Bank${String.fromCodePoint(0x202e)}` }],
+    ['a value that is not a string', { 'client_name#fr': 7 }],
+    ['an overlong value', { 'client_name#fr': 'x'.repeat(257) }],
+  ])('refuses %s, registering nothing', async (_label, extra) => {
+    const tenant = await openTenant(['en', 'fr', 'fr-CA']);
+    const res = await register(tenant.name, extra);
+    expect(res.statusCode).toBe(400);
+    expect(res.json<{ error: string }>().error).toBe('invalid_client_metadata');
+    expect(res.body).not.toContain('<script>');
+    const rows = await withTenant(app.db, tenant.id, (tx) => tx.select().from(clients));
+    expect(rows.filter((row) => row.registrationOrigin === 'anonymous')).toEqual([]);
+  });
+});

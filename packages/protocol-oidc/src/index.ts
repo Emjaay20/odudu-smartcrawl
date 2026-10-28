@@ -1,3 +1,4 @@
+import { lookupLocalised } from '@odudu/contracts';
 import {
   admitSession,
   advance,
@@ -380,6 +381,16 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
             row.scope.consentText === null ? [] : [[row.scope.name, row.scope.consentText]],
           ),
         );
+        const i18n = {
+          clientName: client?.nameI18n ?? {},
+          scopeLabels: Object.fromEntries(
+            ordered.flatMap((row) =>
+              Object.keys(row.scope.consentTextI18n).length === 0
+                ? []
+                : [[row.scope.name, row.scope.consentTextI18n]],
+            ),
+          ),
+        };
         const scopeIdByName = new Map(assignments.map((row) => [row.scope.name, row.scope.id]));
         return {
           clientName: client?.name ?? '',
@@ -389,6 +400,7 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
             tosUri: config?.tosUri ?? null,
           },
           scopeLabels,
+          i18n,
           consentRequired: config?.consentRequired ?? false,
           defaultScopes,
           optionalScopes,
@@ -655,12 +667,13 @@ export function oidcRoutes(deps: OidcRoutesDeps): FastifyPluginAsync {
 
     const recoverPendingRequest = (tenantId: string, authSessionId: string) =>
       withTenant(deps.database.db, tenantId, (tx) => loadPendingRequest(tx, authSessionId));
-    const clientName = (tenantId: string, oauthClientId: string) =>
-      withTenant(
-        deps.database.db,
-        tenantId,
-        async (tx) => (await clientRepository(tx).byClientId(oauthClientId))?.name ?? null,
-      );
+    const clientName = (tenantId: string, oauthClientId: string, localeTag: string) =>
+      withTenant(deps.database.db, tenantId, async (tx) => {
+        const client = await clientRepository(tx).byClientId(oauthClientId);
+        return client === null
+          ? null
+          : (lookupLocalised(client.nameI18n, localeTag) ?? client.name);
+      });
     const redirectStillRegistered = (
       tenantId: string,
       oauthClientId: string,

@@ -8,6 +8,7 @@ import {
   createdAtSchema,
   cursorQuerySchema,
   idSchema,
+  localisedTextSchema,
   searchPrefixSchema,
 } from '#/admin/shared';
 
@@ -30,6 +31,8 @@ export const clientScopeSchema = z.object({
   include_in_access_token: z.boolean(),
   default_client_assignment: clientScopeAssignmentSchema.nullable(),
   consent_text: z.string().nullable(),
+  description_i18n: localisedTextSchema,
+  consent_text_i18n: localisedTextSchema,
   display_order: z.number().int(),
   created_at: createdAtSchema,
 });
@@ -56,6 +59,8 @@ export const createScopeRequestSchema = z.object({
   include_in_access_token: z.boolean().optional(),
   default_client_assignment: clientScopeAssignmentSchema.nullable().optional(),
   consent_text: consentTextSchema.nullable().optional(),
+  description_i18n: localisedTextSchema.optional(),
+  consent_text_i18n: localisedTextSchema.optional(),
   display_order: displayOrderSchema.optional(),
 });
 export type CreateScopeRequest = z.infer<typeof createScopeRequestSchema>;

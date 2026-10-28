@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { boolean, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { boolean, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { tenants } from '@odudu/db';
 
 // Policies are written as hand-authored SQL in packages/db/drizzle/, never
@@ -15,6 +15,10 @@ export const clients = pgTable('clients', {
   // An administrator's note on what the client is for
   // (packages/db/drizzle/0084_client_display_metadata.sql).
   description: text('description'),
+  // Text per language tag, the base column being what a language with no
+  // entry falls back to (packages/db/drizzle/0109_i18n_metadata.sql).
+  nameI18n: jsonb('name_i18n').$type<Record<string, string>>().notNull().default({}),
+  descriptionI18n: jsonb('description_i18n').$type<Record<string, string>>().notNull().default({}),
   enabled: boolean('enabled').notNull().default(true),
   type: text('type').notNull(),
   secretHash: text('secret_hash'),
@@ -70,6 +74,8 @@ export interface ClientRecord {
   clientId: string;
   name: string;
   description: string | null;
+  nameI18n: Record<string, string>;
+  descriptionI18n: Record<string, string>;
   enabled: boolean;
   type: 'public' | 'confidential';
   secretHash: string | null;

@@ -159,6 +159,14 @@ const EXPECTED_CHECKS: Record<string, string> = {
   'client_oidc_config.client_oidc_config_default_max_age_range': 'CHECK ((default_max_age >= 0))',
   'clients.clients_previous_secret_pair':
     'CHECK (((previous_secret_hash IS NULL) = (previous_secret_expires_at IS NULL)))',
+  'clients.clients_name_i18n_shape':
+    "CHECK (((jsonb_typeof(name_i18n) = 'object'::text) AND (octet_length((name_i18n)::text) <= 131072)))",
+  'clients.clients_description_i18n_shape':
+    "CHECK (((jsonb_typeof(description_i18n) = 'object'::text) AND (octet_length((description_i18n)::text) <= 131072)))",
+  'client_scopes.client_scopes_description_i18n_shape':
+    "CHECK (((jsonb_typeof(description_i18n) = 'object'::text) AND (octet_length((description_i18n)::text) <= 131072)))",
+  'client_scopes.client_scopes_consent_text_i18n_shape':
+    "CHECK (((jsonb_typeof(consent_text_i18n) = 'object'::text) AND (octet_length((consent_text_i18n)::text) <= 131072)))",
   'tenants.tenants_default_locale_supported':
     'CHECK (((default_locale IS NULL) OR (default_locale = ANY (supported_locales))))',
   'tenants.tenants_supported_locales_bounds':

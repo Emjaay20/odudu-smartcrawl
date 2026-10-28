@@ -164,6 +164,7 @@ async function renderAuthorizationOutcome(
         clientName: outcome.clientName,
         clientPages: outcome.clientPages,
         scopeLabels: outcome.scopeLabels,
+        i18n: outcome.i18n,
         defaultScopes: outcome.defaultScopes,
         optionalScopes: outcome.optionalScopes,
         alreadyGranted: outcome.alreadyGranted,

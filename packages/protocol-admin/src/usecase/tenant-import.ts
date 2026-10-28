@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto';
+import { canonicalLocale } from '@odudu/contracts';
 import {
   executionRepository,
   registeredAuthenticatorNames,
@@ -110,6 +111,14 @@ function generateClientSecret(): string {
   return randomBytes(32).toString('base64url');
 }
 
+// A validated map with its tags in the canonical spelling; validation has
+// already refused a tag written twice.
+function canonicalTexts(map: Readonly<Record<string, string>>): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(map).map(([tag, text]) => [canonicalLocale(tag) ?? tag, text]),
+  );
+}
+
 function required<T>(map: ReadonlyMap<string, T>, key: string, what: string): T {
   const value = map.get(key);
   if (value === undefined) throw new Error(`tenant import: no ${what} for ${JSON.stringify(key)}`);
@@ -162,6 +171,8 @@ async function writeClient(
     clientId: client.client_id,
     name: client.name,
     description: client.description,
+    nameI18n: canonicalTexts(client.name_i18n),
+    descriptionI18n: canonicalTexts(client.description_i18n),
     type: client.type,
     secretHash: secret === null ? null : await deps.hashClientSecret(secret),
     enabled: client.enabled,
@@ -301,6 +312,8 @@ async function writeScopes(
       includeInAccessToken: scope.include_in_access_token,
       defaultClientAssignment: scope.default_client_assignment,
       consentText: scope.consent_text,
+      descriptionI18n: canonicalTexts(scope.description_i18n),
+      consentTextI18n: canonicalTexts(scope.consent_text_i18n),
       displayOrder: scope.display_order,
     };
     let scopeId: string;

@@ -19,6 +19,8 @@ export {
   idSchema,
   createdAtSchema,
   etagSchema,
+  CLIENT_NAME_MAX,
+  localisedTextSchema,
   DESCRIPTION_MAX,
 } from '#/admin/shared';
 export {

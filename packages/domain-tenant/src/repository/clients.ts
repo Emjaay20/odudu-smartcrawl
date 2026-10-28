@@ -20,6 +20,8 @@ function toRecord(row: typeof clients.$inferSelect): ClientRecord {
     clientId: row.clientId,
     name: row.name,
     description: row.description,
+    nameI18n: row.nameI18n,
+    descriptionI18n: row.descriptionI18n,
     enabled: row.enabled,
     type: row.type as ClientRecord['type'],
     secretHash: row.secretHash,
@@ -39,6 +41,8 @@ export interface NewClient {
   clientId: string;
   name: string;
   description?: string | null;
+  nameI18n?: Record<string, string>;
+  descriptionI18n?: Record<string, string>;
   type: 'public' | 'confidential';
   secretHash: string | null;
   enabled?: boolean;
@@ -105,6 +109,8 @@ export function clientRepository(tx: TenantScopedDatabase) {
             clientId: input.clientId,
             name: input.name,
             description: input.description ?? null,
+            nameI18n: input.nameI18n ?? {},
+            descriptionI18n: input.descriptionI18n ?? {},
             type: input.type,
             secretHash: input.secretHash,
             enabled: input.enabled ?? true,
@@ -138,6 +144,8 @@ export function clientRepository(tx: TenantScopedDatabase) {
           typeof clients.$inferInsert,
           | 'name'
           | 'description'
+          | 'nameI18n'
+          | 'descriptionI18n'
           | 'enabled'
           | 'fullScopeAllowed'
           | 'skipLogoutConfirmation'

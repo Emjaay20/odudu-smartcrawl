@@ -14,7 +14,7 @@ describe('the client amendment allowlist', () => {
   // than falling silently into either list — the fourth test below is
   // what catches a column like it.
   it('admits the five mutable columns on clients and 28 of 30 on client_oidc_config', () => {
-    expect(AMENDABLE_CLIENT_FIELDS).toHaveLength(33);
+    expect(AMENDABLE_CLIENT_FIELDS).toHaveLength(35);
     for (const field of [
       'name',
       'enabled',
@@ -67,16 +67,18 @@ describe('the client amendment allowlist', () => {
 });
 
 describe('the narrower allowlist the built-in admin client is amended through', () => {
-  it('admits thirteen fields nothing about reaching the admin API depends on', () => {
+  it('admits fifteen fields nothing about reaching the admin API depends on', () => {
     expect([...BUILTIN_ADMIN_AMENDABLE_FIELDS].sort()).toEqual([
       'backchannel_logout_session_required',
       'backchannel_logout_uri',
       'client_uri',
       'consent_required',
       'description',
+      'description_i18n',
       'frontchannel_logout_session_required',
       'frontchannel_logout_uri',
       'name',
+      'name_i18n',
       'policy_uri',
       'tos_uri',
       'userinfo_encrypted_response_alg',

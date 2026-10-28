@@ -20,6 +20,14 @@ export {
   isValidZoneinfo,
 } from '#/profile-claims';
 export {
+  checkLocalisedText,
+  LOCALISED_TEXT_ENTRIES_MAX,
+  lookupLocalised,
+  type LocalisedText,
+  type LocalisedTextCheck,
+  type LocalisedTextOptions,
+} from '#/localised-text';
+export {
   BIDI_FREE_PATTERN,
   BIDI_REFUSED,
   BIDI_REFUSED_MESSAGE,

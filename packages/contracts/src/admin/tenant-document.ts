@@ -10,6 +10,7 @@ import {
   CLIENT_LIST_LIMIT,
   fieldErrorSchema,
   listLimitMessage,
+  localisedTextSchema,
   type FieldError,
 } from '#/admin/shared';
 import { requiredActionSchema } from '#/admin/subjects';
@@ -130,6 +131,9 @@ export const exportedClientSchema = z.strictObject({
   client_id: noBidiControls(z.string()),
   name: noBidiControls(z.string()),
   description: noBidiControls(z.string()).nullable(),
+  // Absent from a document exported before per-language text existed.
+  name_i18n: localisedTextSchema.default({}),
+  description_i18n: localisedTextSchema.default({}),
   type: clientTypeSchema,
   enabled: z.boolean(),
   full_scope_allowed: z.boolean(),
@@ -199,6 +203,8 @@ export const exportedScopeSchema = z.strictObject({
   include_in_access_token: z.boolean(),
   default_client_assignment: clientScopeAssignmentSchema.nullable(),
   consent_text: noBidiControls(z.string()).nullable(),
+  description_i18n: localisedTextSchema.default({}),
+  consent_text_i18n: localisedTextSchema.default({}),
   display_order: z.number().int(),
   builtin: z.boolean(),
   roles: assignmentSet(roleReferenceSchema),

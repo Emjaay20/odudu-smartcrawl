@@ -1,8 +1,15 @@
 import { startsALogin } from '@odudu/authn-flows';
-import { BIDI_REFUSED, BIDI_REFUSED_MESSAGE, canonicalLocale } from '@odudu/contracts';
+import {
+  BIDI_REFUSED,
+  BIDI_REFUSED_MESSAGE,
+  canonicalLocale,
+  checkLocalisedText,
+} from '@odudu/contracts';
 import {
   ASSIGNMENT_LIMIT,
+  CLIENT_NAME_MAX,
   CLIENT_SCOPE_LIMIT,
+  DESCRIPTION_MAX,
   EXPORT_SUBJECT_CAP,
   SCOPE_LIMIT,
   smtpPortSchema,
@@ -31,7 +38,7 @@ import {
 } from '@odudu/protocol-oidc';
 import { checkDescription } from '#/service/description';
 import { fieldPath } from '#/service/field-path';
-import { checkConsentText, checkDisplayOrder } from '#/service/scope-consent';
+import { checkConsentText, checkDisplayOrder, checkScopeLocalised } from '#/service/scope-consent';
 import { validateFlowSteps } from '#/service/flow-validation';
 import { CLAIM_KEY, PHONE_E164_MESSAGE, shapeInvalidityFor } from '#/usecase/profile';
 import { tooManySubjectsDetail } from '#/usecase/tenant-export';
@@ -340,6 +347,12 @@ function scopeProblems(
     }
     const consentText = checkConsentText(scope.consent_text);
     if (consentText.kind === 'invalid') problems.add(`${path}.consent_text`, consentText.message);
+    for (const field of ['description_i18n', 'consent_text_i18n'] as const) {
+      const checked = checkScopeLocalised(field, scope[field], {
+        supported: document.settings.supported_locales,
+      });
+      if (checked.kind === 'invalid') problems.add(`${path}.${field}`, checked.message);
+    }
     const displayOrder = checkDisplayOrder(scope.display_order);
     if (displayOrder.kind === 'invalid') {
       problems.add(`${path}.display_order`, displayOrder.message);
@@ -495,6 +508,16 @@ function clientProblems(
       problems.add(`${path}.client_id`, `${ADMIN_CLIENT_ID} is provisioned by every new tenant`);
     }
     if (client.client_id === '') problems.add(`${path}.client_id`, 'is empty');
+    for (const [field, max] of [
+      ['name_i18n', CLIENT_NAME_MAX],
+      ['description_i18n', DESCRIPTION_MAX],
+    ] as const) {
+      const checked = checkLocalisedText(field, client[field], {
+        max,
+        supported: document.settings.supported_locales,
+      });
+      if (checked.kind === 'invalid') problems.add(`${path}.${field}`, checked.message);
+    }
     const parsed = parseClientMetadata(metadataInput(client), {
       tlsClientAuthEnabled: environment.tlsClientAuthEnabled,
     });

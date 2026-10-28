@@ -261,6 +261,10 @@ describeFields(clientFieldsSchema, {
     'The `client_id` the application sends to the authorization and token endpoints. Chosen when the client is created and unique within the tenant.',
   name: 'A display name for people, shown for example on the consent screen.',
   description: 'Free text for administrators, or null when none was set.',
+  name_i18n:
+    'The name in other languages, by language tag, such as `fr` or `pt-BR`: at most 32, each of the tenant’s `supported_locales`, each at most 256 characters. A language with no entry shows `name`. A PATCH replaces the whole map.',
+  description_i18n:
+    'The description in other languages, by language tag, under the same rules as `name_i18n`, each at most 1000 characters.',
   type: '`public` for an application that cannot keep a secret (a single-page or native app), which must use PKCE; `confidential` for one that authenticates at the token endpoint.',
   enabled:
     'A disabled client cannot start a sign-in or obtain tokens, and tokens already issued to it stop being accepted.',
@@ -537,6 +541,10 @@ describeFields(clientScopeSchema, {
   default_client_assignment:
     'How every new client gets this scope: `default`, `optional`, or null for neither.',
   consent_text: 'The sentence the consent screen shows for this scope, or null to use its name.',
+  description_i18n:
+    'The description in other languages, by language tag: at most 32, each of the tenant’s `supported_locales`, each at most 1000 characters. A language with no entry shows `description`. A PATCH replaces the whole map.',
+  consent_text_i18n:
+    'The consent sentence in other languages, by language tag, under the same rules, each at most 500 characters. The consent screen takes the page’s language by RFC 4647 lookup (`fr-CA` finds `fr`), then `consent_text`, then the scope’s name.',
   display_order: 'Where the scope sorts on the consent screen; lowest first.',
   created_at: 'When the scope was created.',
 });
@@ -547,6 +555,10 @@ describeFields(createScopeRequestSchema, {
   include_in_access_token: 'Whether its claims appear in the access token.',
   default_client_assignment: 'Assign it to every new client as `default` or `optional`.',
   consent_text: 'The sentence the consent screen shows for it.',
+  description_i18n:
+    'The description in other languages, by language tag: at most 32, each of the tenant’s `supported_locales`, each at most 1000 characters. A language with no entry shows `description`. A PATCH replaces the whole map.',
+  consent_text_i18n:
+    'The consent sentence in other languages, by language tag, under the same rules, each at most 500 characters. The consent screen takes the page’s language by RFC 4647 lookup (`fr-CA` finds `fr`), then `consent_text`, then the scope’s name.',
   display_order: 'Where it sorts on the consent screen; lowest first.',
 });
 describeFields(scopeClientSchema, {
@@ -730,6 +742,10 @@ describeFields(exportedClientSchema, {
     'The `client_id` the application sends to the authorization and token endpoints. Chosen when the client is created and unique within the tenant.',
   name: 'A display name for people, shown for example on the consent screen.',
   description: 'Free text for administrators, or null when none was set.',
+  name_i18n:
+    'The name in other languages, by language tag, such as `fr` or `pt-BR`: at most 32, each of the tenant’s `supported_locales`, each at most 256 characters. A language with no entry shows `name`. A PATCH replaces the whole map.',
+  description_i18n:
+    'The description in other languages, by language tag, under the same rules as `name_i18n`, each at most 1000 characters.',
   type: '`public` for an application that cannot keep a secret (a single-page or native app), which must use PKCE; `confidential` for one that authenticates at the token endpoint.',
   enabled:
     'A disabled client cannot start a sign-in or obtain tokens, and tokens already issued to it stop being accepted.',
@@ -816,6 +832,10 @@ describeFields(exportedScopeSchema, {
   include_in_access_token: 'Whether its claims appear in the access token.',
   default_client_assignment: 'How every new client gets the scope, or null for neither.',
   consent_text: 'The sentence the consent screen shows for it, or null.',
+  description_i18n:
+    'The description in other languages, by language tag: at most 32, each of the tenant’s `supported_locales`, each at most 1000 characters. A language with no entry shows `description`. A PATCH replaces the whole map.',
+  consent_text_i18n:
+    'The consent sentence in other languages, by language tag, under the same rules, each at most 500 characters. The consent screen takes the page’s language by RFC 4647 lookup (`fr-CA` finds `fr`), then `consent_text`, then the scope’s name.',
   display_order: 'Where it sorts on the consent screen; lowest first.',
   builtin: 'True for a scope every tenant has.',
   roles: 'The roles the scope carries into tokens.',
