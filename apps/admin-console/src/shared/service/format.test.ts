@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  byteSizeReading,
   groupedNumber,
   andList,
   attemptsText,
@@ -156,5 +157,16 @@ describe('attemptsText', () => {
     expect(attemptsText(1)).toBe('1 attempt');
     expect(attemptsText(0)).toBe('0 attempts');
     expect(attemptsText(5)).toBe('5 attempts');
+  });
+});
+
+describe('byteSizeReading', () => {
+  it('says how much of the limit is used, and by how much it is passed', () => {
+    expect(byteSizeReading(1500, 2000)).toEqual({ text: '1,500 of 2,000 bytes.', over: false });
+    expect(byteSizeReading(2000, 2000).over).toBe(false);
+    expect(byteSizeReading(2001, 2000)).toEqual({
+      text: '1 bytes over the limit of 2,000.',
+      over: true,
+    });
   });
 });

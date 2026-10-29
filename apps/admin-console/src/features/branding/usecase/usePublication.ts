@@ -53,12 +53,12 @@ export function usePublication({
       writes.publish
         .run(tag)
         .then((result) => {
-          answered(publishOutcomeOf(result, publishFailure));
+          answered(publishOutcomeOf(result, publishFailure, tag));
           const failure = failureOf(result);
           if (failure !== null) refusal.report(failure, 'manage-tenant');
         })
         .catch(() => {
-          answered(publishOutcomeOf({ ok: false, kind: 'defect' }, publishFailure));
+          answered(publishOutcomeOf({ ok: false, kind: 'defect' }, publishFailure, tag));
         });
     },
   };

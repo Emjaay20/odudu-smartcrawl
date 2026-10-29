@@ -29,7 +29,12 @@ import {
   type Logo,
   type Plain,
 } from '#/features/branding/service/values';
-import type { PublishThemeResponse, ThemeAsset, ThemeView } from '@odudu/contracts/admin';
+import type {
+  FieldError,
+  PublishThemeResponse,
+  ThemeAsset,
+  ThemeView,
+} from '@odudu/contracts/admin';
 import { tabNamed } from '#/shared/service/record';
 import { OFFERED_TABS, type OfferedTab } from '#/features/branding/service/tabs';
 
@@ -125,6 +130,10 @@ export function uploadFailureOf(slot: ImageSlot, failure: GatewayFailure): strin
 
 export interface PublishOutcome {
   issues: Issues;
+  // The refusals as the server gave them, with their lines, and the draft
+  // they were given for.
+  errors: readonly FieldError[];
+  atTag: string | null;
   warnings: readonly string[];
   message: string | null;
   // Said as a toast once the publish went through.
@@ -133,6 +142,8 @@ export interface PublishOutcome {
 
 export const NO_OUTCOME: PublishOutcome = {
   issues: NO_ISSUES,
+  errors: [],
+  atTag: null,
   warnings: [],
   message: null,
   toast: null,
@@ -141,17 +152,27 @@ export const NO_OUTCOME: PublishOutcome = {
 export function publishOutcomeOf(
   result: GatewayResult<PublishThemeResponse>,
   failureText: (failure: GatewayFailure) => string,
+  tag: string,
 ): PublishOutcome {
   if (result.ok) {
     return {
       issues: NO_ISSUES,
+      errors: [],
+      atTag: null,
       warnings: warningLines(result.data),
       message: null,
       toast: PUBLISHED_TOAST,
     };
   }
   const errors = result.kind === 'problem' ? result.problem.errors : undefined;
-  return { issues: issuesOf(errors), warnings: [], message: failureText(result), toast: null };
+  return {
+    issues: issuesOf(errors),
+    errors: errors ?? [],
+    atTag: tag,
+    warnings: [],
+    message: failureText(result),
+    toast: null,
+  };
 }
 
 export function previewWith(choice: PreviewChoice, change: Partial<PreviewChoice>): PreviewChoice {

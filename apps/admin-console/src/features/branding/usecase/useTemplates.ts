@@ -1,10 +1,8 @@
-import type { FieldError, ThemeView } from '@odudu/contracts/admin';
-import { useState } from 'react';
+import type { ThemeView } from '@odudu/contracts/admin';
 import { useRefusal } from '#/features/session';
 import { templateSave } from '#/features/branding/repository/themeSaves';
 import {
   limitedIssues,
-  refusalErrors,
   templateProblems,
   templateSize,
   templateField,
@@ -14,19 +12,19 @@ import {
   themeRecord,
   type PageKind,
   type PlacedProblems,
-  type Size,
   type TemplateValues,
   type ThemeScope,
 } from '#/features/branding/service';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
 import { writeRefusal } from '#/shared/service/capabilities';
+import type { SizeReading } from '#/shared/service/format';
 
 export interface Templates {
   save: SectionSave<TemplateValues>;
   text: (kind: PageKind) => string;
   // What the server refused in this kind's template, with the lines to mark.
   problems: (kind: PageKind) => PlacedProblems;
-  size: (kind: PageKind) => Size;
+  size: (kind: PageKind) => SizeReading;
   edit: (kind: PageKind, text: string) => void;
   changed: (kind: PageKind) => boolean;
 }
@@ -45,7 +43,6 @@ export function useTemplates({
   gone: boolean;
 }): Templates {
   const refusal = useRefusal(tenant);
-  const [refused, setRefused] = useState<readonly FieldError[]>([]);
   const save = useSectionSave({
     tenant,
     record: themeRecord(scope),
@@ -57,21 +54,17 @@ export function useTemplates({
     refusal,
     explain: writeRefusal,
     fields: templateFields(templateValues(view)),
-    save: (gateway, input) =>
-      templateSave(
-        tenant,
-        scope,
-        view,
-      )(gateway, input).then((result) => {
-        setRefused(refusalErrors(result));
-        return result;
-      }),
+    save: templateSave(tenant, scope, view),
   });
   return {
     save,
     text: (kind) => save.values[templateField(kind)],
     problems: (kind) =>
-      templateProblems(kind, refused, limitedIssues(save.fieldErrors[templateField(kind)])),
+      templateProblems(
+        kind,
+        save.refusals[templateField(kind)] ?? [],
+        limitedIssues(save.fieldErrors[templateField(kind)]),
+      ),
     size: (kind) => templateSize(save.values[templateField(kind)]),
     edit: (kind, text) => {
       save.edit(templateField(kind), text);

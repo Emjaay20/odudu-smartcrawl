@@ -1,9 +1,10 @@
-import type { FieldError, ThemeView } from '@odudu/contracts/admin';
-import { useState } from 'react';
+import type { ThemeView } from '@odudu/contracts/admin';
 import { useRefusal } from '#/features/session';
 import { stylesheetSave } from '#/features/branding/repository/themeSaves';
 import {
-  refusalErrors,
+  firstProblems,
+  publishedStylesheetProblems,
+  type PublishOutcome,
   stylesheetFields,
   stylesheetHold,
   stylesheetProblems,
@@ -12,18 +13,18 @@ import {
   STYLESHEET_PATH,
   STYLESHEET_SECTION_TITLE,
   themeRecord,
-  type Size,
   type PlacedProblems,
   type StylesheetValues,
   type ThemeScope,
 } from '#/features/branding/service';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
 import { writeRefusal } from '#/shared/service/capabilities';
+import type { SizeReading } from '#/shared/service/format';
 
 export interface Stylesheet {
   save: SectionSave<StylesheetValues>;
   text: string;
-  size: Size;
+  size: SizeReading;
   blocked: string | undefined;
   // What the server refused in it, with the lines to mark.
   problems: PlacedProblems;
@@ -37,15 +38,17 @@ export function useStylesheet({
   view,
   tag,
   gone,
+  published,
 }: {
   tenant: string;
   scope: ThemeScope;
   view: ThemeView;
   tag: string;
   gone: boolean;
+  // What the last publish answered, for a refusal of the stylesheet in it.
+  published: PublishOutcome;
 }): Stylesheet {
   const refusal = useRefusal(tenant);
-  const [refused, setRefused] = useState<readonly FieldError[]>([]);
   const save = useSectionSave({
     tenant,
     record: themeRecord(scope),
@@ -57,26 +60,22 @@ export function useStylesheet({
     refusal,
     explain: writeRefusal,
     fields: stylesheetFields(stylesheetValues(view)),
-    save: (gateway, input) =>
-      stylesheetSave(
-        tenant,
-        scope,
-        view,
-      )(gateway, input).then((result) => {
-        setRefused(refusalErrors(result));
-        return result;
-      }),
+    save: stylesheetSave(tenant, scope, view),
   });
   const text = save.values.stylesheet;
+  const changed = save.changed.includes('stylesheet');
   return {
     save,
     text,
     size: stylesheetSize(text),
     blocked: stylesheetHold(text),
-    problems: stylesheetProblems(refused, save.fieldErrors[STYLESHEET_PATH]),
+    problems: firstProblems(
+      stylesheetProblems(save.refusals.stylesheet ?? [], save.fieldErrors[STYLESHEET_PATH]),
+      publishedStylesheetProblems(published, tag, changed),
+    ),
     edit: (next) => {
       save.edit('stylesheet', next);
     },
-    changed: save.changed.includes('stylesheet'),
+    changed,
   };
 }

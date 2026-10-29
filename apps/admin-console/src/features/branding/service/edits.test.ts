@@ -130,10 +130,26 @@ describe('a publish', () => {
         next: null,
       },
       () => '',
+      '"d1"',
     );
     expect(ok.toast).toBe('Theme published');
-    expect(publishOutcomeOf({ ok: false, kind: 'network' }, () => 'lost').toast).toBeNull();
+    expect(publishOutcomeOf({ ok: false, kind: 'network' }, () => 'lost', '"d1"').toast).toBeNull();
     expect(NO_OUTCOME.toast).toBeNull();
+  });
+
+  it('keeps a refusal’s errors with the draft it was given for', () => {
+    const errors = [{ path: 'stylesheet', message: 'm', line: 3 }];
+    const refused = publishOutcomeOf(
+      {
+        ok: false,
+        kind: 'problem',
+        problem: { type: 'about:blank', title: 'Bad', status: 400, errors },
+      },
+      () => 'no',
+      '"d1"',
+    );
+    expect(refused).toMatchObject({ errors, atTag: '"d1"', message: 'no' });
+    expect(NO_OUTCOME).toMatchObject({ errors: [], atTag: null });
   });
 
   it('tells a screen reader only whether the contrast passes', () => {

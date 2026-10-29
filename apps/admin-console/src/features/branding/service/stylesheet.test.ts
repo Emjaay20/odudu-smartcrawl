@@ -3,7 +3,11 @@ import type { FieldError, ThemeView } from '@odudu/contracts/admin';
 import { describe, expect, it } from 'vitest';
 import {
   PLACED_SHOWN,
-  refusalErrors,
+  firstProblems,
+  NO_OUTCOME,
+  NO_PROBLEMS,
+  publishedStylesheetProblems,
+  STYLESHEET_UNPUBLISHABLE,
   sizeReading,
   STYLESHEET_OVER,
   STYLESHEET_REFUSALS,
@@ -51,11 +55,8 @@ describe('the size of a text', () => {
 });
 
 describe('what a refused stylesheet says', () => {
-  it('says nothing once the save’s own error is gone', () => {
-    expect(stylesheetProblems([error({ line: 1 })], undefined)).toEqual({
-      lines: [],
-      message: undefined,
-    });
+  it('says nothing when there are neither refusals nor a save’s own error', () => {
+    expect(stylesheetProblems([], undefined)).toEqual(NO_PROBLEMS);
   });
 
   it('marks a refusal that names a line, in the console’s words with what it quoted', () => {
@@ -101,17 +102,25 @@ describe('what a refused stylesheet says', () => {
     expect(problems.message).toBe(`${STYLESHEET_REFUSED} And 5 more problems.`);
   });
 
-  it('takes the refusals from a failed save, and none from any other failure', () => {
-    const errors = [error({ line: 1 })];
-    expect(
-      refusalErrors({
-        ok: false,
-        kind: 'problem',
-        problem: { type: 'about:blank', title: 'Bad', status: 400, errors },
-      }),
-    ).toEqual(errors);
-    expect(refusalErrors({ ok: false, kind: 'network' })).toEqual([]);
-    expect(refusalErrors({ ok: true, status: 200, data: {}, etag: null, next: null })).toEqual([]);
+  it('says what a refused publish says of a stylesheet only while the draft is the one refused', () => {
+    const errors = [error({ code: 'property-not-allowed', detail: 'x', line: 5 })];
+    const outcome = { ...NO_OUTCOME, errors, atTag: '"d1"' };
+    const marked = publishedStylesheetProblems(outcome, '"d1"', false);
+    expect(marked.lines).toEqual([
+      { line: 5, text: `${STYLESHEET_REFUSALS['property-not-allowed'] ?? ''} (x)` },
+    ]);
+    expect(marked.message).toBe(STYLESHEET_UNPUBLISHABLE);
+    expect(publishedStylesheetProblems(outcome, '"d2"', false)).toEqual(NO_PROBLEMS);
+    expect(publishedStylesheetProblems(outcome, '"d1"', true)).toEqual(NO_PROBLEMS);
+    expect(publishedStylesheetProblems(NO_OUTCOME, '"d1"', false)).toEqual(NO_PROBLEMS);
+  });
+
+  it('prefers the save’s reading to the publish’s', () => {
+    const none = { lines: [], message: undefined };
+    const saved = { lines: [], message: 'saved' };
+    const published = { lines: [], message: 'published' };
+    expect(firstProblems(saved, published)).toBe(saved);
+    expect(firstProblems(none, published)).toBe(published);
   });
 });
 

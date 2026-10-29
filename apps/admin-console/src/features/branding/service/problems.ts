@@ -1,5 +1,4 @@
 import type { FieldError } from '@odudu/contracts/admin';
-import type { GatewayResult } from '#/shared/service/result';
 import type { LineIssue } from '#/shared/service/code';
 import { counted } from '#/shared/service/format';
 
@@ -21,17 +20,17 @@ export function detailed(text: string, error: FieldError): string {
   return error.detail === undefined || error.detail === '' ? text : `${text} (${error.detail})`;
 }
 
-// What a refused save says about one piece of the theme. `saved` is what the
-// save's own machinery made of the refusal; it stands when the refusal has
-// none of its own to read, and when it is undefined nothing is wrong.
+// What a refusal says about one piece of the theme. The refusals that name
+// a line are marked on it and the rest are said in the message; `saved` is
+// the save's own sentence, which stands when the refusal has none of its own
+// to read, and with neither there is nothing to say.
 export function placedProblems(
   errors: readonly FieldError[],
   saved: string | undefined,
   { path, refused, wording }: { path: string; refused: string; wording: (e: FieldError) => string },
 ): PlacedProblems {
-  if (saved === undefined) return NO_PROBLEMS;
   const own = errors.filter((error) => error.path === path);
-  if (own.length === 0) return { lines: [], message: saved };
+  if (own.length === 0) return saved === undefined ? NO_PROBLEMS : { lines: [], message: saved };
   const shown = own.slice(0, PLACED_SHOWN);
   const placed = shown.filter((error) => typeof error.line === 'number');
   const rest = own.length - shown.length;
@@ -46,8 +45,7 @@ export function placedProblems(
   };
 }
 
-// The refusals a save's answer carries, for an editor to place on lines;
-// none once a save has gone through.
-export function refusalErrors(result: GatewayResult<unknown>): readonly FieldError[] {
-  return !result.ok && result.kind === 'problem' ? (result.problem.errors ?? []) : [];
+// The first of two readings that has something to say.
+export function firstProblems(first: PlacedProblems, second: PlacedProblems): PlacedProblems {
+  return first.message === undefined ? second : first;
 }

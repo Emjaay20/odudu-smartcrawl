@@ -83,8 +83,11 @@ describe('what the server refused', () => {
     };
     expect(warningLines(response)).toEqual(['stylesheet: m']);
     expect(
-      publishOutcomeOf({ ok: true, status: 200, data: response, etag: null, next: null }, () => '')
-        .warnings,
+      publishOutcomeOf(
+        { ok: true, status: 200, data: response, etag: null, next: null },
+        () => '',
+        '"d1"',
+      ).warnings,
     ).toEqual(['stylesheet: m']);
   });
 });

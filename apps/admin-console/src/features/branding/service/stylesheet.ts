@@ -1,8 +1,10 @@
 import { MAX_STYLESHEET_BYTES, MAX_TEMPLATE_BYTES } from '@odudu/contracts';
 import type { FieldError } from '@odudu/contracts/admin';
-import { groupedNumber } from '#/shared/service/format';
+import { byteSizeReading, type SizeReading } from '#/shared/service/format';
+import type { PublishOutcome } from '#/features/branding/service/edits';
 import {
   detailed,
+  NO_PROBLEMS,
   placedProblems,
   type PlacedProblems,
 } from '#/features/branding/service/problems';
@@ -16,33 +18,24 @@ export const STYLESHEET_PATH = 'stylesheet';
 
 export const STYLESHEET_REFUSED = 'The stylesheet was not saved.';
 
+export const STYLESHEET_UNPUBLISHABLE = 'The saved stylesheet was refused at publish.';
+
 export const STYLESHEET_OVER = 'The stylesheet is over the size limit.';
 
 function utf8Length(text: string): number {
   return new TextEncoder().encode(text).length;
 }
 
-export interface Size {
-  text: string;
-  over: boolean;
-}
-
 // How much of a limit in bytes a text uses, or by how much it is over.
-export function sizeReading(text: string, limit: number): Size {
-  const used = utf8Length(text);
-  return used > limit
-    ? {
-        text: `${groupedNumber(used - limit)} bytes over the limit of ${groupedNumber(limit)}.`,
-        over: true,
-      }
-    : { text: `${groupedNumber(used)} of ${groupedNumber(limit)} bytes.`, over: false };
+export function sizeReading(text: string, limit: number): SizeReading {
+  return byteSizeReading(utf8Length(text), limit);
 }
 
-export function stylesheetSize(text: string): Size {
+export function stylesheetSize(text: string): SizeReading {
   return sizeReading(text, MAX_STYLESHEET_BYTES);
 }
 
-export function templateSize(text: string): Size {
+export function templateSize(text: string): SizeReading {
   return sizeReading(text, MAX_TEMPLATE_BYTES);
 }
 
@@ -85,6 +78,21 @@ export function stylesheetProblems(
   return placedProblems(errors, saved, {
     path: STYLESHEET_PATH,
     refused: STYLESHEET_REFUSED,
+    wording,
+  });
+}
+
+// What a refused publish says about the stylesheet, for as long as the draft
+// it refused is the one on screen.
+export function publishedStylesheetProblems(
+  outcome: PublishOutcome,
+  tag: string,
+  changed: boolean,
+): PlacedProblems {
+  if (changed || outcome.atTag !== tag) return NO_PROBLEMS;
+  return placedProblems(outcome.errors, undefined, {
+    path: STYLESHEET_PATH,
+    refused: STYLESHEET_UNPUBLISHABLE,
     wording,
   });
 }

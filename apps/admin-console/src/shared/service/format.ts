@@ -102,3 +102,18 @@ export function describeIds(value: unknown, nameOf: (id: string) => string): str
   const ids = Array.isArray(value) ? value.map(String) : [];
   return ids.length === 0 ? 'none' : ids.map(nameOf).join(', ');
 }
+
+export interface SizeReading {
+  text: string;
+  over: boolean;
+}
+
+// How much of a limit in bytes is used, or by how much it is passed.
+export function byteSizeReading(used: number, limit: number): SizeReading {
+  return used > limit
+    ? {
+        text: `${groupedNumber(used - limit)} bytes over the limit of ${groupedNumber(limit)}.`,
+        over: true,
+      }
+    : { text: `${groupedNumber(used)} of ${groupedNumber(limit)} bytes.`, over: false };
+}

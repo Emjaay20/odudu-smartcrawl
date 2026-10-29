@@ -156,6 +156,36 @@ describe('the stylesheet editor', () => {
     });
   });
 
+  it('marks the line a refused publish names, until the text is edited', async () => {
+    const user = userEvent.setup();
+    renderConsoleAt(
+      AT,
+      brandingRoutes(themeAnswer(withStylesheet('.logo {\n  behavior: x;\n}'), '"d1"'), {
+        [`POST ${TH}/publish`]: problem(400, 'about:blank', 'Bad Request', {
+          errors: [
+            {
+              path: 'stylesheet',
+              message: 'The property is not allowed.',
+              code: 'property-not-allowed',
+              detail: 'behavior',
+              line: 2,
+              column: 3,
+            },
+          ],
+        }),
+      }),
+    );
+    const editor = await section();
+    await user.click(screen.getByRole('button', { name: 'Publish the draft' }));
+    expect(
+      await within(editor).findByText('Line 2: This property is not allowed. (behavior)'),
+    ).toBeVisible();
+    expect(within(editor).getByText('The saved stylesheet was refused at publish.')).toBeVisible();
+    expect(editor.querySelectorAll('div[aria-hidden="true"] > span')).toHaveLength(1);
+    await user.type(box(editor), 'x');
+    expect(within(editor).queryByText(/Line 2:/u)).toBeNull();
+  });
+
   it('holds Save while it is over the limit, and says by how much', async () => {
     const user = userEvent.setup();
     renderConsoleAt(AT, brandingRoutes(themeAnswer(draftedView(), '"d1"')));

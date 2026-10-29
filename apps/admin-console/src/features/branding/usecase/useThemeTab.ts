@@ -43,25 +43,25 @@ export function useThemeTab({
 }): ThemeTab {
   const colours = useColours({ tenant, scope, view, tag, gone });
   const images = useImages({ tenant, scope, view, tag, gone });
-  const stylesheet = useStylesheet({ tenant, scope, view, tag, gone });
   const deletion = useImageDeletion(tenant, images.forget);
   const writes = useThemeWrites(tenant, scope);
   const report = contrastReport(colours.save.values);
   const dirty = useDirtySections(tenant, themeRecord(scope));
+  const publication = usePublication({
+    tenant,
+    view,
+    tag,
+    unsaved: unsavedSections(dirty),
+    contrast: report.hold,
+    writes,
+  });
   return {
     colours,
     images,
-    stylesheet,
+    stylesheet: useStylesheet({ tenant, scope, view, tag, gone, published: publication.outcome }),
     deletion,
     report,
-    publication: usePublication({
-      tenant,
-      view,
-      tag,
-      unsaved: unsavedSections(dirty),
-      contrast: report.hold,
-      writes,
-    }),
+    publication,
     versions: useVersions(tenant, scope, writes),
     reset: useThemeReset(tenant, writes),
   };
