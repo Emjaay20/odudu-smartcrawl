@@ -41,7 +41,7 @@ export function tenantLayerRead(
 
 // The scope with the tenant's theme under it once that is known.
 export function placedOver(scope: ThemeScope, layer: Read<ThemeView> | null): ThemeScope {
-  if (scope.kind === 'tenant' || layer === null || layer.status !== 'ready') return scope;
+  if (scope.kind === 'tenant' || layer?.status !== 'ready') return scope;
   return { ...scope, below: layer.data };
 }
 
