@@ -65,6 +65,23 @@ export function collector(source: string): Collector {
   };
 }
 
+// The index of the first character from `from` that `stop` accepts, or the
+// end; `stop` is also told where it is looking.
+export function scanUntil(
+  source: string,
+  from: number,
+  stop: (code: number, index: number) => boolean,
+): number {
+  let index = from;
+  while (index < source.length && !stop(source.charCodeAt(index), index)) index += 1;
+  return index;
+}
+
+// The index after the run of characters from `from` that `test` accepts.
+export function scanWhile(source: string, from: number, test: (code: number) => boolean): number {
+  return scanUntil(source, from, (code) => !test(code));
+}
+
 export function isWhitespace(code: number): boolean {
   return code === 0x20 || code === 0x09 || code === 0x0a || code === 0x0d || code === 0x0c;
 }

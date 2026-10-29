@@ -3,6 +3,8 @@ import {
   isLetter,
   isQuote,
   isWhitespace,
+  scanUntil,
+  scanWhile,
   type Collector,
   type CodeToken,
 } from '#/shared/service/code/tokens';
@@ -40,16 +42,6 @@ function startsTag(source: string, at: number): boolean {
   return isLetter(next) || (next === SLASH && isLetter(source.charCodeAt(at + 2)));
 }
 
-function until(
-  source: string,
-  from: number,
-  stop: (code: number, index: number) => boolean,
-): number {
-  let index = from;
-  while (index < source.length && !stop(source.charCodeAt(index), index)) index += 1;
-  return index;
-}
-
 function quotedEnd(source: string, at: number): number {
   const end = source.indexOf(source[at] ?? '"', at + 1);
   return end === -1 ? source.length : end + 1;
@@ -79,7 +71,7 @@ function isValueEnd(code: number): boolean {
 function insideTag(out: Collector, source: string, at: number, valued: boolean): Step {
   const code = source.charCodeAt(at);
   if (isWhitespace(code)) {
-    const end = until(source, at, (c) => !isWhitespace(c));
+    const end = scanWhile(source, at, isWhitespace);
     out.push('plain', at, end);
     return step(end, valued);
   }
@@ -103,7 +95,7 @@ function insideTag(out: Collector, source: string, at: number, valued: boolean):
     out.push('plain', at, at + 1);
     return step(at + 1, code === EQUALS);
   }
-  const end = Math.max(until(source, at + 1, valued ? isValueEnd : isNameEnd), at + 1);
+  const end = Math.max(scanUntil(source, at + 1, valued ? isValueEnd : isNameEnd), at + 1);
   out.push(valued ? 'string' : 'attribute', at, end);
   return step(end);
 }
@@ -112,7 +104,7 @@ function insideTag(out: Collector, source: string, at: number, valued: boolean):
 // broken off by another `<` hands the rest back as text.
 function tag(out: Collector, source: string, at: number): number {
   const nameFrom = source.charCodeAt(at + 1) === SLASH ? at + 2 : at + 1;
-  let index = until(source, nameFrom, isNameEnd);
+  let index = scanUntil(source, nameFrom, isNameEnd);
   out.push('tag', at, index);
   let valued = false;
   while (index < source.length) {
@@ -125,7 +117,7 @@ function tag(out: Collector, source: string, at: number): number {
 }
 
 function textEnd(source: string, at: number): number {
-  return until(
+  return scanUntil(
     source,
     at + 1,
     (code, index) => code === LESS || (code === OPEN && isMarkerStart(source, index)),

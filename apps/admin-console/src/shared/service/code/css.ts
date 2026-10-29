@@ -4,6 +4,7 @@ import {
   isLetter,
   isQuote,
   isWhitespace,
+  scanWhile,
   type Collector,
   type CodeToken,
 } from '#/shared/service/code/tokens';
@@ -72,12 +73,6 @@ function stringEnd(source: string, at: number): number {
   return source.length;
 }
 
-function whileMatching(source: string, from: number, test: (code: number) => boolean): number {
-  let index = from;
-  while (index < source.length && test(source.charCodeAt(index))) index += 1;
-  return index;
-}
-
 function numberAt(source: string, at: number): boolean {
   const first = source.charCodeAt(at);
   const second = source.charCodeAt(at + 1);
@@ -90,9 +85,9 @@ function numberAt(source: string, at: number): boolean {
 // A number and its unit, or a percentage.
 function numberEnd(source: string, at: number): number {
   let index = at + 1;
-  index = whileMatching(source, index, isDigit);
-  if (source.charCodeAt(index) === CODE.dot) index = whileMatching(source, index + 1, isDigit);
-  index = whileMatching(source, index, (code) => isLetter(code) || code === CODE.percent);
+  index = scanWhile(source, index, isDigit);
+  if (source.charCodeAt(index) === CODE.dot) index = scanWhile(source, index + 1, isDigit);
+  index = scanWhile(source, index, (code) => isLetter(code) || code === CODE.percent);
   return index;
 }
 
@@ -100,7 +95,7 @@ function numberEnd(source: string, at: number): number {
 function unquotedUrl(out: Collector, source: string, at: number): number {
   const open = at;
   out.push('plain', open, open + 1);
-  const start = whileMatching(source, open + 1, isWhitespace);
+  const start = scanWhile(source, open + 1, isWhitespace);
   out.push('plain', open + 1, start);
   if (isQuote(source.charCodeAt(start)) || start >= source.length) return start;
   let end = start;
@@ -116,7 +111,7 @@ function unquotedUrl(out: Collector, source: string, at: number): number {
 }
 
 function identifierInValue(out: Collector, source: string, at: number): number {
-  const end = whileMatching(source, at, isIdentifier);
+  const end = scanWhile(source, at, isIdentifier);
   if (source.charCodeAt(end) !== CODE.parenOpen) {
     out.push('value', at, end);
     return end;
@@ -131,7 +126,7 @@ function identifierInValue(out: Collector, source: string, at: number): number {
 function valuePiece(out: Collector, source: string, at: number): number {
   const code = source.charCodeAt(at);
   if (isWhitespace(code)) {
-    const end = whileMatching(source, at, isWhitespace);
+    const end = scanWhile(source, at, isWhitespace);
     out.push('plain', at, end);
     return end;
   }
@@ -151,12 +146,12 @@ function valuePiece(out: Collector, source: string, at: number): number {
     return end;
   }
   if (code === CODE.hash) {
-    const end = whileMatching(source, at + 1, isIdentifier);
+    const end = scanWhile(source, at + 1, isIdentifier);
     out.push('number', at, end);
     return end;
   }
   if (code === CODE.bang) {
-    const end = whileMatching(source, whileMatching(source, at + 1, isWhitespace), isLetter);
+    const end = scanWhile(source, scanWhile(source, at + 1, isWhitespace), isLetter);
     out.push('keyword', at, end);
     return end;
   }
@@ -188,7 +183,7 @@ function selectorRun(source: string, from: number): number {
 }
 
 function atRule(out: Collector, source: string, at: number, stack: Block[]): number {
-  const nameEnd = whileMatching(source, at + 1, isIdentifier);
+  const nameEnd = scanWhile(source, at + 1, isIdentifier);
   out.push('keyword', at, nameEnd);
   const end = valueRun(out, source, nameEnd);
   const code = source.charCodeAt(end);
@@ -206,7 +201,7 @@ function atRule(out: Collector, source: string, at: number, stack: Block[]): num
 function common(out: Collector, source: string, at: number, stack: Block[]): number | null {
   const code = source.charCodeAt(at);
   if (isWhitespace(code)) {
-    const end = whileMatching(source, at, isWhitespace);
+    const end = scanWhile(source, at, isWhitespace);
     out.push('plain', at, end);
     return end;
   }
@@ -252,14 +247,14 @@ function declarationPart(out: Collector, source: string, at: number): number {
     out.push('string', at, end);
     return end;
   }
-  const end = whileMatching(
+  const end = scanWhile(
     source,
     at,
     (c) => !isWhitespace(c) && c !== CODE.colon && !isStop(c) && !isQuote(c) && c !== CODE.slash,
   );
   out.push('property', at, Math.max(end, at + 1));
   const next = Math.max(end, at + 1);
-  const gap = whileMatching(source, next, isWhitespace);
+  const gap = scanWhile(source, next, isWhitespace);
   if (source.charCodeAt(gap) !== CODE.colon) return next;
   out.push('plain', next, gap + 1);
   return valueRun(out, source, gap + 1);
