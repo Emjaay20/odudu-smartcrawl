@@ -1,3 +1,4 @@
+import { shortened } from '#/shared/service/format';
 import type { SectionFields } from '#/shared/service/sectionSave';
 import { PAGE_KIND_LABELS } from '#/features/branding/service/templates';
 import {
@@ -28,7 +29,7 @@ const SHOWN_TEMPLATE = 60;
 
 function describeTemplate(value: unknown): string {
   if (typeof value !== 'string' || value.trim() === '') return 'none';
-  return value.length > SHOWN_TEMPLATE ? `${value.slice(0, SHOWN_TEMPLATE)}…` : value;
+  return shortened(value, SHOWN_TEMPLATE);
 }
 
 // A theme is saved whole, so each section names its own pieces.

@@ -69,7 +69,7 @@ describe('messageOptions', () => {
       { key: 'c.d', text: long },
     ]);
     expect(options[0]).toEqual({ id: 'a.b', label: 'a.b', detail: 'Sign in' });
-    expect(options[1]?.detail.length).toBe(SHORT_TEXT_LENGTH);
+    expect(options[1]?.detail.length).toBe(SHORT_TEXT_LENGTH + 1);
     expect(options[1]?.detail.endsWith('…')).toBe(true);
   });
 

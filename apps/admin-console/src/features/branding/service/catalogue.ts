@@ -1,4 +1,5 @@
 import type { MessageCatalogueResponse } from '@odudu/contracts/admin';
+import { shortened } from '#/shared/service/format';
 import type { PageKind } from '#/features/branding/service/values';
 
 export interface MessageEntry {
@@ -52,7 +53,7 @@ export function templateReference(key: string): string {
 
 function oneLine(text: string, limit: number): string {
   const flat = text.replace(/\s+/gu, ' ').trim();
-  return flat.length <= limit ? flat : `${flat.slice(0, limit - 1)}…`;
+  return shortened(flat, limit);
 }
 
 export function messageOptions(

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   byteSizeReading,
+  shortened,
   groupedNumber,
   andList,
   attemptsText,
@@ -168,5 +169,13 @@ describe('byteSizeReading', () => {
       text: '1 bytes over the limit of 2,000.',
       over: true,
     });
+  });
+});
+
+describe('shortened', () => {
+  it('keeps a text that fits and cuts a longer one to the limit with an ellipsis', () => {
+    expect(shortened('abc', 3)).toBe('abc');
+    expect(shortened('abcd', 3)).toBe('abc…');
+    expect(shortened('', 3)).toBe('');
   });
 });

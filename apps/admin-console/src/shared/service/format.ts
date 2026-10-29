@@ -117,3 +117,8 @@ export function byteSizeReading(used: number, limit: number): SizeReading {
       }
     : { text: `${groupedNumber(used)} of ${groupedNumber(limit)} bytes.`, over: false };
 }
+
+// The first `limit` characters of `text` and an ellipsis when it is longer.
+export function shortened(text: string, limit: number): string {
+  return text.length > limit ? `${text.slice(0, limit)}…` : text;
+}
