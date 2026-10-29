@@ -217,7 +217,7 @@ describe('a message override set through the admin API', () => {
       method: 'POST',
       url: '/admin/tenant-imports',
       headers: { authorization: `Bearer ${operator}`, 'content-type': 'application/json' },
-      payload: { name: `words-${newId()}`, document: exported.json() },
+      payload: { name: `words-${newId()}`, document: exported.json<object>() },
     });
 
     expect(imported.statusCode, imported.payload).toBe(400);
