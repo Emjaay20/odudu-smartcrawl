@@ -1,3 +1,4 @@
+import { LOCALISED_TEXT_ENTRIES_MAX } from '@odudu/contracts';
 import { MAIL_PREVIEW_LOCALES, type AmendSettingsRequest } from '@odudu/contracts/admin';
 import { languageLabel, localeProblem } from '#/shared/service/locales';
 import { offeredLocales } from '#/shared/service/offeredLocales';
@@ -7,9 +8,6 @@ import type { SectionFields } from '#/shared/service/sectionSave';
 // The languages this build holds a catalogue for; a test in packages/email
 // holds the list equal to the i18n package's SHIPPED_LOCALES.
 export const SHIPPED_LANGUAGES: readonly string[] = MAIL_PREVIEW_LOCALES;
-
-// The most languages a tenant's pages are offered in.
-export const MAX_SUPPORTED_LANGUAGES = 32;
 
 export const LANGUAGES_SECTION = 'languages';
 
@@ -39,7 +37,7 @@ export const ADD_NEEDED = 'Choose a language, or type a tag such as fr-CA.';
 
 export const ADD_DUPLICATE = 'That language is already offered.';
 
-export const ADD_FULL = `A tenant offers at most ${String(MAX_SUPPORTED_LANGUAGES)} languages.`;
+export const ADD_FULL = `A tenant offers at most ${String(LOCALISED_TEXT_ENTRIES_MAX)} languages.`;
 
 export const BROWSER_DECIDES = 'The browser decides';
 
@@ -155,6 +153,6 @@ export function languageAdded(supported: readonly string[], text: string): Added
   if (supported.some((held) => held.toLowerCase() === tag.toLowerCase())) {
     return { supported: null, problem: ADD_DUPLICATE };
   }
-  if (supported.length >= MAX_SUPPORTED_LANGUAGES) return { supported: null, problem: ADD_FULL };
+  if (supported.length >= LOCALISED_TEXT_ENTRIES_MAX) return { supported: null, problem: ADD_FULL };
   return { supported: [...supported, tag], problem: null };
 }
