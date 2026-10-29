@@ -1,14 +1,13 @@
 import { type PreviewMailQuery } from '@odudu/contracts/admin';
-import { tenants, type TenantScopedDatabase } from '@odudu/db';
+import { type TenantScopedDatabase } from '@odudu/db';
 import {
   brandingInScheme,
   inlineMark,
-  mailContext,
+  tenantMailContext,
   renderVerifyEmail,
   type MailBrandingResolver,
 } from '@odudu/email';
 import { type MailBranding } from '@odudu/kernel';
-import { eq } from 'drizzle-orm';
 
 export interface MailPreviewDeps {
   readonly resolveMailBranding: MailBrandingResolver;
@@ -21,19 +20,16 @@ export interface TenantMail {
 }
 
 // What the tenant's mail is dressed in as of its published theme: the read a
-// queued mail makes, so the preview and the mail cannot disagree. Two
-// statements, the theme's and the tenant's, whatever the theme names.
+// queued mail makes, so the preview and the mail cannot disagree. One tenant
+// statement, plus the resolver's own read of the published theme, which the
+// resolver bounds and caches; neither grows with what the theme names.
 export async function tenantMail(
   tx: TenantScopedDatabase,
   deps: MailPreviewDeps,
   tenant: { tenantId: string; tenantName: string },
 ): Promise<TenantMail> {
-  const context = await mailContext(tx, deps.resolveMailBranding, tenant);
-  const [row] = await tx
-    .select({ displayName: tenants.displayName })
-    .from(tenants)
-    .where(eq(tenants.id, tenant.tenantId));
-  return { ...context, displayName: row?.displayName ?? tenant.tenantName };
+  const { displayName, ...context } = await tenantMailContext(tx, deps.resolveMailBranding, tenant);
+  return { ...context, displayName: displayName ?? tenant.tenantName };
 }
 
 export interface MailPreviewInput {

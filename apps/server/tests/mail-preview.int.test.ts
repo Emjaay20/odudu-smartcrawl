@@ -13,6 +13,7 @@ import { buildApp } from '#/app';
 import { mintAdminToken } from '#/testing/plan-admin-drives';
 import { createBranding, type Branding } from '#/branding';
 import { seed } from '#/cli/seed';
+import { isWork, StatementRecorder } from '#/testing/plan-capture';
 
 // The real composition root and a real PostgreSQL: the mail preview is the
 // mail a published theme would dress, never a draft, and it writes nothing.
@@ -22,6 +23,7 @@ let owner: DatabaseHandle;
 let appDb: DatabaseHandle;
 let app: FastifyInstance;
 let branding: Branding;
+const recorder = new StatementRecorder();
 
 const KEK = Buffer.alloc(32, 7);
 const BASE = 'https://id.example.test';
@@ -60,7 +62,7 @@ beforeAll(async () => {
   owner = createDatabase(container.adminUrl);
   await runMigrations(owner.db, MIGRATIONS_DIR);
   const appUrl = await createAppRole(container.adminUrl);
-  appDb = createDatabase(appUrl, { max: 5 });
+  appDb = createDatabase(appUrl, { max: 5, onQueryForTests: recorder.hook('app') });
   process.env.ODUDU_DATABASE_URL = container.adminUrl;
   process.env.ODUDU_APP_DATABASE_URL = appUrl;
   process.env.ODUDU_KEK = KEK.toString('base64');
@@ -157,6 +159,10 @@ async function get(w: World, path: string, bearer?: string) {
     headers: { authorization: `Bearer ${bearer ?? (await token(w))}` },
   });
 }
+
+// Measured with the theme's cache emptied: the caller's own checks, the
+// published theme's read and the tenant's row. It must not grow with a theme.
+const MAIL_STATEMENTS = 8;
 
 const header = (res: { headers: Record<string, unknown> }, name: string): string =>
   String(res.headers[name]);
@@ -287,5 +293,38 @@ describe('the branding a mail inherits', () => {
       logo: null,
       dark_logo: null,
     });
+  });
+});
+
+describe('what a preview costs', () => {
+  async function statementsFor(w: World, path: string): Promise<number> {
+    branding.invalidateTenant(w.tenantId);
+    const bearer = await token(w);
+    const { result, statements } = await recorder.record(() => get(w, path, bearer));
+    expect(result.statusCode).toBe(200);
+    return statements.filter(isWork).length;
+  }
+
+  it('is the same few statements for a theme naming two logos as for no theme', async () => {
+    const bare = await world();
+    const named = await world();
+    const light = await putLogo(named, { width: 480, height: 96 });
+    const dark = await putLogo(named, { width: 100, height: 100 });
+    await publish(
+      named,
+      theme({
+        tokens: { light: LIGHT, dark: NIGHT },
+        assets: {
+          logo: { assetId: light.id, alt: 'Acme' },
+          darkLogo: { assetId: dark.id, alt: 'Acme dark' },
+        },
+      }),
+    );
+    for (const path of ['/mail/preview', '/mail/branding']) {
+      const none = await statementsFor(bare, path);
+      const two = await statementsFor(named, path);
+      expect(two, path).toBe(none);
+      expect(two, path).toBeLessThanOrEqual(MAIL_STATEMENTS);
+    }
   });
 });

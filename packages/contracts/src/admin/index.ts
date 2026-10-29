@@ -486,6 +486,7 @@ export {
   MESSAGE_OVERRIDE_LIMIT,
   exportedMessageOverrideSchema,
   type ExportedMessageOverride,
+  MESSAGE_OVERRIDE_KEY_MAX_LENGTH,
   MESSAGE_OVERRIDE_MAX_LENGTH,
   listMessageOverridesQuerySchema,
   listMessageOverridesResponseSchema,

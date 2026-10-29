@@ -43,6 +43,7 @@ export {
   MAX_PREVIEW_BYTES,
   inlinePreview,
   previewHeaders,
+  mailPreviewHeaders,
   type InlinedPreview,
   type PreviewInline,
   type PreviewRender,

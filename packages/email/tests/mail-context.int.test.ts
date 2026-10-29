@@ -10,7 +10,7 @@ import { type MailBranding, newId } from '@odudu/kernel';
 import { createAppRole, startTestDatabase, type TestDatabase } from '@odudu/testkit';
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { mailContext, type MailBrandingResolver } from '#/usecase/mail-context';
+import { mailContext, tenantMailContext, type MailBrandingResolver } from '#/usecase/mail-context';
 
 let container: TestDatabase;
 let owner: DatabaseHandle;
@@ -83,5 +83,24 @@ describe('mailContext', () => {
       mailContext(tx, resolve, { tenantId: t.id, tenantName: t.name }),
     );
     expect(context).toEqual({ branding: null, tenantDefaultLocale: 'fr' });
+  });
+});
+
+describe('tenantMailContext', () => {
+  it('adds the tenant’s display name to what mailContext reads, in one tenant statement', async () => {
+    const t = await tenant('fr');
+    await owner.db.update(tenants).set({ displayName: 'Acme Ltd' }).where(eq(tenants.id, t.id));
+    const context = await withTenant(app.db, t.id, (tx) =>
+      tenantMailContext(tx, undefined, { tenantId: t.id, tenantName: t.name }),
+    );
+    expect(context).toEqual({ branding: null, tenantDefaultLocale: 'fr', displayName: 'Acme Ltd' });
+  });
+
+  it('has no display name for a tenant that sets none', async () => {
+    const t = await tenant(null);
+    const context = await withTenant(app.db, t.id, (tx) =>
+      tenantMailContext(tx, undefined, { tenantId: t.id, tenantName: t.name }),
+    );
+    expect(context.displayName).toBeNull();
   });
 });

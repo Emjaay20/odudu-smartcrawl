@@ -5,12 +5,14 @@ import { createdAtSchema, cursorQuerySchema } from '#/admin/shared';
 
 // A tenant holds at most this many overrides, across every locale.
 export const MESSAGE_OVERRIDE_LIMIT = 500;
+// The longest key an override may name, in characters.
+export const MESSAGE_OVERRIDE_KEY_MAX_LENGTH = 128;
 // The longest message an override may hold, in characters.
 export const MESSAGE_OVERRIDE_MAX_LENGTH = 2000;
 
 export const messageOverrideLocaleSchema = z.string().regex(new RegExp(LOCALE_PATTERN, 'u'));
 // The key of a catalogue message; whether it names one is the server's to say.
-export const messageOverrideKeySchema = z.string().min(1).max(128);
+export const messageOverrideKeySchema = z.string().min(1).max(MESSAGE_OVERRIDE_KEY_MAX_LENGTH);
 
 export const messageOverrideSchema = z.object({
   locale: messageOverrideLocaleSchema,

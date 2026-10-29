@@ -1,7 +1,12 @@
 import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { brandingHead, pageHeaders, stylesheetLink, type RenderedPage } from '#/page';
-import { MAX_PREVIEW_BYTES, inlinePreview, previewHeaders } from '#/page-preview';
+import {
+  MAX_PREVIEW_BYTES,
+  inlinePreview,
+  mailPreviewHeaders,
+  previewHeaders,
+} from '#/page-preview';
 
 const SHEET = '/tenants/acme/brand/' + 'a'.repeat(64) + '.css';
 const LOGO = '/tenants/acme/brand/' + 'b'.repeat(64) + '.png';
@@ -127,6 +132,30 @@ describe('previewHeaders', () => {
     const headers = Object.fromEntries(pageHeaders(pageWith('<p>')));
     expect(headers['x-frame-options']).toBe('DENY');
     expect(headers['content-security-policy']).toContain("frame-ancestors 'none'");
+  });
+});
+
+describe('mailPreviewHeaders', () => {
+  const policy = (origins: string[]): string[] => POLICY(mailPreviewHeaders(origins)).split('; ');
+
+  it('licenses images from the logo origins and data addresses, and no script', () => {
+    const directives = policy(['https://id.example']);
+    expect(directives).toContain('img-src data: https://id.example');
+    expect(directives).toContain("default-src 'none'");
+    expect(directives).toContain("frame-ancestors 'self'");
+    expect(directives.join(';')).not.toContain('script-src');
+  });
+
+  it('allows data images alone when no logo is set', () => {
+    expect(policy([])).toContain('img-src data:');
+  });
+
+  it('sends what every framed preview sends', () => {
+    const headers = Object.fromEntries(mailPreviewHeaders([]));
+    expect(headers['cache-control']).toBe('no-store');
+    expect(headers['x-content-type-options']).toBe('nosniff');
+    expect(headers['referrer-policy']).toBe('no-referrer');
+    expect(headers['x-frame-options']).toBeUndefined();
   });
 });
 

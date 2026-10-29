@@ -41,26 +41,3 @@ export function logoOrigins(branding: MailBranding | null): string[] {
   }
   return [...origins];
 }
-
-// The headers of a mail preview and the only ones: a response of its own, like
-// the page preview's, framed by the console's origin. The mail carries every
-// colour inline and its logo by address, so the policy licenses images from
-// the logo's origin and data addresses, and nothing else, no script, no style.
-export function mailPreviewHeaders(origins: readonly string[]): [string, string][] {
-  return [
-    [
-      'content-security-policy',
-      [
-        "default-src 'none'",
-        "style-src 'unsafe-inline'",
-        `img-src data: ${origins.join(' ')}`.trim(),
-        "frame-ancestors 'self'",
-        "form-action 'none'",
-        "base-uri 'none'",
-      ].join('; '),
-    ],
-    ['referrer-policy', 'no-referrer'],
-    ['cache-control', 'no-store'],
-    ['x-content-type-options', 'nosniff'],
-  ];
-}

@@ -1,7 +1,8 @@
 import { previewMailQuerySchema } from '@odudu/contracts/admin';
 import { type Database } from '@odudu/db';
+import { mailPreviewHeaders } from '@odudu/kernel';
 import { issuerBaseFor } from '@odudu/protocol-oidc';
-import { logoOrigins, mailBrandingView, mailPreviewHeaders } from '#/service/mail-preview';
+import { logoOrigins, mailBrandingView } from '#/service/mail-preview';
 import { previewMail, tenantMail, type MailPreviewDeps } from '#/usecase/mail-preview';
 import { adminTx } from '#/view/routes/admin-tx';
 import { type AdminRouteHandler } from '#/view/routes/router';
