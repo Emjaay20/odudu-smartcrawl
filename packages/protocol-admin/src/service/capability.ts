@@ -20,7 +20,6 @@ import {
   assignScopeToClientRequestSchema,
   assignScopeToClientResponseSchema,
   clientRecordSchema,
-  clientSchema,
   createClientRequestSchema,
   createClientResponseSchema,
   createGroupRequestSchema,
