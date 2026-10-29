@@ -5,7 +5,6 @@ import {
   messageOptions,
   messagesOf,
   messagesForKind,
-  SHORT_TEXT_LENGTH,
   templateReference,
 } from '#/features/branding/service/catalogue';
 
@@ -62,15 +61,14 @@ describe('templateReference', () => {
 });
 
 describe('messageOptions', () => {
-  it('names each option by its key and shows the text beside it, shortened when long', () => {
-    const long = 'x'.repeat(SHORT_TEXT_LENGTH + 50);
+  it('names each option by its key and keeps the whole text, so narrowing can find any word', () => {
+    const long = `${'x'.repeat(200)} needle`;
     const options = messageOptions([
       { key: 'a.b', text: 'Sign in' },
       { key: 'c.d', text: long },
     ]);
     expect(options[0]).toEqual({ id: 'a.b', label: 'a.b', detail: 'Sign in' });
-    expect(options[1]?.detail.length).toBe(SHORT_TEXT_LENGTH + 1);
-    expect(options[1]?.detail.endsWith('…')).toBe(true);
+    expect(options[1]?.detail).toBe(long);
   });
 
   it('collapses a text that runs over lines to one line', () => {

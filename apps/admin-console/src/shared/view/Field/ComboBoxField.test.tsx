@@ -200,6 +200,20 @@ describe('ComboBoxField', () => {
     expect(found.map((o) => o.textContent)).toEqual(['key.399the last one']);
   });
 
+  it('finds a word past what is drawn of a long detail, and draws only the start of it', async () => {
+    const user = userEvent.setup();
+    const long: readonly ComboOption[] = [
+      { id: 'a', label: 'a', detail: `${'words '.repeat(30)}needle` },
+      { id: 'b', label: 'b', detail: 'short' },
+    ];
+    render(<ComboBoxField label="Key" options={long} value="" onChange={vi.fn()} limit={10} />);
+    await user.type(screen.getByRole('combobox', { name: 'Key' }), 'needle');
+    const found = await screen.findAllByRole('option');
+    expect(found).toHaveLength(1);
+    expect(found[0]?.textContent).toMatch(/^a.*…$/u);
+    expect(found[0]?.textContent).not.toContain('needle');
+  });
+
   it('offers the whole bounded list again after a choice', async () => {
     const user = userEvent.setup();
     const many: readonly ComboOption[] = Array.from({ length: 60 }, (_, n) => ({

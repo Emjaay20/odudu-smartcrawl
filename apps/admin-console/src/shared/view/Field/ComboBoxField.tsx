@@ -11,7 +11,8 @@ import {
   Text,
   type Key,
 } from 'react-aria-components';
-import { narrowOptions } from '#/shared/service/options';
+import { shortened } from '#/shared/service/format';
+import { narrowOptions, OPTION_DETAIL_LIMIT } from '#/shared/service/options';
 import {
   Description,
   FieldGroupIds,
@@ -222,7 +223,7 @@ export function ComboBoxField({
               </Text>
               {option.detail === undefined ? null : (
                 <Text slot="description" className={styles.optionDetail ?? ''}>
-                  {option.detail}
+                  {shortened(option.detail, OPTION_DETAIL_LIMIT)}
                 </Text>
               )}
             </ListBoxItem>

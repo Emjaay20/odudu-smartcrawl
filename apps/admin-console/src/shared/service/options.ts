@@ -1,3 +1,7 @@
+// The longest detail an option draws beside its label. Narrowing reads the
+// whole detail, so a word past this is still found.
+export const OPTION_DETAIL_LIMIT = 90;
+
 interface Narrowable {
   label: string;
   detail?: string | undefined;

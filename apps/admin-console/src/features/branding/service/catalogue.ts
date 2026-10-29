@@ -1,5 +1,4 @@
 import type { MessageCatalogueResponse } from '@odudu/contracts/admin';
-import { shortened } from '#/shared/service/format';
 import type { PageKind } from '#/features/branding/service/values';
 
 export interface MessageEntry {
@@ -10,9 +9,6 @@ export interface MessageEntry {
 
 // The most messages a list of them draws at once; typing narrows it.
 export const KEY_LIST_LIMIT = 50;
-
-// The longest text an option shows beside its key.
-export const SHORT_TEXT_LENGTH = 90;
 
 export const INSERT_LABEL = 'Insert a message';
 
@@ -51,9 +47,8 @@ export function templateReference(key: string): string {
   return `{{t "${key}"}}`;
 }
 
-function oneLine(text: string, limit: number): string {
-  const flat = text.replace(/\s+/gu, ' ').trim();
-  return shortened(flat, limit);
+function oneLine(text: string): string {
+  return text.replace(/\s+/gu, ' ').trim();
 }
 
 export function messageOptions(
@@ -62,7 +57,7 @@ export function messageOptions(
   return entries.map((entry) => ({
     id: entry.key,
     label: entry.key,
-    detail: oneLine(entry.text, SHORT_TEXT_LENGTH),
+    detail: oneLine(entry.text),
   }));
 }
 
