@@ -418,7 +418,27 @@ Client rules (spec 6): authorization-session pages use the pending request's `cl
 
 **Interfaces:** Mail tab: preview of a verification mail (the production render, framed the same way) and the logo/palette it inherits; Languages tab: supported list, default, overrides table (bounded, paged) with the `unknown_key` and `over_bound` refusals worded from `service` constants.
 
+**Added during execution:** no admin route returned a rendered mail, so this task also builds `GET /admin/tenants/:tenant/mail/preview` and `GET /admin/tenants/:tenant/mail/branding` (manage-tenant, tenant scope, kernel `previewHeaders`, statement count asserted). The Languages tab can add a validated supported tag and clear the default language (the settings route clears it on an empty string).
+
 - [ ] **Steps 1–4:** tests per tab including axe and `it('refuses a key not in en with its wording')`; implement; run console tests; commit: `Console: Branding mail and languages tabs`.
+
+### Task 24b: Stylesheet editor and CodeField
+
+**Files:** Create `apps/admin-console/src/shared/view/CodeField/` (an in-house textarea with a highlighted overlay: the textarea stays the real control, tokens are coloured by CSS classes, no inline styles, own small tokenizers for CSS and the template language, line numbers, a server refusal marked on its line); Modify `features/branding/**` (a stylesheet editor in the Theme tab, the Pages tab's template editor uses `CodeField`).
+
+**Interfaces:** Consumes the theme draft's `stylesheet` field and the server's `checkStylesheet` refusals, worded from `service` constants; same save, publish, preview and 412 flow as the other editors.
+
+**Decision:** not CodeMirror 6. The console CSP has no `unsafe-inline` and no nonce; CodeMirror in the document root raised a `style-src-elem` violation and broke its layout, and worked only in a ShadowRoot; its chunk is 6 to 8 times the Branding chunk; it is contenteditable with no native form value (`verified:` the spike in the session ledger, `spike-codemirror.md`).
+
+- [ ] **Steps 1–4:** tests (tokenizers as pure service tests, `axeInBothThemes`, a refusal marked on its line, keyboard Tab handling with an escape route); implement; commit: `Console: stylesheet editor and CodeField`.
+
+### Task 24c: Message key catalogue and preview fallback notice
+
+**Files:** a bounded admin read returning the en catalogue's keys with their text per page kind (and the keys the override table accepts); a readable channel for the preview's fallback reason; the template editor's key picker, the override key field and the preview notice in `features/branding/**`.
+
+**Interfaces:** the picker inserts `{{t "key"}}`; the override key field offers the same list; the preview says which layer it fell back to and why, because a frame cannot expose the `x-odudu-preview-fallback` header.
+
+- [ ] **Steps 1–4:** tests (server int test with a foreign-tenant probe, statement count; console tests with axe); implement; commit: `Branding: message key catalogue and preview fallback notice`.
 
 ### Task 25: Client Branding tab and locale-tabbed metadata editor
 
@@ -427,6 +447,14 @@ Client rules (spec 6): authorization-session pages use the pending request's `cl
 **Interfaces:** Reuses the branding feature's components through its `index.ts` (a feature reaches another only so); a shared locale-tabbed field editor goes to `shared/view` if scopes and clients both use it (reuse rule).
 
 - [ ] **Steps 1–4:** tests (axe, `it('a client override shows the tenant piece it hides')`), e2e, implement, run console tests and `console-areas.test.ts`; commit: `Console: client Branding tab and localised metadata editor`.
+
+### Task 25b: Console reuse consolidation
+
+**Files:** every console file this phase added or changed.
+
+**Interfaces:** the Reuse scan rule in `CLAUDE.md`. Audit the phase's console code against `shared/` and every sibling feature (searches by behaviour words and synonyms, not only names, and the cases the duplicate-exports lint cannot see), rule each hit, then move to `shared/` in its own commit and repoint both sides, or keep apart with a written reason.
+
+- [ ] **Steps 1–3:** audit report; rulings; execute with the console tests green after each move; commit per move.
 
 ---
 
