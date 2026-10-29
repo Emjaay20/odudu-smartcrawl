@@ -227,8 +227,9 @@ test('works from the keyboard alone', async ({ page }) => {
   await expect(section.getByRole('button', { name: /^Save/u })).toBeHidden();
   await expect(page.getByRole('region', { name: 'Status' })).toContainText('A saved draft');
 
-  // The Pages tab, by arrow, then a page picked and a template written.
-  await tabTo(page, page.getByRole('tab', { name: 'Theme' }));
+  // The Pages tab, by arrow, then a page picked and a template written. Tab
+  // would go through the stylesheet editor, which indents until Escape.
+  await page.getByRole('tab', { name: 'Theme' }).focus();
   await page.keyboard.press('ArrowRight');
   await expect(page.getByRole('region', { name: 'Page templates' })).toBeVisible();
   await expect(page.getByRole('tab', { name: 'Pages' })).toHaveAttribute('aria-selected', 'true');
@@ -260,13 +261,66 @@ for (const [name, viewport] of [
       );
       await templates.getByRole('textbox', { name: 'Sign in: template', exact: true }).fill(slots);
       await templates.getByRole('button', { name: /^Save/u }).click();
-      await expect(templates.getByText(/and \d+ more problems?/u)).toBeVisible();
+      await expect(templates.getByText(/and \d+ more problems?/iu)).toBeVisible();
       forgive(problems, '/theme');
       await expectFitsViewport(page);
       await expectAccessible(page, { exclude: [FRAME] });
     });
   });
 }
+
+const STYLED = 'h1 {\n  color: #aa0000;\n}';
+
+test('edits the stylesheet, meets a refusal on its line, and publishes it to the real sign-in page', async ({
+  page,
+  browser,
+  problems,
+}) => {
+  test.slow();
+  const { styled } = branding;
+  await signIn(page, styled);
+  await openBranding(page, styled.tenant);
+  const section = page.getByRole('region', { name: 'Stylesheet', exact: true });
+  const editor = section.getByRole('textbox', { name: 'Stylesheet CSS' });
+
+  // Tab indents, and Escape then Tab lets go.
+  await editor.click();
+  await page.keyboard.press('Tab');
+  await expect(editor).toHaveValue('  ');
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Tab');
+  await expect(editor).not.toBeFocused();
+  await editor.fill('h1 {\n  behavior: none;\n}');
+
+  await section.getByRole('button', { name: /^Save/u }).click();
+  await expect(section.getByText('Line 2: This property is not allowed. (behavior)')).toBeVisible();
+  await expect(section.getByText('The stylesheet was not saved.')).toBeVisible();
+  forgive(problems, '/theme');
+  await expectAccessible(page, { exclude: [FRAME] });
+
+  await editor.fill(STYLED);
+  await expect(section.getByText(/^Line 2:/u)).toBeHidden();
+  await save(section);
+  const heading = preview(page).getByRole('heading', { level: 1, name: 'Sign in' });
+  await expect(heading).toHaveCSS('color', 'rgb(170, 0, 0)');
+
+  const before = await visit(browser, styled.tenant);
+  const colour = (visitor: Page): Promise<string> =>
+    visitor
+      .getByRole('heading', { level: 1, name: 'Sign in' })
+      .evaluate((node) => getComputedStyle(node).color);
+  expect(await colour(before.page)).not.toBe('rgb(170, 0, 0)');
+  await before.close();
+
+  await page.getByRole('button', { name: 'Publish the draft' }).click();
+  await expect(page.getByRole('region', { name: 'Status' })).toContainText(
+    'Version 1 is published.',
+  );
+  const after = await visit(browser, styled.tenant);
+  expect(await colour(after.page)).toBe('rgb(170, 0, 0)');
+  await after.close();
+  await expectAccessible(page, { exclude: [FRAME] });
+});
 
 const MAIL_FRAME = 'iframe[title="Preview of the verification mail"]';
 

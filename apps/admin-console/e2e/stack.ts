@@ -244,6 +244,8 @@ const seededSchema = z.object({
       // The Mail tab's frame and the Languages tab's overrides.
       mail: account,
       languages: account,
+      // The stylesheet editor: a refusal marked on its line, then a published one.
+      styled: account,
     }),
     // One tenant per test that reads its mail, each with its outbox seeded.
     mail: z.object({
