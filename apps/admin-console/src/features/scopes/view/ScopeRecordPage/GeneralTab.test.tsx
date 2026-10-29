@@ -62,7 +62,7 @@ it('translates the description into the languages the tenant offers, and sends t
       .map((tab) => tab.textContent),
   ).toEqual(['English (en)', 'French (fr)', 'German (de)']);
   await user.type(
-    within(group).getByRole('textbox', { name: 'Description by language in French (fr)' }),
+    within(group).getByRole('textbox', { name: 'Translation into French (fr)' }),
     'Factures',
   );
   await user.click(within(section).getByRole('button', { name: 'Save Description' }));
@@ -85,7 +85,7 @@ it('translates the consent text on its own, in the consent section', async () =>
   const group = within(section).getByRole('group', { name: 'Consent text by language' });
   await user.click(await within(group).findByRole('tab', { name: 'German (de)' }));
   await user.type(
-    within(group).getByRole('textbox', { name: 'Consent text by language in German (de)' }),
+    within(group).getByRole('textbox', { name: 'Translation into German (de)' }),
     'Rechnungen lesen',
   );
   await user.click(within(section).getByRole('button', { name: 'Save Consent' }));

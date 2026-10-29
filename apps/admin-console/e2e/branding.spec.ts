@@ -604,7 +604,9 @@ test('a client has its own theme over the tenant’s, and a name in French', asy
   const translations = page.getByRole('region', { name: 'Translations' });
   const name = translations.getByRole('group', { name: 'Name' });
   await name.getByRole('tab', { name: 'French (fr)' }).click();
-  await name.getByRole('textbox', { name: 'Name in French (fr)' }).fill('Application Marque');
+  await name
+    .getByRole('textbox', { name: 'Translation into French (fr)' })
+    .fill('Application Marque');
   await save(translations);
   await page.reload();
   await page
@@ -612,7 +614,7 @@ test('a client has its own theme over the tenant’s, and a name in French', asy
     .getByRole('group', { name: 'Name' })
     .getByRole('tab', { name: 'French (fr)' })
     .click();
-  await expect(page.getByRole('textbox', { name: 'Name in French (fr)' })).toHaveValue(
+  await expect(page.getByRole('textbox', { name: 'Translation into French (fr)' })).toHaveValue(
     'Application Marque',
   );
 

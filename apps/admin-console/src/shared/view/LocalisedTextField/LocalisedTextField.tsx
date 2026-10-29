@@ -44,7 +44,8 @@ export function LocalisedTextField({
 }) {
   const note = languagesNote(languages);
   const tabs = translationTabs(offeredOf(languages), value).map((tag) => {
-    const named = `${label} in ${languageLabel(tag)}`;
+    // Not the group's label: a field named `Name in French` would answer a query for the base `Name` field.
+    const named = `Translation into ${languageLabel(tag)}`;
     const edit = (text: string) => {
       onChange(withTranslation(value, tag, text));
     };

@@ -42,19 +42,19 @@ it('has a tab for each language the tenant offers, and a field in the one chosen
   render(<Editing />);
   const tabs = screen.getAllByRole('tab').map((tab) => tab.textContent);
   expect(tabs).toEqual(['French (fr)', 'German (de)']);
-  expect(screen.getByRole('textbox', { name: 'Name in French (fr)' })).toBeVisible();
+  expect(screen.getByRole('textbox', { name: 'Translation into French (fr)' })).toBeVisible();
   await user.click(screen.getByRole('tab', { name: 'German (de)' }));
-  expect(screen.getByRole('textbox', { name: 'Name in German (de)' })).toBeVisible();
+  expect(screen.getByRole('textbox', { name: 'Translation into German (de)' })).toBeVisible();
 });
 
 it('writes a language into the map, and a blank one out of it', async () => {
   const user = userEvent.setup();
   const seen = vi.fn();
   render(<Editing seen={seen} initial={{ de: 'Rechnung' }} />);
-  await user.type(screen.getByRole('textbox', { name: 'Name in French (fr)' }), 'Facture');
+  await user.type(screen.getByRole('textbox', { name: 'Translation into French (fr)' }), 'Facture');
   expect(seen).toHaveBeenLastCalledWith({ de: 'Rechnung', fr: 'Facture' });
   expect(screen.getByText(/Translated: German \(de\) and French \(fr\)\./u)).toBeVisible();
-  await user.clear(screen.getByRole('textbox', { name: 'Name in French (fr)' }));
+  await user.clear(screen.getByRole('textbox', { name: 'Translation into French (fr)' }));
   expect(seen).toHaveBeenLastCalledWith({ de: 'Rechnung' });
 });
 
@@ -74,7 +74,7 @@ it('keeps text under a language the tenant no longer offers, and says so', () =>
 
 it('is a text area, counted against the limit, when it is long text', () => {
   render(<Editing multiline initial={{ fr: 'Facture' }} />);
-  const field = screen.getByRole('textbox', { name: 'Name in French (fr)' });
+  const field = screen.getByRole('textbox', { name: 'Translation into French (fr)' });
   expect(field.tagName).toBe('TEXTAREA');
   expect(screen.getByText(/7 of 20 characters/u)).toBeVisible();
 });

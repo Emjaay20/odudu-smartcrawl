@@ -92,7 +92,7 @@ it('translates the name and description into the languages the tenant offers', a
   ).toHaveLength(3);
   await user.click(within(name).getByRole('tab', { name: 'French (fr)' }));
   await user.type(
-    within(section).getByRole('textbox', { name: 'Name in French (fr)' }),
+    within(section).getByRole('textbox', { name: 'Translation into French (fr)' }),
     'Facturation',
   );
   await user.click(within(section).getByRole('button', { name: 'Save Translations' }));
@@ -132,7 +132,7 @@ it('shows the translations a client already has, and clears one with an empty fi
       name: 'French (fr)',
     }),
   );
-  await user.clear(within(section).getByRole('textbox', { name: 'Name in French (fr)' }));
+  await user.clear(within(section).getByRole('textbox', { name: 'Translation into French (fr)' }));
   await user.click(within(section).getByRole('button', { name: 'Save Translations' }));
   await waitFor(() => {
     expect(sent.find((s) => s.method === 'PATCH')?.body).toEqual({ name_i18n: { de: 'Rechnung' } });
@@ -158,7 +158,10 @@ it("places the server's refusal of a language under the translations", async () 
       name: 'French (fr)',
     }),
   );
-  await user.type(within(section).getByRole('textbox', { name: 'Name in French (fr)' }), 'x');
+  await user.type(
+    within(section).getByRole('textbox', { name: 'Translation into French (fr)' }),
+    'x',
+  );
   await user.click(within(section).getByRole('button', { name: 'Save Translations' }));
   expect(await within(section).findByText(refusal)).toBeVisible();
 });
