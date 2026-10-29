@@ -136,6 +136,7 @@ import {
   listMessageOverridesQuerySchema,
   listMessageOverridesResponseSchema,
   messageCatalogueResponseSchema,
+  stylesheetHooksResponseSchema,
   messageOverrideSchema,
   putMessageOverrideRequestSchema,
   listThemeVersionsResponseSchema,
@@ -966,6 +967,22 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
       'that fills pages, a few hundred messages in all and well under 100 KB, never paged. ' +
       'A template of a page kind may name only a key of the section that lists that kind; ' +
       'an override may name the key of any section. Mail messages are not listed.',
+  },
+  {
+    method: 'GET',
+    pattern: '/admin/tenants/:tenant/theme/stylesheet-hooks',
+    capability: 'manage-tenant',
+    alsoAdmits: ['manage-clients'],
+    responseSchema: stylesheetHooksResponseSchema,
+    description:
+      'Needs `manage-tenant`, or `manage-clients` since a client’s theme has a stylesheet ' +
+      'too. What a stylesheet’s rules may name, as the stylesheet check accepts it and ' +
+      'with the `version` of the list: the `classes` the pages render, one `page_kind_classes` ' +
+      'entry per page kind, the `elements`, the `pseudo_classes` and `pseudo_elements` that may ' +
+      'follow either, and the design `tokens` a declaration may read with `var()`. A ' +
+      'stylesheet cannot define a custom property of its own. The lists are part of the build ' +
+      'and the same for every tenant, so the answer is built once and reads nothing from the ' +
+      'database: under 4 KB, never paged.',
   },
   {
     method: 'PUT',
