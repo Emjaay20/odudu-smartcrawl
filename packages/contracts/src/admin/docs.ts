@@ -1137,6 +1137,8 @@ describeFields(themeViewSchema, {
     'For each piece of the published theme, the layer that supplies it: `client`, `tenant` or `default` (Instrument). A client with no theme of its own shows `tenant` for every piece the tenant sets.',
   draft_sources:
     'The same for the draft as it would be if published, or null when there is no draft.',
+  tenant_sources:
+    'On a client’s theme, the layer that supplies each piece of the tenant’s own published theme: `tenant` where the tenant sets it, `default` where it does not, so a piece the client sets can say which of the tenant’s it hides. Null on the tenant’s own theme. It needs no capability beyond the client’s own theme read.',
 });
 describeFields(publishedThemeSchema, {
   id: 'The version’s identifier, which `restore` names.',

@@ -32,6 +32,9 @@ export const themeViewSchema = z.object({
   published: publishedThemeSchema.nullable(),
   sources: themeSourcesSchema,
   draft_sources: themeSourcesSchema.nullable(),
+  // A client's view only: what the tenant's published theme supplies, so each
+  // piece the client sets can say which of the tenant's it hides.
+  tenant_sources: themeSourcesSchema.nullable(),
 });
 export type ThemeView = z.infer<typeof themeViewSchema>;
 

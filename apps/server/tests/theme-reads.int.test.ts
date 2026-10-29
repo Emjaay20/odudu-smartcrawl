@@ -1,6 +1,6 @@
 import { createDatabase, MIGRATIONS_DIR, runMigrations, tenants, withTenant } from '@odudu/db';
 import { type DatabaseHandle } from '@odudu/db';
-import { messageOverrideRepository } from '@odudu/domain-tenant';
+import { clients, messageOverrideRepository } from '@odudu/domain-tenant';
 import { assetRepository, themeRepository, type ThemeBody } from '@odudu/domain-theme';
 import { newId } from '@odudu/kernel';
 import { createAppRole, makePng, startTestDatabase, type TestDatabase } from '@odudu/testkit';
@@ -163,10 +163,15 @@ async function get(w: World, path: string, bearer?: string) {
 // grow with what a theme names or what a tenant has written.
 const CATALOGUE_STATEMENTS = 6;
 const INFO_STATEMENTS = 9;
+const CLIENT_THEME_STATEMENTS = 10;
 
-async function statementsFor(w: World, path: string): Promise<number> {
+async function statementsFor(
+  w: World,
+  path: string,
+  capabilities?: string[],
+): Promise<number> {
   branding.invalidateTenant(w.tenantId);
-  const bearer = await token(w);
+  const bearer = await token(w, capabilities);
   const { result, statements } = await recorder.record(() => get(w, path, bearer));
   expect(result.statusCode, result.body).toBe(200);
   return statements.filter(isWork).length;
@@ -196,6 +201,42 @@ describe('the message catalogue', () => {
     const count = sections.reduce((total, section) => total + section.messages.length, 0);
     expect(count).toBeGreaterThan(100);
     expect(count).toBeLessThan(1000);
+  });
+});
+
+async function clientPath(w: World): Promise<string> {
+  const rows = await withTenant(appDb.db, w.tenantId, (tx) =>
+    tx.select({ id: clients.id }).from(clients),
+  );
+  return `/clients/${rows[0]?.id ?? ''}/theme`;
+}
+
+describe('a client’s theme read', () => {
+  it('says what the tenant supplies to a caller who may not read the tenant’s theme', async () => {
+    const w = await world();
+    await publish(w, theme({ tokens: { light: LIGHT }, stylesheet: '.page { color: red; }' }));
+    const bearer = await token(w, ['manage-clients']);
+    const view = (await get(w, await clientPath(w), bearer)).json<{
+      tenant_sources: Record<string, string> | null;
+    }>();
+    expect(view.tenant_sources).toMatchObject({
+      'tokens.light': 'tenant',
+      stylesheet: 'tenant',
+      'tokens.dark': 'default',
+    });
+    expect((await get(w, '/theme', bearer)).statusCode).toBe(403);
+    const own = (await get(w, '/theme')).json<{ tenant_sources: unknown }>();
+    expect(own.tenant_sources).toBeNull();
+  });
+
+  it('costs the same few statements whatever the tenant sets', async () => {
+    const bare = await world();
+    const set = await world();
+    await publish(set, theme({ tokens: { light: LIGHT, dark: NIGHT }, stylesheet: '.a { }' }));
+    const none = await statementsFor(bare, await clientPath(bare), ['manage-clients']);
+    const some = await statementsFor(set, await clientPath(set), ['manage-clients']);
+    expect(some).toBe(none);
+    expect(some).toBeLessThanOrEqual(CLIENT_THEME_STATEMENTS);
   });
 });
 

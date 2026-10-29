@@ -577,9 +577,16 @@ describe('a client’s theme', () => {
     await saved(ctx, { templates: { 'sign-in': SIGN_IN } }, base);
     await publish(ctx, base);
 
-    const sources = (await call(ctx, 'GET', `${base}/theme`)).json<{
+    const read = (await call(ctx, 'GET', `${base}/theme`)).json<{
       sources: Record<string, string>;
-    }>().sources;
+      tenant_sources: Record<string, string> | null;
+    }>();
+    const { sources } = read;
+    expect(read.tenant_sources).toMatchObject({
+      stylesheet: 'tenant',
+      'tokens.light': 'tenant',
+      'templates.sign-in': 'default',
+    });
 
     expect(sources).toMatchObject({
       'templates.sign-in': 'client',
