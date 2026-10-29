@@ -595,7 +595,10 @@ test('a client has its own theme over the tenant’s, and a name in French', asy
   const { client } = branding;
   await signIn(page, client);
   await page.goto(`/console/${client.tenant}/clients`);
-  await page.getByRole('link', { name: 'Brand App' }).click();
+  await page
+    .getByRole('grid', { name: 'Clients' })
+    .getByRole('row', { name: /brand-app/u })
+    .click();
   await expect(page.getByRole('heading', { level: 1, name: 'Brand App' })).toBeVisible();
 
   const translations = page.getByRole('region', { name: 'Translations' });
@@ -615,9 +618,11 @@ test('a client has its own theme over the tenant’s, and a name in French', asy
 
   await page.getByRole('tab', { name: 'Branding' }).click();
   const section = await customiseLight(page, '#ffe8d6');
-  await expect(section).toContainText('Replaces Instrument’s default light colours');
   await expectAccessible(page, { exclude: [FRAME] });
   await save(section);
+  await expect(section).toContainText(
+    'The draft replaces Instrument’s default light colours once published',
+  );
   const body = preview(page).locator('body');
   await expect
     .poll(() => body.evaluate((node) => getComputedStyle(node).backgroundColor))
