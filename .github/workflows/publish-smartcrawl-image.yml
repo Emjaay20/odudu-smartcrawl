@@ -27,11 +27,3 @@ jobs:
           tags: |
             ghcr.io/emjaay20/odudu-smartcrawl-brand:smartcrawl
             ghcr.io/emjaay20/odudu-smartcrawl-brand:${{ github.sha }}
-      - name: Make the deployment image public
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: >-
-          gh api --method PATCH
-          -H "Accept: application/vnd.github+json"
-          /user/packages/container/odudu-smartcrawl-brand
-          -f visibility=public
