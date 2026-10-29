@@ -728,6 +728,7 @@ function buildAdminRoutes(
       'POST /admin/tenants/:tenant/theme/publish': tenantTheme.publish,
       'POST /admin/tenants/:tenant/theme/assets': themeAssets.upload,
       'DELETE /admin/tenants/:tenant/theme/assets/:assetId': themeAssets.remove,
+      'GET /admin/tenants/:tenant/theme/assets/:assetId/content': themeAssets.content,
       'GET /admin/tenants/:tenant/theme/preview': tenantPreview,
       'GET /admin/tenants/:tenant/theme/preview/info': tenantPreviewInfo,
       'GET /admin/tenants/:tenant/mail/preview': mailPreviewHandler(mailDeps),

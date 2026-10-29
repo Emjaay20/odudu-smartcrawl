@@ -1031,6 +1031,21 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
       'not hold it, so restoring one that names a deleted image is refused. `404` for an ' +
       'image that does not exist or is another tenant\u2019s.',
   },
+  {
+    method: 'GET',
+    pattern: '/admin/tenants/:tenant/theme/assets/:assetId/content',
+    capability: 'manage-tenant',
+    alsoAdmits: ['manage-clients'],
+    responseSchema: z.string(),
+    successMediaType: 'image/*',
+    description:
+      'Needs `manage-tenant`, or `manage-clients`. The stored bytes of an uploaded image, as ' +
+      'they would be served, under the type they were stored as (`image/png`, `image/jpeg` ' +
+      'or `image/webp`), whether or not a published theme names it: this is how an admin sees ' +
+      'an image before any public address serves it. `X-Content-Type-Options: nosniff` and ' +
+      '`Cache-Control: private, no-store`. At most 1.25 MiB, one statement. `404` for an image ' +
+      'that does not exist, is another tenant\u2019s or is not an id.',
+  },
   // No `view-clients`: client metadata is configuration rather than a
   // population to browse, so every route below requires `manage-clients`.
   {

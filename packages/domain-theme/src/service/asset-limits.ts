@@ -29,6 +29,12 @@ export function inspectLimitsFor(kind: AssetKind): InspectLimits {
 // file under its limit is not refused for that unless it grows past this.
 export const OUTPUT_GROWTH = 1.25;
 
+// The most a stored image can weigh: the largest kind's upload limit, grown by
+// what a re-encode may add. A read that returns bytes asks no more than this.
+export const MAX_STORED_ASSET_BYTES = Math.floor(
+  Math.max(...Object.values(ASSET_LIMITS).map((limits) => limits.maxBytes)) * OUTPUT_GROWTH,
+);
+
 export function withinOutputLimit(kind: AssetKind, length: number): boolean {
   return length <= Math.floor(ASSET_LIMITS[kind].maxBytes * OUTPUT_GROWTH);
 }
