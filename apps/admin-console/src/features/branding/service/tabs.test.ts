@@ -3,6 +3,7 @@ import {
   BRANDING_TAB_LABELS,
   BRANDING_TABS,
   OFFERED_TABS,
+  showsPreview,
   tabsWithEdits,
   themeRecord,
   themeParts,
@@ -37,5 +38,11 @@ describe('the scope', () => {
     expect(tagOf(null)).toBe(NO_DRAFT_TAG);
     expect(ifMatchOf(NO_DRAFT_TAG)).toBeUndefined();
     expect(ifMatchOf('"d1"')).toBe('"d1"');
+  });
+});
+
+describe('showsPreview', () => {
+  it('is the tabs that frame a page, and no other', () => {
+    expect(BRANDING_TABS.filter((tab) => showsPreview(tab))).toEqual(['theme', 'pages']);
   });
 });

@@ -9,6 +9,8 @@ import {
   EMPTY,
   LOGO_ID,
   OWN_LIGHT,
+  PI,
+  previewInfo,
   TH,
   themeAnswer,
   themeView,
@@ -596,6 +598,91 @@ describe('images', () => {
     expect(within(section).getByRole('button', { name: /Save/u })).toBeDisabled();
     await user.click(within(section).getByRole('button', { name: 'Remove from theme: logo' }));
     expect(within(section).getAllByText('No image: the layer below supplies it.')).toHaveLength(4);
+  });
+});
+
+describe('what the preview says about itself', () => {
+  const group = () => screen.queryByRole('group', { name: 'What the preview shows' });
+
+  it('shows nothing when the draft is what the frame shows', async () => {
+    renderConsoleAt(AT, brandingRoutes(themeAnswer(draftedView(), '"d1"')));
+    await screen.findByTitle('Preview of the page');
+    await waitFor(() => {
+      expect(screen.getByTitle('Preview of the page')).toBeVisible();
+    });
+    expect(group()).toBeNull();
+  });
+
+  it('says which layer is shown and why, from the answer for the same page and scheme', async () => {
+    const { sent } = renderConsoleAt(
+      AT,
+      brandingRoutes(themeAnswer(draftedView(), '"d1"'), {
+        [`GET ${PI}`]: json(
+          previewInfo({
+            shown: 'default',
+            faults: [{ layer: 'tenant', code: 'image_gone' }],
+          }),
+        ),
+      }),
+    );
+    const notice = await screen.findByRole('group', { name: 'What the preview shows' });
+    expect(
+      within(notice).getByText('The draft names an image that no longer exists.'),
+    ).toBeVisible();
+    expect(
+      within(notice).getByText('The preview shows Instrument’s default look instead.'),
+    ).toBeVisible();
+    const asked = sent.find((request) => request.path === PI);
+    expect(Object.fromEntries(asked?.search ?? [])).toEqual({ kind: 'sign-in', scheme: 'light' });
+  });
+
+  it('asks again for the page and the scheme chosen, and answers for them', async () => {
+    const user = userEvent.setup();
+    const { sent } = renderConsoleAt(
+      AT,
+      brandingRoutes(themeAnswer(draftedView(), '"d1"'), {
+        [`GET ${PI}`]: (request) =>
+          json(
+            request.search.get('scheme') === 'dark'
+              ? previewInfo({ kind: 'sign-in', unfilled: true })
+              : previewInfo(),
+          )(request),
+      }),
+    );
+    await screen.findByTitle('Preview of the page');
+    expect(group()).toBeNull();
+    const preview = screen.getByRole('complementary');
+    await user.click(within(preview).getByRole('button', { name: /Colour scheme/u }));
+    await user.click(await screen.findByRole('option', { name: 'Dark' }));
+    expect(await screen.findByText(/template could not be filled/u)).toBeVisible();
+    const asks = sent.filter((request) => request.path === PI).map((r) => r.search.get('scheme'));
+    expect(asks).toEqual(['light', 'dark']);
+  });
+
+  it('says so when it could not find out, rather than showing nothing', async () => {
+    renderConsoleAt(
+      AT,
+      brandingRoutes(themeAnswer(draftedView(), '"d1"'), {
+        [`GET ${PI}`]: problem(500, 'about:blank', 'Internal Server Error'),
+      }),
+    );
+    expect(
+      await screen.findByText('The preview could not be checked for a fallback.'),
+    ).toBeVisible();
+  });
+
+  it('is asked only where a preview is framed', async () => {
+    const user = userEvent.setup();
+    const { sent } = renderConsoleAt(
+      `${AT}?tab=languages`,
+      brandingRoutes(themeAnswer(draftedView(), '"d1"')),
+    );
+    await screen.findByRole('tab', { name: /Languages/u });
+    expect(sent.some((request) => request.path === PI)).toBe(false);
+    await user.click(screen.getByRole('tab', { name: /Pages/u }));
+    await waitFor(() => {
+      expect(sent.some((request) => request.path === PI)).toBe(true);
+    });
   });
 });
 

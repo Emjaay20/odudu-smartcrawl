@@ -5,6 +5,7 @@ import {
   NO_OUTCOME,
   OFFERED_TABS,
   selectOffered,
+  showsPreview,
   tabsWithEdits,
   themeRecord,
   type OfferedTab,
@@ -47,7 +48,7 @@ export function useBrandingPage(tenant: string, scope: ThemeScope): BrandingPage
       selectOffered(next, selectTab);
     },
     dirty: tabsWithEdits(dirty),
-    preview: usePreview(tenant, scope, record.data, record.etag),
+    preview: usePreview(tenant, scope, record.data, record.etag, showsPreview(tab)),
     mail: useMailTab(tenant, record.data, tab === 'mail'),
     published,
     setPublished,

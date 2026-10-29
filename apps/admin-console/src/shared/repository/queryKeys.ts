@@ -150,3 +150,9 @@ export function mailBrandingKey(tenant: string, publishedVersion: number) {
 export function messageCatalogueKey(tenant: string) {
   return ['message-catalogue', tenant] as const;
 }
+
+// What the preview of one page of a scope shows and why, read again whenever
+// the frame is reloaded (`frame` is the frame's own key).
+export function previewInfoKey(tenant: string, scope: string, frame: string) {
+  return ['preview-info', tenant, scope, frame] as const;
+}

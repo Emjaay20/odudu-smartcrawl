@@ -4,6 +4,7 @@ import {
   previewSource,
   publishTheme,
   putTheme,
+  readPreviewInfo,
   readTheme,
   readVersions,
   resetTheme,
@@ -11,7 +12,7 @@ import {
   uploadAsset,
 } from '#/features/branding/adapter/theme';
 import { NO_DRAFT_TAG } from '#/features/branding/service';
-import { draftedView, EMPTY, TH, themeView } from '#/testing/brandingFixtures';
+import { draftedView, EMPTY, PI, previewInfo, TH, themeView } from '#/testing/brandingFixtures';
 import { fakeTransport, json, problem } from '#/testing/fakeTransport';
 
 const CLIENT_TH = '/console/api/admin/tenants/acme/clients/c1/theme';
@@ -155,5 +156,42 @@ describe('the preview address', () => {
     expect(
       previewSource('a b', { kind: 'client', id: 'c1' }, { kind: 'sign-in', scheme: 'light' }),
     ).toBe('/console/api/admin/tenants/a%20b/clients/c1/theme/preview?kind=sign-in&scheme=light');
+  });
+});
+
+describe('reading what a preview shows', () => {
+  const choice = { kind: 'consent', scheme: 'dark' } as const;
+
+  it('asks for the page and scheme the frame is given, beside the tenant’s theme', async () => {
+    const fake = fakeTransport({ [`GET ${PI}`]: json(previewInfo({ kind: 'consent' })) });
+    const result = await readPreviewInfo(
+      fake.transport.gateway,
+      'acme',
+      { kind: 'tenant' },
+      choice,
+    );
+    expect(result).toMatchObject({ ok: true, data: { kind: 'consent' } });
+    expect(Object.fromEntries(fake.sent[0]?.search ?? [])).toEqual({
+      kind: 'consent',
+      scheme: 'dark',
+    });
+  });
+
+  it('asks beside the client for a client’s preview', async () => {
+    const fake = fakeTransport({ [`GET ${CLIENT_TH}/preview/info`]: json(previewInfo()) });
+    const result = await readPreviewInfo(
+      fake.transport.gateway,
+      'acme',
+      { kind: 'client', id: 'c1' },
+      choice,
+    );
+    expect(result.ok).toBe(true);
+  });
+
+  it('refuses an answer that is not one', async () => {
+    const fake = fakeTransport({ [`GET ${PI}`]: json({ shown: 'nowhere' }) });
+    expect(
+      await readPreviewInfo(fake.transport.gateway, 'acme', { kind: 'tenant' }, choice),
+    ).toMatchObject({ ok: false, kind: 'schema' });
   });
 });

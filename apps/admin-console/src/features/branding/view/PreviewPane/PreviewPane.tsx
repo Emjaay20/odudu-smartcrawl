@@ -1,4 +1,5 @@
 import {
+  FALLBACK_TITLE,
   PAGE_KIND_OPTIONS,
   PREVIEW_FRAME_TITLE,
   PREVIEW_KIND_LABEL,
@@ -47,6 +48,13 @@ export function PreviewPane({ preview, pickKind }: { preview: Preview; pickKind:
       </div>
       <p className={styles.note}>{PREVIEW_NOTE}</p>
       {preview.note === null ? null : <Note>{preview.note}</Note>}
+      {preview.fallback.length === 0 ? null : (
+        <div role="group" aria-label={FALLBACK_TITLE} className={styles.fallback}>
+          {preview.fallback.map((line) => (
+            <Note key={line}>{line}</Note>
+          ))}
+        </div>
+      )}
       <PreviewFrame
         title={PREVIEW_FRAME_TITLE}
         src={preview.src}

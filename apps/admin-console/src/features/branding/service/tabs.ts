@@ -28,3 +28,8 @@ export function tabsWithEdits(dirty: ReadonlySet<string>): ReadonlySet<OfferedTa
     OFFERED_TABS.filter((tab) => BRANDING_TAB_SECTIONS[tab].some((section) => dirty.has(section))),
   );
 }
+
+// The tabs that frame a preview of a page.
+export function showsPreview(tab: BrandingTab): boolean {
+  return tab === 'theme' || tab === 'pages';
+}

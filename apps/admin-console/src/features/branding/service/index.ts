@@ -3,6 +3,7 @@ export * from '#/features/branding/service/catalogue';
 export * from '#/features/branding/service/contrast';
 export * from '#/features/branding/service/copy';
 export * from '#/features/branding/service/edits';
+export * from '#/features/branding/service/fallback';
 export * from '#/features/branding/service/failures';
 export * from '#/features/branding/service/fields';
 export * from '#/features/branding/service/languages';

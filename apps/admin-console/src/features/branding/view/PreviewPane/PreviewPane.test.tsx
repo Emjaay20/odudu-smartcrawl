@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { DEFAULT_PREVIEW } from '#/features/branding/service';
@@ -11,6 +11,7 @@ function preview(changes: Partial<Preview> = {}): Preview {
     src: '/console/api/admin/tenants/acme/theme/preview?kind=sign-in&scheme=light',
     frameKey: 'k',
     note: null,
+    fallback: [],
     loading: false,
     onLoaded: () => undefined,
     setKind: () => undefined,
@@ -38,9 +39,42 @@ it('offers the page picker only where the editor does not', () => {
   expect(screen.queryByRole('button', { name: /Page/u })).toBeNull();
 });
 
+it('says nothing about a fallback when there is none to say', () => {
+  render(<PreviewPane preview={preview()} pickKind />);
+  expect(screen.queryByRole('group', { name: 'What the preview shows' })).toBeNull();
+});
+
+it('says, beside the frame, each thing the preview shows other than the saved draft', () => {
+  render(
+    <PreviewPane
+      preview={preview({
+        fallback: [
+          'The draft names an image that no longer exists.',
+          'The preview shows Instrument’s default look instead.',
+        ],
+      })}
+      pickKind
+    />,
+  );
+  const group = screen.getByRole('group', { name: 'What the preview shows' });
+  expect(
+    within(group)
+      .getAllByRole('note')
+      .map((n) => n.textContent),
+  ).toEqual([
+    'The draft names an image that no longer exists.',
+    'The preview shows Instrument’s default look instead.',
+  ]);
+});
+
 it('has nothing axe can find in either theme', async () => {
   const found = await axeInBothThemes(
-    () => <PreviewPane preview={preview({ note: 'Left out.' })} pickKind />,
+    () => (
+      <PreviewPane
+        preview={preview({ note: 'Left out.', fallback: ['The draft could not be read.'] })}
+        pickKind
+      />
+    ),
     () => Promise.resolve(),
     { frames: false },
   );

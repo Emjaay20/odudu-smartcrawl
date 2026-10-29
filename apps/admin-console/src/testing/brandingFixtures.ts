@@ -1,4 +1,4 @@
-import type { MailBrandingView } from '@odudu/contracts/admin';
+import type { MailBrandingView, ThemePreviewInfo } from '@odudu/contracts/admin';
 import { json, type Answer } from '#/testing/fakeTransport';
 import { ACME_ADMIN } from '#/testing/tenantPaths';
 import { graceRoutes } from '#/testing/renderConsole';
@@ -96,6 +96,7 @@ export function brandingRoutes(
       [`GET ${TH}`]: theme,
       [`GET ${TH}/versions`]: versionsAnswer([VERSION_2, VERSION_1]),
       [`GET ${MC}`]: json(CATALOGUE),
+      [`GET ${PI}`]: json(previewInfo()),
     },
     extra,
   );
@@ -104,6 +105,7 @@ export function brandingRoutes(
 export const ML = `${ACME_ADMIN}/mail/branding`;
 export const MO = `${ACME_ADMIN}/message-overrides`;
 export const MC = `${ACME_ADMIN}/message-catalogue`;
+export const PI = `${TH}/preview/info`;
 
 const MAIL_COLOURS = {
   page: '#e7eae9',
@@ -152,6 +154,19 @@ export const CATALOGUE = {
     },
   ],
 };
+
+// What the preview says of a draft that is shown as it is.
+export function previewInfo(changes: Partial<ThemePreviewInfo> = {}): ThemePreviewInfo {
+  return {
+    kind: 'sign-in',
+    from: 'draft',
+    shown: 'tenant',
+    faults: [],
+    refused: [],
+    unfilled: false,
+    ...changes,
+  };
+}
 
 export function override(key: string, message: string, locale = 'en') {
   return { locale, key, message, updated_at: '2026-10-20T09:00:00.000Z' };

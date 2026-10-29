@@ -1,8 +1,10 @@
 import type { ThemeView } from '@odudu/contracts/admin';
 import { useState } from 'react';
 import { previewSource } from '#/features/branding/repository/preview';
+import { usePreviewInfo } from '#/features/branding/repository/usePreviewInfo';
 import {
   DEFAULT_PREVIEW,
+  noticeLines,
   omissionNote,
   previewKey,
   previewWith,
@@ -18,6 +20,9 @@ export interface Preview {
   src: string;
   frameKey: string;
   note: string | null;
+  // What the frame shows other than the saved draft, and why, as sentences;
+  // empty when it is the draft, or until the server has said.
+  fallback: string[];
   // The frame has not finished loading what it was asked for.
   loading: boolean;
   onLoaded: () => void;
@@ -31,15 +36,18 @@ export function usePreview(
   scope: ThemeScope,
   view: ThemeView | undefined,
   tag: string | null,
+  asked: boolean,
 ): Preview {
   const [choice, setChoice] = useState(DEFAULT_PREVIEW);
   const [loaded, setLoaded] = useState('');
   const frameKey = previewKey(view, tag, choice);
+  const info = usePreviewInfo(tenant, scope, choice, frameKey, asked && view !== undefined);
   return {
     choice,
     src: previewSource(tenant, scope, choice),
     frameKey,
     note: omissionNote(choice.kind),
+    fallback: noticeLines(info, scope),
     loading: loaded !== frameKey,
     onLoaded: () => {
       setLoaded(frameKey);

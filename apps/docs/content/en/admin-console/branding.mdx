@@ -26,7 +26,7 @@ On the **Pages** tab, choose a page and edit its template. The parts the server 
 
 ## 3. Preview, publish, restore
 
-The preview beside the editor frames the real page for the saved draft, in the light or the dark scheme. **Publish** makes the saved draft the published theme and keeps the version it replaces, up to twenty. **Versions** lists them; **Restore** publishes a copy of an earlier one and leaves the draft alone.
+The preview beside the editor frames the real page for the saved draft, in the light or the dark scheme. When it shows something other than the draft, a notice under **Preview** says what and why: there is no saved draft yet, a layer could not be read or names an image that is gone, a stylesheet was left out, or a template was refused or could not be filled and the page uses the one below it or the default. The notice is the server's own account of the same page, and is not shown when the frame is simply the draft. **Publish** makes the saved draft the published theme and keeps the version it replaces, up to twenty. **Versions** lists them; **Restore** publishes a copy of an earlier one and leaves the draft alone.
 
 ## 4. See the mail
 
@@ -42,4 +42,4 @@ On the **Languages** tab, **Supported languages** is the list of languages the t
 
 ## Do the same through the API
 
-The calls are in the [theme](../reference/generated/admin-api/theme/index.md) area of the admin API: reading and saving the draft, publishing, versions and restore, reset, image upload and delete, and the preview. The mail preview and what the mail inherits are `GET /mail/preview` and `GET /mail/branding`; the overrides are the `/message-overrides` routes, and the keys offered are `GET /message-catalogue`.
+The calls are in the [theme](../reference/generated/admin-api/theme/index.md) area of the admin API: reading and saving the draft, publishing, versions and restore, reset, image upload and delete, and the preview, with `GET /theme/preview/info` saying what that preview shows and why. The mail preview and what the mail inherits are `GET /mail/preview` and `GET /mail/branding`; the overrides are the `/message-overrides` routes, and the keys offered are `GET /message-catalogue`.

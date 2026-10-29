@@ -1,5 +1,7 @@
 import {
   listThemeVersionsResponseSchema,
+  themePreviewInfoSchema,
+  type ThemePreviewInfo,
   publishThemeResponseSchema,
   themeAssetSchema,
   themeViewSchema,
@@ -164,4 +166,18 @@ export function previewSource(
 ): string {
   const path = ['admin', 'tenants', tenant, ...themeParts(scope), 'preview'].map(segment).join('/');
   return `${GATEWAY_BASE}${path}?${new URLSearchParams(choice).toString()}`;
+}
+
+// What the preview of the same request shows and why, which a frame cannot
+// say itself: its headers are not readable from the page that frames it.
+export function readPreviewInfo(
+  gateway: Gateway,
+  tenant: string,
+  scope: ThemeScope,
+  choice: { kind: PageKind; scheme: Scheme },
+): Promise<GatewayResult<ThemePreviewInfo>> {
+  const options = { query: new URLSearchParams(choice), schema: themePreviewInfoSchema };
+  return scope.kind === 'tenant'
+    ? adminCall(gateway, 'GET', tenant, ['theme', 'preview', 'info'], options)
+    : adminCall(gateway, 'GET', tenant, ['clients', scope.id, 'theme', 'preview', 'info'], options);
 }
