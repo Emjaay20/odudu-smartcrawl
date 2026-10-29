@@ -532,6 +532,8 @@ export default function globalSetup(): void {
       reset: { tenant: `${run}-b4`, username: 'finch', password: password() },
       keyed: { tenant: `${run}-b5`, username: 'robin', password: password() },
       layout: { tenant: `${run}-b6`, username: 'plover', password: password() },
+      mail: { tenant: `${run}-b7`, username: 'lark', password: password() },
+      languages: { tenant: `${run}-b8`, username: 'tern', password: password() },
     },
     lockouts: {
       main: { tenant: `${run}-l1`, username: 'curie', password: password() },

@@ -267,3 +267,57 @@ for (const [name, viewport] of [
     });
   });
 }
+
+const MAIL_FRAME = 'iframe[title="Preview of the verification mail"]';
+
+test('frames the verification mail without a script, in either scheme', async ({ page }) => {
+  test.slow();
+  const { mail } = branding;
+  await signIn(page, mail);
+  await page.goto(`/console/${mail.tenant}/branding?tab=mail`);
+  const frame = page.locator(MAIL_FRAME);
+  await expect(frame).toHaveAttribute('sandbox', '');
+  const body = page.frameLocator(MAIL_FRAME);
+  await expect(body.getByRole('heading', { name: 'Verify your email address' })).toBeVisible();
+  const background = (): Promise<string> =>
+    body.locator('body').evaluate((node) => getComputedStyle(node).backgroundColor);
+  const light = await background();
+
+  await page.getByRole('button', { name: /Colour scheme/u }).click();
+  await page.getByRole('option', { name: 'Dark' }).click();
+  await expect(body.getByRole('heading', { name: 'Verify your email address' })).toBeVisible();
+  await expect.poll(background).not.toBe(light);
+
+  await expect(page.getByRole('region', { name: 'Light colours' })).toContainText(
+    'Odudu’s default.',
+  );
+  await expectAccessible(page, { exclude: [MAIL_FRAME] });
+});
+
+test('sets a message override, refuses a key that is not a message, and removes it', async ({
+  page,
+  problems,
+}) => {
+  test.slow();
+  const { languages } = branding;
+  await signIn(page, languages);
+  await page.goto(`/console/${languages.tenant}/branding?tab=languages`);
+  const key = page.getByRole('textbox', { name: /Message key/u });
+  const text = page.getByRole('textbox', { name: /Text shown instead/u });
+
+  await key.fill('no.such.key');
+  await text.fill('Hello');
+  await page.getByRole('button', { name: 'Save override' }).click();
+  await expect(page.getByText(/not the key of any page message/u)).toBeVisible();
+  forgive(problems, '/message-overrides/en/no.such.key');
+
+  await key.fill('login.title');
+  await text.fill('Welcome back');
+  await page.getByRole('button', { name: 'Save override' }).click();
+  const table = page.getByRole('grid', { name: 'Message overrides' });
+  await expect(table.getByRole('row', { name: /login\.title/u })).toContainText('Welcome back');
+
+  await page.getByRole('button', { name: 'Remove login.title' }).click();
+  await page.getByRole('button', { name: 'Remove override' }).click();
+  await expect(page.getByText('No overrides yet')).toBeVisible();
+});

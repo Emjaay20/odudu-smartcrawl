@@ -241,6 +241,9 @@ const seededSchema = z.object({
       keyed: account,
       // Read only: the editors' layout at each width.
       layout: account,
+      // The Mail tab's frame and the Languages tab's overrides.
+      mail: account,
+      languages: account,
     }),
     // One tenant per test that reads its mail, each with its outbox seeded.
     mail: z.object({

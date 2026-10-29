@@ -15,11 +15,11 @@ function expectedRefusal(text: string, url: string): boolean {
   );
 }
 
-// The theme preview is framed with no script allowed, so the browser refuses
+// The theme and mail previews are framed with no script allowed, so the browser refuses
 // the script this harness puts in every frame it finds, and says so. That is
 // the harness's own script, and the frame is meant to refuse scripts.
 function isSandboxedPreview(text: string): boolean {
-  return /^Blocked script execution in '[^']*\/theme\/preview\?[^']*' because the document's frame is sandboxed/u.test(
+  return /^Blocked script execution in '[^']*\/(?:theme|mail)\/preview\?[^']*' because the document's frame is sandboxed/u.test(
     text,
   );
 }
