@@ -164,12 +164,9 @@ async function get(w: World, path: string, bearer?: string) {
 const CATALOGUE_STATEMENTS = 6;
 const INFO_STATEMENTS = 9;
 const CLIENT_THEME_STATEMENTS = 10;
+const CLIENT_READ_STATEMENTS = 9;
 
-async function statementsFor(
-  w: World,
-  path: string,
-  capabilities?: string[],
-): Promise<number> {
+async function statementsFor(w: World, path: string, capabilities?: string[]): Promise<number> {
   branding.invalidateTenant(w.tenantId);
   const bearer = await token(w, capabilities);
   const { result, statements } = await recorder.record(() => get(w, path, bearer));
@@ -237,6 +234,18 @@ describe('a client’s theme read', () => {
     const some = await statementsFor(set, await clientPath(set), ['manage-clients']);
     expect(some).toBe(none);
     expect(some).toBeLessThanOrEqual(CLIENT_THEME_STATEMENTS);
+  });
+});
+
+describe('a client’s own read', () => {
+  it('adds the one read of the tenant’s languages, whatever it offers', async () => {
+    const one = await world();
+    const many = await world('fr');
+    const path = async (w: World): Promise<string> => (await clientPath(w)).replace('/theme', '');
+    const few = await statementsFor(one, await path(one), ['manage-clients']);
+    const more = await statementsFor(many, await path(many), ['manage-clients']);
+    expect(more).toBe(few);
+    expect(more).toBeLessThanOrEqual(CLIENT_READ_STATEMENTS);
   });
 });
 

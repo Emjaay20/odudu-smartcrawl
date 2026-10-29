@@ -97,6 +97,8 @@ export {
   clientTypeSchema,
   registrationOriginSchema,
   clientSchema,
+  clientRecordSchema,
+  type ClientRecord,
   type Client,
   clientFieldsSchema,
   type ClientFields,

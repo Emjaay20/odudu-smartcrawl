@@ -19,6 +19,7 @@ import {
   amendSubjectRequestSchema,
   assignScopeToClientRequestSchema,
   assignScopeToClientResponseSchema,
+  clientRecordSchema,
   clientSchema,
   createClientRequestSchema,
   createClientResponseSchema,
@@ -1063,14 +1064,14 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     method: 'GET',
     pattern: '/admin/tenants/:tenant/clients/:id',
     capability: 'manage-clients',
-    responseSchema: clientSchema,
+    responseSchema: clientRecordSchema,
     description: CLIENT_REACH,
   },
   {
     method: 'PATCH',
     pattern: '/admin/tenants/:tenant/clients/:id',
     capability: 'manage-clients',
-    responseSchema: clientSchema,
+    responseSchema: clientRecordSchema,
     bodySchema: amendClientRequestSchema,
     description:
       `${SERVICE_ACCOUNT_CEILING} ${CLIENT_LIST_BOUND}` +

@@ -29,6 +29,7 @@ import {
   listClientsQuerySchema,
   logoutDeliverySchema,
   rotateClientSecretResponseSchema,
+  clientRecordSchema,
 } from '#/admin/clients';
 import { consentSchema } from '#/admin/consents';
 import { countResponseSchema } from '#/admin/counts';
@@ -749,6 +750,10 @@ describeFields(subjectSchema, {
 });
 describeFields(usernamePolicySchema, {
   username_editable: 'Whether the tenant lets a username be changed.',
+});
+describeFields(clientRecordSchema, {
+  supported_locales:
+    'The languages the tenant offers (its `supported_locales` setting), at most 32: the languages `name_i18n` and `description_i18n` may be written in. Only the client’s own read and amendment carry it, so a caller who may manage clients can see them without reading the tenant’s settings.',
 });
 describeFields(exportedClientSchema, {
   client_id:

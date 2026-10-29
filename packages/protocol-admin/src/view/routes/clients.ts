@@ -4,6 +4,7 @@ import {
   listClientsQuerySchema,
   rotateClientSecretQuerySchema,
   type Client,
+  type ClientRecord,
   type CreateClientResponse,
   type RotateClientSecretResponse,
 } from '@odudu/contracts/admin';
@@ -36,6 +37,7 @@ import {
   type Problem,
   lastAdministratorProblem,
 } from '#/view/problem';
+import { tenantLanguages } from '#/usecase/tenant-languages';
 import { adminTx } from '#/view/routes/admin-tx';
 import { type AdminRequest, type AdminRouteHandler } from '#/view/routes/router';
 
@@ -78,6 +80,10 @@ export function serviceAccountCeilingProblem(
 // can never drift apart.
 function toWireClient(view: ClientView): Client {
   return clientWire(view);
+}
+
+function toWireRecord(view: ClientView, languages: readonly string[]): ClientRecord {
+  return { ...clientWire(view), supported_locales: [...languages] };
 }
 
 // The `ETag` is taken over the stored fields alone: what the service account
@@ -147,9 +153,12 @@ export function readClientHandler(deps: ClientsRouteDeps): AdminRouteHandler {
       throw new Error('protocol-admin: GET client route received no :id');
     }
 
-    const outcome = await adminTx(deps.database, request, targetTenantId, (tx) =>
-      readClient(tx, id),
-    );
+    const outcome = await adminTx(deps.database, request, targetTenantId, async (tx) => {
+      const read = await readClient(tx, id);
+      return read.kind === 'ok'
+        ? { ...read, languages: await tenantLanguages(tx, targetTenantId) }
+        : read;
+    });
     if (outcome.kind === 'not_found') {
       return sendProblem(
         reply,
@@ -159,7 +168,7 @@ export function readClientHandler(deps: ClientsRouteDeps): AdminRouteHandler {
     }
 
     reply.header('etag', etagOfView(outcome.client));
-    return reply.code(200).send(toWireClient(outcome.client));
+    return reply.code(200).send(toWireRecord(outcome.client, outcome.languages));
   };
 }
 
@@ -322,8 +331,8 @@ export function amendClientHandler(deps: ClientsRouteDeps): AdminRouteHandler {
       principal.subjectId,
     );
 
-    const outcome = await adminTx(deps.database, request, targetTenantId, (tx) =>
-      amendClient(
+    const outcome = await adminTx(deps.database, request, targetTenantId, async (tx) => {
+      const amended = await amendClient(
         tx,
         { tlsClientAuthEnabled: deps.tlsClientAuthEnabled, audit: deps.audit },
         {
@@ -335,14 +344,17 @@ export function amendClientHandler(deps: ClientsRouteDeps): AdminRouteHandler {
           actorTenantId: principal.issuerTenantId,
           actorClientId: principal.clientDbId,
         },
-      ),
-    );
+      );
+      return amended.kind === 'ok'
+        ? { ...amended, languages: await tenantLanguages(tx, targetTenantId) }
+        : amended;
+    });
 
     if (outcome.kind !== 'ok') {
       return amendmentProblem(reply, request, outcome);
     }
     reply.header('etag', outcome.etag);
-    return reply.code(200).send(toWireClient(outcome.client));
+    return reply.code(200).send(toWireRecord(outcome.client, outcome.languages));
   };
 }
 
