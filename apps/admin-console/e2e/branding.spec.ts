@@ -553,6 +553,33 @@ test('sets a message override, refuses a key that is not a message, and removes 
   await expect(page.getByText('No overrides yet')).toBeVisible();
 });
 
+test('adds a language by its tag with Enter, marks the tab, saves it and keeps it', async ({
+  page,
+}) => {
+  test.slow();
+  const { languages } = branding;
+  await signIn(page, languages);
+  await page.goto(`/console/${languages.tenant}/branding?tab=languages`);
+  const section = page.getByRole('region', { name: 'Languages', exact: true });
+  const add = page.getByRole('combobox', { name: /Add a language/u });
+
+  await add.fill('xx_YY');
+  await page.getByRole('button', { name: 'Add language' }).click();
+  await expect(page.getByText(/type a tag such as/u)).toBeVisible();
+
+  await add.fill('pt-BR');
+  await add.press('Enter');
+  await expect(section.getByRole('checkbox', { name: /pt-BR/u })).toBeChecked();
+  await expect(add).toHaveValue('');
+  await expect(page.getByRole('tab', { name: 'Languages, unsaved changes' })).toBeVisible();
+  await expectAccessible(page);
+
+  await save(section);
+  await page.reload();
+  await expect(section.getByRole('checkbox', { name: /pt-BR/u })).toBeChecked();
+  await expect(page.getByRole('tab', { name: 'Languages', exact: true })).toBeVisible();
+});
+
 test('inserts a message from the list into a template, and says the preview shows no draft until there is one', async ({
   page,
 }) => {
