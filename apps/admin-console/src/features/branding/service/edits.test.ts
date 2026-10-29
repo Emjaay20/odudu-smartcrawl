@@ -1,7 +1,8 @@
 import type { ThemeAsset } from '@odudu/contracts/admin';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi, type Mock } from 'vitest';
 import {
   altChanged,
+  announcePublish,
   changedColours,
   contrastReport,
   DEFAULT_PALETTES,
@@ -15,8 +16,13 @@ import {
   slotView,
   unsavedSections,
   uploadedImage,
-  uploadStart,
+  forgetImage,
+  finishUpload,
+  startUpload,
+  editAlt,
   type ImageValues,
+  type SlotStates,
+  type UploadStart,
 } from '#/features/branding/service';
 import type { GatewayResult } from '#/shared/service/result';
 
@@ -40,15 +46,51 @@ const refused: GatewayResult<ThemeAsset> = {
   problem: { type: 'about:blank#asset-animated', title: 't', status: 422 },
 };
 
+function slotsFrom(show: Mock<UploadStart['show']>, was: SlotStates): SlotStates {
+  const next = show.mock.calls[0]?.[0];
+  if (next === undefined) throw new Error('nothing was shown');
+  return next(was);
+}
+
 describe('an upload', () => {
   it('starts busy when the file may be sent, and fails in place when it may not', () => {
-    const ok = uploadStart(IDLE_SLOTS, 'logo', { type: 'image/png', size: 10 });
-    expect(ok.send).toBe(true);
-    expect(ok.slots.logo).toEqual({ busy: true, error: null });
-    const big = uploadStart(IDLE_SLOTS, 'logo', { type: 'image/png', size: 10_000_000 });
-    expect(big.send).toBe(false);
-    expect(big.slots.logo.busy).toBe(false);
-    expect(big.slots.logo.error).toMatch(/over 256 KiB/u);
+    const shown = vi.fn<UploadStart['show']>();
+    const send = vi.fn();
+    startUpload('logo', { type: 'image/png', size: 10 }, { show: shown, send });
+    expect(send).toHaveBeenCalledOnce();
+    const busy = slotsFrom(shown, IDLE_SLOTS);
+    expect(busy.logo).toEqual({ busy: true, error: null });
+
+    const bigShown = vi.fn<UploadStart['show']>();
+    const bigSend = vi.fn();
+    startUpload('logo', { type: 'image/png', size: 10_000_000 }, { show: bigShown, send: bigSend });
+    expect(bigSend).not.toHaveBeenCalled();
+    const failed = slotsFrom(bigShown, IDLE_SLOTS);
+    expect(failed.logo.busy).toBe(false);
+    expect(failed.logo.error).toMatch(/over 256 KiB/u);
+  });
+
+  it('starts from the slots as they are when it runs, not as they were drawn', () => {
+    const shown = vi.fn<UploadStart['show']>();
+    startUpload('logo', { type: 'image/png', size: 10 }, { show: shown, send: vi.fn() });
+    const otherBusy = { ...IDLE_SLOTS, favicon: { busy: true, error: null } };
+    const next = slotsFrom(shown, otherBusy);
+    expect(next.favicon.busy).toBe(true);
+    expect(next.logo.busy).toBe(true);
+  });
+
+  it('settles its slot, fills it and reports, each only when it applies', () => {
+    const to = { show: vi.fn(), edit: vi.fn(), report: vi.fn() };
+    finishUpload('logo', uploaded, none, to);
+    expect(to.show).toHaveBeenCalledOnce();
+    expect(to.edit).toHaveBeenCalledExactlyOnceWith('logo', { assetId: 'a1', alt: '' });
+    expect(to.report).not.toHaveBeenCalled();
+
+    const again = { show: vi.fn(), edit: vi.fn(), report: vi.fn() };
+    finishUpload('logo', refused, none, again);
+    expect(again.show).toHaveBeenCalledOnce();
+    expect(again.edit).not.toHaveBeenCalled();
+    expect(again.report).toHaveBeenCalledOnce();
   });
 
   it('leaves its slot quiet when it landed, and says why when it was refused', () => {
@@ -74,6 +116,36 @@ describe('a deleted image', () => {
     expect(slotNames(had, 'favicon', 'f1')).toBe(true);
     expect(slotNames(had, 'favicon', 'other')).toBe(false);
     expect(slotNames(had, 'logo', 'f1')).toBe(false);
+  });
+});
+
+describe('a publish answer', () => {
+  it('toasts only when it asks to', () => {
+    const toast = vi.fn();
+    announcePublish(NO_OUTCOME, toast);
+    expect(toast).not.toHaveBeenCalled();
+    announcePublish({ ...NO_OUTCOME, toast: 'Published.' }, toast);
+    expect(toast).toHaveBeenCalledExactlyOnceWith('Published.');
+  });
+});
+
+describe('an image edit that may not apply', () => {
+  it('sets a logo’s alt text only where a logo is set', () => {
+    const edit = vi.fn();
+    editAlt(none, 'logo', 'x', edit);
+    expect(edit).not.toHaveBeenCalled();
+    const had = { ...none, 'assets.logo': { assetId: 'a', alt: 'A' } };
+    editAlt(had, 'logo', 'x', edit);
+    expect(edit).toHaveBeenCalledExactlyOnceWith('logo', { assetId: 'a', alt: 'x' });
+  });
+
+  it('empties the slot of a deleted image only if it holds that image', () => {
+    const had = { ...none, 'assets.favicon': { assetId: 'f1' } };
+    const edit = vi.fn();
+    forgetImage(had, 'favicon', 'other', edit);
+    expect(edit).not.toHaveBeenCalled();
+    forgetImage(had, 'favicon', 'f1', edit);
+    expect(edit).toHaveBeenCalledExactlyOnceWith('favicon', null);
   });
 });
 

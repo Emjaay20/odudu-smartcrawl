@@ -5,7 +5,9 @@ import { useAssetUpload } from '#/features/branding/repository/useThemeAssets';
 import { imageSave } from '#/features/branding/repository/themeSaves';
 import {
   altChanged,
-  altEdited,
+  editAlt,
+  finishUpload,
+  forgetImage,
   IDLE_SLOTS,
   imageField,
   imageFields,
@@ -13,17 +15,14 @@ import {
   imagesHold,
   IMAGES_TITLE,
   slotAfterUpload,
-  slotNames,
+  startUpload,
   themeRecord,
-  uploadedImage,
-  uploadStart,
   type ImageValues,
   type ImageSlot,
   type SlotStates,
   type ThemeScope,
 } from '#/features/branding/service';
 import { useLatest } from '#/shared/repository/useLatest';
-import { failureOf } from '#/shared/service/settled';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
 import { writeRefusal } from '#/shared/service/capabilities';
 
@@ -76,31 +75,40 @@ export function useImages({
     blocked: imagesHold(save.values),
     slots,
     upload: (slot, file) => {
-      const start = uploadStart(slots, slot, file);
-      setSlots(start.slots);
-      if (!start.send) return;
-      uploading
-        .run({ kind: slot, file })
-        .then((result) => {
-          setSlots((was) => slotAfterUpload(was, slot, result));
-          const image = uploadedImage(slot, result, latestValues());
-          if (image !== null) save.edit(imageField(slot), image);
-          const failure = failureOf(result);
-          if (failure !== null) refusal.report(failure, 'manage-tenant');
-        })
-        .catch(() => {
-          setSlots((was) => slotAfterUpload(was, slot, { ok: false, kind: 'defect' }));
-        });
+      startUpload(slot, file, {
+        show: setSlots,
+        send: () => {
+          uploading
+            .run({ kind: slot, file })
+            .then((result) => {
+              finishUpload(slot, result, latestValues(), {
+                show: setSlots,
+                edit: (at, image) => {
+                  save.edit(imageField(at), image);
+                },
+                report: (failure) => {
+                  refusal.report(failure, 'manage-tenant');
+                },
+              });
+            })
+            .catch(() => {
+              setSlots((was) => slotAfterUpload(was, slot, { ok: false, kind: 'defect' }));
+            });
+        },
+      });
     },
     setAlt: (slot, alt) => {
-      const logo = altEdited(save.values, slot, alt);
-      if (logo !== null) save.edit(imageField(slot), logo);
+      editAlt(save.values, slot, alt, (at, logo) => {
+        save.edit(imageField(at), logo);
+      });
     },
     remove: (slot) => {
       save.edit(imageField(slot), null);
     },
     forget: (slot, assetId) => {
-      if (slotNames(latestValues(), slot, assetId)) save.edit(imageField(slot), null);
+      forgetImage(latestValues(), slot, assetId, (at, image) => {
+        save.edit(imageField(at), image);
+      });
     },
     altChanged: (slot) => altChanged(saved, save.values, slot),
   };

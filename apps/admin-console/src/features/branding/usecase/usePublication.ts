@@ -5,12 +5,13 @@ import {
   publishFailure,
   publishHold,
   publishOutcomeOf,
+  announcePublish,
   currentOutcome,
   NO_OUTCOME,
   type PublishOutcome,
 } from '#/features/branding/service';
 import { useToast } from '#/shared/repository/useToasts';
-import { failureOf } from '#/shared/service/settled';
+import { reportFailure } from '#/shared/service/settled';
 
 export interface Publication {
   busy: boolean;
@@ -46,7 +47,7 @@ export function usePublication({
   const toast = useToast();
   const answered = (next: PublishOutcome): void => {
     onOutcome(next);
-    if (next.toast !== null) toast.succeeded(next.toast);
+    announcePublish(next, toast.succeeded);
   };
   return {
     busy: writes.publish.busy,
@@ -58,8 +59,9 @@ export function usePublication({
         .run(tag)
         .then((result) => {
           answered(publishOutcomeOf(result, publishFailure, tag));
-          const failure = failureOf(result);
-          if (failure !== null) refusal.report(failure, 'manage-tenant');
+          reportFailure(result, (failure) => {
+            refusal.report(failure, 'manage-tenant');
+          });
         })
         .catch(() => {
           answered(publishOutcomeOf({ ok: false, kind: 'defect' }, publishFailure, tag));

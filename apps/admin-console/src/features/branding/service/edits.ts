@@ -1,5 +1,8 @@
 import type { GatewayFailure, GatewayResult } from '#/shared/service/result';
+import { reportFailure } from '#/shared/service/settled';
 import {
+  altEdited,
+  slotNames,
   logoOf,
   uploadRefusal,
   uploadFailureText,
@@ -181,6 +184,11 @@ export function publishOutcomeOf(
   };
 }
 
+// Says what a publish answer asks to be said, when it asks anything.
+export function announcePublish(outcome: PublishOutcome, toast: (text: string) => void): void {
+  if (outcome.toast !== null) toast(outcome.toast);
+}
+
 export function previewWith(choice: PreviewChoice, change: Partial<PreviewChoice>): PreviewChoice {
   return { ...choice, ...change };
 }
@@ -196,20 +204,21 @@ export function previewKey(
 }
 
 export interface UploadStart {
-  slots: SlotStates;
-  // False when the file is refused here, before anything is sent.
-  send: boolean;
+  // Takes the change to the slots as a function of the slots at the time it runs.
+  show: (next: (was: SlotStates) => SlotStates) => void;
+  send: () => void;
 }
 
-export function uploadStart(
-  slots: SlotStates,
+// Marks the slot busy and sends the file, or fails the slot in place when the
+// file is refused here, before anything is sent.
+export function startUpload(
   slot: ImageSlot,
   file: { type: string; size: number },
-): UploadStart {
+  to: UploadStart,
+): void {
   const refused = uploadRefusal(slot, file);
-  return refused === null
-    ? { slots: slotBusy(slots, slot), send: true }
-    : { slots: slotFailed(slots, slot, refused), send: false };
+  to.show((was) => (refused === null ? slotBusy(was, slot) : slotFailed(was, slot, refused)));
+  if (refused === null) to.send();
 }
 
 // The slot once its upload has answered.
@@ -228,6 +237,46 @@ export function uploadedImage(
   values: ImageValues,
 ): Logo | Plain | null {
   return result.ok ? imageAfterUpload(slot, result.data.id, values) : null;
+}
+
+export interface UploadAnswer {
+  show: (next: (was: SlotStates) => SlotStates) => void;
+  edit: (slot: ImageSlot, image: Logo | Plain | null) => void;
+  report: (failure: GatewayFailure) => void;
+}
+
+// Settles the slot, fills it when the file landed and reports a refusal.
+export function finishUpload(
+  slot: ImageSlot,
+  result: GatewayResult<ThemeAsset>,
+  values: ImageValues,
+  to: UploadAnswer,
+): void {
+  to.show((was) => slotAfterUpload(was, slot, result));
+  const image = uploadedImage(slot, result, values);
+  if (image !== null) to.edit(slot, image);
+  reportFailure(result, to.report);
+}
+
+// Sets a logo's alt text where a logo is set.
+export function editAlt(
+  values: ImageValues,
+  slot: 'logo' | 'darkLogo',
+  alt: string,
+  edit: (slot: ImageSlot, logo: Logo) => void,
+): void {
+  const logo = altEdited(values, slot, alt);
+  if (logo !== null) edit(slot, logo);
+}
+
+// Empties the slot that still names a deleted image.
+export function forgetImage(
+  values: ImageValues,
+  slot: ImageSlot,
+  assetId: string,
+  edit: (slot: ImageSlot, image: null) => void,
+): void {
+  if (slotNames(values, slot, assetId)) edit(slot, null);
 }
 
 // Runs `select` for a tab this area has, and for no other name.
