@@ -173,7 +173,7 @@ describe('CodeField', () => {
   });
 
   it('shows text too long to colour as typed, with no layer and no numbers, and says so', () => {
-    const long = `${'x\n'.repeat(HIGHLIGHT_LIMIT)}`;
+    const long = 'x\n'.repeat(HIGHLIGHT_LIMIT);
     const { container } = render(<Editor start={long} />);
     expect(container.querySelector('[data-plain]')).not.toBeNull();
     expect(container.querySelector('pre')).toBeNull();

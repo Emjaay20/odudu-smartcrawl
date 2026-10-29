@@ -5,7 +5,6 @@ import {
   expectFitsViewport,
   forgive,
   signIn,
-  tabsWithin,
   test,
   LAPTOP,
   PHONE,
@@ -22,7 +21,19 @@ const PNG = Buffer.from(
   'base64',
 );
 
-const tabTo = tabsWithin(120);
+// Tab until `target` has focus. A code field indents on Tab, so a keyboard
+// user leaves it with Escape first, which is what this does there.
+async function tabTo(page: Page, target: Locator): Promise<void> {
+  for (let pressed = 0; pressed < 120; pressed += 1) {
+    if (await target.evaluate((node) => node === document.activeElement)) return;
+    const inCode = await page.evaluate(
+      () => document.activeElement?.getAttribute('wrap') === 'off',
+    );
+    if (inCode) await page.keyboard.press('Escape');
+    await page.keyboard.press('Tab');
+  }
+  await expect(target).toBeFocused();
+}
 const FRAME = 'iframe[title="Preview of the page"]';
 
 async function openBranding(page: Page, tenant: string): Promise<void> {
@@ -227,9 +238,9 @@ test('works from the keyboard alone', async ({ page }) => {
   await expect(section.getByRole('button', { name: /^Save/u })).toBeHidden();
   await expect(page.getByRole('region', { name: 'Status' })).toContainText('A saved draft');
 
-  // The Pages tab, by arrow, then a page picked and a template written. Tab
-  // would go through the stylesheet editor, which indents until Escape.
-  await page.getByRole('tab', { name: 'Theme' }).focus();
+  // The Pages tab, by arrow, then a page picked and a template written. The
+  // way round passes the stylesheet editor, left with Escape.
+  await tabTo(page, page.getByRole('tab', { name: 'Theme' }));
   await page.keyboard.press('ArrowRight');
   await expect(page.getByRole('region', { name: 'Page templates' })).toBeVisible();
   await expect(page.getByRole('tab', { name: 'Pages' })).toHaveAttribute('aria-selected', 'true');
@@ -283,13 +294,19 @@ test('edits the stylesheet, meets a refusal on its line, and publishes it to the
   const section = page.getByRole('region', { name: 'Stylesheet', exact: true });
   const editor = section.getByRole('textbox', { name: 'Stylesheet CSS' });
 
-  // Tab indents, and Escape then Tab lets go.
+  // Tab indents and the browser's undo takes the indent back; Escape then Tab
+  // lets go, onto the next control.
   await editor.click();
+  await page.keyboard.type('h1');
   await page.keyboard.press('Tab');
-  await expect(editor).toHaveValue('  ');
+  await expect(editor).toHaveValue('h1  ');
+  await page.keyboard.press('ControlOrMeta+z');
+  await expect(editor).toHaveValue('h1');
+  await page.keyboard.press('Tab');
   await page.keyboard.press('Escape');
   await page.keyboard.press('Tab');
   await expect(editor).not.toBeFocused();
+  await expect(section.getByRole('button').and(page.locator(':focus'))).toHaveCount(1);
   await editor.fill('h1 {\n  behavior: none;\n}');
 
   await section.getByRole('button', { name: /^Save/u }).click();
@@ -320,6 +337,33 @@ test('edits the stylesheet, meets a refusal on its line, and publishes it to the
   expect(await colour(after.page)).toBe('rgb(170, 0, 0)');
   await after.close();
   await expectAccessible(page, { exclude: [FRAME] });
+});
+
+test('a long line keeps the text, the colour and the caret in one place', async ({ page }) => {
+  test.slow();
+  const { layout } = branding;
+  await signIn(page, layout);
+  await openBranding(page, layout.tenant);
+  const section = page.getByRole('region', { name: 'Stylesheet', exact: true });
+  const editor = section.getByRole('textbox', { name: 'Stylesheet CSS' });
+  await editor.fill(`.logo { content: "${'x'.repeat(600)}"; }\n.logo { opacity: 0.5 }`);
+  const widths = await editor.evaluate((area) => {
+    const layer = area.parentElement?.querySelector('pre');
+    const scroller = area.parentElement?.parentElement;
+    return {
+      area: area.getBoundingClientRect().width,
+      layer: layer?.getBoundingClientRect().width ?? 0,
+      selfScroll: area.scrollWidth - area.clientWidth,
+      scrollerScroll: (scroller?.scrollWidth ?? 0) - (scroller?.clientWidth ?? 0),
+    };
+  });
+  expect(Math.abs(widths.area - widths.layer)).toBeLessThan(1.5);
+  expect(widths.selfScroll).toBeLessThanOrEqual(1);
+  expect(widths.scrollerScroll).toBeGreaterThan(100);
+  await page.keyboard.press('ControlOrMeta+End');
+  const caret = await editor.evaluate((area: HTMLTextAreaElement) => area.selectionStart);
+  expect(caret).toBe((await editor.inputValue()).length);
+  await expectFitsViewport(page);
 });
 
 const MAIL_FRAME = 'iframe[title="Preview of the verification mail"]';
