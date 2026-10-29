@@ -5,6 +5,7 @@ import {
 } from '@odudu/contracts/admin';
 import type { Choice } from '#/shared/service/choice';
 import type { Scheme } from '#/features/branding/service/palette';
+import { previewable } from '#/shared/service/profileUrl';
 import { languageChoices } from '#/shared/service/locales';
 
 export const MAIL_PREVIEW_TITLE = 'Preview';
@@ -115,16 +116,12 @@ export interface LogoView {
   size: string | null;
 }
 
-function ownAddress(src: string, origin: string): string | null {
-  return URL.canParse(src) && new URL(src).origin === origin ? src : null;
-}
-
 export function logoViews(branding: MailBrandingView, origin: string): readonly LogoView[] {
   const view = (label: string, empty: string, logo: MailBrandingView['logo']): LogoView => ({
     label,
     empty,
     src: logo?.src ?? null,
-    picture: logo === null ? null : ownAddress(logo.src, origin),
+    picture: logo !== null && previewable(logo.src, origin) ? logo.src : null,
     alt: logo?.alt ?? null,
     size: logo === null ? null : `${String(logo.width)} by ${String(logo.height)} pixels`,
   });
