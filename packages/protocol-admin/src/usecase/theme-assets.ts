@@ -104,3 +104,15 @@ export async function deleteThemeAsset(
   });
   return { kind: 'deleted' };
 }
+
+export type ContentOutcome = { kind: 'not_found' } | { kind: 'found'; mime: string; bytes: Buffer };
+
+// An image the tenant uploaded, published or not: what the admin sees of it
+// before any public address serves it. One statement.
+export async function readThemeAssetContent(
+  tx: TenantScopedDatabase,
+  input: { tenantId: string; assetId: string },
+): Promise<ContentOutcome> {
+  const found = await assetRepository(tx).content(input.tenantId, input.assetId);
+  return found === null ? { kind: 'not_found' } : { kind: 'found', ...found };
+}

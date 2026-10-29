@@ -10,6 +10,7 @@ import { BUSY_RETRY_SECONDS, uploadLimitsFor, type UploadLimits } from '#/servic
 import { type Actor } from '#/usecase/theme';
 import {
   deleteThemeAsset,
+  readThemeAssetContent,
   uploadThemeAsset,
   type Audit,
   type ThemeAssetDeps,
@@ -27,6 +28,7 @@ export interface ThemeAssetRouteDeps {
 export interface ThemeAssetHandlers {
   readonly upload: AdminRouteHandler;
   readonly remove: AdminRouteHandler;
+  readonly content: AdminRouteHandler;
 }
 
 // What a refusal says; never the decoder's own words, which could quote the
@@ -147,6 +149,23 @@ export function themeAssetHandlers(deps: ThemeAssetRouteDeps): ThemeAssetHandler
       }
       const asset: ThemeAsset = outcome.asset;
       return reply.code(201).send(asset);
+    },
+
+    content: async (request, reply, _principal, tenantId) => {
+      const assetId = request.params.assetId;
+      if (assetId === undefined) throw new Error('protocol-admin: asset read received no id');
+      const outcome = await adminTx(deps.database, request, tenantId, (tx) =>
+        readThemeAssetContent(tx, { tenantId, assetId }),
+      );
+      if (outcome.kind === 'not_found') {
+        return sendProblem(reply, request, problem(404, 'about:blank', 'Not Found'));
+      }
+      return reply
+        .code(200)
+        .header('content-type', outcome.mime)
+        .header('x-content-type-options', 'nosniff')
+        .header('cache-control', 'private, no-store')
+        .send(outcome.bytes);
     },
 
     remove: async (request, reply, principal, tenantId) => {

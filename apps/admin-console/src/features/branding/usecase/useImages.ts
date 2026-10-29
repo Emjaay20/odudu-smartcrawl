@@ -2,6 +2,7 @@ import type { ThemeView } from '@odudu/contracts/admin';
 import { useState } from 'react';
 import { useRefusal } from '#/features/session';
 import { useAssetUpload } from '#/features/branding/repository/useThemeAssets';
+import { useSlotImages } from '#/features/branding/repository/useSlotImages';
 import { imageSave } from '#/features/branding/repository/themeSaves';
 import {
   altChanged,
@@ -15,11 +16,13 @@ import {
   imagesHold,
   IMAGES_TITLE,
   slotAfterUpload,
+  slotAssetIds,
   startUpload,
   themeRecord,
   type ImageValues,
   type ImageSlot,
   type SlotStates,
+  type Thumbnail,
   type ThemeScope,
 } from '#/features/branding/service';
 import { useLatest } from '#/shared/repository/useLatest';
@@ -30,6 +33,8 @@ export interface Images {
   save: SectionSave<ImageValues>;
   blocked: string | undefined;
   slots: SlotStates;
+  // What each slot's image looks like, as it is held now, saved or not.
+  thumbnails: Record<ImageSlot, Thumbnail>;
   upload: (slot: ImageSlot, file: File) => void;
   setAlt: (slot: 'logo' | 'darkLogo', alt: string) => void;
   remove: (slot: ImageSlot) => void;
@@ -70,8 +75,10 @@ export function useImages({
     save: imageSave(tenant, scope, view),
   });
   const latestValues = useLatest(save.values);
+  const thumbnails = useSlotImages(tenant, slotAssetIds(save.values));
   return {
     save,
+    thumbnails,
     blocked: imagesHold(save.values),
     slots,
     upload: (slot, file) => {

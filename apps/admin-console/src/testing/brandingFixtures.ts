@@ -1,5 +1,5 @@
 import type { MailBrandingView, ThemePreviewInfo } from '@odudu/contracts/admin';
-import { json, type Answer } from '#/testing/fakeTransport';
+import { image, json, type Answer } from '#/testing/fakeTransport';
 import { ACME_ADMIN } from '#/testing/tenantPaths';
 import { C, clientRoutes } from '#/testing/clientsFixtures';
 import { graceRoutes } from '#/testing/renderConsole';
@@ -28,6 +28,14 @@ export const OWN_LIGHT = LIGHT;
 
 export const LOGO_ID = 'a1b2c3d4-0000-4000-8000-000000000001';
 
+// A PNG signature and a few bytes that are not text, enough for a thumbnail.
+export const LOGO_BYTES = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0xff, 0x00]);
+
+// The route that answers an uploaded image's bytes.
+export function assetContent(assetId: string): string {
+  return `GET ${ACME_ADMIN}/theme/assets/${assetId}/content`;
+}
+
 // A tenant with nothing set: Instrument's own pages, and no draft.
 export function themeView(changes: Record<string, unknown> = {}) {
   return {
@@ -43,11 +51,11 @@ export function themeView(changes: Record<string, unknown> = {}) {
 
 // A tenant whose draft sets the light colours and a logo, published once with
 // the colours only.
-export function draftedView() {
+export function draftedView(moreAssets: Record<string, unknown> = {}) {
   const draft = {
     ...EMPTY,
     tokens: { light: LIGHT },
-    assets: { logo: { assetId: LOGO_ID, alt: 'Acme' } },
+    assets: { logo: { assetId: LOGO_ID, alt: 'Acme' }, ...moreAssets },
   };
   return themeView({
     draft,
@@ -99,6 +107,7 @@ export function brandingRoutes(
       [`GET ${TH}/versions`]: versionsAnswer([VERSION_2, VERSION_1]),
       [`GET ${MC}`]: json(CATALOGUE),
       [`GET ${PI}`]: json(previewInfo()),
+      [assetContent(LOGO_ID)]: image(LOGO_BYTES),
     },
     extra,
   );

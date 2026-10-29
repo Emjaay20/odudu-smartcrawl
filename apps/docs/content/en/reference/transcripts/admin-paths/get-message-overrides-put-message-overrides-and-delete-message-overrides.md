@@ -35,9 +35,12 @@ languages a tenant offers, and which one it prefers to the browser's, are the
   answers the override. `key` must name a message of a page, else `400` with the
   field `key`; the message is 1 to 2,000 characters, must be valid message
   syntax (an unbalanced brace is a `400` on `message`) and holds no
-  bidirectional control characters. It may use the placeholders the catalogue
-  message uses, and a placeholder a page does not supply makes the page show the
-  catalogue's text instead. Markup in it is shown as text, never rendered. The
+  bidirectional control characters. It may use the placeholders the English
+  catalogue message of the same key uses, and no others: one the page does not
+  supply is a `400` on `message` naming it and what the page does supply, since
+  the page would otherwise show the catalogue's text with nothing to say why. A
+  tenant import is held to the same rule. Markup in it is shown as text, never
+  rendered. The
   locale is stored spelled `fr-CA`, whatever was typed.
 - A tenant holds at most 500 overrides across every locale. The 501st is
   refused with `409` (`about:blank#message-overrides-full`); changing one that

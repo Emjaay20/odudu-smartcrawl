@@ -1,10 +1,11 @@
 import { index, integer, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 import { tenants } from '@odudu/db';
 import { type ThemeBody } from '#/service/body';
-import { type ThemeState } from '#/service/theme-body';
+import { type ThemeState } from '#/service/record';
 
 // The foreign key to clients, the partial unique indexes and the policy are in
-// packages/db/drizzle/0107_themes.sql; drizzle-kit does not generate them.
+// packages/db/drizzle/0107_themes.sql (and the one-version index in 0110);
+// drizzle-kit does not generate them.
 export const themeVersions = pgTable(
   'theme_versions',
   {

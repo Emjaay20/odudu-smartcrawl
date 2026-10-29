@@ -677,12 +677,110 @@ describe('before the body is read', () => {
   });
 });
 
+const content = (ctx: Ctx, id: string, token?: string) =>
+  fixture.http.inject({
+    method: 'GET',
+    url: `/admin/tenants/${ctx.tenant.name}/theme/assets/${id}/content`,
+    headers: { authorization: `Bearer ${token ?? ctx.token}` },
+  });
+
+describe('GET /theme/assets/:assetId/content', () => {
+  it('answers an uploaded image no theme names, as stored, under its own type', async () => {
+    const ctx = await tenantCtx();
+    const image = await stored(ctx, [21, 22, 23]);
+    const stored_ = await withTenant(fixture.app.db, ctx.tenant.id, (tx) =>
+      assetRepository(tx).get(ctx.tenant.id, image.sha256),
+    );
+
+    const res = await content(ctx, image.id);
+
+    expect(res.statusCode, res.body.slice(0, 200)).toBe(200);
+    expect(res.headers['content-type']).toBe(image.mime);
+    expect(res.headers['x-content-type-options']).toBe('nosniff');
+    expect(res.headers['cache-control']).toBe('private, no-store');
+    expect(res.rawPayload.equals(stored_?.bytes ?? Buffer.alloc(0))).toBe(true);
+    expect(res.rawPayload.length).toBe(image.bytes);
+  });
+
+  it('answers the same image once a published theme names it, and after it is dropped', async () => {
+    const ctx = await tenantCtx();
+    const image = await stored(ctx, [24, 25, 26]);
+    await draftNaming(ctx, image.id);
+    expect((await publish(ctx)).statusCode).toBe(200);
+    expect((await content(ctx, image.id)).statusCode).toBe(200);
+    await draftNaming(ctx, null);
+    expect((await publish(ctx)).statusCode).toBe(200);
+    expect((await content(ctx, image.id)).statusCode).toBe(200);
+  });
+
+  it('is 404 for an unknown id and for another tenant’s, alike, and 400 for a malformed one', async () => {
+    const ctx = await tenantCtx();
+    const other = await tenantCtx();
+    const image = await stored(other, [27, 28, 29]);
+    const bodyOf = (res: LightMyRequestResponse): string =>
+      res.body.replace(/"instance":"[^"]*"/u, '');
+
+    const foreign = await content(ctx, image.id);
+    const missing = await content(ctx, newId());
+
+    expect([foreign.statusCode, missing.statusCode]).toEqual([404, 404]);
+    expect(bodyOf(foreign)).toBe(bodyOf(missing));
+    expect((await content(ctx, 'not-a-uuid')).statusCode).toBe(400);
+    expect(foreign.headers['content-type']).toContain('application/problem+json');
+  });
+
+  it('is refused without a token, to another tenant’s token and to roles with no theme', async () => {
+    const ctx = await tenantCtx();
+    const image = await stored(ctx, [31, 32, 33]);
+    const anonymous = await fixture.http.inject({
+      method: 'GET',
+      url: `/admin/tenants/${ctx.tenant.name}/theme/assets/${image.id}/content`,
+    });
+    const other = await tenantCtx();
+    expect(anonymous.statusCode).toBe(401);
+    expect((await content(ctx, image.id, other.token)).statusCode).toBe(401);
+    for (const capability of ['view-users', 'manage-users', 'manage-keys']) {
+      const token = await fixture.adminToken(ctx.tenant.name, [capability]);
+      expect((await content(ctx, image.id, token)).statusCode, capability).toBe(403);
+    }
+  });
+
+  it('admits manage-clients alone, since a client’s theme names tenant images', async () => {
+    const ctx = await tenantCtx();
+    const image = await stored(ctx, [34, 35, 36]);
+    const token = await fixture.adminToken(ctx.tenant.name, ['manage-clients']);
+    expect((await content(ctx, image.id, token)).statusCode).toBe(200);
+  });
+
+  it('writes no audit event, since it changes nothing', async () => {
+    const ctx = await tenantCtx();
+    const image = await stored(ctx, [37, 38, 39]);
+    const events = () =>
+      withTenant(
+        fixture.app.db,
+        ctx.tenant.id,
+        async (tx) => (await tx.select().from(auditEvents)).length,
+      );
+    const before = await events();
+    await content(ctx, image.id);
+    expect(await events()).toBe(before);
+  });
+});
+
 describe('the route table', () => {
-  it('names both asset routes, under manage-tenant', () => {
+  it('names the asset routes, under manage-tenant', () => {
     const routes = ADMIN_ROUTES.filter((route) => route.pattern.includes('/theme/assets'));
     expect(routes.map((route) => `${route.method} ${route.capability ?? ''}`).sort()).toEqual([
       'DELETE manage-tenant',
+      'GET manage-tenant',
       'POST manage-tenant',
     ]);
+  });
+
+  it('documents the content route as an image of any type', () => {
+    const route = ADMIN_ROUTES.find((found) =>
+      found.pattern.endsWith('/theme/assets/:assetId/content'),
+    );
+    expect(route?.successMediaType).toBe('image/*');
   });
 });

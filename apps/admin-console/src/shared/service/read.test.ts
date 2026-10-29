@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { loadedData, mapRead, readOutcome, recordRead } from '#/shared/service/read';
+import { freshness, loadedData, mapRead, readOutcome, recordRead } from '#/shared/service/read';
 import type { GatewayResult } from '#/shared/service/result';
 
 const retry = (): void => undefined;
@@ -96,5 +96,12 @@ describe('recordRead', () => {
       status: 'failed',
       refused: false,
     });
+  });
+});
+
+describe('freshness', () => {
+  it('keeps an immutable read and leaves any other to the client’s defaults', () => {
+    expect(freshness(true)).toEqual({ staleTime: Infinity, refetchOnWindowFocus: false });
+    expect(freshness(false)).toEqual({});
   });
 });

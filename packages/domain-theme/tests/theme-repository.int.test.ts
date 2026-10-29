@@ -18,8 +18,9 @@ import { themeRepository } from '#/repository/themes';
 import { themeAssets } from '#/schema/theme-assets';
 import { themeVersionAssets } from '#/schema/theme-version-assets';
 import { themeVersions } from '#/schema/theme-versions';
+import { MAX_STORED_ASSET_BYTES } from '#/service/asset-limits';
 import { parseThemeBody, type ThemeBody } from '#/service/body';
-import { type ThemeScope } from '#/service/theme-body';
+import { type ThemeScope } from '#/service/record';
 
 let containerHandle: TestDatabase | undefined;
 let ownerHandle: DatabaseHandle | undefined;
@@ -48,6 +49,11 @@ afterAll(async () => {
 function refusedByPolicy(error: unknown): boolean {
   const cause = error instanceof Error ? (error.cause ?? error) : error;
   return cause instanceof Error && /row-level security/iu.test(cause.message);
+}
+
+function refusedByVersionIndex(error: unknown): boolean {
+  const cause = error instanceof Error ? (error.cause ?? error) : error;
+  return cause instanceof Error && cause.message.includes('theme_versions_one_version');
 }
 
 function body(label: string, assetId?: string): ThemeBody {
@@ -148,6 +154,23 @@ describe('themeRepository', () => {
       });
     await insert();
     await expect(insert()).rejects.toThrow();
+  });
+
+  it('refuses a version number used twice in a scope at the index, whichever state holds it', async () => {
+    const tenantId = await freshTenant();
+    const insert = (state: 'published' | 'archived', version: number): Promise<unknown> =>
+      owner.db.insert(themeVersions).values({
+        id: newId(),
+        tenantId,
+        clientId: null,
+        state,
+        version,
+        body: body('x'),
+      });
+    await insert('archived', 1);
+    await expect(insert('archived', 1)).rejects.toSatisfy(refusedByVersionIndex);
+    await expect(insert('published', 1)).rejects.toSatisfy(refusedByVersionIndex);
+    await insert('published', 2);
   });
 
   it('publish archives the previous version', async () => {
@@ -833,7 +856,66 @@ describe('assetRepository', () => {
     });
   });
 
+  describe('content', () => {
+    it('reads one image by id, published or not, with its stored type', async () => {
+      const tenantId = await freshTenant();
+      await withTenant(app.db, tenantId, async (tx) => {
+        const assets = assetRepository(tx);
+        const stored = await assets.put(asset(tenantId, 'logo', { mime: 'image/webp' }));
+        if (stored === 'over_cap') throw new Error('refused');
+        const read = await assets.content(tenantId, stored.id);
+        expect(read?.mime).toBe('image/webp');
+        expect(read?.bytes.toString()).toBe('logo');
+      });
+    });
+
+    it('finds nothing for an id that is unknown or not an id at all', async () => {
+      const tenantId = await freshTenant();
+      await withTenant(app.db, tenantId, async (tx) => {
+        const assets = assetRepository(tx);
+        expect(await assets.content(tenantId, newId())).toBeNull();
+        expect(await assets.content(tenantId, 'not-a-uuid')).toBeNull();
+        expect(await assets.content(tenantId, '')).toBeNull();
+      });
+    });
+
+    it('does not return a row stored over the size an upload can produce', async () => {
+      const tenantId = await freshTenant();
+      const id = newId();
+      await owner.db.insert(themeAssets).values({
+        id,
+        tenantId,
+        sha256: 'big'.padEnd(64, '0'),
+        mime: 'image/png',
+        width: 1,
+        height: 1,
+        bytes: Buffer.alloc(MAX_STORED_ASSET_BYTES + 1),
+      });
+      await withTenant(app.db, tenantId, async (tx) => {
+        expect(await assetRepository(tx).content(tenantId, id)).toBeNull();
+      });
+    });
+  });
+
   describe('against another tenant', () => {
+    it('content finds nothing', async () => {
+      await expectCrossTenantMethodProbe(app.db, {
+        seed: async (tx, tenantId) => {
+          await seedTenant(tx, tenantId);
+          const stored = await assetRepository(tx).put(asset(tenantId, 'logo'));
+          if (stored === 'over_cap') throw new Error('refused');
+          return { tenantId, assetId: stored.id };
+        },
+        verifySeeded: async (tx, { tenantId, assetId }) => {
+          expect(await assetRepository(tx).content(tenantId, assetId)).not.toBeNull();
+        },
+        attempt: (tx, { tenantId, assetId }) => assetRepository(tx).content(tenantId, assetId),
+        expectBlocked: (result) => {
+          expect(result).toBeNull();
+        },
+      });
+    });
+
     it('get finds nothing', async () => {
       await expectCrossTenantMethodProbe(app.db, {
         seed: async (tx, tenantId) => {

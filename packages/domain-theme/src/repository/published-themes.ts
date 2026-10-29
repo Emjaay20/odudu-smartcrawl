@@ -1,11 +1,7 @@
 import { type TenantScopedDatabase } from '@odudu/db';
 import { and, eq, isNull, or, sql, type SQL } from 'drizzle-orm';
 import { themeVersions } from '#/schema/theme-versions';
-import {
-  type PublishedAsset,
-  type PublishedLayer,
-  type PublishedLayers,
-} from '#/service/theme-body';
+import { type PublishedAsset, type PublishedLayer, type PublishedLayers } from '#/service/record';
 
 // Which published versions a scope resolves to, without their bodies.
 export interface PublishedIdentity {

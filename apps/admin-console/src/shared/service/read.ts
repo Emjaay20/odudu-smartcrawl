@@ -43,3 +43,13 @@ export function loadedData<T>(
 export function mapRead<T, U>(read: Read<T>, map: (data: T) => U): Read<U> {
   return read.status === 'ready' ? { status: 'ready', data: map(read.data) } : read;
 }
+
+// How long a read stays fresh. What never changes under its key is kept and not
+// asked for again on a window focus; anything else is read again as the client's
+// defaults say.
+export function freshness(immutable: boolean): {
+  staleTime?: number;
+  refetchOnWindowFocus?: boolean;
+} {
+  return immutable ? { staleTime: Infinity, refetchOnWindowFocus: false } : {};
+}

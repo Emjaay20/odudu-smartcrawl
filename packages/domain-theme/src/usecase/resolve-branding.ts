@@ -7,7 +7,7 @@ import {
   type PageBranding,
   type TemplateFallback,
 } from '@odudu/kernel';
-import { type PublishedLayers } from '#/service/theme-body';
+import { type PublishedLayers } from '#/service/record';
 import { type BrandingCache } from '#/service/branding-cache';
 import { buildBranding } from '#/service/build-branding';
 

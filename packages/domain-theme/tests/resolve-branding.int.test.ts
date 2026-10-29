@@ -17,7 +17,7 @@ import { themeRepository } from '#/repository/themes';
 import { themeAssets } from '#/schema/theme-assets';
 import { type ThemeBody } from '#/service/body';
 import { createBrandingCache } from '#/service/branding-cache';
-import { type ThemeScope } from '#/service/theme-body';
+import { type ThemeScope } from '#/service/record';
 import { resolveBranding, type BrandingProblem } from '#/usecase/resolve-branding';
 import { eq } from 'drizzle-orm';
 

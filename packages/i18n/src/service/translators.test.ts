@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_OVERRIDE_LENGTH, overrideProblem } from '#/service/override';
+import { MAX_OVERRIDE_LENGTH, overrideProblem, placeholderProblem } from '#/service/override';
 import { createTranslators } from '#/service/translators';
 
 const escape = (value: string): string =>
@@ -106,5 +106,42 @@ describe('overrideProblem', () => {
 
   it('accepts exactly the longest length', () => {
     expect(overrideProblem('x'.repeat(MAX_OVERRIDE_LENGTH))).toBeNull();
+  });
+});
+
+describe('placeholderProblem', () => {
+  it('accepts the names the original reads, in any order and number, and fewer', () => {
+    expect(placeholderProblem('{client} asks, {name}', '{name} and {client}')).toBeNull();
+    expect(placeholderProblem('{name}, {name}', '{name}')).toBeNull();
+    expect(placeholderProblem('No name at all', '{name}')).toBeNull();
+  });
+
+  it('refuses a name the page does not supply, naming it and what is supplied', () => {
+    const problem = placeholderProblem('Hello, {user}', 'Hello, {name}');
+    expect(problem).toContain('{user}');
+    expect(problem).toContain('{name}');
+    expect(placeholderProblem('Hello, {user}', 'Hello')).toMatch(/supplies no value/u);
+  });
+
+  it('reads names inside plural and select arms, and in the argument they switch on', () => {
+    const original = '{n, plural, one {# try left for {name}} other {# tries left for {name}}}';
+    expect(
+      placeholderProblem('{n, plural, one {# essai} other {# essais pour {name}}}', original),
+    ).toBeNull();
+    expect(placeholderProblem('{m, plural, other {# essais}}', original)).toContain('{m}');
+    expect(placeholderProblem('{n, plural, other {{who} a # essais}}', original)).toContain(
+      '{who}',
+    );
+    expect(placeholderProblem('{kind, select, a {x} other {y}}', original)).toContain('{kind}');
+  });
+
+  it('names at most a few and none of unbounded length', () => {
+    const many = Array.from({ length: 40 }, (_, n) => `{${'x'.repeat(100)}${String(n)}}`).join(' ');
+    const problem = placeholderProblem(many, 'Hello');
+    expect(problem?.length).toBeLessThan(400);
+  });
+
+  it('leaves a message that does not parse to overrideProblem', () => {
+    expect(placeholderProblem('Hi {name', 'Hello, {name}')).toBeNull();
   });
 });

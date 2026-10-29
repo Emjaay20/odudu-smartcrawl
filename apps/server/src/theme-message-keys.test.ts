@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   isOverridableMessageKey,
   isThemeMessageKey,
+  overrideProblemFor,
   pageKindOwners,
   pageMessageCatalogue,
 } from '#/theme-message-keys';
@@ -90,5 +91,25 @@ describe('pageMessageCatalogue', () => {
     expect(all.length).toBeGreaterThan(100);
     expect(all.length).toBeLessThan(1000);
     expect(JSON.stringify(sections).length).toBeLessThan(200_000);
+  });
+});
+
+describe('overrideProblemFor', () => {
+  it('holds an override to the syntax rules and to the arguments its page supplies', () => {
+    expect(overrideProblemFor('login.context', 'to reach {client}')).toBeNull();
+    expect(overrideProblemFor('login.context', 'to reach {app}')).toContain('{app}');
+    expect(overrideProblemFor('login.title', 'Hi {name')).toContain('not a valid message');
+    expect(overrideProblemFor('login.title', '')).toContain('empty');
+  });
+
+  it('asks only the syntax rules of a key it has no page text for', () => {
+    expect(overrideProblemFor('login.nonesuch', 'Hello, {name}')).toBeNull();
+    expect(overrideProblemFor('constructor', 'Hello, {name}')).toBeNull();
+  });
+
+  it('knows every catalogue message by its own text', () => {
+    for (const { messages } of pageMessageCatalogue().sections) {
+      for (const { key, en } of messages) expect(overrideProblemFor(key, en), key).toBeNull();
+    }
   });
 });

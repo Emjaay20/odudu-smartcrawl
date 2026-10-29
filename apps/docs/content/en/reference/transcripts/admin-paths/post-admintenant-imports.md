@@ -66,7 +66,7 @@ message overrides and subjects, in that order. A document exported before
 tenants had languages or overrides still imports: a missing
 `supported_locales` is English only, a missing `default_locale` is none, and
 missing `message_overrides` is none. Each override is checked as `PUT
-/message-overrides/{locale}/{key}` checks one, a pair named twice is refused,
+/message-overrides/{locale}/{key}` checks one, which includes refusing an argument such as `{name}` that the English text of its key does not read (the problem names the argument and the key, so the file can be corrected; this page holds no captured output of it), a pair named twice is refused,
 and there may be at most 500; the problems come back with the rest, by path
 (`document.message_overrides[3].key`). Each confidential client is given a fresh secret,
 answered once under `client_secrets` in the `201` and never logged or

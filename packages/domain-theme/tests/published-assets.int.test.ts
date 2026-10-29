@@ -19,7 +19,7 @@ import { themeRepository } from '#/repository/themes';
 import { themeAssets } from '#/schema/theme-assets';
 import { type ThemeBody } from '#/service/body';
 import { sha256Hex } from '#/service/branding-urls';
-import { type ThemeScope } from '#/service/theme-body';
+import { type ThemeScope } from '#/service/record';
 
 let container: TestDatabase | undefined;
 let ownerHandle: DatabaseHandle | undefined;

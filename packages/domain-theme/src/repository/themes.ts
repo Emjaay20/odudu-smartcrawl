@@ -11,7 +11,7 @@ import {
   type ThemeVersionSummary,
   type ThemeScope,
   type ThemeState,
-} from '#/service/theme-body';
+} from '#/service/record';
 
 export class NoDraftError extends Error {
   constructor() {
@@ -71,7 +71,9 @@ function only(rows: Row[]): ThemeRecord {
 
 export function themeRepository(tx: TenantScopedDatabase) {
   // Held until the transaction ends, so a second writer of the scope waits
-  // and then reads what the first left.
+  // and then reads what the first left. A transaction that also takes the
+  // tenant's asset lock (`assetRepository.put`) takes this one first, so two
+  // such transactions cannot wait on each other.
   async function lockScope(scope: ThemeScope): Promise<void> {
     const key = `theme:${scope.tenantId}:${scope.clientId ?? ''}`;
     await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${key}, 0))`);

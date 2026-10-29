@@ -52,7 +52,7 @@ export interface ImportEnvironment {
   readonly callerCapabilities: ReadonlySet<string>;
   /** Whether a key is a page message, and what is wrong with a text as one. */
   readonly isKnownMessageKey: (key: string) => boolean;
-  readonly messageProblem: (message: string) => string | null;
+  readonly messageProblem: (key: string, message: string) => string | null;
 }
 
 export type ValidateImportOutcome =
@@ -438,8 +438,8 @@ function messageOverrideProblems(
     if (!environment.isKnownMessageKey(override.key)) {
       problems.add(`${at}.key`, 'is not the key of any page message');
     }
-    const problem = environment.messageProblem(override.message);
-    if (problem !== null) problems.add(`${at}.message`, problem);
+    const problem = environment.messageProblem(override.key, override.message);
+    if (problem !== null) problems.add(`${at}.message`, `${problem} (override of ${override.key})`);
     const pair = `${canonicalLocale(override.locale) ?? override.locale}\u0000${override.key}`;
     if (seen.has(pair)) problems.add(at, 'repeats an earlier override of the same locale and key');
     seen.add(pair);

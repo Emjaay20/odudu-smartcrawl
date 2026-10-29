@@ -1,5 +1,6 @@
 import { MAX_ALT_LENGTH } from '@odudu/contracts';
 import type { FieldError } from '@odudu/contracts/admin';
+import type { Read } from '#/shared/service/read';
 import type { Problem } from '#/shared/service/result';
 import { problemSubtype } from '#/shared/service/failure';
 import { bytesText, counted } from '#/shared/service/format';
@@ -172,6 +173,60 @@ export function imagesHold(values: ImageValues): string | undefined {
 }
 
 const UPLOADING_NAME = 'Uploading';
+
+const CHUNK = 0x8000;
+
+// Whatever the server says it is, a data address carries it into the page, so
+// only the three types an upload can be stored as are shown.
+export function imageDataUrl(bytes: Uint8Array, contentType: string | null): string | null {
+  const type = contentType?.split(';')[0]?.trim().toLowerCase() ?? '';
+  if (!TYPES.includes(type)) return null;
+  let binary = '';
+  for (let at = 0; at < bytes.length; at += CHUNK) {
+    binary += String.fromCharCode(...bytes.subarray(at, at + CHUNK));
+  }
+  return `data:${type};base64,${btoa(binary)}`;
+}
+
+// Whether a slot holds an image to read, and its id (empty when it holds none).
+export interface SlotAsk {
+  id: string;
+  asked: boolean;
+}
+
+// The image each slot holds, which the thumbnails are read for.
+export function slotAssetIds(values: ImageValues): Record<ImageSlot, SlotAsk> {
+  const askOf = (slot: ImageSlot): SlotAsk => {
+    const id = values[imageField(slot)]?.assetId;
+    return { id: id ?? '', asked: id !== undefined };
+  };
+  return {
+    logo: askOf('logo'),
+    darkLogo: askOf('darkLogo'),
+    favicon: askOf('favicon'),
+    background: askOf('background'),
+  };
+}
+
+// What a slot's thumbnail is showing: nothing where the slot holds no image,
+// else the state of reading the one it holds.
+export type Thumbnail = { status: 'none' } | Read<string>;
+
+export function slotThumbnail(asked: boolean, read: Read<string>): Thumbnail {
+  return !asked ? { status: 'none' } : read;
+}
+
+// A logo's thumbnail says what the logo is; an image with no alt text of its
+// own says which slot it fills.
+export function thumbnailAlt(slot: ImageSlot, alt: string | null): string {
+  return alt !== null && alt.trim() !== '' ? alt : SLOT_RULES[slot].label;
+}
+
+export const THUMBNAIL_LOADING = 'Loading the image…';
+
+export const THUMBNAIL_FAILED = 'The image could not be shown.';
+
+export const THUMBNAIL_RETRY = 'Try again';
 
 export interface SlotView {
   label: string;

@@ -1,6 +1,6 @@
 import { brandingProblems, PAGE_KINDS, type PageKind, type ResolvedBranding } from '@odudu/kernel';
 import { type MailBranding } from '@odudu/kernel';
-import { type PublishedAsset, type PublishedLayer } from '#/service/theme-body';
+import { type PublishedAsset, type PublishedLayer } from '#/service/record';
 import { assetIdsOf, parseThemeBody, type ThemeBody } from '#/service/body';
 import { brandingCss, tokensCss } from '#/service/branding-css';
 import { buildMailBranding, type LogoSize } from '#/service/mail-branding';
