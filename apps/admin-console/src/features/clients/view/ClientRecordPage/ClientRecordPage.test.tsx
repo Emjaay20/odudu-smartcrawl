@@ -39,6 +39,7 @@ it('heads the page with the breadcrumb, the name, its status and the tabs', asyn
     'Tokens',
     'Scopes',
     'Logout',
+    'Branding',
     'Advanced',
     'Roles',
     'Service account',

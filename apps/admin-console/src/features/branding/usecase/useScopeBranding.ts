@@ -15,12 +15,12 @@ import {
 } from '#/features/branding/service';
 import { usePreview, type Preview } from '#/features/branding/usecase/usePreview';
 import { useDirtySections } from '#/shared/repository/useDirtySections';
+import type { RecordState } from '#/shared/repository/useRecord';
 import { lacking } from '#/shared/service/access';
 import type { Read } from '#/shared/service/read';
-import type { RecordView } from '#/shared/service/record';
 
 export interface ScopeBranding {
-  record: RecordView;
+  record: RecordState<ThemeView>;
   view: ThemeView | undefined;
   // The draft's tag, or the one that says there is none.
   tag: string | null;

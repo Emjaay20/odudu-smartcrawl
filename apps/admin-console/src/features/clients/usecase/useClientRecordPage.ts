@@ -1,4 +1,5 @@
 import type { Client } from '@odudu/contracts/admin';
+import { clientScope, useScopeEdits } from '#/features/branding';
 import { useAuthority } from '#/features/session';
 import { useClientRecord } from '#/features/clients/repository/useClientRecord';
 import {
@@ -43,6 +44,7 @@ export function useClientRecordPage(tenant: string, id: string): ClientRecordPag
   const { tab, selectTab } = useRecordTab(CLIENT_TABS);
   const dirty = useDirtySections(tenant, clientRecord(id));
   const serviceDirty = useDirtySections(tenant, serviceRolesRecordOf(record.data));
+  const brandingEdits = useScopeEdits(tenant, clientScope(id));
   const reach = clientReach(record.data, authority?.capabilities);
   const changeNeeds = lacking(authority, ['manage-clients']);
   return {
@@ -54,7 +56,7 @@ export function useClientRecordPage(tenant: string, id: string): ClientRecordPag
       const chosen = chosenTab(next);
       if (chosen !== undefined) selectTab(chosen);
     },
-    dirty: tabsWithEdits(dirty, serviceDirty),
+    dirty: tabsWithEdits(dirty, serviceDirty, brandingEdits),
     reach,
     changeNeeds,
     writable: canChange(reach, changeNeeds),

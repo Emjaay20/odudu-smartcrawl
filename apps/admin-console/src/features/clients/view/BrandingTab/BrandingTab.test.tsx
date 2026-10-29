@@ -1,0 +1,283 @@
+import { screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { afterEach, describe, expect, it } from 'vitest';
+import { axeInBothThemes } from '#/testing/axeInBothThemes';
+import {
+  clientBrandingRoutes,
+  clientView,
+  CTH,
+  EMPTY,
+  OWN_LIGHT,
+  previewInfo,
+  TH,
+  themeAnswer,
+} from '#/testing/brandingFixtures';
+import { BILLING, C } from '#/testing/clientsFixtures';
+import { json, problem } from '#/testing/fakeTransport';
+import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
+import { resetConsole } from '#/testing/resetConsole';
+
+afterEach(() => {
+  resetConsole();
+  sessionStorage.clear();
+});
+
+const AT = '/console/acme/clients/c-bill?tab=branding';
+
+// A client whose draft and published theme both set the light colours.
+function overriding() {
+  const body = { ...EMPTY, tokens: { light: OWN_LIGHT } };
+  return clientView({
+    draft: body,
+    published: { id: 'cv1', version: 1, published_at: '2026-10-20T09:00:00.000Z', body },
+    sources: { 'tokens.light': 'client' },
+    draft_sources: { 'tokens.light': 'client' },
+  });
+}
+
+async function colours() {
+  return screen.findByRole('region', { name: 'Colours and font' });
+}
+
+it('adds a Branding tab to the client, between Logout and Advanced', async () => {
+  renderConsoleAt('/console/acme/clients/c-bill', clientBrandingRoutes());
+  await screen.findByRole('heading', { level: 1, name: 'Billing' });
+  const tabs = screen.getAllByRole('tab').map((tab) => tab.textContent);
+  expect(tabs.indexOf('Branding')).toBe(tabs.indexOf('Logout') + 1);
+  expect(tabs.indexOf('Advanced')).toBe(tabs.indexOf('Branding') + 1);
+});
+
+it('edits the client’s own theme under the same two tabs as the tenant’s', async () => {
+  renderConsoleAt(AT, clientBrandingRoutes());
+  await colours();
+  expect(screen.getByRole('tablist', { name: 'Branding sections' }).textContent).toBe('ThemePages');
+  expect(screen.getByRole('region', { name: 'Images' })).toBeVisible();
+  expect(screen.getByRole('region', { name: 'Stylesheet' })).toBeVisible();
+  expect(screen.getByRole('region', { name: 'Publish' })).toBeVisible();
+  expect(screen.getByRole('region', { name: 'Versions' })).toBeVisible();
+  expect(screen.getByRole('region', { name: 'Reset to default' })).toHaveTextContent(
+    /its tenant’s look/u,
+  );
+});
+
+describe('what a client piece hides', () => {
+  it('a client override shows the tenant piece it hides', async () => {
+    renderConsoleAt(AT, clientBrandingRoutes(themeAnswer(overriding(), '"cd1"')));
+    const section = await colours();
+    expect(
+      await within(section).findByText(
+        'Draft: this client · Published: this client · Hides the tenant’s light colours',
+      ),
+    ).toBeVisible();
+    expect(
+      within(section).getAllByText('Draft: Instrument’s default · Published: Instrument’s default'),
+    ).toHaveLength(2);
+  });
+
+  it('says a piece the client sets replaces Instrument’s where the tenant sets none', async () => {
+    const view = clientView({
+      sources: { 'tokens.dark': 'client' },
+      draft_sources: { 'tokens.dark': 'client' },
+      draft: { ...EMPTY, tokens: { dark: OWN_LIGHT } },
+    });
+    renderConsoleAt(AT, clientBrandingRoutes(themeAnswer(view, '"cd1"')));
+    const section = await colours();
+    expect(
+      await within(section).findByText(
+        'Draft: this client · Published: this client · Replaces Instrument’s default dark colours',
+      ),
+    ).toBeVisible();
+  });
+
+  it('follows the tenant for a piece the client leaves alone', async () => {
+    const view = clientView({ sources: { 'assets.logo': 'tenant' } });
+    renderConsoleAt(AT, clientBrandingRoutes(themeAnswer(view, '"cd1"')));
+    const images = await screen.findByRole('region', { name: 'Images' });
+    expect(within(images).getAllByText('Published: the tenant').length).toBeGreaterThan(0);
+    expect(images).not.toHaveTextContent('Hides');
+  });
+
+  it('says why a piece cannot name what it hides when the caller may not read the tenant’s theme', async () => {
+    const { sent } = renderConsoleAt(
+      AT,
+      clientBrandingRoutes(themeAnswer(overriding(), '"cd1"'), {}, ['manage-clients']),
+    );
+    expect(
+      await screen.findByText(/can be read only with the manage-tenant capability/u),
+    ).toBeVisible();
+    const section = await colours();
+    expect(section).not.toHaveTextContent('Hides the tenant');
+    expect(sent.some((request) => request.path === TH)).toBe(false);
+  });
+});
+
+describe('saving the client’s theme', () => {
+  it('sends the first save to the client’s theme with no If-Match, never the tenant’s', async () => {
+    const user = userEvent.setup();
+    const { sent } = renderConsoleAt(
+      AT,
+      clientBrandingRoutes(themeAnswer(clientView()), {
+        [`PUT ${CTH}`]: json(overriding(), 200, { etag: '"cd1"' }),
+      }),
+    );
+    const section = await colours();
+    await user.click(within(section).getByRole('switch', { name: 'Use my own light colours' }));
+    await user.click(within(section).getByRole('button', { name: /Save/u }));
+    await waitFor(() => {
+      expect(sent.some((s) => s.method === 'PUT')).toBe(true);
+    });
+    const put = sent.find((s) => s.method === 'PUT');
+    expect(put?.path).toBe(CTH);
+    expect(put?.ifMatch).toBeNull();
+    expect(
+      sent.filter((s) => s.method !== 'GET').every((s) => s.path.includes('/clients/c-bill')),
+    ).toBe(true);
+  });
+
+  it('marks the Branding tab with its dot while a section holds unsaved edits', async () => {
+    const user = userEvent.setup();
+    renderConsoleAt(AT, clientBrandingRoutes());
+    const section = await colours();
+    expect(screen.getByRole('tab', { name: 'Branding' })).toHaveAccessibleName('Branding');
+    await user.click(within(section).getByRole('switch', { name: 'Use my own light colours' }));
+    expect(screen.getByRole('tab', { name: /^Branding/u })).toHaveAccessibleName(/unsaved/iu);
+    expect(screen.getByRole('tab', { name: /^Theme/u })).toHaveAccessibleName(/unsaved/iu);
+    expect(screen.getByRole('tab', { name: 'General' })).toHaveAccessibleName('General');
+  });
+
+  it('keeps the client’s tab, and the tenant’s theme untouched, on a refused publish', async () => {
+    const user = userEvent.setup();
+    const { sent } = renderConsoleAt(
+      AT,
+      clientBrandingRoutes(themeAnswer(overriding(), '"cd1"'), {
+        [`POST ${CTH}/publish`]: problem(409, 'about:blank#theme-no-draft', 'Conflict', {
+          detail: 'There is no draft to publish.',
+        }),
+      }),
+    );
+    const publish = await screen.findByRole('region', { name: 'Publish' });
+    await user.click(await within(publish).findByRole('button', { name: 'Publish the draft' }));
+    await waitFor(() => {
+      expect(sent.some((s) => s.method === 'POST')).toBe(true);
+    });
+    expect(sent.find((s) => s.method === 'POST')?.path).toBe(`${CTH}/publish`);
+  });
+});
+
+describe('the Pages tab', () => {
+  it('edits the client’s page templates beside a preview of the page chosen', async () => {
+    const user = userEvent.setup();
+    renderConsoleAt(AT, clientBrandingRoutes(themeAnswer(overriding(), '"cd1"')));
+    await colours();
+    await user.click(screen.getByRole('tab', { name: /^Pages/u }));
+    const section = await screen.findByRole('region', { name: 'Page templates' });
+    expect(within(section).getByRole('textbox', { name: 'Sign in: template' })).toBeVisible();
+    expect(
+      within(section).getAllByText(/Published: the tenant|Instrument’s default/u).length,
+    ).toBeGreaterThan(0);
+    const frame = screen.getByTitle('Preview of the page');
+    expect(frame.getAttribute('src')).toContain('/clients/c-bill/theme/preview');
+  });
+});
+
+describe('what the preview says about itself', () => {
+  const status = () => screen.findByRole('status', { name: 'What the preview shows' });
+
+  it('says a client with no draft shows its published theme', async () => {
+    renderConsoleAt(
+      AT,
+      clientBrandingRoutes(themeAnswer(overriding(), '"cd1"'), {
+        [`GET ${CTH}/preview/info`]: json(previewInfo({ from: 'published', shown: 'client' })),
+      }),
+    );
+    expect(
+      await within(await status()).findByText(
+        'This client has no saved draft, so the preview shows its published theme.',
+      ),
+    ).toBeVisible();
+  });
+
+  it('says a client with nothing saved shows the tenant’s theme', async () => {
+    const { sent } = renderConsoleAt(
+      AT,
+      clientBrandingRoutes(themeAnswer(clientView()), {
+        [`GET ${CTH}/preview/info`]: json(previewInfo({ from: 'none', shown: 'tenant' })),
+      }),
+    );
+    expect(
+      await within(await status()).findByText(
+        'This client has no saved draft or published theme, so the preview shows the tenant’s theme.',
+      ),
+    ).toBeVisible();
+    expect(sent.some((s) => s.path === `${CTH}/preview/info`)).toBe(true);
+    expect(sent.some((s) => s.path === `${C}/../theme/preview/info`)).toBe(false);
+  });
+
+  it('names the layer a fault is in, the client’s or the tenant’s', async () => {
+    renderConsoleAt(
+      AT,
+      clientBrandingRoutes(themeAnswer(overriding(), '"cd1"'), {
+        [`GET ${CTH}/preview/info`]: json(
+          previewInfo({
+            shown: 'tenant',
+            faults: [{ layer: 'client', code: 'image_gone' }],
+          }),
+        ),
+      }),
+    );
+    const notice = await status();
+    expect(
+      await within(notice).findByText('The client’s draft names an image that no longer exists.'),
+    ).toBeVisible();
+    expect(within(notice).getByText('The preview shows the tenant’s theme instead.')).toBeVisible();
+  });
+});
+
+it('offers nothing to edit where the client itself cannot be changed, and says why', async () => {
+  renderConsoleAt(
+    AT,
+    clientBrandingRoutes(
+      themeAnswer(clientView()),
+      {
+        [`GET ${C}/c-bill`]: json(
+          { ...BILLING, service_account_admin_reach: ['manage-users'] },
+          200,
+          { etag: '"c-bill-1"' },
+        ),
+      },
+      ['manage-clients', 'view-users'],
+    ),
+  );
+  expect(
+    await screen.findByText(/Branding is edited only where the client itself can be changed/u),
+  ).toBeVisible();
+  expect(screen.queryByRole('region', { name: 'Colours and font' })).toBeNull();
+});
+
+it('says the branding could not be loaded, with a way to ask again', async () => {
+  renderConsoleAt(AT, clientBrandingRoutes(problem(500, 'about:blank', 'Server Error')));
+  expect(await screen.findByText('The client’s branding could not be loaded')).toBeVisible();
+  expect(screen.getByRole('button', { name: 'Try again' })).toBeVisible();
+});
+
+it('passes axe in both themes', async () => {
+  const { element } = consoleAt(AT, clientBrandingRoutes(themeAnswer(overriding(), '"cd1"')));
+  const results = await axeInBothThemes(
+    () => element,
+    () => colours(),
+    { frames: false },
+  );
+  expect(results.light).toEqual([]);
+  expect(results.dark).toEqual([]);
+});
+
+it('keeps its tab in the keyboard order, and moves between its own with the arrows', async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(AT, clientBrandingRoutes(themeAnswer(overriding(), '"cd1"')));
+  await colours();
+  const theme = screen.getByRole('tab', { name: /^Theme/u });
+  theme.focus();
+  await user.keyboard('{ArrowRight}');
+  expect(screen.getByRole('tab', { name: /^Pages/u })).toHaveAttribute('aria-selected', 'true');
+  expect(await screen.findByRole('region', { name: 'Page templates' })).toBeVisible();
+});

@@ -49,6 +49,13 @@ export {
   TRANSLATIONS_LEAD,
   translationsPatch,
 } from '#/features/clients/service/translations';
+export {
+  BRANDING_FAILED,
+  BRANDING_HELD,
+  BRANDING_LEAD,
+  BRANDING_LOADING,
+  BRANDING_SECTIONS_LABEL,
+} from '#/features/clients/service/branding';
 export { deleteConsequence } from '#/features/clients/service/confirm';
 export {
   type NewClientKind,

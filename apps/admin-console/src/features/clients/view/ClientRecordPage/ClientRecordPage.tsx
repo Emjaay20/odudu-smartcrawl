@@ -12,6 +12,7 @@ import {
 import { useClientRecordPage } from '#/features/clients/usecase/useClientRecordPage';
 import type { ClientTabProps } from '#/features/clients/view/ClientTabProps';
 import { AdvancedTab } from '#/features/clients/view/AdvancedTab';
+import { BrandingTab } from '#/features/clients/view/BrandingTab';
 import { GeneralTab } from '#/features/clients/view/GeneralTab';
 import { LogoutTab } from '#/features/clients/view/LogoutTab';
 import { RedirectsTab } from '#/features/clients/view/RedirectsTab';
@@ -63,6 +64,9 @@ const PANELS: Readonly<Record<ClientTab, (props: PanelProps) => ReactNode>> = {
   tokens: (props) => <TokensTab {...writes(props)} />,
   scopes: (props) => <ScopesTab tenant={props.tenant} client={props.client} reach={props.reach} />,
   logout: (props) => <LogoutTab {...writes(props)} />,
+  branding: (props) => (
+    <BrandingTab tenant={props.tenant} client={props.client} writable={props.writable} />
+  ),
   advanced: (props) => <AdvancedTab {...writes(props)} />,
   roles: (props) => <RolesTab tenant={props.tenant} client={props.client} />,
   service: (props) => (

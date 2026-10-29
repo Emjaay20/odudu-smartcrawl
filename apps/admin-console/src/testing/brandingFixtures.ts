@@ -1,6 +1,7 @@
 import type { MailBrandingView, ThemePreviewInfo } from '@odudu/contracts/admin';
 import { json, type Answer } from '#/testing/fakeTransport';
 import { ACME_ADMIN } from '#/testing/tenantPaths';
+import { C, clientRoutes } from '#/testing/clientsFixtures';
 import { graceRoutes } from '#/testing/renderConsole';
 import { EVERY_TENANT_CAPABILITY } from '#/testing/roleAnswers';
 import { settingsAnswer, ST } from '#/testing/settingsFixtures';
@@ -185,6 +186,42 @@ export function languagesRoutes(
     [`GET ${ST}`]: settingsAnswer(settings),
     [`GET ${MO}`]: json({ items: [TITLE_OVERRIDE, HELP_OVERRIDE] }),
     [`GET ${ML}`]: json(mailBranding()),
+    ...extra,
+  });
+}
+
+export const CTH = `${C}/c-bill/theme`;
+
+// The theme of the client billing, which sets what `own` names, over the tenant's.
+export function clientView(changes: Record<string, unknown> = {}) {
+  return themeView({ scope: 'client', ...changes });
+}
+
+// A tenant that publishes its light colours and a logo, which a client may hide.
+export function tenantUnderClient() {
+  return themeView({
+    sources: { 'tokens.light': 'tenant', 'assets.logo': 'tenant' },
+    published: {
+      id: 'v1',
+      version: 1,
+      published_at: '2026-10-20T09:00:00.000Z',
+      body: { ...EMPTY, tokens: { light: LIGHT } },
+    },
+  });
+}
+
+// grace of acme on billing's Branding tab: its theme read as `theme`, over the tenant's.
+export function clientBrandingRoutes(
+  theme: Answer = themeAnswer(clientView()),
+  extra: Record<string, Answer> = {},
+  capabilities?: readonly string[],
+): Record<string, Answer> {
+  return clientRoutes(capabilities, {
+    [`GET ${CTH}`]: theme,
+    [`GET ${CTH}/versions`]: versionsAnswer([]),
+    [`GET ${CTH}/preview/info`]: json(previewInfo()),
+    [`GET ${TH}`]: themeAnswer(tenantUnderClient(), '"t1"'),
+    [`GET ${MC}`]: json(CATALOGUE),
     ...extra,
   });
 }
