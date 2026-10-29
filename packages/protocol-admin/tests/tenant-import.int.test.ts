@@ -418,6 +418,21 @@ describe('POST /admin/tenant-imports', () => {
       ]);
     });
 
+    it('refuse a 501st, naming how many the document holds, and create no tenant', async () => {
+      const source = await fixture.createTenant(`over-src-${newId()}`);
+      const token = await operatorToken();
+      const original = await exportOf(token, source.name);
+      const name = `over-${newId()}`;
+      const one = { locale: 'fr', key: 'login.title', message: 'x' };
+      const res = await postImport(token, {
+        name,
+        document: { ...original, message_overrides: Array.from({ length: 501 }, () => one) },
+      });
+      expect(res.statusCode).toBe(400);
+      expect(res.payload).toContain('501 entries, at most 500');
+      expect(await tenantIdOf(name)).toBeNull();
+    });
+
     it('carry a full 500 through an export and an import', async () => {
       const t = await fixture.createTenant(`full-src-${newId()}`);
       // 100 two-letter locales of five keys each.
@@ -567,6 +582,7 @@ describe('POST /admin/tenant-imports', () => {
         groups: document.groups.length,
         scopes: document.scopes.length,
         subjects: document.subjects?.length ?? 0,
+        message_overrides: document.message_overrides.length,
       },
     });
     for (const { secret } of answer.client_secrets) {

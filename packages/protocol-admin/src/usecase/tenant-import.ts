@@ -502,6 +502,7 @@ export async function importTenant(
               groups: document.groups.length,
               scopes: document.scopes.length,
               subjects: document.subjects?.length ?? 0,
+              message_overrides: document.message_overrides.length,
             },
           },
         });
