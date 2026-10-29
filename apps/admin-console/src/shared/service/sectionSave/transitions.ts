@@ -1,6 +1,7 @@
 import type { Conflict } from '#/shared/service/conflict';
 import { edit as editDraft, rebase, sameValue, type Values } from '#/shared/service/dirty';
 import type { KeptDraft } from '#/shared/service/drafts';
+import { uniqueIds } from '#/shared/service/ids';
 import {
   BLOCKED_BY_CONFLICT,
   BLOCKED_GONE,
@@ -67,7 +68,7 @@ export function rebasedSection<T extends Values>(
     base: fresh,
     etag,
     edits: rebased.draft.edits,
-    conflicts: [...new Set([...still, ...rebased.conflicts])],
+    conflicts: uniqueIds([...still, ...rebased.conflicts]),
     source: rebased.conflicts.length > 0 ? 'changed' : state.source,
     phase: state.phase === 'unread' && etag !== state.etag ? 'stale' : state.phase,
   };
