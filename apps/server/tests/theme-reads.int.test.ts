@@ -226,6 +226,17 @@ describe('a client’s theme read', () => {
     expect(own.tenant_sources).toBeNull();
   });
 
+  it('gives another tenant’s caller a 404 for the client, with nothing of the tenant’s layer', async () => {
+    const mine = await world();
+    const theirs = await world();
+    await publish(theirs, theme({ tokens: { light: LIGHT }, stylesheet: '.page { color: red; }' }));
+    const bearer = await token(mine, ['manage-clients']);
+    const res = await get(mine, await clientPath(theirs), bearer);
+    expect(res.statusCode).toBe(404);
+    expect(res.body).not.toContain('tenant_sources');
+    expect(res.body).not.toContain('stylesheet');
+  });
+
   it('costs the same few statements whatever the tenant sets', async () => {
     const bare = await world();
     const set = await world();
