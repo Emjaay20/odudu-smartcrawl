@@ -112,9 +112,9 @@ describe('the tabs', () => {
   it('select a tab this area has, and nothing for another name', () => {
     const select = vi.fn<(tab: string) => void>();
     selectOffered('pages', select);
-    selectOffered('mail', select);
+    selectOffered('languages', select);
     selectOffered('nope', select);
-    expect(select.mock.calls).toEqual([['pages']]);
+    expect(select.mock.calls).toEqual([['pages'], ['languages']]);
   });
 });
 

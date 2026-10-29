@@ -138,3 +138,9 @@ export function overviewKey(tenant: string, ...read: readonly string[]) {
 export function themeVersionsKey(tenant: string, scope: string) {
   return ['theme-versions', tenant, scope] as const;
 }
+
+// What a tenant's mail inherits from its published theme, read again once
+// a newer version is published.
+export function mailBrandingKey(tenant: string, publishedVersion: number) {
+  return ['mail-branding', tenant, publishedVersion] as const;
+}

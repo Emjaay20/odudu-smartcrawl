@@ -2,7 +2,6 @@ import {
   PAGE_KIND_OPTIONS,
   PREVIEW_FRAME_TITLE,
   PREVIEW_KIND_LABEL,
-  PREVIEW_LOADING,
   PREVIEW_NOTE,
   PREVIEW_SCHEME_LABEL,
   PREVIEW_TITLE,
@@ -10,6 +9,7 @@ import {
   pageKindOf,
 } from '#/features/branding/service';
 import type { Preview } from '#/features/branding/usecase/usePreview';
+import { PreviewFrame } from '#/features/branding/view/PreviewFrame';
 import { InlineFields, SelectField } from '#/shared/view/Field';
 import { Note } from '#/shared/view/Note';
 import { Panel } from '#/shared/view/Panel';
@@ -45,22 +45,13 @@ export function PreviewPane({ preview, pickKind }: { preview: Preview; pickKind:
       </div>
       <p className={styles.note}>{PREVIEW_NOTE}</p>
       {preview.note === null ? null : <Note>{preview.note}</Note>}
-      <div className={styles.frame} data-loading={preview.loading || undefined}>
-        <iframe
-          key={preview.frameKey}
-          className={styles.iframe}
-          title={PREVIEW_FRAME_TITLE}
-          src={preview.src}
-          sandbox=""
-          referrerPolicy="no-referrer"
-          onLoad={preview.onLoaded}
-        />
-        {preview.loading ? (
-          <p role="status" className={styles.loading}>
-            {PREVIEW_LOADING}
-          </p>
-        ) : null}
-      </div>
+      <PreviewFrame
+        title={PREVIEW_FRAME_TITLE}
+        src={preview.src}
+        frameKey={preview.frameKey}
+        loading={preview.loading}
+        onLoaded={preview.onLoaded}
+      />
     </Panel>
   );
 }

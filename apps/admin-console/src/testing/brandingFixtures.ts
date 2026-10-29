@@ -1,7 +1,9 @@
+import type { MailBrandingView } from '@odudu/contracts/admin';
 import { json, type Answer } from '#/testing/fakeTransport';
 import { ACME_ADMIN } from '#/testing/tenantPaths';
 import { graceRoutes } from '#/testing/renderConsole';
 import { EVERY_TENANT_CAPABILITY } from '#/testing/roleAnswers';
+import { settingsAnswer, ST } from '#/testing/settingsFixtures';
 
 export const TH = `${ACME_ADMIN}/theme`;
 
@@ -96,4 +98,55 @@ export function brandingRoutes(
     },
     extra,
   );
+}
+
+export const ML = `${ACME_ADMIN}/mail/branding`;
+export const MO = `${ACME_ADMIN}/message-overrides`;
+
+const MAIL_COLOURS = {
+  page: '#e7eae9',
+  panel: '#ffffff',
+  sunken: '#f3f5f4',
+  border: '#d4d9d7',
+  ink: '#161b1a',
+  muted: '#56605d',
+  link: '#0a6344',
+  button: '#161b1a',
+  button_ink: '#ffffff',
+};
+
+// A tenant whose published theme sets the light colours and a logo, and
+// leaves the dark colours to the default.
+export function mailBranding(changes: Partial<MailBrandingView> = {}): MailBrandingView {
+  return {
+    light: { source: 'tenant', colours: { ...MAIL_COLOURS, panel: '#fafafa' } },
+    dark: {
+      source: 'default',
+      colours: { ...MAIL_COLOURS, page: '#151a19', panel: '#1c2221', ink: '#e4e9e7' },
+    },
+    logo: { src: 'https://id.example/brand/a.png', alt: 'Acme logo', width: 160, height: 32 },
+    dark_logo: null,
+    ...changes,
+  };
+}
+
+export function override(key: string, message: string, locale = 'en') {
+  return { locale, key, message, updated_at: '2026-10-20T09:00:00.000Z' };
+}
+
+export const TITLE_OVERRIDE = override('login.title', 'Welcome back');
+export const HELP_OVERRIDE = override('login.help', 'Ask your administrator');
+
+// grace of acme on the Mail and Languages tabs: settings, mail branding and
+// two overrides in English.
+export function languagesRoutes(
+  extra: Record<string, Answer> = {},
+  settings: Record<string, unknown> = { supported_locales: ['en', 'ar'] },
+): Record<string, Answer> {
+  return brandingRoutes(themeAnswer(draftedView(), '"d1"'), {
+    [`GET ${ST}`]: settingsAnswer(settings),
+    [`GET ${MO}`]: json({ items: [TITLE_OVERRIDE, HELP_OVERRIDE] }),
+    [`GET ${ML}`]: json(mailBranding()),
+    ...extra,
+  });
 }

@@ -11,7 +11,8 @@ import {
   type OfferedTab,
 } from '#/features/branding/service';
 import { useBrandingPage } from '#/features/branding/usecase/useBrandingPage';
-import type { Preview } from '#/features/branding/usecase/usePreview';
+import { LanguagesTab } from '#/features/branding/view/LanguagesTab';
+import { MailInherits, MailPreview } from '#/features/branding/view/MailTab';
 import { PagesTab } from '#/features/branding/view/PagesTab';
 import { PreviewPane } from '#/features/branding/view/PreviewPane';
 import { ThemeTab } from '#/features/branding/view/ThemeTab';
@@ -19,22 +20,12 @@ import { RecordPage } from '#/shared/view/RecordPage';
 import styles from '#/features/branding/view/BrandingPage/BrandingPage.module.css';
 
 // The editor beside the preview of what it edits, and below it when narrow.
-function Workspace({
-  editor,
-  preview,
-  pickKind,
-}: {
-  editor: ReactNode;
-  preview: Preview;
-  pickKind: boolean;
-}) {
+function Workspace({ editor, aside }: { editor: ReactNode; aside: ReactNode }) {
   return (
     <div className={styles.frame}>
       <div className={styles.workspace}>
         <div className={styles.editor}>{editor}</div>
-        <aside className={styles.preview}>
-          <PreviewPane preview={preview} pickKind={pickKind} />
-        </aside>
+        <aside className={styles.preview}>{aside}</aside>
       </div>
     </div>
   );
@@ -43,15 +34,14 @@ function Workspace({
 function Branding({ tenant }: { tenant: string }) {
   const scope = TENANT_SCOPE;
   const page = useBrandingPage(tenant, scope);
-  const { view, tag, preview } = page;
+  const { view, tag, preview, mail } = page;
   const panels: Readonly<Record<OfferedTab, ReactNode>> | null =
     view === undefined || tag === null
       ? null
       : {
           theme: (
             <Workspace
-              preview={preview}
-              pickKind
+              aside={<PreviewPane preview={preview} pickKind />}
               editor={
                 <ThemeTab
                   tenant={tenant}
@@ -65,8 +55,7 @@ function Branding({ tenant }: { tenant: string }) {
           ),
           pages: (
             <Workspace
-              preview={preview}
-              pickKind={false}
+              aside={<PreviewPane preview={preview} pickKind={false} />}
               editor={
                 <PagesTab
                   tenant={tenant}
@@ -80,6 +69,10 @@ function Branding({ tenant }: { tenant: string }) {
               }
             />
           ),
+          mail: (
+            <Workspace aside={<MailPreview mail={mail} />} editor={<MailInherits mail={mail} />} />
+          ),
+          languages: <LanguagesTab tenant={tenant} />,
         };
   return (
     <RecordPage

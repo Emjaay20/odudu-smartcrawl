@@ -415,14 +415,14 @@ describe('the Pages tab', () => {
 });
 
 describe('the area', () => {
-  it('offers Theme and Pages, and no tab that opens on nothing', async () => {
+  it('offers Theme, Pages, Mail and Languages', async () => {
     renderConsoleAt(AT, brandingRoutes(themeAnswer(draftedView(), '"d1"')));
     const tabs = await screen.findByRole('tablist', { name: 'Branding sections' });
     expect(
       within(tabs)
         .getAllByRole('tab')
         .map((tab) => tab.textContent),
-    ).toEqual(['Theme', 'Pages']);
+    ).toEqual(['Theme', 'Pages', 'Mail', 'Languages']);
   });
 
   it('names manage-tenant for a caller without it, and reads nothing', async () => {

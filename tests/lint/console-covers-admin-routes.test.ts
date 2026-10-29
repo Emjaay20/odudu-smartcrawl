@@ -32,10 +32,8 @@ const NEVER: Readonly<Record<string, string>> = {
   ...pendingBrandingRoutes(),
 };
 
-// The previews are framed by address, as `previewSource` builds it, and never
-// requested by an adapter. The message overrides belong to the Languages tab,
-// which does not exist yet: an entry stands for each, and fails this test the
-// moment a screen calls it, so it cannot outlive the screen.
+// The previews are framed by address, as `previewSource` and
+// `mailPreviewSource` build it, and never requested by an adapter.
 function pendingBrandingRoutes(): Record<string, string> {
   const framed =
     'Framed by address (previewSource), not requested by an adapter: the Branding preview is an iframe whose own navigation fetches it.';
@@ -43,18 +41,6 @@ function pendingBrandingRoutes(): Record<string, string> {
     ['GET /admin/tenants/:tenant/theme/preview', framed],
     ['GET /admin/tenants/:tenant/clients/:id/theme/preview', framed],
     ['GET /admin/tenants/:tenant/mail/preview', framed],
-    [
-      'GET /admin/tenants/:tenant/mail/branding',
-      'The console has no Mail tab yet; the branding route is called by it when it lands.',
-    ],
-    ...[
-      'GET /admin/tenants/:tenant/message-overrides',
-      'PUT /admin/tenants/:tenant/message-overrides/:locale/:key',
-      'DELETE /admin/tenants/:tenant/message-overrides/:locale/:key',
-    ].map((route): [string, string] => [
-      route,
-      'The console has no Languages tab yet; the message override routes are called by it when it lands.',
-    ]),
   ];
   return Object.fromEntries(entries);
 }

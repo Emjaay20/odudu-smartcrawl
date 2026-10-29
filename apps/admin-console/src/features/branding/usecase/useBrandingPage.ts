@@ -8,6 +8,7 @@ import {
   type OfferedTab,
   type ThemeScope,
 } from '#/features/branding/service';
+import { useMailTab, type MailTab } from '#/features/branding/usecase/useMailTab';
 import { usePreview, type Preview } from '#/features/branding/usecase/usePreview';
 import { useDirtySections } from '#/shared/repository/useDirtySections';
 import { useRecordTab } from '#/shared/repository/useRecordTab';
@@ -23,6 +24,7 @@ export interface BrandingPage {
   // Tabs with a section holding unsaved edits, for their dots.
   dirty: ReadonlySet<OfferedTab>;
   preview: Preview;
+  mail: MailTab;
 }
 
 export function useBrandingPage(tenant: string, scope: ThemeScope): BrandingPage {
@@ -39,5 +41,6 @@ export function useBrandingPage(tenant: string, scope: ThemeScope): BrandingPage
     },
     dirty: tabsWithEdits(dirty),
     preview: usePreview(tenant, scope, record.data, record.etag),
+    mail: useMailTab(tenant, record.data, tab === 'mail'),
   };
 }

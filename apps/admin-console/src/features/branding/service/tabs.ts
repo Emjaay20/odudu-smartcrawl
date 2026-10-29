@@ -3,9 +3,8 @@ export const BRANDING_TABS = ['theme', 'pages', 'mail', 'languages'] as const;
 
 export type BrandingTab = (typeof BRANDING_TABS)[number];
 
-// The tabs that have a view today. A tab joins this list with its view, so
-// the area never shows one that opens on nothing.
-export const OFFERED_TABS = ['theme', 'pages'] as const satisfies readonly BrandingTab[];
+// The tabs the area shows, each with a view.
+export const OFFERED_TABS = BRANDING_TABS;
 
 export type OfferedTab = (typeof OFFERED_TABS)[number];
 

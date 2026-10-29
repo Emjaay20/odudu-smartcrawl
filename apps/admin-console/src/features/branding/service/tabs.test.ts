@@ -12,10 +12,9 @@ import {
 } from '#/features/branding/service';
 
 describe('the tabs', () => {
-  it('keep the order Theme, Pages, Mail, Languages, and offer only those with a view', () => {
+  it('keep the order Theme, Pages, Mail, Languages, each with a view', () => {
     expect(BRANDING_TABS).toEqual(['theme', 'pages', 'mail', 'languages']);
-    expect(OFFERED_TABS).toEqual(['theme', 'pages']);
-    expect(OFFERED_TABS.every((tab) => BRANDING_TABS.includes(tab))).toBe(true);
+    expect(OFFERED_TABS).toEqual(BRANDING_TABS);
     expect(Object.keys(BRANDING_TAB_LABELS)).toEqual([...BRANDING_TABS]);
   });
 

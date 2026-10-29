@@ -530,6 +530,30 @@ export const DEFINED: Readonly<Record<string, Defined>> = {
   // Branding.
   Theme: tab('branding', 'theme', 'Theme'),
   Pages: tab('branding', 'pages', 'Pages'),
+  Mail: tab('branding', 'mail', 'Mail'),
+  Languages: tab('branding', 'languages', 'Languages'),
+  'What the mail inherits': feature(
+    'branding/service/mail.ts',
+    "MAIL_INHERITS_TITLE = 'What the mail inherits'",
+  ),
+  'Message background': feature('branding/service/mail.ts', "label: 'Message background'"),
+  'Link box background': feature('branding/service/mail.ts', "label: 'Link box background'"),
+  'Quiet text': feature('branding/service/mail.ts', "label: 'Quiet text'"),
+  'Button text': feature('branding/service/mail.ts', "label: 'Button text'"),
+  'Supported languages': feature(
+    'branding/service/languages.ts',
+    "SUPPORTED_LABEL = 'Supported languages'",
+  ),
+  'Default language': feature(
+    'branding/service/languages.ts',
+    "DEFAULT_LABEL = 'Default language'",
+  ),
+  'Message overrides': feature(
+    'branding/service/overrides.ts',
+    "OVERRIDES_TITLE = 'Message overrides'",
+  ),
+  Edit: feature('branding/view/LanguagesTab/LanguagesTab.tsx', '> Edit </Button>'),
+  Remove: feature('branding/view/LanguagesTab/LanguagesTab.tsx', '> Remove </Button>'),
   'Colours and font': feature('branding/service/fields.ts', "COLOURS_TITLE = 'Colours and font'"),
   'Use my own light colours': template(
     [inFeature('branding/service/copy.ts', 'Use my own ${scheme} colours')],
