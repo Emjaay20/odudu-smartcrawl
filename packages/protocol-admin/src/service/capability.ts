@@ -333,7 +333,7 @@ function themeRoutes(
         '`X-Odudu-Preview-Script: omitted` header says. A scope with no draft shows its own ' +
         'published theme, then what is below it. A template that cannot be filled shows the default ' +
         'page, and `X-Odudu-Preview-Fallback` lists the kinds. Refused with `422` (`about:blank#theme-preview-too-large`) when the ' +
-        'stylesheet and the images the page shows come to over 1 MiB once inlined. Reads ' +
+        'stylesheet and the images the page shows come to over about 2.2 MiB once inlined. Reads ' +
         'the draft only: nothing is saved and nothing is published.',
     },
     {
