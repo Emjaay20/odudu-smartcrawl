@@ -456,6 +456,22 @@ Client rules (spec 6): authorization-session pages use the pending request's `cl
 
 - [ ] **Steps 1–3:** audit report; rulings; execute with the console tests green after each move; commit per move.
 
+### Task 25c: Console findings the phase owns
+
+**Files:** `features/branding/**`, `features/clients/**`, `shared/view/ComboBoxField`.
+
+**Interfaces:** every minor an earlier review deferred inside the branding feature is fixed with a test, because the phase owns defects in its own topic whatever their severity: the unsaved-sections hold quoting section titles, service-side guards in place of hook guards, Enter adding a language tag, the supported-languages note naming Add, an unsaved dot on Languages, the Mail tab drawing a same-origin logo, the empty preview-notice region taking no grid row, and an e2e for adding a language.
+
+- [ ] **Steps 1–3:** a finding table (finding, fix, commit); tests first; commit per group.
+
+### Task 25d: Findings outside the console, and the uploaded-asset thumbnail
+
+**Files:** the domain, server and gateway code the phase wrote (Tasks 4–21), and the Theme tab.
+
+**Interfaces:** every deferred minor in the ledger is re-checked against the code and fixed with a test first, marked already fixed or wrong with evidence, or placed with one line against another phase's topic. An admin read `GET /admin/tenants/:tenant/theme/assets/:id/content` (tenant-scoped, read capability, stored mime, `nosniff`, `no-store`, bounded, foreign-tenant probe, statement count) with a gateway pass-through and an adapter returning a `data:` URL, so the Theme tab shows a bounded thumbnail of any uploaded asset, published or not.
+
+- [ ] **Steps 1–3:** finding table; tests first; commit per area; the transcript and screenshots stay owed to Task 26.
+
 ---
 
 ## Increment I — documentation close
