@@ -1,5 +1,5 @@
 import { MAIL_PREVIEW_LOCALES, type AmendSettingsRequest } from '@odudu/contracts/admin';
-import { localeName, localeProblem } from '#/shared/service/locales';
+import { languageLabel, localeProblem } from '#/shared/service/locales';
 import { offeredLocales } from '#/shared/service/offeredLocales';
 import type { Choice } from '#/shared/service/choice';
 import type { SectionFields } from '#/shared/service/sectionSave';
@@ -77,10 +77,6 @@ export function languagesOf(settings: LanguageSettings): LanguageValues {
 // each once.
 export function languageTags(...offered: readonly (readonly string[])[]): string[] {
   return [...new Set([...SHIPPED_LANGUAGES, ...offered.flat()])];
-}
-
-export function languageLabel(tag: string): string {
-  return `${localeName(tag, 'en')} (${tag})`;
 }
 
 // Saved languages stay listed when unticked, so a tick can be undone; one

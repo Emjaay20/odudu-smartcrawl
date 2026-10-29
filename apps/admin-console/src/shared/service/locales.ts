@@ -33,6 +33,11 @@ export function localeName(tag: string, display: string): string {
   }
 }
 
+// A language as a list of them shows it: its English name, then its tag.
+export function languageLabel(tag: string): string {
+  return `${localeName(tag, 'en')} (${tag})`;
+}
+
 // `own` is the reader's locale, offered too when it is a shape the server takes.
 export function localeOptions(display: string, own: string): readonly LocaleOption[] {
   const tags = isValidLocale(own) && !TAGS.includes(own) ? [...TAGS, own] : TAGS;

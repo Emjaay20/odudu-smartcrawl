@@ -5,7 +5,7 @@ import {
 } from '@odudu/contracts/admin';
 import type { Choice } from '#/shared/service/choice';
 import type { Scheme } from '#/features/branding/service/palette';
-import { languageLabel } from '#/features/branding/service/languages';
+import { languageLabel } from '#/shared/service/locales';
 
 export const MAIL_PREVIEW_TITLE = 'Preview';
 
