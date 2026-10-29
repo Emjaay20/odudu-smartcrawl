@@ -18,8 +18,6 @@ export const KEY_LOADING = 'Loading the list of messages.';
 
 export const KEY_FAILED = 'The list of messages could not be loaded.';
 
-export const KEY_RETRY = 'Try again';
-
 // The messages the template of a kind may name: those of the section that
 // fills the kind.
 export function messagesForKind(

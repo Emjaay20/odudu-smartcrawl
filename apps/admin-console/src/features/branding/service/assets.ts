@@ -166,8 +166,6 @@ export const DELETE_TITLE = 'Delete this image?';
 export const DELETE_BODY =
   'The stored image is removed. It cannot be deleted while a draft or a published theme names it.';
 
-export const DELETE_FAILED = 'The image was not deleted.';
-
 export const ALT_HOLD = 'Describe each logo before saving: alt text is required.';
 
 export function imagesHold(values: ImageValues): string | undefined {

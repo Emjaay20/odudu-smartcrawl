@@ -14,8 +14,6 @@ export const MAIL_PREVIEW_NOTE =
 
 export const MAIL_FRAME_TITLE = 'Preview of the verification mail';
 
-export const MAIL_LOADING = 'Loading the preview';
-
 export const MAIL_SCHEME_LABEL = 'Colour scheme';
 
 export const MAIL_LOCALE_LABEL = 'Language';

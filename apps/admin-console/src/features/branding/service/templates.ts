@@ -121,8 +121,6 @@ export function slot(part: string): string {
   return `{{${part}}}`;
 }
 
-export const TEMPLATE_TITLE = 'Page templates';
-
 export const TEMPLATES_INTRO =
   'A template is the HTML of one page. Leave it empty to use the layer below. The server fills in every part itself; a template only decides where each one sits.';
 

@@ -12,9 +12,6 @@ const WORDS: Readonly<Record<ThemeScope['kind'], Readonly<Record<Source, string>
   client: { client: 'this client', tenant: 'the tenant', default: 'Instrument’s default' },
 };
 
-export const SOURCE_NOTE =
-  'Each piece comes from the first layer that sets it: the client, else the tenant, else Instrument.';
-
 function wordsFor(scope: ThemeScope, source: Source | undefined): string {
   return WORDS[scope.kind][source ?? 'default'];
 }

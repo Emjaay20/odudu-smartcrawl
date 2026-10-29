@@ -30,8 +30,6 @@ export interface ColourValues extends Readonly<Record<string, unknown>> {
   'tokens.font': FontChoice | null;
 }
 
-export const COLOUR_FIELDS = ['tokens.light', 'tokens.dark', 'tokens.font'] as const;
-
 export function colourValues(view: ThemeView): ColourValues {
   const { tokens } = baseBody(view);
   return {
