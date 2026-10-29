@@ -121,12 +121,21 @@
   color: transparent;
 }
 
-/* Beyond the length that is coloured, the textarea shows its own text. */
-.frame[data-plain] .layer {
-  visibility: hidden;
+/* Beyond the length that is coloured there is no layer and no gutter: the
+   textarea shows its own text and scrolls itself. */
+.frame[data-plain] .scroller {
+  display: block;
+  block-size: 28rem;
+  overflow: hidden;
+}
+
+.frame[data-plain] .stage {
+  display: block;
+  block-size: 100%;
 }
 
 .frame[data-plain] .area {
+  overflow: auto;
   color: var(--ink-primary);
 }
 
@@ -189,8 +198,7 @@
   color: var(--signal-danger-ink);
 }
 
-.issues li::before {
-  content: '! ';
+.bang {
   font-family: var(--font-mono);
 }
 

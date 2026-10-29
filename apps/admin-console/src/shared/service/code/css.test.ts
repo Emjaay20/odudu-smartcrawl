@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { cssTokens } from '#/shared/service/code/css';
 import { HIGHLIGHT_LIMIT, type CodeToken } from '#/shared/service/code/tokens';
-import { highlight } from '#/shared/service/code';
+import { highlight, normalisedBreaks } from '#/shared/service/code';
 
 function joined(tokens: readonly CodeToken[]): string {
   return tokens.map((token) => token.text).join('');
@@ -117,6 +117,12 @@ describe('cssTokens', () => {
 });
 
 describe('highlight', () => {
+  it('reads \\r\\n and \\r as one line break each, as a textarea does', () => {
+    const result = highlight('css', 'a {\r\n  color: red;\r}\r\n');
+    expect(joined(result.tokens)).toBe('a {\n  color: red;\n}\n');
+    expect(normalisedBreaks('x\r\ny\rz')).toBe('x\ny\nz');
+  });
+
   it('degrades to the text as typed beyond the limit', () => {
     const source = `a { color: red }\n${'x'.repeat(HIGHLIGHT_LIMIT)}`;
     const result = highlight('css', source);

@@ -11,6 +11,7 @@ const press = (key: string, more: Partial<KeyPress> = {}): KeyPress => ({
   ctrlKey: false,
   metaKey: false,
   altKey: false,
+  composing: false,
   ...more,
 });
 
@@ -40,6 +41,19 @@ describe('keyStep', () => {
 
   it('forgets the escape on any other key', () => {
     expect(keyStep(press('a'), true)).toEqual({ action: 'none', escaped: false });
+  });
+
+  it('leaves every key to an input method that is composing, and keeps the escape as it was', () => {
+    for (const key of ['Tab', 'Escape', 'a']) {
+      expect(keyStep(press(key, { composing: true }), false)).toEqual({
+        action: 'none',
+        escaped: false,
+      });
+      expect(keyStep(press(key, { composing: true }), true)).toEqual({
+        action: 'none',
+        escaped: true,
+      });
+    }
   });
 
   it('leaves Ctrl, Cmd and Alt with Tab to the browser', () => {

@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { createEvent, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
@@ -172,22 +172,135 @@ describe('CodeField', () => {
     );
   });
 
-  it('shows text too long to colour as typed', () => {
-    const long = 'x'.repeat(HIGHLIGHT_LIMIT + 1);
+  it('shows text too long to colour as typed, with no layer and no numbers, and says so', () => {
+    const long = `${'x\n'.repeat(HIGHLIGHT_LIMIT)}`;
     const { container } = render(<Editor start={long} />);
     expect(container.querySelector('[data-plain]')).not.toBeNull();
-    expect(layer(container).querySelectorAll('span span')).toHaveLength(0);
+    expect(container.querySelector('pre')).toBeNull();
+    expect(container.querySelector('div[aria-hidden="true"]')).toBeNull();
     expect(box()).toHaveValue(long);
+    expect(screen.getByText('Colour and line numbers are off for text this long.')).toBeVisible();
   });
 
-  it('is read-only where the page is', () => {
-    render(
-      <ReadOnlyFields when>
-        <CodeField label="Stylesheet" language="css" value="a {}" onChange={vi.fn()} />
-      </ReadOnlyFields>,
+  it('draws the layer from the text a textarea holds, whatever its line breaks', () => {
+    const { container } = render(<Editor start={'a {\r\n  x: 1\r\n}'} />);
+    expect(layer(container).textContent).toBe('a {\n  x: 1\n}\n');
+    expect(container.querySelector('div[aria-hidden="true"]')?.textContent).toBe('1\n2\n3');
+  });
+
+  describe('read-only', () => {
+    it('is read-only where the page is', () => {
+      render(
+        <ReadOnlyFields when>
+          <CodeField label="Stylesheet" language="css" value="a {}" onChange={vi.fn()} />
+        </ReadOnlyFields>,
+      );
+      expect(box()).toHaveAttribute('readonly');
+      expect(box()).toHaveValue('a {}');
+    });
+
+    it('lets Tab move on and changes nothing', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(
+        <ReadOnlyFields when>
+          <CodeField label="Stylesheet" language="css" value="a {}" onChange={onChange} />
+          <button type="button">After</button>
+        </ReadOnlyFields>,
+      );
+      await user.click(box());
+      await user.keyboard('{Tab}');
+      expect(screen.getByRole('button', { name: 'After' })).toHaveFocus();
+      expect(box()).toHaveValue('a {}');
+      expect(onChange).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('an input method', () => {
+    it('keeps Tab and Escape while composing, and Tab still indents after', async () => {
+      const user = userEvent.setup();
+      render(<Editor start="a" />);
+      await user.click(box());
+      fireEvent.compositionStart(box());
+      const tab = createEvent.keyDown(box(), { key: 'Tab' });
+      fireEvent(box(), tab);
+      expect(tab.defaultPrevented).toBe(false);
+      expect(box()).toHaveValue('a');
+      const composed = createEvent.keyDown(box(), { key: 'Tab', isComposing: true });
+      fireEvent(box(), composed);
+      expect(composed.defaultPrevented).toBe(false);
+      fireEvent.keyDown(box(), { key: 'Escape' });
+      fireEvent.compositionEnd(box());
+      await vi.waitFor(() => {
+        const after = createEvent.keyDown(box(), { key: 'Tab' });
+        fireEvent(box(), after);
+        expect(after.defaultPrevented).toBe(true);
+      });
+      expect(box()).toHaveValue('a  ');
+    });
+  });
+
+  it('indents again after a click, though Escape came before it', async () => {
+    const user = userEvent.setup();
+    render(<Editor start="a" />);
+    await user.click(box());
+    await user.keyboard('{Escape}');
+    await user.click(box());
+    await user.keyboard('{Tab}');
+    expect(box()).toHaveFocus();
+    expect(box()).toHaveValue('a  ');
+  });
+
+  describe('with a browser that can insert text and keep undo', () => {
+    function withInsert(run: (text: string) => boolean, test: () => Promise<void>) {
+      return async () => {
+        Object.defineProperty(document, 'execCommand', {
+          configurable: true,
+          value: (command: string, _ui: boolean, text: string) =>
+            command === 'insertText' && run(text),
+        });
+        try {
+          await test();
+        } finally {
+          Reflect.deleteProperty(document, 'execCommand');
+        }
+      };
+    }
+
+    it(
+      'asks the browser to insert, and does not insert by hand as well',
+      withInsert(
+        (text) => {
+          const area = box() as HTMLTextAreaElement;
+          area.setRangeText(text, area.selectionStart, area.selectionEnd, 'end');
+          fireEvent.input(area);
+          return true;
+        },
+        async () => {
+          const user = userEvent.setup();
+          const onValue = vi.fn();
+          render(<Editor start="a" onValue={onValue} />);
+          await user.click(box());
+          await user.keyboard('{Tab}');
+          expect(box()).toHaveValue('a  ');
+          expect(onValue).toHaveBeenCalledTimes(1);
+        },
+      ),
     );
-    expect(box()).toHaveAttribute('readonly');
-    expect(box()).toHaveValue('a {}');
+
+    it(
+      'falls back to editing by hand when the browser declines',
+      withInsert(
+        () => false,
+        async () => {
+          const user = userEvent.setup();
+          render(<Editor start="a" />);
+          await user.click(box());
+          await user.keyboard('{Tab}');
+          expect(box()).toHaveValue('a  ');
+        },
+      ),
+    );
   });
 
   it('shows an error under the field', () => {

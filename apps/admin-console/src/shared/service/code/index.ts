@@ -1,4 +1,9 @@
-export { highlight, lineCount, tokensByLine } from '#/shared/service/code/highlight';
+export {
+  highlight,
+  lineCount,
+  normalisedBreaks,
+  tokensByLine,
+} from '#/shared/service/code/highlight';
 export {
   gutterParts,
   lineLabel,
@@ -18,6 +23,7 @@ export {
 } from '#/shared/service/code/editing';
 export {
   HIGHLIGHT_LIMIT,
+  PLAIN_NOTE,
   type CodeLanguage,
   type CodeToken,
   type Highlighted,

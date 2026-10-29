@@ -8,6 +8,8 @@ import {
   lineCount,
   lineLabel,
   markedLines,
+  normalisedBreaks,
+  PLAIN_NOTE,
   TAB_LEAD,
   TAB_THEN,
   tokensByLine,
@@ -27,6 +29,7 @@ import {
   type Chrome,
 } from '#/shared/view/Field';
 import { KeyHint } from '#/shared/view/KeyHint';
+import type { SizeReading } from '#/shared/service/format';
 import styles from '#/shared/view/CodeField/CodeField.module.css';
 
 const TOKEN_CLASS: Readonly<Record<TokenKind, string | undefined>> = {
@@ -84,20 +87,28 @@ function Gutter({ count, marked }: { count: number; marked: readonly number[] })
   );
 }
 
-// The edit made at the selection. The browser's own undo does not see it.
+// The browser's own text insertion keeps its undo history, and the only way
+// to ask for it is the deprecated execCommand, so it is looked up rather than
+// named. Where it is missing or declines, the edit is made by hand and undo
+// cannot see it.
+function insertedWithHistory(text: string): boolean {
+  const run: unknown = Reflect.get(document, 'execCommand');
+  if (typeof run !== 'function') return false;
+  const done: unknown = Reflect.apply(run, document, ['insertText', false, text]);
+  return done === true;
+}
+
 function replaceRange(
   area: HTMLTextAreaElement,
   edit: TextEdit,
   onChange: (value: string) => void,
 ): void {
-  area.setRangeText(edit.text, edit.from, edit.to, 'end');
-  onChange(area.value);
+  area.setSelectionRange(edit.from, edit.to);
+  if (!insertedWithHistory(edit.text)) {
+    area.setRangeText(edit.text, edit.from, edit.to, 'end');
+    onChange(area.value);
+  }
   area.setSelectionRange(edit.selectionStart, edit.selectionEnd);
-}
-
-export interface CodeSize {
-  text: string;
-  over: boolean;
 }
 
 // A text field for code: the textarea is the control, with a coloured copy
@@ -119,17 +130,30 @@ export function CodeField({
   language: CodeLanguage;
   value: string;
   onChange: (value: string) => void;
-  size?: CodeSize;
+  size?: SizeReading;
   issues?: readonly LineIssue[];
 }) {
   const issuesId = useId();
+  const readOnly = use(FieldsReadOnly);
   const escaped = useRef(false);
+  const composing = useRef(false);
   const { tokens, plain } = highlight(language, value);
-  const count = lineCount(value);
+  const count = lineCount(normalisedBreaks(value));
   const marks = markedLines(issues, count);
 
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>): void => {
-    const step = keyStep(event, escaped.current);
+    if (readOnly) return;
+    const step = keyStep(
+      {
+        key: event.key,
+        shiftKey: event.shiftKey,
+        ctrlKey: event.ctrlKey,
+        metaKey: event.metaKey,
+        altKey: event.altKey,
+        composing: event.nativeEvent.isComposing || composing.current,
+      },
+      escaped.current,
+    );
     escaped.current = step.escaped;
     if (step.action === 'none') return;
     event.preventDefault();
@@ -148,7 +172,7 @@ export function CodeField({
       {...VALIDATION}
       {...invalid(error)}
       isDisabled={isDisabled ?? false}
-      isReadOnly={use(FieldsReadOnly)}
+      isReadOnly={readOnly}
       value={value}
       onChange={onChange}
       autoComplete="off"
@@ -159,9 +183,9 @@ export function CodeField({
       <Header label={label} {...(changed === undefined ? {} : { changed })} />
       <div className={styles.frame} data-plain={plain || undefined}>
         <div className={styles.scroller}>
-          <Gutter count={count} marked={marks} />
+          {plain ? null : <Gutter count={count} marked={marks} />}
           <div className={styles.stage}>
-            <Layer tokens={tokens} marked={new Set(marks)} />
+            {plain ? null : <Layer tokens={tokens} marked={new Set(marks)} />}
             <TextArea
               className={styles.area ?? ''}
               data-control
@@ -170,6 +194,18 @@ export function CodeField({
               autoCapitalize="off"
               autoCorrect="off"
               onKeyDown={onKeyDown}
+              onPointerDown={() => {
+                escaped.current = false;
+              }}
+              onCompositionStart={() => {
+                composing.current = true;
+              }}
+              onCompositionEnd={() => {
+                // A key that ends a composition is still delivered to keydown.
+                setTimeout(() => {
+                  composing.current = false;
+                }, 0);
+              }}
               onBlur={() => {
                 escaped.current = false;
               }}
@@ -182,6 +218,7 @@ export function CodeField({
         <span className={styles.hint}>
           <KeyHint lead={TAB_LEAD} keys={['Escape']} /> <KeyHint lead={TAB_THEN} keys={['Tab']} />
         </span>
+        {plain ? <span>{PLAIN_NOTE}</span> : null}
         {size === undefined ? null : (
           <span className={styles.size} data-over={size.over || undefined}>
             {size.text}
@@ -191,7 +228,12 @@ export function CodeField({
       {issues.length === 0 ? null : (
         <ul id={issuesId} className={styles.issues}>
           {issues.map((issue, index) => (
-            <li key={`${String(issue.line)}:${String(index)}`}>{lineLabel(issue)}</li>
+            <li key={`${String(issue.line)}:${String(index)}`}>
+              <span aria-hidden="true" className={styles.bang}>
+                !{' '}
+              </span>
+              {lineLabel(issue)}
+            </li>
           ))}
         </ul>
       )}

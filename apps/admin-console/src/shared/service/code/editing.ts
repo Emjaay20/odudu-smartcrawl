@@ -9,6 +9,8 @@ export interface KeyPress {
   ctrlKey: boolean;
   metaKey: boolean;
   altKey: boolean;
+  // An input method is composing text: the key belongs to it.
+  composing: boolean;
 }
 
 export interface KeyStep {
@@ -22,6 +24,7 @@ const MODIFIERS = new Set(['Shift', 'Control', 'Alt', 'Meta']);
 // Tab in a code field indents, so it would trap the keyboard. Escape lets go:
 // the Tab that follows moves on, as it would from any other field.
 export function keyStep(press: KeyPress, escaped: boolean): KeyStep {
+  if (press.composing) return { action: 'none', escaped };
   const bare = !press.ctrlKey && !press.metaKey && !press.altKey;
   if (press.key === 'Escape' && bare) return { action: 'none', escaped: true };
   if (MODIFIERS.has(press.key)) return { action: 'none', escaped };
