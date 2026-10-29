@@ -1,4 +1,5 @@
 import { CONSENT_TEXT_MAX } from '@odudu/contracts/admin';
+import { nullWhenBlank } from '#/shared/service/format';
 import { DESCRIPTION_MAX } from '#/shared/service/labels';
 import type { Choice } from '#/shared/service/choice';
 import type { Translations } from '#/shared/service/localised';
@@ -103,9 +104,8 @@ interface Patch {
 // number is sent as one.
 export function generalPatch(changes: GeneralValues): Patch {
   const body: Patch = {};
-  const emptied = (text: string): string | null => (text.trim() === '' ? null : text);
-  if (changes.description !== undefined) body.description = emptied(changes.description);
-  if (changes.consent_text !== undefined) body.consent_text = emptied(changes.consent_text);
+  if (changes.description !== undefined) body.description = nullWhenBlank(changes.description);
+  if (changes.consent_text !== undefined) body.consent_text = nullWhenBlank(changes.consent_text);
   if (changes.include_in_id_token !== undefined) {
     body.include_in_id_token = changes.include_in_id_token;
   }

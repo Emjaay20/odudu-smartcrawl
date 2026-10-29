@@ -5,6 +5,7 @@ import {
   type ThemeBodyWire,
 } from '@odudu/contracts';
 import type { ThemeView } from '@odudu/contracts/admin';
+import { nullWhenBlank } from '#/shared/service/format';
 import type { Palette } from '#/features/branding/service/palette';
 
 export type PageKind = (typeof THEME_PAGE_KINDS)[number];
@@ -138,7 +139,7 @@ export function colourRequest(view: ThemeView, values: ColourValues): ThemeBodyR
 export function stylesheetRequest(view: ThemeView, values: StylesheetValues): ThemeBodyRequest {
   return {
     ...baseBody(view),
-    stylesheet: values.stylesheet.trim() === '' ? null : values.stylesheet,
+    stylesheet: nullWhenBlank(values.stylesheet),
   };
 }
 

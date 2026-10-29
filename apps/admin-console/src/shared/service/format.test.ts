@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   byteSizeReading,
+  nullWhenBlank,
+  utf8Length,
   bytesText,
   shortened,
   groupedNumber,
@@ -191,5 +193,17 @@ describe('a size in bytes', () => {
   it('keeps one decimal only when the size is not whole', () => {
     expect(bytesText(1536)).toBe('1.5 KiB');
     expect(bytesText(5 * 1024 * 1024 + 1)).toBe('5.0 MiB');
+  });
+});
+
+describe('texts as the server reads them', () => {
+  it('counts bytes, not characters', () => {
+    expect(utf8Length('abc')).toBe(3);
+    expect(utf8Length('é')).toBe(2);
+  });
+
+  it('takes blank for null and leaves other text as typed', () => {
+    expect(nullWhenBlank('  ')).toBeNull();
+    expect(nullWhenBlank(' a ')).toBe(' a ');
   });
 });

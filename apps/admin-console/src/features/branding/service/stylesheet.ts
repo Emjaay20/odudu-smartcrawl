@@ -1,6 +1,6 @@
 import { MAX_STYLESHEET_BYTES, MAX_TEMPLATE_BYTES } from '@odudu/contracts';
 import type { FieldError } from '@odudu/contracts/admin';
-import { byteSizeReading, type SizeReading } from '#/shared/service/format';
+import { byteSizeReading, utf8Length, type SizeReading } from '#/shared/service/format';
 import type { PublishOutcome } from '#/features/branding/service/edits';
 import {
   detailed,
@@ -21,10 +21,6 @@ export const STYLESHEET_REFUSED = 'The stylesheet was not saved.';
 export const STYLESHEET_UNPUBLISHABLE = 'The saved stylesheet was refused at publish.';
 
 export const STYLESHEET_OVER = 'The stylesheet is over the size limit.';
-
-function utf8Length(text: string): number {
-  return new TextEncoder().encode(text).length;
-}
 
 // How much of a limit in bytes a text uses, or by how much it is over.
 export function sizeReading(text: string, limit: number): SizeReading {

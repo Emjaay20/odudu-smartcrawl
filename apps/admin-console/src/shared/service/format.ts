@@ -83,6 +83,16 @@ export function attemptsText(attempts: number): string {
   return counted(attempts, 'attempt', 'attempts');
 }
 
+// How many bytes a text takes in UTF-8, which is what the server bounds.
+export function utf8Length(text: string): number {
+  return new TextEncoder().encode(text).length;
+}
+
+// A text field emptied clears the value: blank is null.
+export function nullWhenBlank(text: string): string | null {
+  return text.trim() === '' ? null : text;
+}
+
 // A text a record may not hold, as a field's value.
 export function orBlank(value: string | null | undefined): string {
   return value ?? '';
