@@ -194,12 +194,21 @@ describe('a size in bytes', () => {
     expect(bytesText(1536)).toBe('1.5 KiB');
     expect(bytesText(5 * 1024 * 1024 + 1)).toBe('5.0 MiB');
   });
+
+  it('reads the unit edges without a 1024.0 KiB', () => {
+    expect(bytesText(0)).toBe('0 bytes');
+    expect(bytesText(1023)).toBe('1023 bytes');
+    expect(bytesText(1024)).toBe('1 KiB');
+    expect(bytesText(1024 * 1024 - 1)).toBe('1.0 MiB');
+  });
 });
 
 describe('texts as the server reads them', () => {
   it('counts bytes, not characters', () => {
     expect(utf8Length('abc')).toBe(3);
     expect(utf8Length('é')).toBe(2);
+    expect(utf8Length('')).toBe(0);
+    expect(utf8Length('😀')).toBe(4);
   });
 
   it('takes blank for null and leaves other text as typed', () => {

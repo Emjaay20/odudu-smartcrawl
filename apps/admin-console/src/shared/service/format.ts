@@ -135,6 +135,8 @@ export function shortened(text: string, limit: number): string {
 
 const KIB = 1024;
 const MIB = KIB * KIB;
+// Below this a KiB value would print as 1024.0 KiB, so it reads in MiB.
+const MIB_ROUNDS_UP_FROM = MIB - KIB / 20;
 
 function unitsOf(bytes: number, unit: number, name: string): string {
   const value = bytes / unit;
@@ -144,5 +146,5 @@ function unitsOf(bytes: number, unit: number, name: string): string {
 // A size as a person reads it: whole when it is whole, else one decimal.
 export function bytesText(bytes: number): string {
   if (bytes < KIB) return `${String(bytes)} bytes`;
-  return bytes < MIB ? unitsOf(bytes, KIB, 'KiB') : unitsOf(bytes, MIB, 'MiB');
+  return bytes < MIB_ROUNDS_UP_FROM ? unitsOf(bytes, KIB, 'KiB') : unitsOf(bytes, MIB, 'MiB');
 }
