@@ -23,7 +23,9 @@ import {
   type PublishOutcome,
   type ThemeScope,
 } from '#/features/branding/service';
+import { useMessageKeys } from '#/features/branding/usecase/useMessageKeys';
 import { useTemplates } from '#/features/branding/usecase/useTemplates';
+import { InsertMessage } from '#/features/branding/view/MessageKeyField';
 import { CodeField } from '#/shared/view/CodeField';
 import { SelectField } from '#/shared/view/Field';
 import { Panel } from '#/shared/view/Panel';
@@ -85,6 +87,7 @@ export function PagesTab({
 }) {
   const templates = useTemplates({ tenant, scope, view, tag, gone, published });
   const { save } = templates;
+  const keys = useMessageKeys(tenant, kind);
   const problems = templates.problems(kind);
   return (
     <div className={styles.tab}>
@@ -103,6 +106,7 @@ export function PagesTab({
           label={`${PAGE_KIND_LABELS[kind]}: ${TEMPLATE_LABEL.toLowerCase()}`}
           description={`${sourceReading(scope, view, templateField(kind))}. ${templateDescription()}`}
           language="template"
+          tools={<InsertMessage keys={keys} />}
           value={templates.text(kind)}
           size={templates.size(kind)}
           issues={problems.lines}

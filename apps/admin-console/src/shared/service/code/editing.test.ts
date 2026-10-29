@@ -3,6 +3,7 @@ import {
   changesNothing,
   historyKey,
   indentEdit,
+  insertEdit,
   keyStep,
   type KeyPress,
   type TextEdit,
@@ -161,5 +162,29 @@ describe('changesNothing', () => {
     expect(changesNothing(edit)).toBe(true);
     expect(changesNothing({ ...edit, to: 3 })).toBe(false);
     expect(changesNothing({ ...edit, text: ' ' })).toBe(false);
+  });
+});
+
+describe('insertEdit', () => {
+  it('puts the text at the caret and leaves the caret after it', () => {
+    const edit = insertEdit('<h1></h1>', 4, 4, '{{t "a"}}');
+    expect(applyEdit('<h1></h1>', edit)).toBe('<h1>{{t "a"}}</h1>');
+    expect(edit.selectionStart).toBe(4 + '{{t "a"}}'.length);
+    expect(edit.selectionEnd).toBe(edit.selectionStart);
+  });
+
+  it('replaces a selection', () => {
+    const edit = insertEdit('one two three', 4, 7, 'X');
+    expect(applyEdit('one two three', edit)).toBe('one X three');
+    expect(edit.selectionStart).toBe(5);
+  });
+
+  it('works on an empty text and takes a backwards selection as given', () => {
+    expect(applyEdit('', insertEdit('', 0, 0, 'abc'))).toBe('abc');
+    expect(applyEdit('abcdef', insertEdit('abcdef', 4, 2, '-'))).toBe('ab-ef');
+  });
+
+  it('is an edit, not nothing, for a non-empty insertion', () => {
+    expect(changesNothing(insertEdit('x', 0, 0, 'y'))).toBe(false);
   });
 });

@@ -1,4 +1,5 @@
 export * from '#/features/branding/service/assets';
+export * from '#/features/branding/service/catalogue';
 export * from '#/features/branding/service/contrast';
 export * from '#/features/branding/service/copy';
 export * from '#/features/branding/service/edits';

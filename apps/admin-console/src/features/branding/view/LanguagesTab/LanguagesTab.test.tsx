@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { OVER_BOUND, UNKNOWN_KEY } from '#/features/branding/service';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
-import { HELP_OVERRIDE, languagesRoutes, MO, TITLE_OVERRIDE } from '#/testing/brandingFixtures';
+import { HELP_OVERRIDE, languagesRoutes, MC, MO, TITLE_OVERRIDE } from '#/testing/brandingFixtures';
 import { inTurn, json, problem } from '#/testing/fakeTransport';
 import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
 import { resetConsole } from '#/testing/resetConsole';
@@ -18,7 +18,7 @@ const AT = '/console/acme/branding?tab=languages';
 const PUT_TITLE = `PUT ${MO}/en/login.title`;
 
 async function typeOverride(user: ReturnType<typeof userEvent.setup>, key: string, text: string) {
-  await user.type(await screen.findByRole('textbox', { name: /Message key/u }), key);
+  await user.type(await screen.findByRole('combobox', { name: /Message key/u }), key);
   await user.type(screen.getByRole('textbox', { name: /Text shown instead/u }), text);
 }
 
@@ -83,7 +83,7 @@ it('refuses a key not in en with its wording', async () => {
   );
   await typeOverride(user, 'no.such.key', 'Hello');
   await user.click(screen.getByRole('button', { name: 'Save override' }));
-  const key = await screen.findByRole('textbox', { name: /Message key/u });
+  const key = await screen.findByRole('combobox', { name: /Message key/u });
   await waitFor(() => {
     expect(key).toBeInvalid();
   });
@@ -131,7 +131,7 @@ it('sets an override, empties the form and reads the list again', async () => {
   await typeOverride(user, 'login.title', 'Hello');
   await user.click(screen.getByRole('button', { name: 'Save override' }));
   expect(await screen.findByRole('row', { name: /login\.title/u })).toHaveTextContent('Hello');
-  expect(screen.getByRole('textbox', { name: /Message key/u })).toHaveValue('');
+  expect(screen.getByRole('combobox', { name: /Message key/u })).toHaveValue('');
   expect(sent.find((request) => request.method === 'PUT')?.path).toBe(`${MO}/en/login.title`);
 });
 
@@ -143,7 +143,7 @@ it('edits an override by filling the form with it, and saves the new text', asyn
   );
   await user.click(await screen.findByRole('button', { name: 'Edit login.title' }));
   const text = screen.getByRole('textbox', { name: /Text shown instead/u });
-  expect(screen.getByRole('textbox', { name: /Message key/u })).toHaveValue('login.title');
+  expect(screen.getByRole('combobox', { name: /Message key/u })).toHaveValue('login.title');
   expect(text).toHaveValue('Welcome back');
   await user.clear(text);
   await user.type(text, 'Hi');
@@ -284,4 +284,30 @@ it('has nothing axe can find in either theme', async () => {
     { frames: false },
   );
   expect(found).toEqual({ light: [], dark: [] });
+});
+
+it('offers the keys the server holds, with their text, and keeps a key typed whole', async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(AT, languagesRoutes());
+  const key = await screen.findByRole('combobox', { name: /Message key/u });
+  await user.click(screen.getByRole('button', { name: /^Show Message key options/u }));
+  const options = await screen.findAllByRole('option');
+  expect(options.length).toBeGreaterThan(0);
+  expect(options.length).toBeLessThanOrEqual(50);
+  await user.type(key, 'Create an acc');
+  expect(await screen.findByRole('option', { name: /register\.title/u })).toHaveTextContent(
+    'Create an account',
+  );
+});
+
+it('still takes a typed key when the list of messages cannot be read', async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(
+    AT,
+    languagesRoutes({ [`GET ${MC}`]: problem(500, 'about:blank', 'Internal Server Error') }),
+  );
+  const key = await screen.findByRole('combobox', { name: /Message key/u });
+  expect(await screen.findByText('The list of messages could not be loaded.')).toBeVisible();
+  await user.type(key, 'login.title');
+  expect(key).toHaveValue('login.title');
 });

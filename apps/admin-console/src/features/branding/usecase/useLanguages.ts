@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useRefusal } from '#/features/session';
 import { languagesSave } from '#/features/branding/repository/languagesSave';
 import { useOverrideList, useOverrideWrites } from '#/features/branding/repository/useOverrides';
+import { useMessageKeys } from '#/features/branding/usecase/useMessageKeys';
 import {
   afterSave,
   askedRemoval,
@@ -20,9 +21,11 @@ import {
   removeOutcome,
   shownLocale,
   type LanguageValues,
+  type MessageEntry,
   type OverrideErrors,
   type OverrideValues,
 } from '#/features/branding/service';
+import type { Read } from '#/shared/service/read';
 import { useToast } from '#/shared/repository/useToasts';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
 import { writeRefusal } from '#/shared/service/capabilities';
@@ -92,6 +95,8 @@ export interface Overrides {
   locale: string;
   pick: (locale: string) => void;
   list: ReturnType<typeof useOverrideList>;
+  // Every message an override may be set under, for the key field.
+  keys: Read<MessageEntry[]>;
   values: OverrideValues;
   errors: OverrideErrors;
   message: string | null;
@@ -133,6 +138,7 @@ export function useOverrides(tenant: string, data: Settings): Overrides {
     locale,
     pick: setPicked,
     list,
+    keys: useMessageKeys(tenant, null),
     values,
     errors,
     message,

@@ -167,6 +167,42 @@ it('does not carry one page’s undo history to another page with the same text'
   expect(other).toHaveValue('');
 });
 
+it('inserts a message of the page’s own catalogue at the caret, saved like any edit', async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(AT, brandingRoutes(themeAnswer(draftedView(), '"d1"')));
+  const section = await screen.findByRole('region', { name: 'Page templates' });
+  const box = within(section).getByRole('textbox', { name: 'Sign in: template' });
+  await user.click(box);
+  await user.paste('<h1></h1>{{form.open}}');
+  (box as HTMLTextAreaElement).setSelectionRange(4, 4);
+  const picker = await within(section).findByRole('combobox', { name: 'Insert a message' });
+  await user.type(picker, 'Sign in to');
+  await user.click(await screen.findByRole('option', { name: /login\.title/u }));
+  expect(box).toHaveValue('<h1>{{t "login.title"}}</h1>{{form.open}}');
+  expect(within(section).getByRole('button', { name: /Save/u })).toBeEnabled();
+});
+
+it('offers only the messages of the page kind being edited', async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(AT, brandingRoutes(themeAnswer(draftedView(), '"d1"')));
+  const section = await screen.findByRole('region', { name: 'Page templates' });
+  await user.click(
+    await within(section).findByRole('button', { name: /^Show Insert a message options/u }),
+  );
+  const own = (await screen.findAllByRole('option')).map((o) => o.textContent);
+  expect(own.some((text) => text.startsWith('login.title'))).toBe(true);
+  expect(own.some((text) => text.startsWith('register.title'))).toBe(false);
+  await user.keyboard('{Escape}');
+  await user.click(within(section).getByRole('button', { name: /Page/u }));
+  await user.click(await screen.findByRole('option', { name: 'Registration' }));
+  await user.click(
+    await within(section).findByRole('button', { name: /^Show Insert a message options/u }),
+  );
+  const other = (await screen.findAllByRole('option')).map((o) => o.textContent);
+  expect(other.some((text) => text.startsWith('register.title'))).toBe(true);
+  expect(other.some((text) => text.startsWith('login.title'))).toBe(false);
+});
+
 it('has nothing axe can find in either theme', async () => {
   const { element } = consoleAt(AT, brandingRoutes(themeAnswer(draftedView(), '"d1"')));
   const found = await axeInBothThemes(

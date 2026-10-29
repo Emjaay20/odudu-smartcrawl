@@ -15,6 +15,7 @@ export {
   changesNothing,
   historyKey,
   indentEdit,
+  insertEdit,
   INDENT,
   keyStep,
   TAB_LEAD,

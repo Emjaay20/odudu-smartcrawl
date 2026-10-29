@@ -35,12 +35,13 @@ import {
   type Overrides,
 } from '#/features/branding/usecase/useLanguages';
 import { useTenantSettingsRead } from '#/shared/usecase/useTenantSettingsRead';
+import { MessageKeyField } from '#/features/branding/view/MessageKeyField';
 import { Button } from '#/shared/view/Button';
 import { ChecklistField } from '#/shared/view/ChecklistField';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
 import { DataTable, type Column } from '#/shared/view/DataTable';
 import { EmptyState } from '#/shared/view/EmptyState';
-import { LocaleField, SelectField, TextAreaField, TextField } from '#/shared/view/Field';
+import { LocaleField, SelectField, TextAreaField } from '#/shared/view/Field';
 import { FieldGrid, GridCell } from '#/shared/view/FieldGrid';
 import { LastAction } from '#/shared/view/LastAction';
 import { ListGate } from '#/shared/view/ListGate';
@@ -186,10 +187,12 @@ function Form({ page }: { page: Overrides }) {
     >
       <FieldGrid>
         <GridCell span="wide">
-          <TextField
+          <MessageKeyField
+            keys={page.keys}
             label={KEY_LABEL}
             description={KEY_NOTE}
             mono
+            custom
             value={page.values.key}
             error={page.errors.key}
             onChange={(next) => {

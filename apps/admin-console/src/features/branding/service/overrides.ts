@@ -30,7 +30,7 @@ export const OVERRIDE_LENGTH = MESSAGE_OVERRIDE_MAX_LENGTH;
 export const KEY_LABEL = 'Message key';
 
 export const KEY_NOTE =
-  'The key of the page message to replace, such as login.title. The server holds the list, so a key it does not know is refused.';
+  'The key of the page message to replace, such as login.title. Choose one from the list, with its English text beside it, or type it; a key the server does not know is refused.';
 
 export const MESSAGE_LABEL = 'Text shown instead';
 

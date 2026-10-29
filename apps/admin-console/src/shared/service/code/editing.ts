@@ -154,6 +154,14 @@ export function indentEdit(
   return indentLines(value, start, end);
 }
 
+// `text` typed over the selection: the caret ends after it.
+export function insertEdit(value: string, start: number, end: number, text: string): TextEdit {
+  const from = Math.min(start, end);
+  const to = Math.max(start, end);
+  const caret = from + text.length;
+  return { from, to: Math.min(to, value.length), text, selectionStart: caret, selectionEnd: caret };
+}
+
 // An edit that would leave the text as it is.
 export function changesNothing(edit: TextEdit): boolean {
   return edit.from === edit.to && edit.text === '';

@@ -1,10 +1,19 @@
-import { Fragment, use, useId, useRef, type KeyboardEvent } from 'react';
+import {
+  createContext,
+  Fragment,
+  use,
+  useId,
+  useRef,
+  type KeyboardEvent,
+  type ReactNode,
+} from 'react';
 import { TextArea, TextField as AriaTextField } from 'react-aria-components';
 import {
   caretAt,
   gutterParts,
   highlight,
   indentEdit,
+  insertEdit,
   keyStep,
   lineCount,
   lineLabel,
@@ -89,6 +98,10 @@ function Gutter({ count, marked }: { count: number; marked: readonly number[] })
   );
 }
 
+// What `tools` call to type at the caret of the field they sit in: one step
+// of its history, with focus returned to it.
+export const CodeInsert = createContext<(text: string) => void>(() => undefined);
+
 const FALLBACK_TAB_WIDTH = 8;
 const PROBE_LENGTH = 20;
 
@@ -159,12 +172,16 @@ export function CodeField({
   onChange,
   size,
   issues = [],
+  tools,
 }: Chrome & {
   language: CodeLanguage;
   value: string;
   onChange: (value: string) => void;
   size?: SizeReading;
   issues?: readonly LineIssue[];
+  // Controls drawn above the field that put text into it through
+  // `CodeInsert`. Not drawn for a read-only field.
+  tools?: ReactNode;
 }) {
   const issuesId = useId();
   const readOnly = use(FieldsReadOnly);
@@ -173,6 +190,16 @@ export function CodeField({
   const { tokens, plain } = highlight(language, value);
   const count = lineCount(normalisedBreaks(value));
   const marks = markedLines(issues, count);
+
+  const insert = (text: string): void => {
+    const area = areaRef.current;
+    if (area === null || readOnly) return;
+    history.replace(insertEdit(area.value, area.selectionStart, area.selectionEnd, text));
+    // After the control that chose the text has put its own focus back.
+    setTimeout(() => {
+      area.focus();
+    }, 0);
+  };
 
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>): void => {
     if (readOnly) return;
@@ -201,70 +228,73 @@ export function CodeField({
   };
 
   return (
-    <AriaTextField
-      {...VALIDATION}
-      {...invalid(error)}
-      isDisabled={isDisabled ?? false}
-      isReadOnly={readOnly}
-      value={value}
-      onChange={history.change}
-      autoComplete="off"
-      className={styles.field ?? ''}
-      data-changed={changed === true || undefined}
-      {...(issues.length === 0 ? {} : { 'aria-describedby': issuesId })}
-    >
-      <Header label={label} {...(changed === undefined ? {} : { changed })} />
-      <div className={styles.frame} data-plain={plain || undefined}>
-        <div className={styles.scroller} data-code-scroller>
-          {plain ? null : <Gutter count={count} marked={marks} />}
-          <div className={styles.stage}>
-            {plain ? null : <Layer tokens={tokens} marked={new Set(marks)} />}
-            <TextArea
-              ref={areaRef}
-              className={styles.area ?? ''}
-              data-control
-              wrap="off"
-              spellCheck={false}
-              autoCapitalize="off"
-              autoCorrect="off"
-              onKeyDown={onKeyDown}
-              onPointerDown={() => {
-                escaped.current = false;
-              }}
-              onCompositionStart={history.compositionStart}
-              onCompositionEnd={history.compositionEnd}
-              onBlur={() => {
-                escaped.current = false;
-              }}
-            />
+    <div className={styles.root}>
+      {tools === undefined || readOnly ? null : <CodeInsert value={insert}>{tools}</CodeInsert>}
+      <AriaTextField
+        {...VALIDATION}
+        {...invalid(error)}
+        isDisabled={isDisabled ?? false}
+        isReadOnly={readOnly}
+        value={value}
+        onChange={history.change}
+        autoComplete="off"
+        className={styles.field ?? ''}
+        data-changed={changed === true || undefined}
+        {...(issues.length === 0 ? {} : { 'aria-describedby': issuesId })}
+      >
+        <Header label={label} {...(changed === undefined ? {} : { changed })} />
+        <div className={styles.frame} data-plain={plain || undefined}>
+          <div className={styles.scroller} data-code-scroller>
+            {plain ? null : <Gutter count={count} marked={marks} />}
+            <div className={styles.stage}>
+              {plain ? null : <Layer tokens={tokens} marked={new Set(marks)} />}
+              <TextArea
+                ref={areaRef}
+                className={styles.area ?? ''}
+                data-control
+                wrap="off"
+                spellCheck={false}
+                autoCapitalize="off"
+                autoCorrect="off"
+                onKeyDown={onKeyDown}
+                onPointerDown={() => {
+                  escaped.current = false;
+                }}
+                onCompositionStart={history.compositionStart}
+                onCompositionEnd={history.compositionEnd}
+                onBlur={() => {
+                  escaped.current = false;
+                }}
+              />
+            </div>
           </div>
         </div>
-      </div>
-      <Description>
-        {description === undefined ? null : <>{description} </>}
-        <span className={styles.hint}>
-          <KeyHint lead={TAB_LEAD} keys={['Escape']} /> <KeyHint lead={TAB_THEN} keys={['Tab']} />
-        </span>
-        {plain ? <span>{PLAIN_NOTE}</span> : null}
-        {size === undefined ? null : (
-          <span className={styles.size} data-over={size.over || undefined}>
-            {size.text}
+        <Description>
+          {description === undefined ? null : <>{description} </>}
+          <span className={styles.hint}>
+            <KeyHint lead={TAB_LEAD} keys={['Escape']} /> <KeyHint lead={TAB_THEN} keys={['Tab']} />
           </span>
+          {plain ? <span>{PLAIN_NOTE}</span> : null}
+          {size === undefined ? null : (
+            <span className={styles.size} data-over={size.over || undefined}>
+              {size.text}
+            </span>
+          )}
+        </Description>
+        {issues.length === 0 ? null : (
+          <ul id={issuesId} className={styles.issues}>
+            {issues.map((issue, index) => (
+              <li key={`${String(issue.line)}:${String(index)}`}>
+                <span aria-hidden="true" className={styles.bang}>
+                  !{' '}
+                </span>
+                {lineLabel(issue)}
+              </li>
+            ))}
+          </ul>
         )}
-      </Description>
-      {issues.length === 0 ? null : (
-        <ul id={issuesId} className={styles.issues}>
-          {issues.map((issue, index) => (
-            <li key={`${String(issue.line)}:${String(index)}`}>
-              <span aria-hidden="true" className={styles.bang}>
-                !{' '}
-              </span>
-              {lineLabel(issue)}
-            </li>
-          ))}
-        </ul>
-      )}
-      <Message error={error} />
-    </AriaTextField>
+        <Message error={error} />
+      </AriaTextField>
+    </div>
   );
 }

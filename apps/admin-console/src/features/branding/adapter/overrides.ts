@@ -1,5 +1,7 @@
 import {
   listMessageOverridesResponseSchema,
+  messageCatalogueResponseSchema,
+  type MessageCatalogueResponse,
   messageOverrideSchema,
   type MessageOverride,
 } from '@odudu/contracts/admin';
@@ -36,5 +38,15 @@ export function deleteOverride(
 ): Promise<GatewayResult<undefined>> {
   return adminCall(gateway, 'DELETE', tenant, ['message-overrides', input.locale, input.key], {
     schema: nothing,
+  });
+}
+
+// The keys a template or an override may name, with their English text.
+export function readMessageCatalogue(
+  gateway: Gateway,
+  tenant: string,
+): Promise<GatewayResult<MessageCatalogueResponse>> {
+  return adminCall(gateway, 'GET', tenant, ['message-catalogue'], {
+    schema: messageCatalogueResponseSchema,
   });
 }

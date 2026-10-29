@@ -1,3 +1,9 @@
+.root {
+  display: grid;
+  gap: var(--space-3);
+  min-inline-size: 0;
+}
+
 .field {
   display: grid;
   align-content: start;

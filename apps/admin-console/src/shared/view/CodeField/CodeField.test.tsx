@@ -1,9 +1,9 @@
-import { createEvent, fireEvent, render, screen, within } from '@testing-library/react';
+import { createEvent, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useState } from 'react';
+import { use, useState } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { HIGHLIGHT_LIMIT, type CodeLanguage, type LineIssue } from '#/shared/service/code';
-import { CodeField } from '#/shared/view/CodeField/CodeField';
+import { CodeField, CodeInsert } from '#/shared/view/CodeField/CodeField';
 import css from '#/shared/view/CodeField/CodeField.module.css?raw';
 import { ReadOnlyFields } from '#/shared/view/Field';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
@@ -456,5 +456,66 @@ describe('undo and redo', () => {
     await user.click(box());
     await user.keyboard(undo);
     expect(box()).toHaveValue('from outside');
+  });
+
+  describe('tools', () => {
+    const undoKeys = '{Control>}z{/Control}';
+    function InsertA() {
+      const insert = use(CodeInsert);
+      return (
+        <button
+          type="button"
+          onClick={() => {
+            insert('{{t "a"}}');
+          }}
+        >
+          Insert a
+        </button>
+      );
+    }
+
+    function WithTools({ start = '', readOnly = false }: { start?: string; readOnly?: boolean }) {
+      const [value, setValue] = useState(start);
+      return (
+        <ReadOnlyFields when={readOnly}>
+          <CodeField
+            label="Stylesheet"
+            language="template"
+            value={value}
+            onChange={setValue}
+            tools={<InsertA />}
+          />
+        </ReadOnlyFields>
+      );
+    }
+
+    it('inserts at the caret, keeps the caret after it and returns focus to the editor', async () => {
+      const user = userEvent.setup();
+      render(<WithTools start="<h1></h1>" />);
+      await user.click(box());
+      (box() as HTMLTextAreaElement).setSelectionRange(4, 4);
+      await user.click(screen.getByRole('button', { name: 'Insert a' }));
+      expect(box()).toHaveValue('<h1>{{t "a"}}</h1>');
+      await waitFor(() => {
+        expect(box()).toHaveFocus();
+      });
+      expect((box() as HTMLTextAreaElement).selectionStart).toBe(4 + '{{t "a"}}'.length);
+    });
+
+    it('replaces the selection, and an insertion is one undo step', async () => {
+      const user = userEvent.setup();
+      render(<WithTools start="one two" />);
+      await user.click(box());
+      (box() as HTMLTextAreaElement).setSelectionRange(0, 3);
+      await user.click(screen.getByRole('button', { name: 'Insert a' }));
+      expect(box()).toHaveValue('{{t "a"}} two');
+      await user.keyboard(undoKeys);
+      expect(box()).toHaveValue('one two');
+    });
+
+    it('offers nothing to a read-only field', () => {
+      render(<WithTools start="x" readOnly />);
+      expect(screen.queryByRole('button', { name: 'Insert a' })).toBeNull();
+    });
   });
 });

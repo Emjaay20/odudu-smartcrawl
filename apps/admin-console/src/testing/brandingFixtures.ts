@@ -95,6 +95,7 @@ export function brandingRoutes(
     {
       [`GET ${TH}`]: theme,
       [`GET ${TH}/versions`]: versionsAnswer([VERSION_2, VERSION_1]),
+      [`GET ${MC}`]: json(CATALOGUE),
     },
     extra,
   );
@@ -102,6 +103,7 @@ export function brandingRoutes(
 
 export const ML = `${ACME_ADMIN}/mail/branding`;
 export const MO = `${ACME_ADMIN}/message-overrides`;
+export const MC = `${ACME_ADMIN}/message-catalogue`;
 
 const MAIL_COLOURS = {
   page: '#e7eae9',
@@ -129,6 +131,27 @@ export function mailBranding(changes: Partial<MailBrandingView> = {}): MailBrand
     ...changes,
   };
 }
+
+// The messages a sign-in page and a registration page are filled from.
+export const CATALOGUE = {
+  sections: [
+    {
+      kinds: ['sign-in', 'consent', 'select-account', 'logout-confirm'],
+      messages: [
+        { key: 'login.help', en: 'Ask your administrator' },
+        { key: 'login.submit', en: 'Sign in' },
+        { key: 'login.title', en: 'Sign in to your account' },
+      ],
+    },
+    {
+      kinds: ['registration', 'reset'],
+      messages: [
+        { key: 'register.title', en: 'Create an account' },
+        { key: 'register.submit', en: 'Register' },
+      ],
+    },
+  ],
+};
 
 export function override(key: string, message: string, locale = 'en') {
   return { locale, key, message, updated_at: '2026-10-20T09:00:00.000Z' };

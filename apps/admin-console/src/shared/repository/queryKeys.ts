@@ -144,3 +144,9 @@ export function themeVersionsKey(tenant: string, scope: string) {
 export function mailBrandingKey(tenant: string, publishedVersion: number) {
   return ['mail-branding', tenant, publishedVersion] as const;
 }
+
+// The messages a tenant's pages are filled from: the same for every tenant and
+// fixed for a build, so it is read once.
+export function messageCatalogueKey(tenant: string) {
+  return ['message-catalogue', tenant] as const;
+}
