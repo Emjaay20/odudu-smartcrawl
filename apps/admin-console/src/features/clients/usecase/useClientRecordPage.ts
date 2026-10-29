@@ -63,7 +63,7 @@ export function useClientRecordPage(tenant: string, id: string): ClientRecordPag
     dirty: tabsWithEdits(dirty, serviceDirty, brandingEdits),
     reach,
     changeNeeds,
-    branding: brandingOffer(changeNeeds, reach),
+    branding: brandingOffer(authority?.capabilities, changeNeeds),
     writable: canChange(reach, changeNeeds),
     line: reachLine(reach, record.data?.name),
   };

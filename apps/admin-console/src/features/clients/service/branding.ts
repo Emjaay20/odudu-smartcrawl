@@ -1,4 +1,3 @@
-import type { Reach } from '#/features/clients/service/ceiling';
 import type { AdminCapability } from '#/shared/service/principal';
 
 export const BRANDING_LEAD =
@@ -13,9 +12,13 @@ export const BRANDING_HELD = 'The client’s branding is read and changed with';
 export type BrandingOffer = 'checking' | 'held' | 'open';
 
 // The theme routes need `manage-clients` and apply no service-account ceiling,
-// so only a missing capability holds the tab back; until the caller's
-// capabilities are known it offers neither the editor nor a refusal.
-export function brandingOffer(needs: readonly AdminCapability[], reach: Reach): BrandingOffer {
-  if (needs.length > 0) return 'held';
-  return reach.status === 'checking' ? 'checking' : 'open';
+// so only a missing capability holds the tab back. Until whoami has answered
+// (`caller` undefined) the editor would ask for a theme the caller may not
+// read, so it offers neither the editor nor a refusal.
+export function brandingOffer(
+  caller: readonly AdminCapability[] | undefined,
+  needs: readonly AdminCapability[],
+): BrandingOffer {
+  if (caller === undefined) return 'checking';
+  return needs.length > 0 ? 'held' : 'open';
 }

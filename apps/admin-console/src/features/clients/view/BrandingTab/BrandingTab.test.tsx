@@ -14,6 +14,7 @@ import {
 } from '#/testing/brandingFixtures';
 import { BILLING, C } from '#/testing/clientsFixtures';
 import { json, problem } from '#/testing/fakeTransport';
+import { ACME_ADMIN } from '#/testing/tenantPaths';
 import { BrandingTab } from '#/features/clients/view/BrandingTab';
 import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
 import { resetConsole } from '#/testing/resetConsole';
@@ -255,6 +256,20 @@ it('asks for no theme and no tenant settings of a caller holding manage-clients 
     sent.some((request) => request.path.endsWith('/theme') && !request.path.includes('/clients/')),
   ).toBe(false);
   expect(sent.some((request) => request.path.endsWith('/settings'))).toBe(false);
+});
+
+it('asks for no theme of a client with no service account while the caller is unknown', async () => {
+  const { sent } = renderConsoleAt(
+    '/console/acme/clients/c-portal?tab=branding',
+    clientBrandingRoutes(themeAnswer(clientView()), {
+      [`GET ${ACME_ADMIN}/whoami`]: problem(500),
+      [`GET ${C}/c-portal/theme`]: themeAnswer(clientView()),
+    }),
+  );
+  await screen.findByRole('heading', { level: 1, name: 'portal' });
+  await screen.findByRole('tab', { name: 'Branding' });
+  expect(screen.queryByRole('region', { name: 'Colours and font' })).toBeNull();
+  expect(sent.some((request) => request.path.includes('/theme'))).toBe(false);
 });
 
 describe('the tab held back for a missing capability', () => {
