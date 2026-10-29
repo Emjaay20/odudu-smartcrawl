@@ -439,7 +439,7 @@ function messageOverrideProblems(
       problems.add(`${at}.key`, 'is not the key of any page message');
     }
     const problem = environment.messageProblem(override.key, override.message);
-    if (problem !== null) problems.add(`${at}.message`, problem);
+    if (problem !== null) problems.add(`${at}.message`, `${problem} (override of ${override.key})`);
     const pair = `${canonicalLocale(override.locale) ?? override.locale}\u0000${override.key}`;
     if (seen.has(pair)) problems.add(at, 'repeats an earlier override of the same locale and key');
     seen.add(pair);

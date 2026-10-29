@@ -1,11 +1,12 @@
 import { createDatabase, MIGRATIONS_DIR, runMigrations, type DatabaseHandle } from '@odudu/db';
+import { MANAGE_TENANTS, SYSTEM_TENANT_NAME, TENANT_CAPABILITIES } from '@odudu/domain-tenant';
 import { newId } from '@odudu/kernel';
 import { createAppRole, startTestDatabase, type TestDatabase } from '@odudu/testkit';
 import { type FastifyInstance } from 'fastify';
 import { pino } from 'pino';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { buildApp } from '#/app';
-import { seed } from '#/cli/seed';
+import { seed, seedAdmin } from '#/cli/seed';
 import { mintAdminToken } from '#/testing/plan-admin-drives';
 
 // The admin API and the pages in one process: what an override changes is what
@@ -188,6 +189,48 @@ describe('a message override set through the admin API', () => {
       message: 'to reach {client}',
     });
     expect(fewer.statusCode, fewer.payload).toBe(200);
+  });
+
+  // Overrides exist only in this unreleased phase, so a stored one that names
+  // an argument the page does not supply (written before the check) is a
+  // development leftover: its export is refused on import, naming key and
+  // argument, until the file is corrected.
+  it('refuses on import an override its own export carries that names an argument the page lacks', async () => {
+    const t = await tenant();
+    await owner.sql`
+      insert into message_overrides (tenant_id, locale, key, message)
+      values (${t.id}::uuid, 'en', 'login.context', 'to reach {app}')`;
+    await seedAdmin({ username: `operator-${newId()}` });
+    const [system] = await owner.sql<{ id: string }[]>`
+      select id from tenants where name = ${SYSTEM_TENANT_NAME}`;
+    const operator = await mintAdminToken(
+      { http: app, app: appDb },
+      { id: system?.id ?? '', name: SYSTEM_TENANT_NAME },
+      [MANAGE_TENANTS, ...TENANT_CAPABILITIES],
+    );
+    const exported = await app.inject({
+      url: `/admin/tenants/${t.name}/export`,
+      headers: { authorization: `Bearer ${operator}` },
+    });
+    expect(exported.statusCode, exported.payload).toBe(200);
+    const imported = await app.inject({
+      method: 'POST',
+      url: '/admin/tenant-imports',
+      headers: { authorization: `Bearer ${operator}`, 'content-type': 'application/json' },
+      payload: { name: `words-${newId()}`, document: exported.json() },
+    });
+
+    expect(imported.statusCode, imported.payload).toBe(400);
+    const { errors } = imported.json<{ errors: { path: string; message: string }[] }>();
+    const refused = errors.find((error) => error.path.endsWith('.message'));
+    expect(refused?.path).toMatch(/^document\.message_overrides\[\d+\]\.message$/u);
+    expect(refused?.message).toContain('{app}');
+    expect(refused?.message).toContain('login.context');
+    const put = await admin(t, 'PUT', '/message-overrides/en/login.context', {
+      message: 'to reach {app}',
+    });
+    expect(put.statusCode).toBe(400);
+    expect(put.payload).toContain('{app}');
   });
 
   it('is not shown to another tenant', async () => {
