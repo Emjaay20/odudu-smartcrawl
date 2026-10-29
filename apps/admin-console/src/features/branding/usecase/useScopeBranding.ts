@@ -4,6 +4,7 @@ import { useAuthority } from '#/features/session';
 import { useThemeRecord } from '#/features/branding/repository/useThemeRecord';
 import {
   NO_OUTCOME,
+  mayReadTenantTheme,
   placedOver,
   tabsWithEdits,
   tenantLayerRead,
@@ -16,7 +17,6 @@ import {
 import { usePreview, type Preview } from '#/features/branding/usecase/usePreview';
 import { useDirtySections } from '#/shared/repository/useDirtySections';
 import type { RecordState } from '#/shared/repository/useRecord';
-import { lacking } from '#/shared/service/access';
 import type { Read } from '#/shared/service/read';
 
 export interface ScopeBranding {
@@ -43,7 +43,7 @@ export function useScopeBranding(
 ): ScopeBranding {
   const record = useThemeRecord(tenant, scope);
   const authority = useAuthority(tenant);
-  const canRead = lacking(authority, ['manage-tenant']).length === 0;
+  const canRead = mayReadTenantTheme(authority);
   const tenantRecord = useThemeRecord(tenant, TENANT_SCOPE, scope.kind === 'client' && canRead);
   const tenantLayer = tenantLayerRead(scope, canRead, tenantRecord);
   const placed = placedOver(scope, tenantLayer);

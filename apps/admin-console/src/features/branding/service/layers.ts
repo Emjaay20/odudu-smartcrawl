@@ -1,4 +1,6 @@
 import type { ThemeView } from '@odudu/contracts/admin';
+import { lacking } from '#/shared/service/access';
+import type { Authority } from '#/shared/service/principal';
 import { isRefused } from '#/shared/service/failure';
 import type { Read } from '#/shared/service/read';
 import type { GatewayFailure } from '#/shared/service/result';
@@ -12,6 +14,12 @@ export const TENANT_LAYER_REFUSED =
 
 export const TENANT_LAYER_FAILED =
   'The tenant’s theme could not be read, so a piece cannot say what it hides.';
+
+// The tenant's theme is read with `manage-tenant`; until whoami has answered
+// it is asked for, so a page does not flash a refusal it may not owe.
+export function mayReadTenantTheme(authority: Authority | undefined): boolean {
+  return lacking(authority, ['manage-tenant']).length === 0;
+}
 
 interface ThemeRecordRead {
   status: 'loading' | 'ready' | 'missing' | 'failed';
