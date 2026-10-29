@@ -1,5 +1,6 @@
 import { MAIL_PREVIEW_LOCALES, type AmendSettingsRequest } from '@odudu/contracts/admin';
 import { localeName, localeProblem } from '#/shared/service/locales';
+import { offeredLocales } from '#/shared/service/offeredLocales';
 import type { Choice } from '#/shared/service/choice';
 import type { SectionFields } from '#/shared/service/sectionSave';
 
@@ -58,10 +59,9 @@ function isTag(value: unknown): value is string {
 
 // The two settings out of the whole record, which the contract types loosely.
 export function languageSettingsOf(settings: Readonly<Record<string, unknown>>): LanguageSettings {
-  const supported = settings.supported_locales;
   const fallback = settings.default_locale;
   return {
-    supported_locales: Array.isArray(supported) ? supported.filter(isTag) : [],
+    supported_locales: offeredLocales(settings),
     default_locale: isTag(fallback) && fallback !== '' ? fallback : null,
   };
 }
