@@ -2,6 +2,7 @@ import { json, type Answer, type Sent } from '#/testing/fakeTransport';
 import { ACME_ADMIN } from '#/testing/tenantPaths';
 import { graceRoutes } from '#/testing/renderConsole';
 import { EVERY_TENANT_CAPABILITY } from '#/testing/roleAnswers';
+import { settingsAnswer, ST } from '#/testing/settingsFixtures';
 export const C = `${ACME_ADMIN}/clients`;
 
 export interface ClientAnswer {
@@ -190,6 +191,7 @@ export function clientRoutes(
       [`GET ${ACME_ADMIN}/roles`]: json({ items: [] }),
       [`GET ${ACME_ADMIN}/roles/count`]: json({ count: 0, capped: false }),
       [`GET ${ACME_ADMIN}/audit`]: json({ items: [] }),
+      [`GET ${ST}`]: settingsAnswer({ supported_locales: ['en', 'fr', 'de'] }),
     },
     extra,
   );

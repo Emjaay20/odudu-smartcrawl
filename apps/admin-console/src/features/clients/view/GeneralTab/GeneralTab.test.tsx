@@ -4,6 +4,7 @@ import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { ADMIN, BILLING, C, clientRoutes, PORTAL } from '#/testing/clientsFixtures';
 import { inTurn, json, problem, whoamiReads } from '#/testing/fakeTransport';
+import { ST } from '#/testing/settingsFixtures';
 import { resetConsole } from '#/testing/resetConsole';
 import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
 
@@ -67,6 +68,117 @@ it('keeps the description in a text area counted against the limit, and clears i
       description: null,
     });
   });
+});
+
+it('translates the name and description into the languages the tenant offers', async () => {
+  const user = userEvent.setup();
+  const { sent } = renderConsoleAt(
+    AT,
+    clientRoutes(undefined, {
+      [`PATCH ${C}/c-bill`]: json({ ...BILLING, name_i18n: { fr: 'Facturation' } }, 200, {
+        etag: '"b2"',
+      }),
+    }),
+  );
+  await offered();
+  const section = screen.getByRole('region', { name: 'Translations' });
+  const name = within(section).getByRole('group', { name: 'Name' });
+  expect((await within(name).findAllByRole('tab')).map((tab) => tab.textContent)).toEqual([
+    'English (en)',
+    'French (fr)',
+    'German (de)',
+  ]);
+  expect(
+    within(within(section).getByRole('group', { name: 'Description' })).getAllByRole('tab'),
+  ).toHaveLength(3);
+  await user.click(within(name).getByRole('tab', { name: 'French (fr)' }));
+  await user.type(
+    within(section).getByRole('textbox', { name: 'Name in French (fr)' }),
+    'Facturation',
+  );
+  await user.click(within(section).getByRole('button', { name: 'Save Translations' }));
+  await waitFor(() => {
+    expect(sent.find((s) => s.method === 'PATCH')).toMatchObject({
+      ifMatch: '"c-bill-1"',
+      body: { name_i18n: { fr: 'Facturation' } },
+    });
+  });
+  expect(sent.find((s) => s.method === 'PATCH')?.body).toEqual({
+    name_i18n: { fr: 'Facturation' },
+  });
+});
+
+it('shows the translations a client already has, and clears one with an empty field', async () => {
+  const user = userEvent.setup();
+  const { sent } = renderConsoleAt(
+    AT,
+    clientRoutes(undefined, {
+      [`GET ${C}/c-bill`]: json(
+        { ...BILLING, name_i18n: { fr: 'Facturation', de: 'Rechnung' } },
+        200,
+        {
+          etag: '"c-bill-1"',
+        },
+      ),
+      [`PATCH ${C}/c-bill`]: json(BILLING, 200, { etag: '"b2"' }),
+    }),
+  );
+  await offered();
+  const section = screen.getByRole('region', { name: 'Translations' });
+  expect(
+    await within(section).findByText(/Translated: French \(fr\) and German \(de\)/u),
+  ).toBeVisible();
+  await user.clear(within(section).getByRole('textbox', { name: 'Name in French (fr)' }));
+  await user.click(within(section).getByRole('button', { name: 'Save Translations' }));
+  await waitFor(() => {
+    expect(sent.find((s) => s.method === 'PATCH')?.body).toEqual({ name_i18n: { de: 'Rechnung' } });
+  });
+});
+
+it("places the server's refusal of a language under the translations", async () => {
+  const user = userEvent.setup();
+  const refusal = 'name_i18n language "xx" is not one of the tenant’s supported_locales';
+  renderConsoleAt(
+    AT,
+    clientRoutes(undefined, {
+      [`PATCH ${C}/c-bill`]: problem(400, 'about:blank', 'Bad Request', {
+        detail: refusal,
+        errors: [{ path: 'name_i18n', message: refusal }],
+      }),
+    }),
+  );
+  await offered();
+  const section = screen.getByRole('region', { name: 'Translations' });
+  await user.click(
+    await within(within(section).getByRole('group', { name: 'Name' })).findByRole('tab', {
+      name: 'French (fr)',
+    }),
+  );
+  await user.type(within(section).getByRole('textbox', { name: 'Name in French (fr)' }), 'x');
+  await user.click(within(section).getByRole('button', { name: 'Save Translations' }));
+  expect(await within(section).findByText(refusal)).toBeVisible();
+});
+
+it('says why the languages are missing when the caller may not read the tenant settings', async () => {
+  renderConsoleAt(
+    AT,
+    clientRoutes(undefined, {
+      [`GET ${ST}`]: problem(403, 'about:blank', 'Forbidden'),
+      [`GET ${C}/c-bill`]: json({ ...BILLING, name_i18n: { fr: 'Facturation' } }, 200, {
+        etag: '"c-bill-1"',
+      }),
+    }),
+  );
+  await offered();
+  const section = screen.getByRole('region', { name: 'Translations' });
+  expect((await within(section).findAllByText(/needs the manage-tenant capability/u)).length).toBe(
+    2,
+  );
+  expect(
+    within(section)
+      .getAllByRole('tab')
+      .map((tab) => tab.textContent),
+  ).toEqual(['French (fr)']);
 });
 
 it('shows a name changed elsewhere beside yours on a 412, and sends nothing more', async () => {

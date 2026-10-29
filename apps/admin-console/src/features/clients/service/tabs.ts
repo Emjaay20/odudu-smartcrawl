@@ -45,7 +45,7 @@ export function clientRecord(id: string): string {
 
 // Every tab edits the one record, so its dot follows the sections it holds.
 export const TAB_SECTIONS: Readonly<Record<ClientTab, readonly string[]>> = {
-  general: ['details', 'pages', 'availability', 'consent'],
+  general: ['details', 'translations', 'pages', 'availability', 'consent'],
   redirects: ['redirects', 'origins'],
   tokens: ['lifetimes', 'grants', 'credentials', 'fullScope', 'idToken'],
   scopes: [],

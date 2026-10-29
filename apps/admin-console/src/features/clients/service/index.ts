@@ -38,6 +38,18 @@ export {
   scopesFixed,
   skipLogoutFixed,
 } from '#/features/clients/service/blocks';
+export {
+  type TranslationValues,
+  DESCRIPTION_LIMIT,
+  DESCRIPTION_TRANSLATIONS_LABEL,
+  DESCRIPTION_TRANSLATIONS_NOTE,
+  NAME_LIMIT,
+  NAME_TRANSLATIONS_LABEL,
+  NAME_TRANSLATIONS_NOTE,
+  TRANSLATIONS_LEAD,
+  describeTranslations,
+  translationsPatch,
+} from '#/features/clients/service/translations';
 export { deleteConsequence } from '#/features/clients/service/confirm';
 export {
   type NewClientKind,

@@ -75,6 +75,8 @@ export function readClient(
 export interface ClientChanges {
   name?: string;
   description?: string;
+  name_i18n?: Readonly<Record<string, string>>;
+  description_i18n?: Readonly<Record<string, string>>;
   client_uri?: string;
   policy_uri?: string;
   tos_uri?: string;
