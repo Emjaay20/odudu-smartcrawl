@@ -567,6 +567,18 @@ export const DEFINED: Readonly<Record<string, Defined>> = {
   Versions: feature('branding/service/versions.ts', "VERSIONS_TITLE = 'Versions'"),
   'Reset to default': feature('branding/service/versions.ts', "RESET_TITLE = 'Reset to default'"),
   'Delete image': feature('branding/service/copy.ts', "DELETE_LABEL = 'Delete image'"),
+  Preview: feature('branding/service/preview.ts', "PREVIEW_TITLE = 'Preview'"),
+  'Message key': feature('branding/service/overrides.ts', "KEY_LABEL = 'Message key'"),
+  'Insert a message': feature('branding/service/catalogue.ts', "INSERT_LABEL = 'Insert a message'"),
+  Translations: feature('clients/service/labels.ts', "translations: 'Translations'"),
+  'Description by language': feature(
+    'scopes/service/general.ts',
+    "DESCRIPTION_LANGUAGES_LABEL = 'Description by language'",
+  ),
+  'Consent text by language': feature(
+    'scopes/service/general.ts',
+    "CONSENT_LANGUAGES_LABEL = 'Consent text by language'",
+  ),
 
   // The audit trail.
   'Event type': feature(FILTERS, 'label="Event type"'),
