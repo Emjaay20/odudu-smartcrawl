@@ -8,7 +8,7 @@ import {
   type AssetKind,
 } from '#/service/asset-limits';
 import { inspectImage, isImageRefusal, type ImageRefusalCode } from '#/service/image';
-import { type AssetRef } from '#/service/theme-body';
+import { type AssetRef } from '#/service/record';
 
 export type UploadRefusalCode = ImageRefusalCode | 'too_large' | 'over_cap';
 

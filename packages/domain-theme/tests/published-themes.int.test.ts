@@ -17,7 +17,7 @@ import { publishedThemeRepository } from '#/repository/published-themes';
 import { themeRepository } from '#/repository/themes';
 import { themeAssets } from '#/schema/theme-assets';
 import { type ThemeBody } from '#/service/body';
-import { type ThemeScope } from '#/service/theme-body';
+import { type ThemeScope } from '#/service/record';
 import { eq } from 'drizzle-orm';
 
 let containerHandle: TestDatabase | undefined;

@@ -1,6 +1,6 @@
 import { etagMatches } from '@odudu/kernel';
 import { type PublishedIdentity } from '#/repository/published-themes';
-import { type PublishedLayers } from '#/service/theme-body';
+import { type PublishedLayers } from '#/service/record';
 import { createBrandingCache, type BrandingCache } from '#/service/branding-cache';
 import { buildBranding } from '#/service/build-branding';
 import { assetExtension, isClientRowId, parseBrandFile, sha256Hex } from '#/service/branding-urls';

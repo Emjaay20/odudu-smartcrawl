@@ -305,7 +305,10 @@ export function checkTemplate(
   };
   const add: Add = (code, detail, offset) => {
     const seen = issues.some((issue) => issue.code === code && issue.detail === detail);
-    if (!seen && issues.length < MAX_ISSUES) issues.push({ code, detail, ...position(offset) });
+    // Past the cap only a kind of problem not yet listed still gets a line,
+    // so the list stays bounded by the cap plus the number of kinds.
+    const room = issues.length < MAX_ISSUES || !issues.some((issue) => issue.code === code);
+    if (!seen && room) issues.push({ code, detail, ...position(offset) });
   };
   if (template.length > MAX_TEMPLATE_LENGTH) {
     add('too-large', `${String(template.length)} characters`);
@@ -348,13 +351,25 @@ export function checkTemplate(
     }
   }
 
+  // The parser reports end of input where it ran out; the editor needs the
+  // tag or comment that was left open.
+  const constructStart = (code: string, atEnd: number): number => {
+    if (code === 'eof-in-tag') return sourceTags[sourceTags.length - 1] ?? atEnd;
+    if (code === 'eof-in-comment') {
+      const start = template.lastIndexOf('<!--', atEnd);
+      return start === -1 ? atEnd : start;
+    }
+    return atEnd;
+  };
+
   const body = defaultTreeAdapter.createElement('body', html.NS.HTML, []);
   // A tag left open at the end would swallow the markup the server puts
   // after the template, so any end-of-input error refuses the template.
   const fragment = parseFragment(body, template, {
     sourceCodeLocationInfo: true,
     onParseError: (error) => {
-      if (error.code.startsWith('eof-')) add('unterminated', error.code, error.startOffset);
+      if (!error.code.startsWith('eof-')) return;
+      add('unterminated', error.code, constructStart(error.code, error.startOffset));
     },
   });
   // Where each element's own start tag begins; an element the parser made up

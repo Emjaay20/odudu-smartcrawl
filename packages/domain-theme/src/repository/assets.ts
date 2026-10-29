@@ -4,7 +4,7 @@ import { and, eq, inArray, sql } from 'drizzle-orm';
 import { themeAssets } from '#/schema/theme-assets';
 import { themeVersionAssets } from '#/schema/theme-version-assets';
 import { themeVersions } from '#/schema/theme-versions';
-import { type AssetRecord, type AssetRef, type ThemeState } from '#/service/theme-body';
+import { type AssetRecord, type AssetRef, type ThemeState } from '#/service/record';
 
 export interface NewAsset {
   tenantId: string;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type PublishedLayer, type PublishedLayers } from '#/service/theme-body';
+import { type PublishedLayer, type PublishedLayers } from '#/service/record';
 import { type ThemeBody } from '#/service/body';
 import { assetPath, parseBrandFile, sha256Hex, stylesheetPath } from '#/service/branding-urls';
 import { brandingCss, tokensCss } from '#/service/branding-css';

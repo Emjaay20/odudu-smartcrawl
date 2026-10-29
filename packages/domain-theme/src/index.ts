@@ -15,7 +15,7 @@ export {
   type ThemeScope,
   type ThemeState,
   type ThemeVersionSummary,
-} from '#/service/theme-body';
+} from '#/service/record';
 export {
   MAX_TEMPLATE_SLOTS,
   checkTemplate,
