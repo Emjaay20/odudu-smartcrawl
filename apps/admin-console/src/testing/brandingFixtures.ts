@@ -36,6 +36,7 @@ export function themeView(changes: Record<string, unknown> = {}) {
     published: null,
     sources: {},
     draft_sources: null,
+    tenant_sources: null,
     ...changes,
   };
 }
@@ -192,22 +193,18 @@ export function languagesRoutes(
 
 export const CTH = `${C}/c-bill/theme`;
 
-// The theme of the client billing, which sets what `own` names, over the tenant's.
-export function clientView(changes: Record<string, unknown> = {}) {
-  return themeView({ scope: 'client', ...changes });
-}
+// What the tenant's published theme supplies under a client: the light colours
+// and a logo, which a client may hide.
+export const TENANT_LAYER = {
+  'tokens.light': 'tenant',
+  'assets.logo': 'tenant',
+  'tokens.dark': 'default',
+  stylesheet: 'default',
+};
 
-// A tenant that publishes its light colours and a logo, which a client may hide.
-export function tenantUnderClient() {
-  return themeView({
-    sources: { 'tokens.light': 'tenant', 'assets.logo': 'tenant' },
-    published: {
-      id: 'v1',
-      version: 1,
-      published_at: '2026-10-20T09:00:00.000Z',
-      body: { ...EMPTY, tokens: { light: LIGHT } },
-    },
-  });
+// The theme of the client billing, which sets what `changes` names, over the tenant's.
+export function clientView(changes: Record<string, unknown> = {}) {
+  return themeView({ scope: 'client', tenant_sources: TENANT_LAYER, ...changes });
 }
 
 // grace of acme on billing's Branding tab: its theme read as `theme`, over the tenant's.
@@ -220,7 +217,6 @@ export function clientBrandingRoutes(
     [`GET ${CTH}`]: theme,
     [`GET ${CTH}/versions`]: versionsAnswer([]),
     [`GET ${CTH}/preview/info`]: json(previewInfo()),
-    [`GET ${TH}`]: themeAnswer(tenantUnderClient(), '"t1"'),
     [`GET ${MC}`]: json(CATALOGUE),
     ...extra,
   });

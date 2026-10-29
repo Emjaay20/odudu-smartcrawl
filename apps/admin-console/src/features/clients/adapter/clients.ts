@@ -1,9 +1,10 @@
 import {
-  clientSchema,
+  clientRecordSchema,
   createClientResponseSchema,
   rotateClientSecretResponseSchema,
   roleSchema,
   type Client,
+  type ClientRecord,
   type CreateClientResponse,
   type Role,
   type RotateClientSecretResponse,
@@ -66,9 +67,9 @@ export function readClient(
   gateway: Gateway,
   tenant: string,
   id: string,
-): Promise<GatewayResult<Client>> {
+): Promise<GatewayResult<ClientRecord>> {
   return adminCall(gateway, 'GET', tenant, ['clients', id], {
-    schema: clientSchema,
+    schema: clientRecordSchema,
   });
 }
 
@@ -149,11 +150,11 @@ export function amendClient(
   id: string,
   changes: ClientChanges,
   ifMatch: string,
-): Promise<GatewayResult<Client>> {
+): Promise<GatewayResult<ClientRecord>> {
   return adminCall(gateway, 'PATCH', tenant, ['clients', id], {
     body: wireChanges(changes),
     ifMatch,
-    schema: clientSchema,
+    schema: clientRecordSchema,
   });
 }
 

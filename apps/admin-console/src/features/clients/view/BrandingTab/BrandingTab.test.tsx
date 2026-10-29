@@ -1,5 +1,6 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { ClientRecord } from '@odudu/contracts/admin';
 import { afterEach, describe, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import {
@@ -9,11 +10,11 @@ import {
   EMPTY,
   OWN_LIGHT,
   previewInfo,
-  TH,
   themeAnswer,
 } from '#/testing/brandingFixtures';
 import { BILLING, C } from '#/testing/clientsFixtures';
 import { json, problem } from '#/testing/fakeTransport';
+import { BrandingTab } from '#/features/clients/view/BrandingTab';
 import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
 import { resetConsole } from '#/testing/resetConsole';
 
@@ -96,19 +97,6 @@ describe('what a client piece hides', () => {
     expect(within(images).getAllByText('Published: the tenant').length).toBeGreaterThan(0);
     expect(images).not.toHaveTextContent('Hides');
   });
-
-  it('says why a piece cannot name what it hides when the caller may not read the tenant’s theme', async () => {
-    const { sent } = renderConsoleAt(
-      AT,
-      clientBrandingRoutes(themeAnswer(overriding(), '"cd1"'), {}, ['manage-clients']),
-    );
-    expect(
-      await screen.findByText(/can be read only with the manage-tenant capability/u),
-    ).toBeVisible();
-    const section = await colours();
-    expect(section).not.toHaveTextContent('Hides the tenant');
-    expect(sent.some((request) => request.path === TH)).toBe(false);
-  });
 });
 
 describe('saving the client’s theme', () => {
@@ -145,7 +133,7 @@ describe('saving the client’s theme', () => {
     expect(screen.getByRole('tab', { name: 'General' })).toHaveAccessibleName('General');
   });
 
-  it('keeps the client’s tab, and the tenant’s theme untouched, on a refused publish', async () => {
+  it('sends a publish to the client’s own route only, says the refusal, and keeps the tab', async () => {
     const user = userEvent.setup();
     const { sent } = renderConsoleAt(
       AT,
@@ -160,7 +148,12 @@ describe('saving the client’s theme', () => {
     await waitFor(() => {
       expect(sent.some((s) => s.method === 'POST')).toBe(true);
     });
-    expect(sent.find((s) => s.method === 'POST')?.path).toBe(`${CTH}/publish`);
+    expect(await within(publish).findByText(/no draft/iu)).toBeVisible();
+    expect(sent.filter((s) => s.method !== 'GET').map((s) => s.path)).toEqual([`${CTH}/publish`]);
+    expect(screen.getByRole('tab', { name: /^Branding/u })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
   });
 });
 
@@ -233,7 +226,7 @@ describe('what the preview says about itself', () => {
   });
 });
 
-it('offers nothing to edit where the client itself cannot be changed, and says why', async () => {
+it('offers the editor to a client the service-account ceiling holds back, since a theme write has none', async () => {
   renderConsoleAt(
     AT,
     clientBrandingRoutes(
@@ -248,10 +241,39 @@ it('offers nothing to edit where the client itself cannot be changed, and says w
       ['manage-clients', 'view-users'],
     ),
   );
+  expect(await screen.findByRole('region', { name: 'Colours and font' })).toBeVisible();
+  expect(screen.getByText(/cannot change Billing/u)).toBeVisible();
+});
+
+it('asks for no theme and no tenant settings of a caller holding manage-clients alone', async () => {
+  const { sent } = renderConsoleAt(
+    AT,
+    clientBrandingRoutes(themeAnswer(clientView()), {}, ['manage-clients']),
+  );
+  await colours();
   expect(
-    await screen.findByText(/Branding is edited only where the client itself can be changed/u),
-  ).toBeVisible();
-  expect(screen.queryByRole('region', { name: 'Colours and font' })).toBeNull();
+    sent.some((request) => request.path.endsWith('/theme') && !request.path.includes('/clients/')),
+  ).toBe(false);
+  expect(sent.some((request) => request.path.endsWith('/settings'))).toBe(false);
+});
+
+describe('the tab held back for a missing capability', () => {
+  const client = { ...BILLING, id: 'c-bill' } as ClientRecord;
+
+  it('names the capability and offers no editor', () => {
+    render(<BrandingTab tenant="acme" client={client} offer="held" needs={['manage-clients']} />);
+    expect(screen.getByRole('note')).toHaveTextContent(
+      'The client’s branding is read and changed with manage-clients.',
+    );
+    expect(screen.queryByRole('region')).toBeNull();
+  });
+
+  it('shows neither the note nor the editor while the caller’s capabilities are unknown', () => {
+    const { container } = render(
+      <BrandingTab tenant="acme" client={client} offer="checking" needs={[]} />,
+    );
+    expect(container).toBeEmptyDOMElement();
+  });
 });
 
 it('says the branding could not be loaded, with a way to ask again', async () => {

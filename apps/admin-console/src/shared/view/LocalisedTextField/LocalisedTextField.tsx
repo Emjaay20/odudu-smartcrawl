@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { languageLabel } from '#/shared/service/locales';
 import {
+  LANGUAGES_FAILED,
   languagesNote,
   NOT_OFFERED,
   offeredOf,
@@ -11,7 +12,7 @@ import {
   type Translations,
 } from '#/shared/service/localised';
 import type { Read } from '#/shared/service/read';
-import { Button } from '#/shared/view/Button';
+import { InlineFailed } from '#/shared/view/InlineFailed';
 import { FieldGroup, TextAreaField, TextField } from '#/shared/view/Field';
 import { Note } from '#/shared/view/Note';
 import { recordTab } from '#/shared/view/RecordTab';
@@ -35,6 +36,7 @@ export function LocalisedTextField({
   languages: Read<string[]>;
   value: Translations;
   onChange: (next: Translations) => void;
+  // Counted in a text area only; a single line has no counter.
   limit?: number;
   multiline?: boolean;
   error?: string | undefined;
@@ -73,14 +75,11 @@ export function LocalisedTextField({
       error={error}
       {...(changed === undefined ? {} : { changed })}
     >
-      {note === null ? null : <p className={recordTab.rule}>{note}</p>}
       {languages.status === 'failed' && !languages.refused ? (
-        <div>
-          <Button size="small" variant="quiet" onPress={languages.retry}>
-            Try again
-          </Button>
-        </div>
-      ) : null}
+        <InlineFailed message={LANGUAGES_FAILED} retry={languages.retry} />
+      ) : (
+        <div role="status">{note === null ? null : <p className={recordTab.rule}>{note}</p>}</div>
+      )}
       {tabs.length === 0 ? null : <Tabs label={`${label}, by language`} tabs={tabs} />}
       <p className={recordTab.rule}>{translatedSummary(value)}</p>
     </FieldGroup>

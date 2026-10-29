@@ -5,6 +5,8 @@ description: 'Lists, reads and creates clients: the clients row and its OIDC con
 
 # `GET /clients`, `POST /clients` and `GET /clients/{id}`
 
+> The response below predates the `supported_locales` field of a client's own read and amendment (the tenant's languages, at most 32), which the documentation close re-runs along with the rest of this page.
+
 Lists, reads and creates clients — the `clients` row and its OIDC
 configuration (`client_oidc_config`), joined into one resource keyed by the
 client's internal id (`{id}` above is that id, not the OAuth `client_id`

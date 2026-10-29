@@ -44,13 +44,15 @@ export {
   NAME_TRANSLATIONS_FIELD,
   DESCRIPTION_TRANSLATIONS_LABEL,
   DESCRIPTION_TRANSLATIONS_NOTE,
-  NAME_LIMIT,
   NAME_TRANSLATIONS_LABEL,
   NAME_TRANSLATIONS_NOTE,
   TRANSLATIONS_LEAD,
+  offeredBy,
   translationsPatch,
 } from '#/features/clients/service/translations';
 export {
+  type BrandingOffer,
+  brandingOffer,
   BRANDING_FAILED,
   BRANDING_HELD,
   BRANDING_LEAD,

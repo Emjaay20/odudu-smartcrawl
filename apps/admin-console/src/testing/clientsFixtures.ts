@@ -2,7 +2,6 @@ import { json, type Answer, type Sent } from '#/testing/fakeTransport';
 import { ACME_ADMIN } from '#/testing/tenantPaths';
 import { graceRoutes } from '#/testing/renderConsole';
 import { EVERY_TENANT_CAPABILITY } from '#/testing/roleAnswers';
-import { settingsAnswer, ST } from '#/testing/settingsFixtures';
 export const C = `${ACME_ADMIN}/clients`;
 
 export interface ClientAnswer {
@@ -47,6 +46,7 @@ export interface ClientAnswer {
   builtin_admin: boolean;
   skip_logout_confirmation: boolean;
   name_i18n: Record<string, string>;
+  supported_locales: readonly string[];
   description_i18n: Record<string, string>;
   service_subject_id: string | null;
   service_account_admin_reach: readonly string[];
@@ -106,6 +106,7 @@ export function client(
     builtin_admin: false,
     skip_logout_confirmation: false,
     name_i18n: {},
+    supported_locales: ['en', 'fr', 'de'],
     description_i18n: {},
     service_subject_id: serviceAccountOf(id),
     service_account_admin_reach: [],
@@ -191,7 +192,6 @@ export function clientRoutes(
       [`GET ${ACME_ADMIN}/roles`]: json({ items: [] }),
       [`GET ${ACME_ADMIN}/roles/count`]: json({ count: 0, capped: false }),
       [`GET ${ACME_ADMIN}/audit`]: json({ items: [] }),
-      [`GET ${ST}`]: settingsAnswer({ supported_locales: ['en', 'fr', 'de'] }),
     },
     extra,
   );

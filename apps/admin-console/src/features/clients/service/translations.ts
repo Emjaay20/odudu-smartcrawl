@@ -1,6 +1,7 @@
 import { CLIENT_NAME_MAX } from '@odudu/contracts/admin';
 import { DESCRIPTION_MAX } from '#/shared/service/labels';
 import type { Translations } from '#/shared/service/localised';
+import type { Read } from '#/shared/service/read';
 
 export const TRANSLATIONS_LEAD =
   'How the client is named in another language, on the consent screen and wherever else a person meets it. A language left empty shows the name and description above.';
@@ -12,8 +13,6 @@ export const DESCRIPTION_TRANSLATIONS_NOTE = `At most ${String(DESCRIPTION_MAX)}
 
 export const NAME_TRANSLATIONS_FIELD = 'Name in other languages';
 export const DESCRIPTION_TRANSLATIONS_FIELD = 'Description in other languages';
-
-export const NAME_LIMIT = CLIENT_NAME_MAX;
 
 export interface TranslationValues {
   name_i18n?: Translations;
@@ -28,4 +27,9 @@ export function translationsPatch(changes: TranslationValues): TranslationValues
       ? {}
       : { description_i18n: changes.description_i18n }),
   };
+}
+
+// The languages the client's own record says the tenant offers.
+export function offeredBy(client: { supported_locales: readonly string[] }): Read<string[]> {
+  return { status: 'ready', data: [...client.supported_locales] };
 }

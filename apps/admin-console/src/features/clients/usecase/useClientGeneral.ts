@@ -21,6 +21,7 @@ import {
   enabledFixed,
   FIELD,
   NAME_TRANSLATIONS_FIELD,
+  offeredBy,
   SECTION,
 } from '#/features/clients/service';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
@@ -31,7 +32,6 @@ import { DESCRIPTION_MAX, DESCRIPTION_RULE } from '#/shared/service/labels';
 import { orBlank } from '#/shared/service/format';
 import { describeTranslations } from '#/shared/service/localised';
 import type { Read } from '#/shared/service/read';
-import { useOfferedLocales } from '#/shared/usecase/useOfferedLocales';
 
 export type { SectionSave };
 
@@ -151,7 +151,7 @@ export function useClientGeneral({ tenant, client, etag, gone }: ClientRecordRea
   return {
     details,
     translations,
-    languages: useOfferedLocales(tenant),
+    languages: offeredBy(client),
     descriptionRule: DESCRIPTION_RULE,
     descriptionLimit: DESCRIPTION_MAX,
     pages,

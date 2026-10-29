@@ -5,6 +5,8 @@ description: 'Requires manage-clients, as every client route does.'
 
 # `PATCH /clients/{id}`
 
+> The response below predates the `supported_locales` field of a client's own read and amendment (the tenant's languages, at most 32), which the documentation close re-runs along with the rest of this page.
+
 Requires `manage-clients`, as every client route does. Amends the fields a
 general-purpose amendment can safely touch — every column of `clients` and
 `client_oidc_config` except identity (`id`, `client_id`, `tenant_id`), history

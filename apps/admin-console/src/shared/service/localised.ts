@@ -5,9 +5,6 @@ import type { Read } from '#/shared/service/read';
 // Text by language tag, as a client's name or a scope's description is kept.
 export type Translations = Readonly<Record<string, string>>;
 
-// The most languages a map may hold; the server refuses a thirty-third.
-export const MAX_TRANSLATIONS = 32;
-
 export const LOADING_LANGUAGES = 'Loading the languages the tenant offers…';
 
 export const LANGUAGES_REFUSED =
@@ -37,6 +34,8 @@ export function withTranslation(map: Translations, tag: string, text: string): T
   return Object.fromEntries(text.trim() === '' ? others : [...others, [tag, text]]);
 }
 
+// Not a live region: it changes with every keystroke, which would be announced
+// one letter at a time.
 export function translatedSummary(map: Translations): string {
   const tags = Object.keys(map).filter((tag) => isTranslated(map, tag));
   if (tags.length === 0) return NONE_TRANSLATED;

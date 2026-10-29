@@ -5,6 +5,8 @@ description: 'A tenant’s branding, and a client’s over it, saved as a draft 
 
 # Theme: draft, publish, versions, restore, reset
 
+> The theme views below predate `tenant_sources` (a client's view says what the tenant's published theme supplies; null on the tenant's own), which the documentation close re-runs along with the rest of this page.
+
 This page covers `GET /theme`, `PUT /theme`, `POST /theme/publish`, `GET /theme/versions`, `POST /theme/versions/{versionId}/restore`, `DELETE /theme`, `GET /theme/preview`, `GET /theme/preview/info`, `GET /clients/:id/theme`, `PUT /clients/:id/theme`, `POST /clients/:id/theme/publish`, `GET /clients/:id/theme/versions`, `POST /clients/:id/theme/versions/{versionId}/restore`, `DELETE /clients/:id/theme` `GET /clients/:id/theme/preview` and `GET /clients/:id/theme/preview/info`, and the tenant's image routes `POST /theme/assets` and `DELETE /theme/assets/{assetId}`.
 
 **No captured output yet.** The theme API is built and tested against a real

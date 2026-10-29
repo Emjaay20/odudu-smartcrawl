@@ -4,7 +4,6 @@ import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { ADMIN, BILLING, C, clientRoutes, PORTAL } from '#/testing/clientsFixtures';
 import { inTurn, json, problem, whoamiReads } from '#/testing/fakeTransport';
-import { ST } from '#/testing/settingsFixtures';
 import { resetConsole } from '#/testing/resetConsole';
 import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
 
@@ -128,6 +127,11 @@ it('shows the translations a client already has, and clears one with an empty fi
   expect(
     await within(section).findByText(/Translated: French \(fr\) and German \(de\)/u),
   ).toBeVisible();
+  await user.click(
+    within(within(section).getByRole('group', { name: 'Name' })).getByRole('tab', {
+      name: 'French (fr)',
+    }),
+  );
   await user.clear(within(section).getByRole('textbox', { name: 'Name in French (fr)' }));
   await user.click(within(section).getByRole('button', { name: 'Save Translations' }));
   await waitFor(() => {
@@ -159,26 +163,51 @@ it("places the server's refusal of a language under the translations", async () 
   expect(await within(section).findByText(refusal)).toBeVisible();
 });
 
-it('says why the languages are missing when the caller may not read the tenant settings', async () => {
-  renderConsoleAt(
+it('lists the languages from the client itself, and never reads the tenant settings', async () => {
+  const { sent } = renderConsoleAt(
     AT,
-    clientRoutes(undefined, {
-      [`GET ${ST}`]: problem(403, 'about:blank', 'Forbidden'),
-      [`GET ${C}/c-bill`]: json({ ...BILLING, name_i18n: { fr: 'Facturation' } }, 200, {
-        etag: '"c-bill-1"',
-      }),
+    clientRoutes(['manage-clients'], {
+      [`GET ${C}/c-bill`]: json(
+        { ...BILLING, supported_locales: ['en', 'fr'], name_i18n: { fr: 'Facturation' } },
+        200,
+        { etag: '"c-bill-1"' },
+      ),
     }),
   );
   await offered();
   const section = screen.getByRole('region', { name: 'Translations' });
-  expect((await within(section).findAllByText(/needs the manage-tenant capability/u)).length).toBe(
-    2,
-  );
+  const name = within(section).getByRole('group', { name: 'Name' });
   expect(
-    within(section)
+    within(name)
       .getAllByRole('tab')
       .map((tab) => tab.textContent),
-  ).toEqual(['French (fr)']);
+  ).toEqual(['English (en)', 'French (fr)']);
+  expect(section).not.toHaveTextContent('manage-tenant');
+  expect(sent.some((request) => request.path.endsWith('/settings'))).toBe(false);
+});
+
+it('keeps text under a language the tenant no longer offers, so it can be cleared', async () => {
+  renderConsoleAt(
+    AT,
+    clientRoutes(undefined, {
+      [`GET ${C}/c-bill`]: json(
+        { ...BILLING, supported_locales: ['en'], name_i18n: { es: 'Facturación' } },
+        200,
+        { etag: '"c-bill-1"' },
+      ),
+    }),
+  );
+  await offered();
+  const name = within(screen.getByRole('region', { name: 'Translations' })).getByRole('group', {
+    name: 'Name',
+  });
+  expect(
+    within(name)
+      .getAllByRole('tab')
+      .map((tab) => tab.textContent),
+  ).toEqual(['English (en)', 'Spanish (es)']);
+  await userEvent.setup().click(within(name).getByRole('tab', { name: 'Spanish (es)' }));
+  expect(within(name).getByText(/no longer offers this language/u)).toBeVisible();
 });
 
 it('shows a name changed elsewhere beside yours on a 412, and sends nothing more', async () => {

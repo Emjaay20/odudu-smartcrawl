@@ -13,6 +13,7 @@ import {
   clientScope,
   SCOPED_TABS,
   selectScopedTab,
+  placedOver,
 } from '#/features/branding/service';
 
 describe('the tabs', () => {
@@ -65,5 +66,27 @@ describe('a client’s tabs', () => {
 
   it('is a theme of its own record, which the client’s id names', () => {
     expect(themeRecord(clientScope('c1'))).toBe('clients/c1/theme');
+  });
+});
+
+describe('what lies under a client’s theme', () => {
+  const view = (tenantSources: Record<string, string> | null) =>
+    ({ scope: 'client', tenant_sources: tenantSources }) as never;
+
+  it('is what the client’s own read says the tenant supplies', () => {
+    expect(placedOver(clientScope('c1'), view({ stylesheet: 'tenant' }))).toEqual({
+      kind: 'client',
+      id: 'c1',
+      below: { stylesheet: 'tenant' },
+    });
+  });
+
+  it('is nothing before the read, for the tenant’s own theme, or when the read says none', () => {
+    const scope = clientScope('c1');
+    expect(placedOver(scope, undefined)).toBe(scope);
+    expect(placedOver(scope, view(null))).toBe(scope);
+    expect(placedOver({ kind: 'tenant' }, view({ stylesheet: 'tenant' }))).toEqual({
+      kind: 'tenant',
+    });
   });
 });

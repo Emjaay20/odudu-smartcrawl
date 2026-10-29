@@ -1,9 +1,10 @@
 import type { ThemeView } from '@odudu/contracts/admin';
 
 // Whose theme a call is about: the tenant's own, or one client's. `below` is
-// the tenant's theme a client's pieces sit over, once it has been read; it
-// only words what a piece hides, and takes no part in what is requested.
-export type ThemeScope = { kind: 'tenant' } | { kind: 'client'; id: string; below?: ThemeView };
+// what the tenant's published theme supplies, as the client's own read says;
+// it only words what a piece hides, and takes no part in what is requested.
+export type ThemeScope =
+  { kind: 'tenant' } | { kind: 'client'; id: string; below?: ThemeView['sources'] };
 
 export const TENANT_SCOPE: ThemeScope = { kind: 'tenant' };
 
@@ -35,4 +36,11 @@ export function ifMatchOf(tag: string): string | undefined {
 
 export function tagOf(etag: string | null): string {
   return etag ?? NO_DRAFT_TAG;
+}
+
+// The scope with what lies under it, where the read says: a client's view does.
+export function placedOver(scope: ThemeScope, view: ThemeView | undefined): ThemeScope {
+  const below = view?.tenant_sources;
+  if (scope.kind === 'tenant' || below === undefined || below === null) return scope;
+  return { ...scope, below };
 }

@@ -3,7 +3,6 @@ import {
   CLIENT_ID_FIXED,
   DESCRIPTION_TRANSLATIONS_LABEL,
   DESCRIPTION_TRANSLATIONS_NOTE,
-  NAME_LIMIT,
   NAME_TRANSLATIONS_LABEL,
   NAME_TRANSLATIONS_NOTE,
   PAGES_RULE,
@@ -93,7 +92,6 @@ function Translations({ general }: { general: ClientGeneral }) {
         description={NAME_TRANSLATIONS_NOTE}
         languages={general.languages}
         value={s.values.name_i18n}
-        limit={NAME_LIMIT}
         error={s.fieldErrors.name_i18n}
         changed={s.changed.includes('name_i18n')}
         onChange={(next) => {

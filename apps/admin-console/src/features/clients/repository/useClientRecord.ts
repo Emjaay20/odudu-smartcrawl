@@ -1,4 +1,4 @@
-import type { Client } from '@odudu/contracts/admin';
+import type { ClientRecord } from '@odudu/contracts/admin';
 import {
   amendClient,
   deleteClient,
@@ -16,7 +16,7 @@ import type { SaveInput } from '#/shared/repository/useSectionSave';
 import type { Gateway, GatewayResult } from '#/shared/transport/gateway';
 import { useWrite, type Write } from '#/shared/repository/useWrite';
 
-export function useClientRecord(tenant: string, id: string): RecordState<Client> {
+export function useClientRecord(tenant: string, id: string): RecordState<ClientRecord> {
   return useRecord({
     tenant,
     record: clientRecord(id),

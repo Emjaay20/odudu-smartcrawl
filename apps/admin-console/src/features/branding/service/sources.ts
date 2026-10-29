@@ -46,7 +46,7 @@ function hidden(scope: ThemeScope, view: ThemeView, piece: string): string | nul
   if (scope.kind !== 'client' || scope.below === undefined) return null;
   const live = view.sources[piece] === 'client';
   if (!live && view.draft_sources?.[piece] !== 'client') return null;
-  const tenants = scope.below.sources[piece] === 'tenant';
+  const tenants = scope.below[piece] === 'tenant';
   const name = pieceName(piece);
   const below = tenants ? `the tenant’s ${name}` : `Instrument’s default ${name}`;
   const verb = tenants ? 'hides' : 'replaces';

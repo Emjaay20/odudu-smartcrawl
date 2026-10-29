@@ -15,7 +15,6 @@ export {
   SCOPED_TABS,
   selectScopedTab,
   showsPreview,
-  tenantLayerNote,
   type ScopedTab,
   type ThemeScope,
 } from '#/features/branding/service';

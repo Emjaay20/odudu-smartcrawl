@@ -3,7 +3,6 @@ import {
   clientScope,
   selectScopedTab,
   showsPreview,
-  tenantLayerNote,
   useScopeBranding,
   useScopeEdits,
   type ScopeBranding,
@@ -16,8 +15,6 @@ export interface ClientBranding {
   selectTab: (tab: string) => void;
   // Tabs of the client's theme with a section holding unsaved edits.
   edited: ReadonlySet<string>;
-  // Why a piece cannot say which of the tenant's it hides, while that is so.
-  layerNote: string | null;
 }
 
 // The client's own theme: the same editors as the tenant's, over its record.
@@ -32,6 +29,5 @@ export function useClientBranding(tenant: string, id: string): ClientBranding {
       selectScopedTab(next, setTab);
     },
     edited: useScopeEdits(tenant, scope),
-    layerNote: tenantLayerNote(branding.tenantLayer),
   };
 }

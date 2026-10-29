@@ -1,8 +1,9 @@
-import type { Client } from '@odudu/contracts/admin';
+import type { ClientRecord } from '@odudu/contracts/admin';
 import { clientScope, useScopeEdits } from '#/features/branding';
 import { useAuthority } from '#/features/session';
 import { useClientRecord } from '#/features/clients/repository/useClientRecord';
 import {
+  brandingOffer,
   canChange,
   CLIENT_TABS,
   chosenTab,
@@ -11,6 +12,7 @@ import {
   reachLine,
   serviceRolesRecordOf,
   tabsWithEdits,
+  type BrandingOffer,
   type ClientTab,
   type Reach,
 } from '#/features/clients/service';
@@ -22,7 +24,7 @@ import type { RecordView } from '#/shared/service/record';
 
 export interface ClientRecordPage {
   record: RecordView;
-  client: Client | undefined;
+  client: ClientRecord | undefined;
   etag: string | null;
   tab: ClientTab;
   selectTab: (tab: string) => void;
@@ -31,6 +33,8 @@ export interface ClientRecordPage {
   reach: Reach;
   // What a write needs that whoami says is missing.
   changeNeeds: readonly AdminCapability[];
+  // Whether the Branding tab shows its editor, a refusal or neither yet.
+  branding: BrandingOffer;
   // Whether any write is offered: the ceiling on the client's service
   // account has been judged from the record and holds nothing back.
   writable: boolean;
@@ -59,6 +63,7 @@ export function useClientRecordPage(tenant: string, id: string): ClientRecordPag
     dirty: tabsWithEdits(dirty, serviceDirty, brandingEdits),
     reach,
     changeNeeds,
+    branding: brandingOffer(changeNeeds, reach),
     writable: canChange(reach, changeNeeds),
     line: reachLine(reach, record.data?.name),
   };

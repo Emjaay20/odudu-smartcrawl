@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { Client } from '@odudu/contracts/admin';
+import type { ClientRecord } from '@odudu/contracts/admin';
 import {
   BRANDING_SECTIONS_LABEL,
   BRANDING_TAB_LABELS,
@@ -13,11 +13,14 @@ import {
 import {
   BRANDING_FAILED,
   BRANDING_HELD,
+  type BrandingOffer,
   BRANDING_LEAD,
   BRANDING_LOADING,
 } from '#/features/clients/service';
 import { useClientBranding } from '#/features/clients/usecase/useClientBranding';
-import { Note } from '#/shared/view/Note';
+import { andList } from '#/shared/service/format';
+import type { AdminCapability } from '#/shared/service/principal';
+import { Note, NoteCode } from '#/shared/view/Note';
 import { ReadGate } from '#/shared/view/ReadGate';
 import { recordTab } from '#/shared/view/RecordTab';
 import { Tabs } from '#/shared/view/Tabs';
@@ -29,7 +32,6 @@ function Editing({ tenant, id }: { tenant: string; id: string }) {
   return (
     <div className={recordTab.tab}>
       <p className={recordTab.rule}>{BRANDING_LEAD}</p>
-      {page.layerNote === null ? null : <Note>{page.layerNote}</Note>}
       <ReadGate read={branding.record} label={BRANDING_LOADING} fields={4} failed={BRANDING_FAILED}>
         {(view, tag) => {
           const gone = branding.record.gone;
@@ -88,20 +90,27 @@ function Editing({ tenant, id }: { tenant: string; id: string }) {
 }
 
 // The client's own look: what it sets over the tenant's theme, with a preview.
-// Offered only where the client itself can be changed, as the rest of its page.
+// Held back only for a missing capability: the theme applies no service-account
+// ceiling, so a client the caller cannot change otherwise is edited here.
 export function BrandingTab({
   tenant,
   client,
-  writable,
+  offer,
+  needs,
 }: {
   tenant: string;
-  client: Client;
-  writable: boolean;
+  client: ClientRecord;
+  offer: BrandingOffer;
+  needs: readonly AdminCapability[];
 }) {
-  if (!writable) {
+  if (offer === 'checking') return null;
+  if (offer === 'held') {
     return (
       <div className={recordTab.tab}>
-        <Note>{BRANDING_HELD}</Note>
+        <Note>
+          {`${BRANDING_HELD} `}
+          <NoteCode>{andList(needs)}</NoteCode>.
+        </Note>
       </div>
     );
   }

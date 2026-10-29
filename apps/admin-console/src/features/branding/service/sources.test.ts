@@ -26,11 +26,12 @@ describe('sourceReading', () => {
 });
 
 describe('what a client piece hides', () => {
-  const tenant = themeView({
-    scope: 'tenant',
-    sources: { 'tokens.light': 'tenant', 'assets.logo': 'tenant', 'templates.sign-in': 'default' },
-  }) as ThemeView;
-  const client = { kind: 'client' as const, id: 'c', below: tenant };
+  const below = {
+    'tokens.light': 'tenant',
+    'assets.logo': 'tenant',
+    'templates.sign-in': 'default',
+  } as const;
+  const client = { kind: 'client' as const, id: 'c', below };
 
   it('a client override shows the tenant piece it hides', () => {
     const view = themeView({
