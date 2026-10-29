@@ -1,4 +1,5 @@
 import type { ThemePreviewInfo } from '@odudu/contracts/admin';
+import { capitalise } from '#/shared/service/format';
 import type { Read } from '#/shared/service/read';
 import { PAGE_KIND_LABELS } from '#/features/branding/service/templates';
 import type { ThemeScope } from '#/features/branding/service/scope';
@@ -22,10 +23,6 @@ export const FALLBACK_REASONS: Readonly<Record<Fault['code'], string>> = {
 };
 
 const DEFAULT_LOOK = 'Instrument’s default look';
-
-function upper(text: string): string {
-  return `${text.charAt(0).toUpperCase()}${text.slice(1)}`;
-}
 
 // The scope's own layer is its draft while there is one; the tenant's layer
 // under a client is always a published theme.
@@ -60,7 +57,8 @@ function sourceLine(info: ThemePreviewInfo, scope: ThemeScope): string[] {
 
 function faultLines(info: ThemePreviewInfo, scope: ThemeScope): string[] {
   const own = info.faults.map(
-    (fault) => `${upper(layerNoun(fault.layer, info, scope))} ${FALLBACK_REASONS[fault.code]}.`,
+    (fault) =>
+      `${capitalise(layerNoun(fault.layer, info, scope))} ${FALLBACK_REASONS[fault.code]}.`,
   );
   const swapped = info.faults.some((fault) => fault.code !== 'stylesheet_refused');
   return swapped ? [...own, `The preview shows ${shownNoun(info.shown)} instead.`] : own;

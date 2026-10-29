@@ -1,5 +1,9 @@
-// Whose theme a call is about: the tenant's own, or one client's.
-export type ThemeScope = { kind: 'tenant' } | { kind: 'client'; id: string };
+import type { ThemeView } from '@odudu/contracts/admin';
+
+// Whose theme a call is about: the tenant's own, or one client's. `below` is
+// the tenant's theme a client's pieces sit over, once it has been read; it
+// only words what a piece hides, and takes no part in what is requested.
+export type ThemeScope = { kind: 'tenant' } | { kind: 'client'; id: string; below?: ThemeView };
 
 export const TENANT_SCOPE: ThemeScope = { kind: 'tenant' };
 
