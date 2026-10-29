@@ -67,8 +67,9 @@ export function OptionPicker({
   );
 }
 
-// The picker above a code editor: chooses an option and types `text(id)` at
-// the caret, as one step of the editor's history.
+// The picker above a code editor: chooses an option and types `text(id)`, or
+// the option's id as it stands, at the caret, as one step of the editor's
+// history.
 export function InsertPicker({
   options,
   wording,
@@ -82,7 +83,7 @@ export function InsertPicker({
   limit: number;
   label: string;
   description: string;
-  text: (id: string) => string;
+  text?: (id: string) => string;
 }) {
   const insert = use(CodeInsert);
   return (
@@ -95,7 +96,7 @@ export function InsertPicker({
       value=""
       mono
       onChange={(id) => {
-        if (id !== '') insert(text(id));
+        if (id !== '') insert(text === undefined ? id : text(id));
       }}
     />
   );
