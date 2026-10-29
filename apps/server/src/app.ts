@@ -18,7 +18,11 @@ import {
 import { type DatabaseHandle, type TenantScopedDatabase } from '@odudu/db';
 import { createBranding, type Branding } from '#/branding';
 import { createDatabaseMessageOverrides, type MessageOverrides } from '#/message-overrides';
-import { isOverridableMessageKey, isThemeMessageKey } from '#/theme-message-keys';
+import {
+  isOverridableMessageKey,
+  isThemeMessageKey,
+  pageMessageCatalogue,
+} from '#/theme-message-keys';
 import { THEME_PREVIEW_PAGES } from '#/theme-preview-pages';
 import { brandRoutes, frameworkError } from '#/brand-routes';
 import { requiredActionRepository } from '@odudu/authn-flows';
@@ -508,6 +512,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     adminRoutes({
       invalidateTheme: branding.invalidateTenant,
       isThemeMessageKey,
+      messageCatalogue: pageMessageCatalogue,
       messageOverrides: {
         isKnownKey: isOverridableMessageKey,
         messageProblem: overrideProblem,

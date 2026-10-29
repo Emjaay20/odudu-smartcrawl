@@ -556,6 +556,7 @@ export async function driveAdminWrites(
 function overrideCalls(T: string): [string, Call][] {
   const url = `${T}/message-overrides/en/login.title`;
   return [
+    ['list the messages an override may name', { method: 'GET', url: `${T}/message-catalogue` }],
     ['set a message override', { method: 'PUT', url, body: { message: 'Sign in to Acme' } }],
     ['set the message override again', { method: 'PUT', url, body: { message: 'Sign in' } }],
     ['remove the message override', { method: 'DELETE', url }],
@@ -576,6 +577,10 @@ function themeCalls(T: string, base: string, what: string): [string, Call][] {
     [`save ${what} as a draft`, { method: 'PUT', url: theme, body }],
     [`save ${what} again`, { method: 'PUT', url: theme, body: edited, etagFrom: theme }],
     [`preview the draft of ${what}`, { method: 'GET', url: `${theme}/preview?kind=sign-in` }],
+    [
+      `read what the preview of ${what} shows`,
+      { method: 'GET', url: `${theme}/preview/info?kind=sign-in` },
+    ],
     [
       `publish ${what}`,
       { method: 'POST', url: `${theme}/publish`, saveAs: key, saveWith: PUBLISHED_ID },

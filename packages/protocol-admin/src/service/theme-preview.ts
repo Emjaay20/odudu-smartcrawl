@@ -1,4 +1,12 @@
-import { assetIdsOf, assetPath, type PublishedLayer, type ThemeRecord } from '@odudu/domain-theme';
+import { type ThemePreviewInfo } from '@odudu/contracts/admin';
+import {
+  assetIdsOf,
+  assetPath,
+  type BuildOutcome,
+  type PublishedLayer,
+  type ThemeRecord,
+} from '@odudu/domain-theme';
+import { type PageKind } from '@odudu/kernel';
 
 export interface WeighedImage {
   readonly id: string;
@@ -68,4 +76,25 @@ export function usedImages(
 
 export function dataUri(mime: string, bytes: Uint8Array): string {
   return `data:${mime};base64,${Buffer.from(bytes).toString('base64')}`;
+}
+
+// What the preview of one page says about itself: the build's own account of
+// the layers it used and what it left out, narrowed to the page asked for.
+export function previewInfoView(input: {
+  kind: PageKind;
+  from: ThemePreviewInfo['from'];
+  built: Pick<BuildOutcome, 'used' | 'faults' | 'refused'>;
+  unfilled: boolean;
+}): ThemePreviewInfo {
+  const { built } = input;
+  return {
+    kind: input.kind,
+    from: input.from,
+    shown: built.used[0] ?? 'default',
+    faults: built.faults.map(({ layer, code }) => ({ layer, code })),
+    refused: built.refused
+      .filter((entry) => entry.kind === input.kind)
+      .map((entry) => ({ layer: entry.layer, codes: entry.reason.split(',') })),
+    unfilled: input.unfilled,
+  };
 }

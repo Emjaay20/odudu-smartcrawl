@@ -1,4 +1,5 @@
 import {
+  type MessageCatalogueResponse,
   listMessageOverridesQuerySchema,
   putMessageOverrideRequestSchema,
 } from '@odudu/contracts/admin';
@@ -124,4 +125,11 @@ export function deleteMessageOverrideHandler(deps: MessageOverridesRouteDeps): A
     deps.invalidate(tenantId);
     return reply.code(204).send();
   };
+}
+
+// The same answer for every tenant and every call, so there is nothing to read.
+export function messageCatalogueHandler(
+  catalogue: () => MessageCatalogueResponse,
+): AdminRouteHandler {
+  return (_request, reply) => reply.code(200).send(catalogue());
 }

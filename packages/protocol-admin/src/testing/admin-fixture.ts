@@ -45,6 +45,7 @@ import { DEFAULT_OUTBOX_MAX_ATTEMPTS, FakeClock, newId, type PageKind } from '@o
 import {
   clientOidcConfigRepository,
   isOidcMessageKey,
+  OIDC_PAGE_MESSAGES,
   OIDC_PREVIEW_PAGES,
   NO_CLIENT_KEY_FETCHER,
   oidcRoutes,
@@ -309,6 +310,16 @@ export async function startAdminFixture(options: AdminFixtureOptions = {}): Prom
           ...AUTHN_PREVIEW_PAGES,
           ...ACCOUNT_PREVIEW_PAGES,
         },
+        messageCatalogue: () => ({
+          sections: [
+            {
+              kinds: ['sign-in'],
+              messages: Object.entries(OIDC_PAGE_MESSAGES)
+                .sort(([a], [b]) => a.localeCompare(b))
+                .map(([key, en]) => ({ key, en })),
+            },
+          ],
+        }),
         messageOverrides: {
           isKnownKey: (key) => (options.messageKeys ?? isOidcMessageKey)(key),
           // The real check parses the message syntax; a balanced-braces test is

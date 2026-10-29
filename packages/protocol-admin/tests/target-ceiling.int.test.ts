@@ -410,6 +410,7 @@ const CLIENT_THEME_ROUTES: ReadonlySet<string> = new Set(
     'DELETE /theme',
     'POST /theme/publish',
     'GET /theme/preview',
+    'GET /theme/preview/info',
     'GET /theme/versions',
     'POST /theme/versions/:versionId/restore',
   ].map(

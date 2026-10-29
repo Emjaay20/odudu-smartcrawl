@@ -133,6 +133,9 @@ import {
   exportedMessageOverrideSchema,
   listMessageOverridesQuerySchema,
   listMessageOverridesResponseSchema,
+  messageCatalogueEntrySchema,
+  messageCatalogueResponseSchema,
+  messageCatalogueSectionSchema,
   messageOverrideSchema,
   putMessageOverrideRequestSchema,
 } from '#/admin/message-overrides';
@@ -147,6 +150,9 @@ import {
   publishedThemeSchema,
   themeAssetSchema,
   previewThemeQuerySchema,
+  themePreviewFaultSchema,
+  themePreviewInfoSchema,
+  themePreviewRefusedSchema,
   uploadThemeAssetQuerySchema,
   themeVersionSchema,
   themeViewSchema,
@@ -1159,6 +1165,26 @@ describeFields(previewThemeQuerySchema, {
   scheme:
     'Render in the `light` or the `dark` palette; the viewer\u2019s own colour scheme when left out.',
 });
+describeFields(themePreviewInfoSchema, {
+  kind: 'The page kind the preview shows.',
+  from: 'Where the scope\u2019s own layer comes from: its `draft`, its `published` version when it has no draft, or `none` when it has neither.',
+  shown:
+    'The most specific layer the page is drawn from: the `client`\u2019s, the `tenant`\u2019s, or the `default` look when no layer could be used.',
+  faults:
+    'Layers, or a layer\u2019s stylesheet, that were not used, each with the reason; empty when everything was used.',
+  refused:
+    'Templates of this page kind that failed the checks, by layer; the page then uses the template of the layer below or the default one.',
+  unfilled:
+    'True when a template passed the checks but could not be filled, so the default page is shown.',
+});
+describeFields(themePreviewFaultSchema, {
+  layer: 'The layer that was not fully used.',
+  code: '`invalid_body`: the stored theme could not be read; `image_gone`: it names an image that no longer exists; `stylesheet_refused`: its stylesheet fails today\u2019s checks and was left out.',
+});
+describeFields(themePreviewRefusedSchema, {
+  layer: 'The layer whose template was refused.',
+  codes: 'The codes of the checks it failed.',
+});
 describeFields(previewMailQuerySchema, {
   kind: 'The mail to render; `verify-email`, the address-verification mail, when left out.',
   scheme:
@@ -1233,6 +1259,20 @@ describeFields(listMessageOverridesQuerySchema, {
 });
 describeFields(listMessageOverridesResponseSchema, {
   items: 'The overrides of the locale in key order.',
+});
+describeFields(messageCatalogueResponseSchema, {
+  sections:
+    'One section per package that fills pages, each with the page kinds it fills. The list is the same for every tenant and holds a few hundred messages in all.',
+});
+describeFields(messageCatalogueSectionSchema, {
+  kinds:
+    'The page kinds filled from this section. A template of one of them may name, in `{{t "key"}}`, only a key of its own section.',
+  messages:
+    'Every message of the section in key order. A message override may name the key of any section.',
+});
+describeFields(messageCatalogueEntrySchema, {
+  key: 'The key a template names in `{{t "key"}}` and an override is set under.',
+  en: 'The English text of the message, as the catalogue holds it, placeholders included.',
 });
 
 // Words for a field of this name wherever it appears and nothing says otherwise.

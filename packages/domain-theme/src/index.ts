@@ -55,7 +55,13 @@ export {
   type StylesheetOptions,
 } from '#/service/stylesheet';
 export { buildMailBranding, fitLogo, MAIL_LOGO_BOX } from '#/service/mail-branding';
-export { buildBranding, type BuildInput, type BuildOutcome } from '#/service/build-branding';
+export {
+  buildBranding,
+  type BuildInput,
+  type BuildOutcome,
+  type LayerFault,
+  type TemplateRefused,
+} from '#/service/build-branding';
 export {
   brandingCache,
   createBrandingCache,

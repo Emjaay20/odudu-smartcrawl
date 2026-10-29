@@ -1,6 +1,11 @@
 import { PAGE_KINDS, type PageKind } from '@odudu/kernel';
 import { describe, expect, it } from 'vitest';
-import { isOverridableMessageKey, isThemeMessageKey, pageKindOwners } from '#/theme-message-keys';
+import {
+  isOverridableMessageKey,
+  isThemeMessageKey,
+  pageKindOwners,
+  pageMessageCatalogue,
+} from '#/theme-message-keys';
 
 const KINDS = Object.keys(PAGE_KINDS) as PageKind[];
 
@@ -33,5 +38,47 @@ describe('isOverridableMessageKey', () => {
     expect(isOverridableMessageKey('')).toBe(false);
     expect(isOverridableMessageKey('constructor')).toBe(false);
     expect(isOverridableMessageKey('__proto__')).toBe(false);
+  });
+});
+
+describe('pageMessageCatalogue', () => {
+  const sections = pageMessageCatalogue().sections;
+
+  it('lists, for each page kind, exactly the keys a template of it may name', () => {
+    for (const kind of KINDS) {
+      const section = sections.find((entry) => entry.kinds.includes(kind));
+      expect(section, kind).toBeDefined();
+      const listed = new Set(section?.messages.map((message) => message.key));
+      expect(listed.size, kind).toBeGreaterThan(0);
+      for (const key of listed) expect(isThemeMessageKey(kind, key), `${kind} ${key}`).toBe(true);
+      for (const other of sections) {
+        if (other === section) continue;
+        for (const message of other.messages) {
+          if (!listed.has(message.key)) expect(isThemeMessageKey(kind, message.key)).toBe(false);
+        }
+      }
+    }
+  });
+
+  it('puts every page kind in one section and no section twice', () => {
+    const seen = sections.flatMap((section) => section.kinds);
+    expect([...seen].sort()).toEqual([...KINDS].sort());
+  });
+
+  it('lists only keys an override accepts, each once per section and in key order', () => {
+    for (const section of sections) {
+      const keys = section.messages.map((message) => message.key);
+      expect(keys).toEqual([...keys].sort());
+      expect(new Set(keys).size).toBe(keys.length);
+      for (const key of keys) expect(isOverridableMessageKey(key), key).toBe(true);
+    }
+  });
+
+  it('carries the English text, never empty, and is a few hundred small entries', () => {
+    const all = sections.flatMap((section) => section.messages);
+    for (const message of all) expect(message.en.length, message.key).toBeGreaterThan(0);
+    expect(all.length).toBeGreaterThan(100);
+    expect(all.length).toBeLessThan(1000);
+    expect(JSON.stringify(sections).length).toBeLessThan(200_000);
   });
 });

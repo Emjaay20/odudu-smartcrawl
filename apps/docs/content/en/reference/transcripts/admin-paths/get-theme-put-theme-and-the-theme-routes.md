@@ -5,7 +5,7 @@ description: 'A tenant’s branding, and a client’s over it, saved as a draft 
 
 # Theme: draft, publish, versions, restore, reset
 
-This page covers `GET /theme`, `PUT /theme`, `POST /theme/publish`, `GET /theme/versions`, `POST /theme/versions/{versionId}/restore`, `DELETE /theme`, `GET /theme/preview`, `GET /clients/:id/theme`, `PUT /clients/:id/theme`, `POST /clients/:id/theme/publish`, `GET /clients/:id/theme/versions`, `POST /clients/:id/theme/versions/{versionId}/restore`, `DELETE /clients/:id/theme` and `GET /clients/:id/theme/preview`, and the tenant's image routes `POST /theme/assets` and `DELETE /theme/assets/{assetId}`.
+This page covers `GET /theme`, `PUT /theme`, `POST /theme/publish`, `GET /theme/versions`, `POST /theme/versions/{versionId}/restore`, `DELETE /theme`, `GET /theme/preview`, `GET /theme/preview/info`, `GET /clients/:id/theme`, `PUT /clients/:id/theme`, `POST /clients/:id/theme/publish`, `GET /clients/:id/theme/versions`, `POST /clients/:id/theme/versions/{versionId}/restore`, `DELETE /clients/:id/theme` `GET /clients/:id/theme/preview` and `GET /clients/:id/theme/preview/info`, and the tenant's image routes `POST /theme/assets` and `DELETE /theme/assets/{assetId}`.
 
 **No captured output yet.** The theme API is built and tested against a real
 database, but a transcript of it needs a published theme to render against, and
@@ -55,6 +55,17 @@ one of another tenant, or that does not exist, answers `404`.
   `/console/api/admin/tenants/{tenant}/theme/preview`, which the admin's session
   cookie authorises. An unknown `kind` or `scheme` is `400`. It reads the draft
   and writes nothing.
+- `GET /theme/preview/info` (and `GET /clients/:id/theme/preview/info`) takes the
+  preview's own query and says what that preview shows and why, because a frame
+  cannot read the headers of the page it loads. It answers `kind`; `from`, which is
+  the scope's `draft`, its `published` version when it has no draft, or `none`;
+  `shown`, the most specific layer the page is drawn from (`client`, `tenant` or
+  `default`); `faults`, each layer or stylesheet that was left out with a code
+  (`invalid_body`, `image_gone`, `stylesheet_refused`); `refused`, the templates of
+  this kind that failed the checks, by layer with their codes; and `unfilled`,
+  true when a template passed the checks but could not be filled. It is computed
+  by the code that renders the preview, reads at most five rows' worth of
+  statements whatever the theme names, and needs the preview's capability.
 - `DELETE /theme` deletes the draft and archives the published version, so the
   tenant shows the default and a client shows its tenant's theme. History is kept.
 

@@ -1,4 +1,4 @@
-import { type PreviewThemeQuery } from '@odudu/contracts/admin';
+import { type PreviewThemeQuery, type ThemePreviewInfo } from '@odudu/contracts/admin';
 import { type TenantScopedDatabase } from '@odudu/db';
 import { assetRepository, buildBranding, themeRepository } from '@odudu/domain-theme';
 import {
@@ -8,8 +8,9 @@ import {
   type InlinedPreview,
   type PageKind,
   type PreviewRender,
+  type RenderedPage,
 } from '@odudu/kernel';
-import { imageIdsOf, dataUri, layerOf, usedImages } from '#/service/theme-preview';
+import { imageIdsOf, dataUri, layerOf, previewInfoView, usedImages } from '#/service/theme-preview';
 import { clientExists, type ThemeTarget } from '#/usecase/theme';
 
 // The page shown when none is asked for.
@@ -25,24 +26,34 @@ export type PreviewOutcome =
   | { kind: 'too_large'; bytes: number }
   | { kind: 'rendered'; inlined: InlinedPreview; fallbacks: PageKind[] };
 
-// The scope rendered as its next publish would be, over what sits below it: a
-// client's draft over its tenant's published theme, a tenant's over the
-// default. A scope with no draft shows its own published theme. At most six
-// statements whatever the theme names: the client, the draft, the published
-// theme, the tenant's, the images' sizes and, once they fit, their bytes.
-export async function previewTheme(
+interface Prepared {
+  readonly images: Awaited<ReturnType<ReturnType<typeof assetRepository>['sizes']>>;
+  readonly built: ReturnType<typeof buildBranding>;
+  readonly from: ThemePreviewInfo['from'];
+  readonly kind: PageKind;
+  readonly fallbacks: Set<PageKind>;
+  readonly unfilled: boolean;
+  readonly page: RenderedPage;
+}
+
+// The scope as its next publish would be, over what sits below it, and the
+// page of it asked for: a client's draft over its tenant's published theme, a
+// tenant's over the default. A scope with no draft shows its own published
+// theme. The preview and what it says about itself both come from here, so
+// they cannot disagree. Four statements whatever the theme names: the client,
+// the draft, the published theme, the tenant's, and the images' sizes.
+async function prepare(
   tx: TenantScopedDatabase,
   deps: ThemePreviewDeps,
   target: ThemeTarget,
   input: { query: PreviewThemeQuery; origin: string },
-): Promise<PreviewOutcome> {
-  if (!(await clientExists(tx, target))) return { kind: 'not_found' };
+): Promise<Prepared | null> {
+  if (!(await clientExists(tx, target))) return null;
   const themes = themeRepository(tx);
   const isClient = target.clientRowId !== null;
   const scope = { tenantId: target.tenantId, clientId: target.clientRowId };
-  // What the scope shows once published: its draft, or with none its own
-  // published version.
-  const own = (await themes.draft(scope)) ?? (await themes.published(scope));
+  const draft = await themes.draft(scope);
+  const own = draft ?? (await themes.published(scope));
   const tenantPublished = isClient
     ? await themes.published({ tenantId: target.tenantId, clientId: null })
     : null;
@@ -59,6 +70,8 @@ export async function previewTheme(
   const built = buildBranding({ tenantName: target.tenantName, origin: input.origin, layers });
 
   const fallbacks = new Set<PageKind>(built.refused.map((entry) => entry.kind));
+  const kind = input.query.kind ?? DEFAULT_KIND;
+  let unfilled = false;
   const locale = withBranding(
     {
       tag: 'en',
@@ -66,13 +79,51 @@ export async function previewTheme(
       ...(input.query.scheme === undefined ? {} : { theme: input.query.scheme }),
     },
     built.branding,
-    (kind) => {
-      fallbacks.add(kind);
+    (fellBack) => {
+      fallbacks.add(fellBack);
+      unfilled = true;
     },
   );
-  const render = deps.pages[input.query.kind ?? DEFAULT_KIND];
-  const page = render(target.tenantName, locale);
+  const page = deps.pages[kind](target.tenantName, locale);
+  const from = draft === null ? (own === null ? 'none' : 'published') : 'draft';
+  return { images, built, from, kind, fallbacks, unfilled, page };
+}
 
+export type PreviewInfoOutcome = { kind: 'not_found' } | { kind: 'info'; info: ThemePreviewInfo };
+
+// What the preview of the same request shows and why. At most five statements,
+// the preview's own without its image bytes.
+export async function previewInfo(
+  tx: TenantScopedDatabase,
+  deps: ThemePreviewDeps,
+  target: ThemeTarget,
+  input: { query: PreviewThemeQuery; origin: string },
+): Promise<PreviewInfoOutcome> {
+  const prepared = await prepare(tx, deps, target, input);
+  if (prepared === null) return { kind: 'not_found' };
+  return {
+    kind: 'info',
+    info: previewInfoView({
+      kind: prepared.kind,
+      from: prepared.from,
+      built: prepared.built,
+      unfilled: prepared.unfilled,
+    }),
+  };
+}
+
+// The preview itself: the page of the prepared scope with its stylesheet and
+// images inlined. Six statements at most, the preparation's and the images'
+// bytes once they fit.
+export async function previewTheme(
+  tx: TenantScopedDatabase,
+  deps: ThemePreviewDeps,
+  target: ThemeTarget,
+  input: { query: PreviewThemeQuery; origin: string },
+): Promise<PreviewOutcome> {
+  const prepared = await prepare(tx, deps, target, input);
+  if (prepared === null) return { kind: 'not_found' };
+  const { images, built, fallbacks, page } = prepared;
   const { used, weight } = usedImages(target.tenantName, images, [page.html, built.css]);
   const bytes = weight + built.css.length;
   if (bytes > MAX_PREVIEW_BYTES) return { kind: 'too_large', bytes };

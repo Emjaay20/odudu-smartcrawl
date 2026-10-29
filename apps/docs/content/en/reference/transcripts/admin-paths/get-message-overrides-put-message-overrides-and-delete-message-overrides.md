@@ -5,18 +5,26 @@ description: 'A tenant’s own wording for the messages its pages show, per lang
 
 # Message overrides: list, set, remove
 
-This page covers `GET /message-overrides`, `PUT /message-overrides/{locale}/{key}` and `DELETE /message-overrides/{locale}/{key}`.
+This page covers `GET /message-catalogue`, `GET /message-overrides`, `PUT /message-overrides/{locale}/{key}` and `DELETE /message-overrides/{locale}/{key}`.
 
 **No captured output yet.** The routes are built and tested against a real
 database, but the stack that captures these pages has not been run with an
 override. This page says what the routes do and holds no response that nobody
 produced; the captured requests are added when the branding transcripts are.
 
-All three need `manage-tenant`. They change the words a page shows; which
+All four need `manage-tenant`. They change the words a page shows; which
 languages a tenant offers, and which one it prefers to the browser's, are the
 `supported_locales` and `default_locale` settings (see [GET /settings and PATCH
 /settings](./get-settings-and-patch-settings.md)).
 
+- `GET /message-catalogue` lists the messages the pages are filled from, so a
+  template's `{{t "key"}}` and an override's `key` can be chosen rather than
+  guessed. It answers `sections`, one per package that fills pages, each with the
+  `kinds` it fills and its `messages` as `key` and `en`, the English text, in key
+  order. A template of a kind may name only a key of its own section; an override
+  may name the key of any. It is the same for every tenant, read from the build
+  and not the database, a few hundred messages and well under 100 KB, and so
+  is never paged. Mail messages are not in it.
 - `GET /message-overrides?locale=fr` lists one locale's overrides in key order,
   each with its `locale`, `key`, `message` and `updated_at`. `locale` is
   required and must be a language tag such as `fr` or `zh-Hant-TW`. It pages
