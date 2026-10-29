@@ -1,7 +1,6 @@
 import type { Client } from '@odudu/contracts/admin';
 import {
   CLIENT_ID_FIXED,
-  DESCRIPTION_LIMIT,
   DESCRIPTION_TRANSLATIONS_LABEL,
   DESCRIPTION_TRANSLATIONS_NOTE,
   NAME_LIMIT,
@@ -20,6 +19,7 @@ import {
   type Deletion,
 } from '#/features/clients/usecase/useClientGeneral';
 import type { ClientTabProps } from '#/features/clients/view/ClientTabProps';
+import { DESCRIPTION_MAX } from '#/shared/service/labels';
 import { DeleteZone } from '#/shared/view/DeleteZone';
 import { DescriptionField } from '#/shared/view/DescriptionField';
 import { LocalisedTextField } from '#/shared/view/LocalisedTextField';
@@ -105,7 +105,7 @@ function Translations({ general }: { general: ClientGeneral }) {
         description={DESCRIPTION_TRANSLATIONS_NOTE}
         languages={general.languages}
         value={s.values.description_i18n}
-        limit={DESCRIPTION_LIMIT}
+        limit={DESCRIPTION_MAX}
         multiline
         error={s.fieldErrors.description_i18n}
         changed={s.changed.includes('description_i18n')}

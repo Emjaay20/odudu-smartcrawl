@@ -36,12 +36,12 @@ export function showsPreview(tab: BrandingTab): boolean {
 
 // A client's Branding holds the two tabs that are about the client's own
 // pages; mail and languages belong to the tenant.
-export const SCOPE_TABS = ['theme', 'pages'] as const;
+export const SCOPED_TABS = ['theme', 'pages'] as const;
 
-export type ScopeTab = (typeof SCOPE_TABS)[number];
+export type ScopedTab = (typeof SCOPED_TABS)[number];
 
 // Runs `select` for a tab a scope has, and for no other name.
-export function selectScopeTab(name: string, select: (tab: ScopeTab) => void): void {
-  const tab = SCOPE_TABS.find((each) => each === name);
+export function selectScopedTab(name: string, select: (tab: ScopedTab) => void): void {
+  const tab = SCOPED_TABS.find((each) => each === name);
   if (tab !== undefined) select(tab);
 }

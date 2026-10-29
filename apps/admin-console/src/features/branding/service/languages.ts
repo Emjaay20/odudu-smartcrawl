@@ -53,16 +53,12 @@ export interface LanguageSettings {
   default_locale: string | null;
 }
 
-function isTag(value: unknown): value is string {
-  return typeof value === 'string';
-}
-
 // The two settings out of the whole record, which the contract types loosely.
 export function languageSettingsOf(settings: Readonly<Record<string, unknown>>): LanguageSettings {
   const fallback = settings.default_locale;
   return {
     supported_locales: offeredLocales(settings),
-    default_locale: isTag(fallback) && fallback !== '' ? fallback : null,
+    default_locale: typeof fallback === 'string' && fallback !== '' ? fallback : null,
   };
 }
 

@@ -17,8 +17,10 @@ import {
   clientsHref,
   deleteConsequence,
   deleteFixed,
+  DESCRIPTION_TRANSLATIONS_FIELD,
   enabledFixed,
   FIELD,
+  NAME_TRANSLATIONS_FIELD,
   SECTION,
 } from '#/features/clients/service';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
@@ -95,13 +97,13 @@ export function useClientGeneral({ tenant, client, etag, gone }: ClientRecordRea
     fields: {
       name_i18n: {
         value: client.name_i18n,
-        label: 'Name translations',
+        label: NAME_TRANSLATIONS_FIELD,
         kind: 'plain',
         describe: describeTranslations,
       },
       description_i18n: {
         value: client.description_i18n,
-        label: 'Description translations',
+        label: DESCRIPTION_TRANSLATIONS_FIELD,
         kind: 'plain',
         describe: describeTranslations,
       },

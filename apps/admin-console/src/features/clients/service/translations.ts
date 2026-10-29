@@ -1,4 +1,5 @@
-import { CLIENT_NAME_MAX, DESCRIPTION_MAX } from '@odudu/contracts/admin';
+import { CLIENT_NAME_MAX } from '@odudu/contracts/admin';
+import { DESCRIPTION_MAX } from '#/shared/service/labels';
 import type { Translations } from '#/shared/service/localised';
 
 export const TRANSLATIONS_LEAD =
@@ -9,8 +10,10 @@ export const NAME_TRANSLATIONS_NOTE = `At most ${String(CLIENT_NAME_MAX)} charac
 export const DESCRIPTION_TRANSLATIONS_LABEL = 'Description';
 export const DESCRIPTION_TRANSLATIONS_NOTE = `At most ${String(DESCRIPTION_MAX)} characters in each language.`;
 
+export const NAME_TRANSLATIONS_FIELD = 'Name in other languages';
+export const DESCRIPTION_TRANSLATIONS_FIELD = 'Description in other languages';
+
 export const NAME_LIMIT = CLIENT_NAME_MAX;
-export const DESCRIPTION_LIMIT = DESCRIPTION_MAX;
 
 export interface TranslationValues {
   name_i18n?: Translations;

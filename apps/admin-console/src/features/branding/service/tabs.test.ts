@@ -11,8 +11,8 @@ import {
   ifMatchOf,
   NO_DRAFT_TAG,
   clientScope,
-  SCOPE_TABS,
-  selectScopeTab,
+  SCOPED_TABS,
+  selectScopedTab,
 } from '#/features/branding/service';
 
 describe('the tabs', () => {
@@ -52,14 +52,14 @@ describe('showsPreview', () => {
 
 describe('a client’s tabs', () => {
   it('are the two about its own pages, in the area’s order', () => {
-    expect(SCOPE_TABS).toEqual(['theme', 'pages']);
+    expect(SCOPED_TABS).toEqual(['theme', 'pages']);
   });
 
   it('select a tab a client has, and none for a name it has not', () => {
     const chosen: string[] = [];
-    selectScopeTab('pages', (tab) => chosen.push(tab));
-    selectScopeTab('mail', (tab) => chosen.push(tab));
-    selectScopeTab('nonsense', (tab) => chosen.push(tab));
+    selectScopedTab('pages', (tab) => chosen.push(tab));
+    selectScopedTab('mail', (tab) => chosen.push(tab));
+    selectScopedTab('nonsense', (tab) => chosen.push(tab));
     expect(chosen).toEqual(['pages']);
   });
 

@@ -1,20 +1,20 @@
 import type { ReactNode } from 'react';
 import type { Client } from '@odudu/contracts/admin';
 import {
+  BRANDING_SECTIONS_LABEL,
   BRANDING_TAB_LABELS,
   PagesTab,
   PreviewPane,
-  SCOPE_TABS,
+  SCOPED_TABS,
   ThemeTab,
   Workspace,
-  type ScopeTab,
+  type ScopedTab,
 } from '#/features/branding';
 import {
   BRANDING_FAILED,
   BRANDING_HELD,
   BRANDING_LEAD,
   BRANDING_LOADING,
-  BRANDING_SECTIONS_LABEL,
 } from '#/features/clients/service';
 import { useClientBranding } from '#/features/clients/usecase/useClientBranding';
 import { Note } from '#/shared/view/Note';
@@ -33,7 +33,7 @@ function Editing({ tenant, id }: { tenant: string; id: string }) {
       <ReadGate read={branding.record} label={BRANDING_LOADING} fields={4} failed={BRANDING_FAILED}>
         {(view, tag) => {
           const gone = branding.record.gone;
-          const panels: Readonly<Record<ScopeTab, ReactNode>> = {
+          const panels: Readonly<Record<ScopedTab, ReactNode>> = {
             theme: (
               <Workspace
                 aside={<PreviewPane preview={preview} pickKind />}
@@ -73,7 +73,7 @@ function Editing({ tenant, id }: { tenant: string; id: string }) {
               label={BRANDING_SECTIONS_LABEL}
               selectedKey={page.tab}
               onSelectionChange={page.selectTab}
-              tabs={SCOPE_TABS.map((tab) => ({
+              tabs={SCOPED_TABS.map((tab) => ({
                 id: tab,
                 label: BRANDING_TAB_LABELS[tab],
                 dirty: page.edited.has(tab),

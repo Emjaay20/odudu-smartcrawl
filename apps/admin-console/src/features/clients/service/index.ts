@@ -40,7 +40,8 @@ export {
 } from '#/features/clients/service/blocks';
 export {
   type TranslationValues,
-  DESCRIPTION_LIMIT,
+  DESCRIPTION_TRANSLATIONS_FIELD,
+  NAME_TRANSLATIONS_FIELD,
   DESCRIPTION_TRANSLATIONS_LABEL,
   DESCRIPTION_TRANSLATIONS_NOTE,
   NAME_LIMIT,
@@ -54,7 +55,6 @@ export {
   BRANDING_HELD,
   BRANDING_LEAD,
   BRANDING_LOADING,
-  BRANDING_SECTIONS_LABEL,
 } from '#/features/clients/service/branding';
 export { deleteConsequence } from '#/features/clients/service/confirm';
 export {

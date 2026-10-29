@@ -1,4 +1,5 @@
-import { CONSENT_TEXT_MAX, DESCRIPTION_MAX } from '@odudu/contracts/admin';
+import { CONSENT_TEXT_MAX } from '@odudu/contracts/admin';
+import { DESCRIPTION_MAX } from '#/shared/service/labels';
 import type { Choice } from '#/shared/service/choice';
 import type { Translations } from '#/shared/service/localised';
 
@@ -6,7 +7,6 @@ export const CONSENT_RULE = `What the consent screen says in place of the scope'
 
 export const DESCRIPTION_LANGUAGES_LABEL = 'Description by language';
 export const DESCRIPTION_LANGUAGES_NOTE = `What the scope is for in another language, shown wherever it is chosen in that language. At most ${String(DESCRIPTION_MAX)} characters in each; a language left empty shows the description above.`;
-export const DESCRIPTION_LIMIT = DESCRIPTION_MAX;
 
 export const CONSENT_LANGUAGES_LABEL = 'Consent text by language';
 export const CONSENT_LANGUAGES_NOTE = `What the consent screen says in another language. At most ${String(CONSENT_TEXT_MAX)} characters in each; a language left empty shows the consent text above, or the scope's name.`;

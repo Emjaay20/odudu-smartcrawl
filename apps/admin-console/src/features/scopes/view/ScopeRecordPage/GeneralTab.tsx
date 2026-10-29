@@ -6,7 +6,6 @@ import {
   CONSENT_LIMIT,
   DESCRIPTION_LANGUAGES_LABEL,
   DESCRIPTION_LANGUAGES_NOTE,
-  DESCRIPTION_LIMIT,
   ID_TOKEN_LABEL,
   NAME_FIXED,
   NEW_CLIENT_LABEL,
@@ -16,6 +15,7 @@ import {
   type Deletion,
   type ScopeGeneral,
 } from '#/features/scopes/usecase/useScopeGeneral';
+import { DESCRIPTION_MAX } from '#/shared/service/labels';
 import { DeleteZone } from '#/shared/view/DeleteZone';
 import { DescriptionField } from '#/shared/view/DescriptionField';
 import { SelectField, TextAreaField, TextField, ToggleField } from '#/shared/view/Field';
@@ -61,7 +61,7 @@ function Description({ general }: { general: ScopeGeneral }) {
         description={DESCRIPTION_LANGUAGES_NOTE}
         languages={general.languages}
         value={s.values.description_i18n}
-        limit={DESCRIPTION_LIMIT}
+        limit={DESCRIPTION_MAX}
         multiline
         error={s.fieldErrors.description_i18n}
         changed={s.changed.includes('description_i18n')}

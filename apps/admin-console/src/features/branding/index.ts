@@ -9,12 +9,13 @@ export {
   type ScopeBranding,
 } from '#/features/branding/usecase/useScopeBranding';
 export {
+  BRANDING_SECTIONS_LABEL,
   BRANDING_TAB_LABELS,
   clientScope,
-  SCOPE_TABS,
-  selectScopeTab,
+  SCOPED_TABS,
+  selectScopedTab,
   showsPreview,
   tenantLayerNote,
-  type ScopeTab,
+  type ScopedTab,
   type ThemeScope,
 } from '#/features/branding/service';
