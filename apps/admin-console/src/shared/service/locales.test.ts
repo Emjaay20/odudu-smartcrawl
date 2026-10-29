@@ -1,6 +1,7 @@
 import { isValidLocale } from '@odudu/contracts';
 import { describe, expect, it } from 'vitest';
 import {
+  languageChoices,
   languageLabel,
   localeName,
   localeOptions,
@@ -42,5 +43,13 @@ describe('a language as a list shows it', () => {
   it('names the language in English, then gives its tag', () => {
     expect(languageLabel('fr')).toBe('French (fr)');
     expect(languageLabel('pt-BR')).toBe('Portuguese (Brazil) (pt-BR)');
+  });
+
+  it('lists tags as choices, each by its label', () => {
+    expect(languageChoices(['fr', 'pt-BR'])).toEqual([
+      { id: 'fr', label: 'French (fr)' },
+      { id: 'pt-BR', label: 'Portuguese (Brazil) (pt-BR)' },
+    ]);
+    expect(languageChoices([])).toEqual([]);
   });
 });

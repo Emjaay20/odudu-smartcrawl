@@ -5,7 +5,7 @@ import {
 } from '@odudu/contracts/admin';
 import type { Choice } from '#/shared/service/choice';
 import type { Scheme } from '#/features/branding/service/palette';
-import { languageLabel } from '#/shared/service/locales';
+import { languageChoices } from '#/shared/service/locales';
 
 export const MAIL_PREVIEW_TITLE = 'Preview';
 
@@ -58,7 +58,7 @@ export const TENANT_DEFAULT_LANGUAGE = 'The tenant’s default';
 
 export const MAIL_LOCALE_OPTIONS: readonly Choice[] = [
   { id: '', label: TENANT_DEFAULT_LANGUAGE },
-  ...MAIL_PREVIEW_LOCALES.map((tag) => ({ id: tag, label: languageLabel(tag) })),
+  ...languageChoices(MAIL_PREVIEW_LOCALES),
 ];
 
 export function mailLocaleOf(id: string): string | undefined {

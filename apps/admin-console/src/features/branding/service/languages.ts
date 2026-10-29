@@ -1,6 +1,6 @@
 import { LOCALISED_TEXT_ENTRIES_MAX } from '@odudu/contracts';
 import { MAIL_PREVIEW_LOCALES, type AmendSettingsRequest } from '@odudu/contracts/admin';
-import { languageLabel, localeProblem } from '#/shared/service/locales';
+import { languageChoices, localeProblem } from '#/shared/service/locales';
 import { offeredLocales } from '#/shared/service/offeredLocales';
 import type { Choice } from '#/shared/service/choice';
 import type { SectionFields } from '#/shared/service/sectionSave';
@@ -76,12 +76,11 @@ export function languageTags(...offered: readonly (readonly string[])[]): string
 // Saved languages stay listed when unticked, so a tick can be undone; one
 // that was added and never saved is listed only while ticked.
 export function supportedChoices(saved: readonly string[], edited: readonly string[]): Choice[] {
-  return languageTags(saved, edited).map((tag) => ({ id: tag, label: languageLabel(tag) }));
+  return languageChoices(languageTags(saved, edited));
 }
 
 export function defaultChoices(supported: readonly string[]): Choice[] {
-  const tags = supported.map((tag) => ({ id: tag, label: languageLabel(tag) }));
-  return [{ id: '', label: BROWSER_DECIDES }, ...tags];
+  return [{ id: '', label: BROWSER_DECIDES }, ...languageChoices(supported)];
 }
 
 export const NONE_SUPPORTED = 'Offer at least one language.';
@@ -109,7 +108,7 @@ export function languagesRequest(changes: Partial<LanguageValues>): AmendSetting
 
 // The tags a message override can be written for: the supported ones.
 export function overrideLocales(supported: readonly string[]): Choice[] {
-  return supported.map((tag) => ({ id: tag, label: languageLabel(tag) }));
+  return languageChoices(supported);
 }
 
 // The language the overrides open on: the default if it is offered, else the first.
