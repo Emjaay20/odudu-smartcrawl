@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import type { MailBrandingView } from '@odudu/contracts/admin';
 import {
   logoViews,
@@ -5,6 +6,7 @@ import {
   MAIL_FAILED,
   MAIL_FRAME_TITLE,
   MAIL_INHERITS_LEAD,
+  MAIL_INHERITS_TITLE,
   MAIL_LOADING_BRANDING,
   MAIL_LOCALE_LABEL,
   MAIL_LOCALE_OPTIONS,
@@ -126,6 +128,7 @@ function Palette({ scheme, view }: { scheme: Scheme; view: MailBrandingView['lig
 
 export function MailInherits({ mail }: { mail: Mail }) {
   const { branding } = mail;
+  const heading = useId();
   if (branding.status === 'loading') {
     return <FormSkeleton label={MAIL_LOADING_BRANDING} fields={3} />;
   }
@@ -134,8 +137,13 @@ export function MailInherits({ mail }: { mail: Mail }) {
   }
   return (
     <div className={styles.inherits}>
-      <p className={recordTab.rule}>{MAIL_INHERITS_LEAD}</p>
-      <p className={recordTab.rule}>{MAIL_CLIENTS_NOTE}</p>
+      <section aria-labelledby={heading} className={styles.lead}>
+        <h2 id={heading} className={styles.heading}>
+          {MAIL_INHERITS_TITLE}
+        </h2>
+        <p className={recordTab.rule}>{MAIL_INHERITS_LEAD}</p>
+        <p className={recordTab.rule}>{MAIL_CLIENTS_NOTE}</p>
+      </section>
       <Logos branding={branding.data} />
       <Palette scheme="light" view={branding.data.light} />
       <Palette scheme="dark" view={branding.data.dark} />

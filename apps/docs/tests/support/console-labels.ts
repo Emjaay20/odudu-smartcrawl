@@ -532,9 +532,9 @@ export const DEFINED: Readonly<Record<string, Defined>> = {
   Pages: tab('branding', 'pages', 'Pages'),
   Mail: tab('branding', 'mail', 'Mail'),
   Languages: tab('branding', 'languages', 'Languages'),
-  'What the mail inherits': feature(
-    'branding/service/mail.ts',
-    "MAIL_INHERITS_TITLE = 'What the mail inherits'",
+  'What the mail inherits': several(
+    feature('branding/service/mail.ts', "MAIL_INHERITS_TITLE = 'What the mail inherits'"),
+    feature('branding/view/MailTab/MailTab.tsx', '{MAIL_INHERITS_TITLE}'),
   ),
   'Message background': feature('branding/service/mail.ts', "label: 'Message background'"),
   'Link box background': feature('branding/service/mail.ts', "label: 'Link box background'"),

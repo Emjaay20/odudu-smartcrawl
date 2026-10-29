@@ -72,6 +72,15 @@ it('says the colours could not be loaded, and offers to try again', async () => 
   expect(screen.getByRole('button', { name: /Try again|Retry/u })).toBeVisible();
 });
 
+it('heads what the mail inherits, beside the logo and the colours', async () => {
+  renderConsoleAt(AT, languagesRoutes());
+  const section = await screen.findByRole('region', { name: 'What the mail inherits' });
+  expect(within(section).getByRole('heading', { level: 2 })).toHaveTextContent(
+    'What the mail inherits',
+  );
+  expect(within(section).getByText(/follows the tenant’s published theme/u)).toBeVisible();
+});
+
 it('reads what the mail inherits only when the Mail tab is open', async () => {
   const { sent } = renderConsoleAt('/console/acme/branding', languagesRoutes());
   await screen.findByRole('tab', { name: 'Mail' });
