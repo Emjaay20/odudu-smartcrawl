@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   byteSizeReading,
+  bytesText,
   shortened,
   groupedNumber,
   andList,
@@ -177,5 +178,18 @@ describe('shortened', () => {
     expect(shortened('abc', 3)).toBe('abc');
     expect(shortened('abcd', 3)).toBe('abc…');
     expect(shortened('', 3)).toBe('');
+  });
+});
+
+describe('a size in bytes', () => {
+  it('is read as a person would', () => {
+    expect(bytesText(512)).toBe('512 bytes');
+    expect(bytesText(256 * 1024)).toBe('256 KiB');
+    expect(bytesText(16 * 1024 * 1024)).toBe('16 MiB');
+  });
+
+  it('keeps one decimal only when the size is not whole', () => {
+    expect(bytesText(1536)).toBe('1.5 KiB');
+    expect(bytesText(5 * 1024 * 1024 + 1)).toBe('5.0 MiB');
   });
 });

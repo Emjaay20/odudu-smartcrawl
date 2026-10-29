@@ -2,7 +2,7 @@ import { MAX_ALT_LENGTH } from '@odudu/contracts';
 import type { FieldError } from '@odudu/contracts/admin';
 import type { Problem } from '#/shared/service/result';
 import { problemSubtype } from '#/shared/service/failure';
-import { counted } from '#/shared/service/format';
+import { bytesText, counted } from '#/shared/service/format';
 import {
   DELETE_LABEL,
   imageNote,
@@ -50,10 +50,6 @@ export const SLOT_RULES: Readonly<Record<ImageSlot, SlotRule>> = {
 export const ACCEPTED_TYPES = 'image/png,image/jpeg,image/webp';
 
 export const TENANT_IMAGE_CAP = '8 MiB';
-
-export function bytesText(bytes: number): string {
-  return bytes >= 1024 * KIB ? `${String(bytes / (1024 * KIB))} MiB` : `${String(bytes / KIB)} KiB`;
-}
 
 export function limitText(slot: ImageSlot): string {
   const rule = SLOT_RULES[slot];

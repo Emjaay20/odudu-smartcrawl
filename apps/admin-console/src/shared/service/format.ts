@@ -122,3 +122,17 @@ export function byteSizeReading(used: number, limit: number): SizeReading {
 export function shortened(text: string, limit: number): string {
   return text.length > limit ? `${text.slice(0, limit)}…` : text;
 }
+
+const KIB = 1024;
+const MIB = KIB * KIB;
+
+function unitsOf(bytes: number, unit: number, name: string): string {
+  const value = bytes / unit;
+  return `${Number.isInteger(value) ? String(value) : value.toFixed(1)} ${name}`;
+}
+
+// A size as a person reads it: whole when it is whole, else one decimal.
+export function bytesText(bytes: number): string {
+  if (bytes < KIB) return `${String(bytes)} bytes`;
+  return bytes < MIB ? unitsOf(bytes, KIB, 'KiB') : unitsOf(bytes, MIB, 'MiB');
+}

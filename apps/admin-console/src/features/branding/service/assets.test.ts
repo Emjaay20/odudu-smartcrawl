@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import {
   altEdited,
   altProblem,
-  bytesText,
   imageAfterUpload,
   imagesHold,
   inUse,
@@ -33,7 +32,6 @@ describe('limits', () => {
   it('state the size and side of each kind', () => {
     expect(limitText('logo')).toContain('up to 256 KiB and 1024 pixels');
     expect(limitText('background')).toContain('up to 1 MiB and 2560 pixels');
-    expect(bytesText(256 * 1024)).toBe('256 KiB');
   });
 
   it('refuse a file over its size or of another type before it is sent', () => {

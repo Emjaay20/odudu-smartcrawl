@@ -5,7 +5,7 @@ import {
   placedProblems,
   type PlacedProblems,
 } from '#/features/branding/service/problems';
-import { bytesText } from '#/features/branding/service/assets';
+import { bytesText } from '#/shared/service/format';
 import type { PublishOutcome } from '#/features/branding/service/edits';
 import type { PageKind } from '#/features/branding/service/values';
 import type { FieldError } from '@odudu/contracts/admin';
