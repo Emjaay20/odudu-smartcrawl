@@ -1,17 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import {
+  changed,
+  committed,
+  DISCRETE,
   EMPTY_HISTORY,
+  HISTORY_MAX_BURST,
   HISTORY_MAX_CHARS,
   HISTORY_MAX_ENTRIES,
   HISTORY_PAUSE_MS,
   inputIntent,
-  noted,
+  patchBetween,
   reconciled,
-  recorded,
-  redone,
   snapshotOf,
   travelled,
-  undone,
   type History,
   type HistoryEdit,
   type Snapshot,
@@ -24,154 +25,303 @@ const at = (value: string, caret = value.length): Snapshot => ({
 });
 const typed = (data: string): HistoryEdit => ({ kind: 'insert', data });
 const erased: HistoryEdit = { kind: 'delete', data: '' };
-const discrete: HistoryEdit = { kind: 'discrete', data: '' };
 
-// Types `text` a character at a time, `gap` ms apart, from an empty text.
-function typing(text: string, gap = 10, from: History = EMPTY_HISTORY, start = ''): History {
-  let history = from;
-  let value = start;
-  Array.from(text).forEach((character, index) => {
-    history = recorded(history, at(value), typed(character), index * gap);
-    value += character;
-  });
-  return history;
+interface Run {
+  history: History;
+  text: Snapshot;
 }
 
+// Makes one edit to `run`'s text: `from`..`to` replaced by `put`, caret after it.
+function edit(run: Run, put: string, how: HistoryEdit, now: number, range?: [number, number]): Run {
+  const [from, to] = range ?? [run.text.selectionStart, run.text.selectionEnd];
+  const before = { value: run.text.value, selectionStart: from, selectionEnd: to };
+  const value = run.text.value.slice(0, from) + put + run.text.value.slice(to);
+  const after = at(value, from + put.length);
+  return {
+    history: committed(run.history, run.text.value, before, after, how, now),
+    text: after,
+  };
+}
+
+const START: Run = { history: EMPTY_HISTORY, text: at('') };
+
+function typing(text: string, gap = 10, from: Run = START): Run {
+  let run = from;
+  Array.from(text).forEach((character, index) => {
+    run = edit(run, character, typed(character), index * gap);
+  });
+  return run;
+}
+
+// Undoes every step, then redoes every step, returning the text after each.
+function walk(run: Run): { back: string[]; forth: string[] } {
+  const back: string[] = [];
+  let history = run.history;
+  let current = run.text.value;
+  for (;;) {
+    const step = travelled(history, current, current, 'undo');
+    if (step.to === null) break;
+    history = step.history;
+    current = step.to.value;
+    back.push(current);
+  }
+  const forth: string[] = [];
+  for (;;) {
+    const step = travelled(history, current, current, 'redo');
+    if (step.to === null) break;
+    history = step.history;
+    current = step.to.value;
+    forth.push(current);
+  }
+  return { back, forth };
+}
+
+describe('the patch between two texts', () => {
+  it('is what was replaced, found from both ends', () => {
+    expect(patchBetween(at('hello world', 6), at('hello brave world', 12))).toMatchObject({
+      from: 6,
+      removed: '',
+      inserted: 'brave ',
+      before: { start: 6, end: 6 },
+      after: { start: 12, end: 12 },
+    });
+    expect(patchBetween(at('abcd'), at('abXd'))).toMatchObject({
+      from: 2,
+      removed: 'c',
+      inserted: 'X',
+    });
+  });
+
+  it('is nothing for the same text, and the whole text from nothing', () => {
+    expect(patchBetween(at('same'), at('same', 1))).toBeNull();
+    expect(patchBetween(at(''), at('x'))).toMatchObject({ from: 0, removed: '', inserted: 'x' });
+    expect(patchBetween(at('x'), at(''))).toMatchObject({ from: 0, removed: 'x', inserted: '' });
+  });
+
+  it('is the size of the change, not of the text', () => {
+    const big = 'x'.repeat(100_000);
+    const patch = patchBetween(at(big), at(`${big}y`));
+    expect(patch?.inserted).toBe('y');
+    expect(patch?.removed).toBe('');
+  });
+});
+
 describe('coalescing', () => {
-  it('keeps a burst of typing as one entry, the state before it', () => {
-    const history = typing('abc');
-    expect(history.past).toEqual([at('')]);
+  it('keeps a burst of typing as one step', () => {
+    expect(typing('abc').history.past).toHaveLength(1);
   });
 
-  it('starts a new entry after whitespace, so entries are words', () => {
-    const history = typing('ab cd');
-    expect(history.past.map((entry) => entry.value)).toEqual(['', 'ab ']);
+  it('starts a new step after whitespace, so steps are words', () => {
+    expect(walk(typing('ab cd')).back).toEqual(['ab ', '']);
   });
 
-  it('starts a new entry after a newline', () => {
-    const history = typing('a\nb');
-    expect(history.past.map((entry) => entry.value)).toEqual(['', 'a\n']);
+  it('starts a new step after a newline', () => {
+    expect(walk(typing('a\nb')).back).toEqual(['a\n', '']);
   });
 
-  it('starts a new entry after a pause', () => {
-    const first = typing('ab');
-    const next = recorded(first, at('ab'), typed('c'), HISTORY_PAUSE_MS + 100);
-    expect(next.past.map((entry) => entry.value)).toEqual(['', 'ab']);
+  it('starts a new step after a pause', () => {
+    const run = edit(typing('ab'), 'c', typed('c'), HISTORY_PAUSE_MS + 100);
+    expect(walk(run).back).toEqual(['ab', '']);
   });
 
   it('keeps typing and deleting apart', () => {
-    const history = recorded(typing('ab'), at('ab'), erased, 30);
-    expect(history.past.map((entry) => entry.value)).toEqual(['', 'ab']);
-    const more = recorded(history, at('a'), erased, 40);
-    expect(more.past).toHaveLength(2);
+    const run = edit(typing('ab'), '', erased, 30, [1, 2]);
+    expect(run.text.value).toBe('a');
+    expect(walk(run).back).toEqual(['ab', '']);
   });
 
-  it.each([['a Tab or any programmatic edit'], ['a paste'], ['a cut']])(
-    'gives %s an entry of its own, and the next typing another',
-    () => {
-      let history = typing('ab');
-      history = recorded(history, at('ab'), discrete, 30);
-      history = recorded(history, at('ab  '), typed('c'), 40);
-      expect(history.past.map((entry) => entry.value)).toEqual(['', 'ab', 'ab  ']);
-    },
-  );
+  it('starts a new step when the caret moved away, and when typing over a selection', () => {
+    const moved = edit(typing('abc'), 'X', typed('X'), 30, [0, 0]);
+    expect(walk(moved).back).toEqual(['abc', '']);
+    const selected = typing('abc');
+    const over = edit(
+      { ...selected, text: { value: 'abc', selectionStart: 0, selectionEnd: 3 } },
+      'z',
+      typed('z'),
+      30,
+    );
+    expect(walk(over).back).toEqual(['abc', '']);
+  });
 
-  it('does not join a second discrete edit to the first', () => {
-    let history = recorded(EMPTY_HISTORY, at('a'), discrete, 0);
-    history = recorded(history, at('a  '), discrete, 5);
-    expect(history.past).toHaveLength(2);
+  it('gives a Tab, a paste or a cut a step of its own, and the next typing another', () => {
+    let run = typing('ab');
+    run = edit(run, '  ', DISCRETE, 30);
+    run = edit(run, 'c', typed('c'), 40);
+    expect(walk(run).back).toEqual(['ab  ', 'ab', '']);
+  });
+
+  it('does not join one discrete edit to another', () => {
+    let run = edit(START, 'a', DISCRETE, 0);
+    run = edit(run, 'b', DISCRETE, 5);
+    expect(run.history.past).toHaveLength(2);
+  });
+
+  it('cuts a very long burst into steps', () => {
+    const run = typing('x'.repeat(HISTORY_MAX_BURST + 10), 1);
+    expect(run.history.past).toHaveLength(2);
+  });
+
+  it('does not note an edit that changed nothing, and keeps the redo line', () => {
+    const back = travelled(typing('ab').history, 'ab', 'ab', 'undo');
+    const same = committed(back.history, '', at(''), at('', 0), typed(''), 5);
+    expect(same).toBe(back.history);
   });
 });
 
 describe('undo and redo', () => {
-  it('goes back to the state before the edit and forward again', () => {
-    const history = typing('abc');
-    const back = undone(history, at('abc'));
-    expect(back?.to).toEqual(at(''));
-    expect(back?.history.future).toEqual([at('abc')]);
-    const forward = back === null ? null : redone(back.history, at(''));
-    expect(forward?.to).toEqual(at('abc'));
-    expect(forward?.history.past).toEqual([at('')]);
+  it('go back to the text and the caret before the edit, and forward again', () => {
+    const run = edit(edit(START, 'ab', DISCRETE, 0), 'XY', DISCRETE, 5, [1, 1]);
+    expect(run.text.value).toBe('aXYb');
+    const back = travelled(run.history, 'aXYb', 'aXYb', 'undo');
+    expect(back.to).toEqual(at('ab', 1));
+    const forth = travelled(back.history, 'ab', 'ab', 'redo');
+    expect(forth.to).toEqual(at('aXYb', 3));
   });
 
-  it('keeps the caret each state had', () => {
-    const history = recorded(EMPTY_HISTORY, at('ab', 1), discrete, 0);
-    expect(undone(history, at('a  b', 3))?.to).toEqual(at('ab', 1));
+  it('are nothing past the start or past the end, and change nothing', () => {
+    expect(travelled(EMPTY_HISTORY, 'x', 'x', 'undo')).toEqual({
+      history: EMPTY_HISTORY,
+      to: null,
+    });
+    expect(travelled(EMPTY_HISTORY, 'x', 'x', 'redo')).toEqual({
+      history: EMPTY_HISTORY,
+      to: null,
+    });
+    const run = typing('a');
+    const back = travelled(run.history, 'a', 'a', 'undo');
+    expect(travelled(back.history, '', '', 'undo').to).toBeNull();
   });
 
-  it('is nothing past the start, and nothing past the end', () => {
-    expect(undone(EMPTY_HISTORY, at('x'))).toBeNull();
-    expect(redone(EMPTY_HISTORY, at('x'))).toBeNull();
-    const back = undone(typing('a'), at('a'));
-    expect(back === null ? null : undone(back.history, at(''))).toBeNull();
+  it('end the redo line with a new edit', () => {
+    const back = travelled(typing('abc').history, 'abc', 'abc', 'undo');
+    expect(back.history.future).toHaveLength(1);
+    const run = edit({ history: back.history, text: at('') }, 'z', typed('z'), 5000);
+    expect(run.history.future).toEqual([]);
   });
 
-  it('ends the redo line with a new edit', () => {
-    const back = undone(typing('abc'), at('abc'));
-    expect(back?.history.future).toHaveLength(1);
-    const edited = recorded(back?.history ?? EMPTY_HISTORY, at(''), typed('z'), 5000);
-    expect(edited.future).toEqual([]);
+  it('end a burst, so typing after an undo is a step of its own', () => {
+    const back = travelled(typing('ab').history, 'ab', 'ab', 'undo');
+    const run = edit({ history: back.history, text: at('') }, 'z', typed('z'), 20);
+    expect(run.history.past).toHaveLength(1);
   });
 
-  it('steps back through several entries in order', () => {
-    let history = typing('ab cd');
-    history = recorded(history, at('ab cd'), discrete, 500);
-    const one = undone(history, at('ab cd  '));
-    const two = one === null ? null : undone(one.history, one.to);
-    const three = two === null ? null : undone(two.history, two.to);
-    expect([one?.to.value, two?.to.value, three?.to.value]).toEqual(['ab cd', 'ab ', '']);
+  it('put back the text through every step of a mixed run, and again forward', () => {
+    let seed = 7;
+    const random = (): number => {
+      seed = (seed * 1_103_515_245 + 12_345) % 2_147_483_648;
+      return seed / 2_147_483_648;
+    };
+    let run = START;
+    const texts = [''];
+    for (let step = 0; step < 150; step += 1) {
+      const length = run.text.value.length;
+      const from = Math.floor(random() * (length + 1));
+      const to = Math.min(length, from + Math.floor(random() * 4));
+      const put = random() < 0.3 ? '' : 'ab c\n'.slice(0, 1 + Math.floor(random() * 4));
+      const kind = random() < 0.5 ? DISCRETE : typed(put);
+      run = edit(run, put, kind, step * 2000, [from, to]);
+      if (run.text.value !== texts[texts.length - 1]) texts.push(run.text.value);
+    }
+    const { back, forth } = walk(run);
+    expect(back.length).toBeGreaterThan(30);
+    expect(back[back.length - 1]).toBe('');
+    expect(forth[forth.length - 1]).toBe(run.text.value);
+    expect(back.length).toBe(forth.length);
   });
 
-  it('ends a burst, so typing after an undo is an entry of its own', () => {
-    const back = undone(typing('ab'), at('ab'));
-    const next = recorded(back?.history ?? EMPTY_HISTORY, at(''), typed('z'), 20);
-    expect(next.past).toEqual([at('')]);
-    expect(next.burst?.kind).toBe('insert');
+  it('end the history instead of putting a step where it does not fit', () => {
+    const run = typing('abc');
+    const patch = run.history.past[0]?.[0];
+    expect(patch).toBeDefined();
+    const broken = travelled(
+      { ...run.history, past: patch === undefined ? [] : [[{ ...patch, from: 50 }]] },
+      'abc',
+      'abc',
+      'undo',
+    );
+    expect(broken).toEqual({ history: EMPTY_HISTORY, to: null });
   });
 });
 
 describe('the caps', () => {
-  it('keep at most the entries it names, the newest', () => {
-    let history = EMPTY_HISTORY;
+  it('keep at most the steps it names, the newest', () => {
+    let run = START;
     for (let index = 0; index < HISTORY_MAX_ENTRIES + 50; index += 1) {
-      history = recorded(history, at(String(index)), discrete, index);
+      run = edit(run, 'x', DISCRETE, index);
     }
-    expect(history.past).toHaveLength(HISTORY_MAX_ENTRIES);
-    expect(history.past[0]?.value).toBe('50');
-    expect(history.past.at(-1)?.value).toBe(String(HISTORY_MAX_ENTRIES + 49));
+    expect(run.history.past).toHaveLength(HISTORY_MAX_ENTRIES);
+    expect(walk(run).back).toHaveLength(HISTORY_MAX_ENTRIES);
   });
 
-  it('keep the entries within the characters it names, but never none', () => {
-    const big = 'x'.repeat(HISTORY_MAX_CHARS / 2 + 1);
-    let history = recorded(EMPTY_HISTORY, at(big), discrete, 0);
-    history = recorded(history, at(`${big}y`), discrete, 1);
-    expect(history.past).toHaveLength(1);
-    expect(history.past[0]?.value).toBe(`${big}y`);
-    const huge = recorded(EMPTY_HISTORY, at('x'.repeat(HISTORY_MAX_CHARS * 2)), discrete, 0);
-    expect(huge.past).toHaveLength(1);
+  it('keep the steps within the characters it names, but never none', () => {
+    const half = 'x'.repeat(HISTORY_MAX_CHARS / 2 + 1);
+    let run = edit(START, half, DISCRETE, 0);
+    run = edit(run, half, DISCRETE, 1);
+    expect(run.history.past).toHaveLength(1);
+    const huge = edit(START, 'x'.repeat(HISTORY_MAX_CHARS * 2), DISCRETE, 0);
+    expect(huge.history.past).toHaveLength(1);
+  });
+
+  it('count what a step changed, so a large text keeps its depth under typing', () => {
+    const big = 'x'.repeat(131_072);
+    let run: Run = { history: EMPTY_HISTORY, text: at(big, big.length) };
+    for (let index = 0; index < 100; index += 1) {
+      run = edit(run, 'a', DISCRETE, index);
+    }
+    expect(run.history.past).toHaveLength(100);
   });
 
   it('bound the redo line too', () => {
-    let history = EMPTY_HISTORY;
+    let run = START;
     for (let index = 0; index < HISTORY_MAX_ENTRIES + 10; index += 1) {
-      history = recorded(history, at(String(index)), discrete, index);
+      run = edit(run, 'x', DISCRETE, index);
     }
-    let current = at('end');
+    let history = run.history;
+    let current = run.text.value;
     for (let step = 0; step < HISTORY_MAX_ENTRIES + 10; step += 1) {
-      const back = undone(history, current);
-      if (back === null) break;
+      const back = travelled(history, current, current, 'undo');
+      if (back.to === null) break;
       history = back.history;
-      current = back.to;
+      current = back.to.value;
     }
     expect(history.future.length).toBeLessThanOrEqual(HISTORY_MAX_ENTRIES);
   });
 });
 
+describe('on a 128 KiB text', () => {
+  const big = 'a { color: red }\n'.repeat(8192);
+
+  it('typing 200 characters, and undoing them, stays linear and quick', () => {
+    let run: Run = { history: EMPTY_HISTORY, text: at(big, 6) };
+    const started = performance.now();
+    for (let index = 0; index < 200; index += 1) {
+      run = edit(run, 'x', typed('x'), index * 5, [6 + index, 6 + index]);
+    }
+    const typedIn = performance.now() - started;
+    expect(typedIn).toBeLessThan(1500);
+    expect(run.history.past).toHaveLength(1);
+    const back = travelled(run.history, run.text.value, run.text.value, 'undo');
+    expect(back.to?.value).toBe(big);
+    expect(back.to?.selectionStart).toBe(6);
+    expect(performance.now() - started).toBeLessThan(3000);
+  });
+});
+
 describe('a text changed from outside', () => {
   it('has no history', () => {
-    const history = typing('abc');
+    const history = typing('abc').history;
     expect(reconciled(history, 'abc', 'abc')).toBe(history);
     expect(reconciled(history, 'abc', 'other')).toBe(EMPTY_HISTORY);
+  });
+
+  it('is not travelled into, and the next edit starts a fresh history', () => {
+    const history = typing('abc').history;
+    expect(travelled(history, 'abc', 'replaced', 'undo')).toEqual({
+      history: EMPTY_HISTORY,
+      to: null,
+    });
+    const next = committed(history, 'abc', at('other'), at('other!'), DISCRETE, 5000);
+    expect(next.past).toHaveLength(1);
   });
 });
 
@@ -183,39 +333,13 @@ describe('what a beforeinput means', () => {
     expect(inputIntent('insertLineBreak', null)).toEqual({ kind: 'insert', data: '\n' });
     expect(inputIntent('deleteContentBackward', null)).toEqual({ kind: 'delete', data: '' });
     expect(inputIntent('deleteWordBackward', null)).toEqual({ kind: 'delete', data: '' });
-    expect(inputIntent('insertFromPaste', 'x')).toEqual({ kind: 'discrete', data: '' });
-    expect(inputIntent('deleteByCut', null)).toEqual({ kind: 'discrete', data: '' });
-    expect(inputIntent('insertFromDrop', null)).toEqual({ kind: 'discrete', data: '' });
+    expect(inputIntent('insertFromPaste', 'x')).toEqual(DISCRETE);
+    expect(inputIntent('deleteByCut', null)).toEqual(DISCRETE);
+    expect(inputIntent('insertFromDrop', null)).toEqual(DISCRETE);
     expect(inputIntent('insertCompositionText', 'あ')).toBe('ignore');
     expect(inputIntent('deleteCompositionText', null)).toBe('ignore');
-  });
-});
-
-describe('noting and travelling', () => {
-  it('forgets the history of a text changed from outside before noting the next edit', () => {
-    const history = typing('abc');
-    const noted_ = noted(history, 'abc', at('other'), discrete, 5000);
-    expect(noted_.past).toEqual([at('other')]);
-    expect(noted(history, 'abc', at('abc'), discrete, 5000).past).toEqual([at(''), at('abc')]);
-  });
-
-  it('travels, and says where there is nowhere to go', () => {
-    const history = typing('abc');
-    const back = travelled(history, 'abc', at('abc'), 'undo');
-    expect(back.to).toEqual(at(''));
-    expect(travelled(back.history, '', at(''), 'redo').to).toEqual(at('abc'));
-    expect(travelled(EMPTY_HISTORY, 'x', at('x'), 'undo')).toEqual({
-      history: EMPTY_HISTORY,
-      to: null,
-    });
-  });
-
-  it('does not travel into a history of a text that is no longer this one', () => {
-    const history = typing('abc');
-    expect(travelled(history, 'abc', at('replaced from outside'), 'undo')).toEqual({
-      history: EMPTY_HISTORY,
-      to: null,
-    });
+    expect(inputIntent('insertText', 'a', true)).toBe('ignore');
+    expect(inputIntent('historyUndo', null, true)).toBe('ignore');
   });
 });
 
@@ -224,5 +348,26 @@ it('reads a snapshot from a field', () => {
     value: 'ab',
     selectionStart: 1,
     selectionEnd: 2,
+  });
+});
+
+describe('what a change does to the history', () => {
+  const run = typing('abc');
+
+  it('notes an edit that was heard coming', () => {
+    const next = changed(
+      run.history,
+      'abc',
+      { before: at('abc'), edit: DISCRETE },
+      at('abcd'),
+      false,
+      5000,
+    );
+    expect(next.past).toHaveLength(2);
+  });
+
+  it('ends the history for a change nobody heard coming, unless an input method is composing', () => {
+    expect(changed(run.history, 'abc', null, at('abcd'), false, 5000)).toBe(EMPTY_HISTORY);
+    expect(changed(run.history, 'abc', null, at('abcd'), true, 5000)).toBe(run.history);
   });
 });

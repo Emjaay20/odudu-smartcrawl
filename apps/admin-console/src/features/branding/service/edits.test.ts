@@ -8,6 +8,7 @@ import {
   IDLE_SLOTS,
   NO_OUTCOME,
   publishOutcomeOf,
+  currentOutcome,
   selectOffered,
   slotAfterUpload,
   slotNames,
@@ -150,6 +151,24 @@ describe('a publish', () => {
     );
     expect(refused).toMatchObject({ errors, atTag: '"d1"', message: 'no' });
     expect(NO_OUTCOME).toMatchObject({ errors: [], atTag: null });
+  });
+
+  it('shows a refusal only for the draft it was given for', () => {
+    const refused = publishOutcomeOf(
+      { ok: false, kind: 'problem', problem: { type: 'about:blank', title: 'Bad', status: 400 } },
+      () => 'no',
+      '"d1"',
+    );
+    expect(currentOutcome(refused, '"d1"')).toBe(refused);
+    expect(currentOutcome(refused, '"d2"')).toBe(NO_OUTCOME);
+    const lost = publishOutcomeOf({ ok: false, kind: 'network' }, () => 'lost', '"d1"');
+    expect(currentOutcome(lost, '"d2"')).toBe(NO_OUTCOME);
+    const ok = publishOutcomeOf(
+      { ok: true, status: 200, data: { warnings: [] } as never, etag: null, next: null },
+      () => '',
+      '"d1"',
+    );
+    expect(currentOutcome(ok, '"d2"')).toBe(ok);
   });
 
   it('tells a screen reader only whether the contrast passes', () => {

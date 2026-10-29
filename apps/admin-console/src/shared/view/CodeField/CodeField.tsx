@@ -1,6 +1,7 @@
 import { Fragment, use, useId, useRef, type KeyboardEvent } from 'react';
 import { TextArea, TextField as AriaTextField } from 'react-aria-components';
 import {
+  caretAt,
   gutterParts,
   highlight,
   indentEdit,
@@ -10,6 +11,7 @@ import {
   markedLines,
   normalisedBreaks,
   PLAIN_NOTE,
+  scrollTarget,
   TAB_LEAD,
   TAB_THEN,
   tokensByLine,
@@ -87,6 +89,44 @@ function Gutter({ count, marked }: { count: number; marked: readonly number[] })
   );
 }
 
+// A monospace face is about this many ems across.
+const CHARACTER_EM = 0.6;
+const TAB_WIDTH = 2;
+
+// After the field set the caret from code, which does not scroll to it:
+// brings it into view in whatever scrolls, the layer's scroller or, beyond
+// the colouring limit, the textarea itself.
+function reveal(area: HTMLTextAreaElement): void {
+  const plain = area.closest('[data-plain]') !== null;
+  const scroller = plain ? area : area.parentElement?.parentElement;
+  const style = getComputedStyle(area);
+  const lineHeight = Number.parseFloat(style.lineHeight);
+  const fontSize = Number.parseFloat(style.fontSize);
+  if (!(scroller instanceof HTMLElement) || !Number.isFinite(lineHeight + fontSize)) return;
+  const frame = scroller.getBoundingClientRect();
+  const box = area.getBoundingClientRect();
+  const offsetX = plain ? 0 : box.left - frame.left + scroller.scrollLeft;
+  const offsetY = plain ? 0 : box.top - frame.top + scroller.scrollTop;
+  const target = scrollTarget(
+    caretAt(area.value, area.selectionEnd, TAB_WIDTH),
+    {
+      lineHeight,
+      charWidth: fontSize * CHARACTER_EM,
+      originX: offsetX + Number.parseFloat(style.paddingLeft),
+      originY: offsetY + Number.parseFloat(style.paddingTop),
+      inset: offsetX,
+    },
+    {
+      scrollTop: scroller.scrollTop,
+      scrollLeft: scroller.scrollLeft,
+      clientHeight: scroller.clientHeight,
+      clientWidth: scroller.clientWidth,
+    },
+  );
+  if (target.top !== null) scroller.scrollTop = target.top;
+  if (target.left !== null) scroller.scrollLeft = target.left;
+}
+
 // A text field for code: the textarea is the control, with a coloured copy
 // of its text behind it and line numbers beside it. Tab indents; Escape then
 // Tab leaves. Where the server refused a line, that line carries a mark and
@@ -112,7 +152,7 @@ export function CodeField({
   const issuesId = useId();
   const readOnly = use(FieldsReadOnly);
   const escaped = useRef(false);
-  const [areaRef, history] = useCodeHistory({ value, onChange, readOnly });
+  const [areaRef, history] = useCodeHistory({ value, onChange, readOnly, moved: reveal });
   const { tokens, plain } = highlight(language, value);
   const count = lineCount(normalisedBreaks(value));
   const marks = markedLines(issues, count);
@@ -121,6 +161,7 @@ export function CodeField({
     if (readOnly) return;
     const press = {
       key: event.key,
+      code: event.code,
       shiftKey: event.shiftKey,
       ctrlKey: event.ctrlKey,
       metaKey: event.metaKey,

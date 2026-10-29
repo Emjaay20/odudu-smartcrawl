@@ -425,6 +425,68 @@ test('undo and redo restore the text and the caret after typing, an indent, an o
   await at('ab cd\nx  \nPASTE', 15);
 });
 
+test('undo, redo and an indent bring the caret back into view in a long stylesheet', async ({
+  page,
+  context,
+}) => {
+  test.slow();
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  const { layout } = branding;
+  await signIn(page, layout);
+  await openBranding(page, layout.tenant);
+  const section = page.getByRole('region', { name: 'Stylesheet', exact: true });
+  const editor = section.getByRole('textbox', { name: 'Stylesheet CSS' });
+  const lines = Array.from(
+    { length: 300 },
+    (_, index) => `.logo { opacity: 0.${String(index % 10)} }`,
+  );
+  await editor.fill(lines.join('\n'));
+  const place = (line: number): Promise<void> =>
+    editor.evaluate((area: HTMLTextAreaElement, at) => {
+      const offset = area.value.split('\n').slice(0, at).join('\n').length + (at > 0 ? 1 : 0);
+      area.focus();
+      area.setSelectionRange(offset, offset);
+    }, line);
+  const away = (): Promise<void> =>
+    editor.evaluate((area) => {
+      const scroller = area.parentElement?.parentElement;
+      if (scroller) scroller.scrollTop = scroller.scrollHeight;
+    });
+  // Whether the caret's line sits inside what the scroller shows.
+  const caretShows = (): Promise<boolean> =>
+    editor.evaluate((area: HTMLTextAreaElement) => {
+      const scroller = area.parentElement?.parentElement;
+      if (!scroller) return false;
+      const style = getComputedStyle(area);
+      const line = area.value.slice(0, area.selectionEnd).split('\n').length - 1;
+      const top =
+        area.getBoundingClientRect().top +
+        Number.parseFloat(style.paddingTop) +
+        line * Number.parseFloat(style.lineHeight);
+      const frame = scroller.getBoundingClientRect();
+      return top >= frame.top - 2 && top + Number.parseFloat(style.lineHeight) <= frame.bottom + 2;
+    });
+
+  await place(150);
+  await page.evaluate(() => navigator.clipboard.writeText('/* pasted */\n'.repeat(60)));
+  await page.keyboard.press('ControlOrMeta+v');
+  await away();
+  await page.keyboard.press('ControlOrMeta+z');
+  await expect.poll(caretShows).toBe(true);
+  await away();
+  await page.keyboard.press('ControlOrMeta+Shift+z');
+  await expect.poll(caretShows).toBe(true);
+
+  await place(100);
+  await page.keyboard.press('Tab');
+  await away();
+  await page.keyboard.press('ControlOrMeta+z');
+  await expect.poll(caretShows).toBe(true);
+  await away();
+  await page.keyboard.press('ControlOrMeta+Shift+z');
+  await expect.poll(caretShows).toBe(true);
+});
+
 const MAIL_FRAME = 'iframe[title="Preview of the verification mail"]';
 
 test('frames the verification mail without a script, in either scheme', async ({ page }) => {

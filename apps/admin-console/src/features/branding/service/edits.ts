@@ -149,6 +149,12 @@ export const NO_OUTCOME: PublishOutcome = {
   toast: null,
 };
 
+// The last publish answer, as far as it still describes the draft on screen:
+// a refusal of one draft says nothing of the draft saved after it.
+export function currentOutcome(outcome: PublishOutcome, tag: string): PublishOutcome {
+  return outcome.atTag !== null && outcome.atTag !== tag ? NO_OUTCOME : outcome;
+}
+
 export function publishOutcomeOf(
   result: GatewayResult<PublishThemeResponse>,
   failureText: (failure: GatewayFailure) => string,

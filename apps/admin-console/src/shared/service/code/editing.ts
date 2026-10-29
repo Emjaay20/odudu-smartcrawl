@@ -5,6 +5,8 @@ export const TAB_THEN = 'then';
 
 export interface KeyPress {
   key: string;
+  // The physical key, which names the letter on a layout that is not Latin.
+  code: string;
   shiftKey: boolean;
   ctrlKey: boolean;
   metaKey: boolean;
@@ -13,13 +15,23 @@ export interface KeyPress {
   composing: boolean;
 }
 
+// The letter a key press stands for: the character it types where that is a
+// Latin letter, and the key it is on the keyboard where it is not (Cyrillic,
+// Greek), since a shortcut belongs to the key.
+function letterOf(press: KeyPress): string {
+  const typed = press.key.toLowerCase();
+  if (/^[a-z]$/u.test(typed)) return typed;
+  return press.code.startsWith('Key') ? press.code.slice(3).toLowerCase() : typed;
+}
+
 // Undo and redo from the keyboard, for a browser that gives the field no
-// `beforeinput` to hear them by.
-export function historyKey(press: KeyPress): 'undo' | 'redo' | null {
+// `beforeinput` to hear them by. Ctrl+Y is redo only where it is not the
+// yank binding of an Apple keyboard.
+export function historyKey(press: KeyPress, platform: 'mac' | 'other'): 'undo' | 'redo' | null {
   if (press.composing || press.altKey || !(press.ctrlKey || press.metaKey)) return null;
-  const key = press.key.toLowerCase();
-  if (key === 'z') return press.shiftKey ? 'redo' : 'undo';
-  return key === 'y' && press.ctrlKey && !press.shiftKey ? 'redo' : null;
+  const letter = letterOf(press);
+  if (letter === 'z') return press.shiftKey ? 'redo' : 'undo';
+  return letter === 'y' && platform === 'other' && press.ctrlKey && !press.shiftKey ? 'redo' : null;
 }
 
 export interface KeyStep {
@@ -140,4 +152,9 @@ export function indentEdit(
     return { from: start, to: end, text: INDENT, selectionStart: caret, selectionEnd: caret };
   }
   return indentLines(value, start, end);
+}
+
+// An edit that would leave the text as it is.
+export function changesNothing(edit: TextEdit): boolean {
+  return edit.from === edit.to && edit.text === '';
 }

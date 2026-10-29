@@ -1,9 +1,9 @@
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
 import { brandingRoutes, draftedView, EMPTY, TH, themeAnswer } from '#/testing/brandingFixtures';
-import { problem } from '#/testing/fakeTransport';
+import { json, problem } from '#/testing/fakeTransport';
 import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
 import { resetConsole } from '#/testing/resetConsole';
 
@@ -118,6 +118,53 @@ it('marks the template line a refused publish names, on the Pages tab', async ()
   expect(within(section).getByText('The saved template was refused at publish.')).toBeVisible();
   await user.type(within(section).getByRole('textbox', { name: 'Sign in: template' }), 'x');
   expect(within(section).queryByText(/Line 2:/u)).toBeNull();
+});
+
+it('drops a refusal from the Publish panel once the draft it refused is replaced', async () => {
+  const user = userEvent.setup();
+  const view = draftedView();
+  const bad = { ...EMPTY, templates: { 'sign-in': '<p>{{form.open}}</p>\n<p>{{nope}}</p>' } };
+  const fixed = { ...view, draft: { ...EMPTY, templates: { 'sign-in': '<p>{{form.open}}</p>' } } };
+  renderConsoleAt(
+    '/console/acme/branding',
+    brandingRoutes(themeAnswer({ ...view, draft: bad }, '"d1"'), {
+      [`POST ${TH}/publish`]: problem(400, 'about:blank', 'Bad Request', {
+        errors: [{ path: 'templates.sign-in', message: 'Unknown slot.', line: 2, column: 4 }],
+      }),
+      [`PUT ${TH}`]: json(fixed, 200, { etag: '"d2"' }),
+    }),
+  );
+  await user.click(await screen.findByRole('button', { name: 'Publish the draft' }));
+  const panel = await screen.findByRole('region', { name: 'Publish' });
+  expect(await within(panel).findByText(/templates\.sign-in: Unknown slot\./u)).toBeVisible();
+  await user.click(screen.getByRole('tab', { name: /Pages/u }));
+  const section = await screen.findByRole('region', { name: 'Page templates' });
+  await user.click(within(section).getByRole('textbox', { name: 'Sign in: template' }));
+  await user.keyboard('{Backspace>9/}');
+  await user.click(within(section).getByRole('button', { name: /Save/u }));
+  await waitFor(() => {
+    expect(within(section).queryByRole('button', { name: /Save/u })).toBeNull();
+  });
+  await user.click(screen.getByRole('tab', { name: /Theme/u }));
+  const again = await screen.findByRole('region', { name: 'Publish' });
+  expect(within(again).queryByText(/templates\.sign-in/u)).toBeNull();
+});
+
+it('does not carry one page’s undo history to another page with the same text', async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(AT, brandingRoutes(themeAnswer(draftedView(), '"d1"')));
+  const section = await screen.findByRole('region', { name: 'Page templates' });
+  const box = within(section).getByRole('textbox', { name: 'Sign in: template' });
+  await user.click(box);
+  await user.keyboard('x');
+  await user.keyboard('{Backspace}');
+  expect(box).toHaveValue('');
+  await user.click(within(section).getByRole('button', { name: /Page/u }));
+  await user.click(await screen.findByRole('option', { name: 'Consent' }));
+  const other = within(section).getByRole('textbox', { name: 'Consent: template' });
+  await user.click(other);
+  await user.keyboard('{Control>}z{/Control}');
+  expect(other).toHaveValue('');
 });
 
 it('has nothing axe can find in either theme', async () => {

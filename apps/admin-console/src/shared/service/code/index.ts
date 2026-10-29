@@ -12,6 +12,7 @@ export {
   type LineIssue,
 } from '#/shared/service/code/gutter';
 export {
+  changesNothing,
   historyKey,
   indentEdit,
   INDENT,
@@ -33,24 +34,33 @@ export {
 export { cssTokens } from '#/shared/service/code/css';
 export { templateTokens, MARKER_LIMIT } from '#/shared/service/code/template';
 export {
+  changed,
+  committed,
   DISCRETE,
   EMPTY_HISTORY,
+  HISTORY_MAX_BURST,
   HISTORY_MAX_CHARS,
   HISTORY_MAX_ENTRIES,
   HISTORY_PAUSE_MS,
   inputIntent,
-  noted,
+  patchBetween,
   reconciled,
-  recorded,
-  redone,
   snapshotOf,
   travelled,
-  undone,
   type EditKind,
   type History,
   type HistoryEdit,
   type InputIntent,
+  type Patch,
+  type Pending,
   type Snapshot,
   type Stepped,
-  type Travel,
 } from '#/shared/service/code/history';
+export {
+  caretAt,
+  scrollTarget,
+  type Caret,
+  type Metrics,
+  type Scroll,
+  type Viewport,
+} from '#/shared/service/code/scroll';

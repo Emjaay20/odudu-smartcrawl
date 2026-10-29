@@ -99,6 +99,7 @@ export function PagesTab({
           }}
         />
         <CodeField
+          key={kind}
           label={`${PAGE_KIND_LABELS[kind]}: ${TEMPLATE_LABEL.toLowerCase()}`}
           description={`${sourceReading(scope, view, templateField(kind))}. ${templateDescription()}`}
           language="template"

@@ -5,6 +5,7 @@ import {
   publishFailure,
   publishHold,
   publishOutcomeOf,
+  currentOutcome,
   NO_OUTCOME,
   type PublishOutcome,
 } from '#/features/branding/service';
@@ -50,7 +51,7 @@ export function usePublication({
   return {
     busy: writes.publish.busy,
     hold: publishHold({ view, unsaved, contrast }),
-    outcome,
+    outcome: currentOutcome(outcome, tag),
     publish: () => {
       onOutcome(NO_OUTCOME);
       writes.publish

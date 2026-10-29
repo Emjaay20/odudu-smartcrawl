@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  changesNothing,
   historyKey,
   indentEdit,
   keyStep,
@@ -13,6 +14,7 @@ function applyEdit(value: string, edit: TextEdit): string {
 
 const press = (key: string, more: Partial<KeyPress> = {}): KeyPress => ({
   key,
+  code: '',
   shiftKey: false,
   ctrlKey: false,
   metaKey: false,
@@ -124,18 +126,40 @@ describe('indentEdit outdenting', () => {
 });
 
 describe('historyKey', () => {
-  it('is undo on Ctrl or Cmd+Z, redo on Shift+Z and on Ctrl+Y', () => {
-    expect(historyKey(press('z', { ctrlKey: true }))).toBe('undo');
-    expect(historyKey(press('Z', { metaKey: true }))).toBe('undo');
-    expect(historyKey(press('Z', { metaKey: true, shiftKey: true }))).toBe('redo');
-    expect(historyKey(press('z', { ctrlKey: true, shiftKey: true }))).toBe('redo');
-    expect(historyKey(press('y', { ctrlKey: true }))).toBe('redo');
+  it('is undo on Ctrl or Cmd+Z, redo on Shift+Z and on Ctrl+Y where that is redo', () => {
+    expect(historyKey(press('z', { ctrlKey: true }), 'other')).toBe('undo');
+    expect(historyKey(press('Z', { metaKey: true }), 'mac')).toBe('undo');
+    expect(historyKey(press('Z', { metaKey: true, shiftKey: true }), 'mac')).toBe('redo');
+    expect(historyKey(press('z', { ctrlKey: true, shiftKey: true }), 'other')).toBe('redo');
+    expect(historyKey(press('y', { ctrlKey: true }), 'other')).toBe('redo');
   });
 
-  it('is nothing for a bare letter, Alt, Cmd+Y, or while composing', () => {
-    expect(historyKey(press('z'))).toBeNull();
-    expect(historyKey(press('z', { ctrlKey: true, altKey: true }))).toBeNull();
-    expect(historyKey(press('y', { metaKey: true }))).toBeNull();
-    expect(historyKey(press('z', { ctrlKey: true, composing: true }))).toBeNull();
+  it('leaves Ctrl+Y to an Apple keyboard, and Cmd+Y to everyone', () => {
+    expect(historyKey(press('y', { ctrlKey: true }), 'mac')).toBeNull();
+    expect(historyKey(press('y', { metaKey: true }), 'other')).toBeNull();
+  });
+
+  it('is nothing for a bare letter, Alt, or while composing', () => {
+    expect(historyKey(press('z'), 'other')).toBeNull();
+    expect(historyKey(press('z', { ctrlKey: true, altKey: true }), 'other')).toBeNull();
+    expect(historyKey(press('z', { ctrlKey: true, composing: true }), 'other')).toBeNull();
+  });
+
+  it('follows the key on a layout that is not Latin', () => {
+    expect(historyKey(press('я', { ctrlKey: true, code: 'KeyZ' }), 'other')).toBe('undo');
+    expect(historyKey(press('Я', { ctrlKey: true, shiftKey: true, code: 'KeyZ' }), 'other')).toBe(
+      'redo',
+    );
+    expect(historyKey(press('н', { ctrlKey: true, code: 'KeyY' }), 'other')).toBe('redo');
+    expect(historyKey(press('ж', { ctrlKey: true, code: 'Semicolon' }), 'other')).toBeNull();
+  });
+});
+
+describe('changesNothing', () => {
+  it('is an empty replacement of nothing', () => {
+    const edit = { from: 2, to: 2, text: '', selectionStart: 2, selectionEnd: 2 };
+    expect(changesNothing(edit)).toBe(true);
+    expect(changesNothing({ ...edit, to: 3 })).toBe(false);
+    expect(changesNothing({ ...edit, text: ' ' })).toBe(false);
   });
 });
