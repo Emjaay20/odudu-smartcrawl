@@ -721,6 +721,21 @@ token, got the way "Getting the token" shows, is `$ADMIN_TOKEN`, and a tenant
 `smtp-audit-demo` made through `POST /admin/tenants`. It was torn down with
 `docker compose down -v` when the capture finished.
 
+**The branding captures.** The theme, message-override, mail-preview and brand-route pages,
+and every block that shows a client, a scope, a tenant's settings or an export once they
+carried languages, were run on one stack: compose project `odudu-26a` on port 3000, its
+Postgres on 5442, built from commit `e6747259` on an empty volume, with
+`ODUDU_THROTTLE_LIMIT=10000` and `ODUDU_LOGIN_THROTTLE_LIMIT=10000` and a console key made
+for it. `seed admin --username ada` made the administrator, whose token, got the way
+"Getting the token" shows, is `$ADMIN_TOKEN`. A script ran each command and wrote the block
+that followed it, so no output was typed. Each section made the tenant it names fresh
+(disabled and deleted if an earlier pass had left one, then created through
+`POST /admin/tenants`), so a block is what it printed against that tenant and nothing
+else; the blocks of the other pages that name `demo`, `client-facts-demo` or `export-demo`
+ran against tenants built the same way for them. The OpenAPI page's block, run on this stack,
+printed 98 paths and 627891 bytes, the figures the test derives. The PNGs the pages upload are
+solid-colour images made for them, and were not kept.
+
 ### Built-in scopes
 
 [The built-in scopes page](../reference/transcripts/admin-paths/get-scopesidimpact-get-scopesbuiltins-and-post-scopesrestore-builtins.md)
