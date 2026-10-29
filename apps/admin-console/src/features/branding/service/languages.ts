@@ -1,11 +1,14 @@
 import { MAIL_PREVIEW_LOCALES, type AmendSettingsRequest } from '@odudu/contracts/admin';
-import { localeName } from '#/shared/service/locales';
+import { localeName, localeProblem } from '#/shared/service/locales';
 import type { Choice } from '#/shared/service/choice';
 import type { SectionFields } from '#/shared/service/sectionSave';
 
 // The languages this build holds a catalogue for; a test in packages/email
 // holds the list equal to the i18n package's SHIPPED_LOCALES.
 export const SHIPPED_LANGUAGES: readonly string[] = MAIL_PREVIEW_LOCALES;
+
+// The most languages a tenant's pages are offered in.
+export const MAX_SUPPORTED_LANGUAGES = 32;
 
 export const LANGUAGES_SECTION = 'languages';
 
@@ -23,6 +26,19 @@ export const DEFAULT_LABEL = 'Default language';
 
 export const DEFAULT_NOTE =
   'Used ahead of the browser’s preference, when the request names no language.';
+
+export const ADD_LABEL = 'Add a language';
+
+export const ADD_NOTE =
+  'Choose a language or type its tag, such as fr or pt-BR. Its pages use the English text unless a message override says otherwise.';
+
+export const ADD_BUTTON = 'Add language';
+
+export const ADD_NEEDED = 'Choose a language, or type a tag such as fr-CA.';
+
+export const ADD_DUPLICATE = 'That language is already offered.';
+
+export const ADD_FULL = `A tenant offers at most ${String(MAX_SUPPORTED_LANGUAGES)} languages.`;
 
 export const BROWSER_DECIDES = 'The browser decides';
 
@@ -57,24 +73,25 @@ export function languagesOf(settings: LanguageSettings): LanguageValues {
   };
 }
 
-// The shipped languages, then any other the tenant already offers, each once.
-export function languageTags(supported: readonly string[]): string[] {
-  return [...new Set([...SHIPPED_LANGUAGES, ...supported])];
+// The shipped languages, then every other the tenant offers or is adding,
+// each once.
+export function languageTags(...offered: readonly (readonly string[])[]): string[] {
+  return [...new Set([...SHIPPED_LANGUAGES, ...offered.flat()])];
 }
 
 export function languageLabel(tag: string): string {
   return `${localeName(tag, 'en')} (${tag})`;
 }
 
-export function supportedChoices(supported: readonly string[]): Choice[] {
-  return languageTags(supported).map((tag) => ({ id: tag, label: languageLabel(tag) }));
+// Saved languages stay listed when unticked, so a tick can be undone; one
+// that was added and never saved is listed only while ticked.
+export function supportedChoices(saved: readonly string[], edited: readonly string[]): Choice[] {
+  return languageTags(saved, edited).map((tag) => ({ id: tag, label: languageLabel(tag) }));
 }
 
-// "The browser decides" is only a choice while it is what is saved: the
-// settings take a language tag, so a default once set cannot be cleared here.
-export function defaultChoices(supported: readonly string[], saved: string): Choice[] {
+export function defaultChoices(supported: readonly string[]): Choice[] {
   const tags = supported.map((tag) => ({ id: tag, label: languageLabel(tag) }));
-  return saved === '' ? [{ id: '', label: BROWSER_DECIDES }, ...tags] : tags;
+  return [{ id: '', label: BROWSER_DECIDES }, ...tags];
 }
 
 export const NONE_SUPPORTED = 'Offer at least one language.';
@@ -89,15 +106,14 @@ export function languagesHold(values: LanguageValues): string | undefined {
     : undefined;
 }
 
-// Only what changed is sent, and a default is only ever set, never cleared.
+// Only what changed is sent. An empty default is what the settings take to
+// clear it, so the browser decides again.
 export function languagesRequest(changes: Partial<LanguageValues>): AmendSettingsRequest {
   return {
     ...(changes.supported_locales === undefined
       ? {}
       : { supported_locales: [...changes.supported_locales] }),
-    ...(changes.default_locale === undefined || changes.default_locale === ''
-      ? {}
-      : { default_locale: changes.default_locale }),
+    ...(changes.default_locale === undefined ? {} : { default_locale: changes.default_locale }),
   };
 }
 
@@ -131,4 +147,22 @@ export function languageFields(base: LanguageValues): SectionFields<LanguageValu
       describe: (value) => (value === '' ? DEFAULT_NONE : String(value)),
     },
   };
+}
+
+export interface Added {
+  // The supported languages with the new one, or null when it is refused.
+  supported: string[] | null;
+  problem: string | null;
+}
+
+// A typed or chosen tag joined to the supported languages, or why it cannot.
+export function languageAdded(supported: readonly string[], text: string): Added {
+  const tag = text.trim();
+  const problem = tag === '' ? ADD_NEEDED : localeProblem(tag);
+  if (problem !== null) return { supported: null, problem };
+  if (supported.some((held) => held.toLowerCase() === tag.toLowerCase())) {
+    return { supported: null, problem: ADD_DUPLICATE };
+  }
+  if (supported.length >= MAX_SUPPORTED_LANGUAGES) return { supported: null, problem: ADD_FULL };
+  return { supported: [...supported, tag], problem: null };
 }

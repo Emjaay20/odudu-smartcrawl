@@ -15,6 +15,7 @@ import {
   mailLocaleOf,
   paletteRows,
   SCHEME_OPTIONS,
+  schemeOf,
   schemeTitle,
   sourceText,
   type Scheme,
@@ -38,7 +39,8 @@ export function MailPreview({ mail }: { mail: Mail }) {
             options={SCHEME_OPTIONS}
             value={mail.choice.scheme}
             onChange={(id) => {
-              if (id === 'light' || id === 'dark') mail.setScheme(id);
+              const scheme = schemeOf(id);
+              if (scheme !== undefined) mail.setScheme(scheme);
             }}
           />
           <SelectField

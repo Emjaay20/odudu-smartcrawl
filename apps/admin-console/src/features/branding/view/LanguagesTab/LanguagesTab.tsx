@@ -1,6 +1,9 @@
 import type { MessageOverride, Settings } from '@odudu/contracts/admin';
 import { useRef } from 'react';
 import {
+  ADD_BUTTON,
+  ADD_LABEL,
+  ADD_NOTE,
   capText,
   defaultChoices,
   DEFAULT_LABEL,
@@ -37,7 +40,7 @@ import { ChecklistField } from '#/shared/view/ChecklistField';
 import { ConfirmDialog } from '#/shared/view/ConfirmDialog';
 import { DataTable, type Column } from '#/shared/view/DataTable';
 import { EmptyState } from '#/shared/view/EmptyState';
-import { SelectField, TextAreaField, TextField } from '#/shared/view/Field';
+import { LocaleField, SelectField, TextAreaField, TextField } from '#/shared/view/Field';
 import { FieldGrid, GridCell } from '#/shared/view/FieldGrid';
 import { LastAction } from '#/shared/view/LastAction';
 import { ListGate } from '#/shared/view/ListGate';
@@ -59,7 +62,12 @@ interface Props {
 }
 
 function LanguagesSection({ tenant, data, etag, gone }: Props) {
-  const { save, hold } = useLanguagesSection({ tenant, data, etag, gone });
+  const { save, hold, adding, addProblem, typeAdding, add } = useLanguagesSection({
+    tenant,
+    data,
+    etag,
+    gone,
+  });
   const saved = languageSettingsOf(data);
   return (
     <SaveSection
@@ -76,7 +84,7 @@ function LanguagesSection({ tenant, data, etag, gone }: Props) {
             description={SUPPORTED_NOTE}
             error={save.fieldErrors.supported_locales}
             changed={save.changed.includes('supported_locales')}
-            options={supportedChoices(saved.supported_locales)}
+            options={supportedChoices(saved.supported_locales, save.values.supported_locales)}
             value={save.values.supported_locales}
             onChange={(next) => {
               save.edit('supported_locales', next);
@@ -84,12 +92,24 @@ function LanguagesSection({ tenant, data, etag, gone }: Props) {
           />
         </GridCell>
         <GridCell span="wide">
+          <LocaleField
+            label={ADD_LABEL}
+            description={ADD_NOTE}
+            error={addProblem}
+            value={adding}
+            onChange={typeAdding}
+          />
+          <Button variant="quiet" onPress={add}>
+            {ADD_BUTTON}
+          </Button>
+        </GridCell>
+        <GridCell span="wide">
           <SelectField
             label={DEFAULT_LABEL}
             description={DEFAULT_NOTE}
             error={save.fieldErrors.default_locale}
             changed={save.changed.includes('default_locale')}
-            options={defaultChoices(save.values.supported_locales, saved.default_locale ?? '')}
+            options={defaultChoices(save.values.supported_locales)}
             value={save.values.default_locale}
             onChange={(next) => {
               save.edit('default_locale', next);
@@ -233,7 +253,7 @@ function OverridesSection({ tenant, data }: { tenant: string; data: Settings }) 
               </EmptyState>
             ) : (
               <>
-                <p className={recordTab.rule}>{capText(list.rows.length)}</p>
+                <p className={recordTab.rule}>{capText(list.rows.length, list.next !== null)}</p>
                 <DataTable
                   label={OVERRIDES_TITLE}
                   columns={columns(page, (row) => {

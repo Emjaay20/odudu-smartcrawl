@@ -1,8 +1,12 @@
-import { MESSAGE_OVERRIDE_LIMIT } from '@odudu/contracts/admin';
+import { MESSAGE_OVERRIDE_KEY_MAX_LENGTH, MESSAGE_OVERRIDE_LIMIT } from '@odudu/contracts/admin';
 import { describe, expect, it } from 'vitest';
 import {
   ALREADY_REMOVED,
+  afterSave,
+  capText,
   EMPTY_OVERRIDE,
+  OVERRIDE_KEY_LENGTH,
+  overrideAttempt,
   OVER_BOUND,
   overrideFailure,
   overrideProblems,
@@ -66,7 +70,10 @@ describe('the form', () => {
       message: expect.stringContaining('text') as string,
     });
     expect(overrideProblems({ key: 'login.title', message: 'x' })).toEqual({});
-    expect(overrideProblems({ key: 'k'.repeat(129), message: 'x' }).key).toMatch(/128/u);
+    expect(OVERRIDE_KEY_LENGTH).toBe(MESSAGE_OVERRIDE_KEY_MAX_LENGTH);
+    expect(
+      overrideProblems({ key: 'k'.repeat(OVERRIDE_KEY_LENGTH + 1), message: 'x' }).key,
+    ).toContain(String(OVERRIDE_KEY_LENGTH));
     expect(overrideProblems({ key: 'k', message: 'x'.repeat(2001) }).message).toMatch(/2000/u);
   });
 
@@ -93,5 +100,41 @@ describe('removing an override', () => {
   it('counts one that is already gone as done', () => {
     const outcome = removeOutcome(refused(404, 'about:blank'));
     expect(outcome).toEqual({ done: true, text: ALREADY_REMOVED });
+  });
+});
+
+describe('the count above the table', () => {
+  it('is a total only once nothing is left to load', () => {
+    expect(capText(1, false)).toContain('1 override in this language');
+    expect(capText(50, true)).toContain('50 overrides loaded so far; more follow');
+    expect(capText(50, true)).not.toContain('in this language');
+  });
+});
+
+describe('the form as it is sent', () => {
+  it('trims the key, and is not sent while it has problems', () => {
+    expect(overrideAttempt('en', { key: ' login.title ', message: 'Hi' }).sent).toEqual({
+      locale: 'en',
+      key: 'login.title',
+      message: 'Hi',
+    });
+    const held = overrideAttempt('en', EMPTY_OVERRIDE);
+    expect(held.sent).toBeNull();
+    expect(Object.keys(held.errors)).toEqual(['key', 'message']);
+  });
+
+  it('reports a refusal and nothing else', () => {
+    const values = { key: 'k', message: 'm' };
+    const sent = { locale: 'en', key: 'k' };
+    const denied = afterSave(
+      refused(403, 'about:blank', { detail: 'the caller does not hold: manage-tenant' }),
+      sent,
+      values,
+    );
+    expect(denied.reported).not.toBeNull();
+    expect(afterSave({ ok: false, kind: 'network' }, sent, values).reported).toBeNull();
+    expect(
+      afterSave({ ok: true, status: 200, data: {}, etag: null, next: null }, sent, values).reported,
+    ).toBeNull();
   });
 });

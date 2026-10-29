@@ -4,6 +4,7 @@ import {
   languageSettingsOf,
   languagesHold,
   languagesOf,
+  languageAdded,
   languagesRequest,
   openingLocale,
   shownLocale,
@@ -16,8 +17,13 @@ describe('the shipped languages', () => {
     expect(SHIPPED_LANGUAGES).toEqual(['en', 'ar']);
   });
 
-  it('are offered first, then any other the tenant already supports, each once', () => {
-    expect(supportedChoices(['fr', 'en']).map((choice) => choice.id)).toEqual(['en', 'ar', 'fr']);
+  it('are offered first, then any other the tenant supports or is adding, each once', () => {
+    expect(supportedChoices(['fr', 'en'], ['en', 'pt-BR']).map((c) => c.id)).toEqual([
+      'en',
+      'ar',
+      'fr',
+      'pt-BR',
+    ]);
   });
 });
 
@@ -37,9 +43,8 @@ describe('the settings as languages', () => {
 });
 
 describe('the default language choices', () => {
-  it('offer "the browser decides" only while that is what is saved', () => {
-    expect(defaultChoices(['en', 'ar'], '').map((choice) => choice.id)).toEqual(['', 'en', 'ar']);
-    expect(defaultChoices(['en', 'ar'], 'ar').map((choice) => choice.id)).toEqual(['en', 'ar']);
+  it('always offer "the browser decides", first', () => {
+    expect(defaultChoices(['en', 'ar']).map((choice) => choice.id)).toEqual(['', 'en', 'ar']);
   });
 });
 
@@ -57,12 +62,12 @@ describe('what holds the section', () => {
 });
 
 describe('the request', () => {
-  it('carries what changed, and never clears a default', () => {
+  it('carries what changed, and an empty default to clear it', () => {
     expect(languagesRequest({ supported_locales: ['en', 'ar'] })).toEqual({
       supported_locales: ['en', 'ar'],
     });
     expect(languagesRequest({ default_locale: 'ar' })).toEqual({ default_locale: 'ar' });
-    expect(languagesRequest({ default_locale: '' })).toEqual({});
+    expect(languagesRequest({ default_locale: '' })).toEqual({ default_locale: '' });
   });
 });
 
@@ -77,5 +82,28 @@ describe('the language the overrides open on', () => {
     expect(shownLocale('ar', ['en', 'ar'], 'en')).toBe('ar');
     expect(shownLocale('fr', ['en', 'ar'], 'en')).toBe('en');
     expect(shownLocale(null, ['en', 'ar'], 'en')).toBe('en');
+  });
+});
+
+describe('adding a language', () => {
+  it('joins a tag the server takes, as typed', () => {
+    expect(languageAdded(['en'], ' pt-BR ')).toEqual({ supported: ['en', 'pt-BR'], problem: null });
+  });
+
+  it('refuses nothing chosen, a tag that is not one, and one already offered in any case', () => {
+    expect(languageAdded(['en'], '').problem).toMatch(/Choose a language/u);
+    expect(languageAdded(['en'], 'English').supported).toBeNull();
+    expect(languageAdded(['en'], 'English').problem).toMatch(/type a tag/u);
+    expect(languageAdded(['en', 'fr-CA'], 'FR-ca').problem).toBe(
+      'That language is already offered.',
+    );
+  });
+
+  it('refuses a thirty-third', () => {
+    const full = Array.from(
+      { length: 32 },
+      (_, i) => `x${String.fromCharCode(97 + (i % 26))}${String(i)}`,
+    );
+    expect(languageAdded(full, 'fr').problem).toMatch(/at most 32/u);
   });
 });

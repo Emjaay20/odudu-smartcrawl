@@ -56,6 +56,12 @@ export function isStaleCursor(failure: GatewayFailure | null): boolean {
   );
 }
 
+// The part of a problem's type after `#`, the name an endpoint gives its own
+// refusals, or empty for a plain status.
+export function problemSubtype(problem: Problem): string {
+  return problem.type.split('#')[1] ?? '';
+}
+
 export function isMissing(result: GatewayResult<unknown>): boolean {
   return hasStatus(result, 404);
 }

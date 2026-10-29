@@ -6,6 +6,7 @@ import {
   PREVIEW_SCHEME_LABEL,
   PREVIEW_TITLE,
   SCHEME_OPTIONS,
+  schemeOf,
   pageKindOf,
 } from '#/features/branding/service';
 import type { Preview } from '#/features/branding/usecase/usePreview';
@@ -38,7 +39,8 @@ export function PreviewPane({ preview, pickKind }: { preview: Preview; pickKind:
             options={SCHEME_OPTIONS}
             value={preview.choice.scheme}
             onChange={(id) => {
-              if (id === 'light' || id === 'dark') preview.setScheme(id);
+              const scheme = schemeOf(id);
+              if (scheme !== undefined) preview.setScheme(scheme);
             }}
           />
         </InlineFields>

@@ -1,6 +1,7 @@
 import { MAX_ALT_LENGTH } from '@odudu/contracts';
 import type { FieldError } from '@odudu/contracts/admin';
 import type { Problem } from '#/shared/service/result';
+import { problemSubtype } from '#/shared/service/failure';
 import { counted } from '#/shared/service/format';
 import {
   DELETE_LABEL,
@@ -118,14 +119,10 @@ const ASSET_PROBLEMS: Readonly<Record<string, (slot: ImageSlot) => string>> = {
   'asset-busy': () => 'The server is busy decoding images. Try again in a moment.',
 };
 
-function typeOf(problem: Problem): string {
-  return problem.type.split('#')[1] ?? '';
-}
-
 // What a refused upload says, in the console's own words and never the
 // server's, which may name a decoder.
 export function uploadFailureText(slot: ImageSlot, problem: Problem): string {
-  const said = ASSET_PROBLEMS[typeOf(problem)]?.(slot);
+  const said = ASSET_PROBLEMS[problemSubtype(problem)]?.(slot);
   if (said !== undefined) return said;
   if (problem.status === 413) return tooLarge(slot);
   return 'The image was not uploaded.';
@@ -153,7 +150,7 @@ function referenceLine(error: FieldError): string {
 export const IN_USE_MORE = 'more than errors lists';
 
 export function inUse(problem: Problem): InUse | null {
-  if (!typeOf(problem).startsWith('asset-in-use')) return null;
+  if (!problemSubtype(problem).startsWith('asset-in-use')) return null;
   return {
     lines: (problem.errors ?? []).map(referenceLine),
     more: problem.detail?.includes(IN_USE_MORE) === true,

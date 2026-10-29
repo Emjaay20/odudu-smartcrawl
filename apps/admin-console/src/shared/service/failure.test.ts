@@ -14,6 +14,7 @@ import {
   removalOutcome,
   writeFailureText,
   namedCreation,
+  problemSubtype,
   type CreateSpec,
   type WriteCopy,
 } from '#/shared/service/failure';
@@ -330,5 +331,14 @@ describe('staleWhenTagMissing', () => {
     for (const result of [refused(400), refused(412), { ok: false, kind: 'network' } as const]) {
       expect(staleWhenTagMissing(result)).toBe(result);
     }
+  });
+});
+
+describe('problemSubtype', () => {
+  it('is the name after the hash, and empty for a plain status', () => {
+    expect(problemSubtype({ type: 'about:blank#asset-cap', status: 409, title: 'x' })).toBe(
+      'asset-cap',
+    );
+    expect(problemSubtype({ type: 'about:blank', status: 404, title: 'x' })).toBe('');
   });
 });

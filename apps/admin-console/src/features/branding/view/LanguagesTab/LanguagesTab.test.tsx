@@ -201,6 +201,74 @@ it('saves the default language on the one tag that stands for the settings', asy
   expect(sent.find((request) => request.method === 'PATCH')?.ifMatch).toBe('"s1"');
 });
 
+it('clears the default language by sending it empty, so the browser decides again', async () => {
+  const user = userEvent.setup();
+  const { sent } = renderConsoleAt(
+    AT,
+    languagesRoutes(
+      {
+        [`PATCH ${ST}`]: settingsAnswer(
+          { supported_locales: ['en', 'ar'], default_locale: null },
+          '"s2"',
+        ),
+      },
+      { supported_locales: ['en', 'ar'], default_locale: 'ar' },
+    ),
+  );
+  await screen.findByRole('grid', { name: 'Message overrides' });
+  await user.click(screen.getByRole('button', { name: /Default language/u }));
+  await user.click(await screen.findByRole('option', { name: 'The browser decides' }));
+  await user.click(screen.getByRole('button', { name: /^Save Languages/u }));
+  await waitFor(() => {
+    expect(sent.find((request) => request.method === 'PATCH')?.body).toEqual({
+      default_locale: '',
+    });
+  });
+});
+
+it('adds a language by its tag, lists it ticked, and saves the whole list', async () => {
+  const user = userEvent.setup();
+  const { sent } = renderConsoleAt(
+    AT,
+    languagesRoutes({
+      [`PATCH ${ST}`]: settingsAnswer({ supported_locales: ['en', 'ar', 'pt-BR'] }, '"s2"'),
+    }),
+  );
+  await screen.findByRole('grid', { name: 'Message overrides' });
+  await user.type(screen.getByRole('combobox', { name: /Add a language/u }), 'pt-BR');
+  await user.click(screen.getByRole('button', { name: 'Add language' }));
+  expect(await screen.findByRole('checkbox', { name: /pt-BR/u })).toBeChecked();
+  await user.click(screen.getByRole('button', { name: /^Save Languages/u }));
+  await waitFor(() => {
+    expect(sent.find((request) => request.method === 'PATCH')?.body).toEqual({
+      supported_locales: ['en', 'ar', 'pt-BR'],
+    });
+  });
+});
+
+it('refuses to add a tag that is not one, and one already offered, sending nothing', async () => {
+  const user = userEvent.setup();
+  const { sent } = renderConsoleAt(AT, languagesRoutes());
+  await screen.findByRole('grid', { name: 'Message overrides' });
+  const field = screen.getByRole('combobox', { name: /Add a language/u });
+  await user.type(field, 'en_US');
+  await user.click(screen.getByRole('button', { name: 'Add language' }));
+  expect(await screen.findByText(/type a tag such as/u)).toBeVisible();
+  await user.clear(field);
+  await user.type(field, 'AR');
+  await user.click(screen.getByRole('button', { name: 'Add language' }));
+  expect(await screen.findByText('That language is already offered.')).toBeVisible();
+  expect(sent.some((request) => request.method === 'PATCH')).toBe(false);
+});
+
+it('does not give the loaded rows as the total while more pages follow', async () => {
+  renderConsoleAt(
+    AT,
+    languagesRoutes({ [`GET ${MO}`]: json({ items: [TITLE_OVERRIDE], next: 'c2' }) }),
+  );
+  expect(await screen.findByText(/1 override loaded so far; more follow/u)).toBeVisible();
+});
+
 it('holds the section when no language is left supported', async () => {
   const user = userEvent.setup();
   renderConsoleAt(AT, languagesRoutes({}, { supported_locales: ['en'] }));

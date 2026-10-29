@@ -4,10 +4,11 @@ import { useRefusal } from '#/features/session';
 import { languagesSave } from '#/features/branding/repository/languagesSave';
 import { useOverrideList, useOverrideWrites } from '#/features/branding/repository/useOverrides';
 import {
+  afterSave,
   askedRemoval,
   clearedOverrideError,
   EMPTY_OVERRIDE,
-  hasProblems,
+  languageAdded,
   languageFields,
   languageSettingsOf,
   languagesOf,
@@ -15,9 +16,8 @@ import {
   LANGUAGES_SECTION,
   LANGUAGES_TITLE,
   openingLocale,
-  overrideProblems,
+  overrideAttempt,
   removeOutcome,
-  saveOutcome,
   shownLocale,
   type LanguageValues,
   type OverrideErrors,
@@ -39,6 +39,11 @@ export interface LanguagesInput {
 export interface LanguagesSection {
   save: SectionSave<LanguageValues>;
   hold: string | undefined;
+  // The language being typed or chosen to be added to the supported ones.
+  adding: string;
+  addProblem: string | undefined;
+  typeAdding: (text: string) => void;
+  add: () => void;
 }
 
 // The tenant's supported and default languages, saved as settings.
@@ -62,7 +67,25 @@ export function useLanguagesSection({
     fields: languageFields(languagesOf(languageSettingsOf(data))),
     save: languagesSave(tenant),
   });
-  return { save, hold: languagesHold(save.values) };
+  const [adding, setAdding] = useState('');
+  const [addProblem, setAddProblem] = useState<string | undefined>(undefined);
+  return {
+    save,
+    hold: languagesHold(save.values),
+    adding,
+    addProblem,
+    typeAdding: (text) => {
+      setAdding(text);
+      setAddProblem(undefined);
+    },
+    add: () => {
+      const added = languageAdded(save.values.supported_locales, adding);
+      setAddProblem(added.problem ?? undefined);
+      if (added.supported === null) return;
+      save.edit('supported_locales', added.supported);
+      setAdding('');
+    },
+  };
 }
 
 export interface Overrides {
@@ -124,20 +147,20 @@ export function useOverrides(tenant: string, data: Settings): Overrides {
     },
     saving: writes.put.busy,
     save: () => {
-      const problems = overrideProblems(values);
-      setErrors(problems);
+      const attempt = overrideAttempt(locale, values);
+      setErrors(attempt.errors);
       setMessage(null);
-      if (hasProblems(problems)) return;
-      const sent = { locale, key: values.key.trim(), message: values.message };
+      const { sent } = attempt;
+      if (sent === null) return;
       writes.put
         .run(sent)
         .then((result) => {
-          const outcome = saveOutcome(result, sent, values);
-          setErrors(outcome.errors);
-          setMessage(outcome.message);
-          setValues(outcome.values);
-          if (outcome.toast !== null) toast.succeeded(outcome.toast);
-          if (outcome.report) refusal.report(result, 'manage-tenant');
+          const after = afterSave(result, sent, values);
+          setErrors(after.errors);
+          setMessage(after.message);
+          setValues(after.values);
+          if (after.toast !== null) toast.succeeded(after.toast);
+          if (after.reported !== null) refusal.report(after.reported, 'manage-tenant');
         })
         .catch(() => undefined);
     },

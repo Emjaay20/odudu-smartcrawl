@@ -1,11 +1,17 @@
 import {
+  MESSAGE_OVERRIDE_KEY_MAX_LENGTH,
   MESSAGE_OVERRIDE_LIMIT,
   MESSAGE_OVERRIDE_MAX_LENGTH,
   type FieldError,
   type MessageOverride,
 } from '@odudu/contracts/admin';
 import { writeRefusal } from '#/shared/service/capabilities';
-import { removalOutcome, writeFailureText, type RemovalOutcome } from '#/shared/service/failure';
+import {
+  problemSubtype,
+  removalOutcome,
+  writeFailureText,
+  type RemovalOutcome,
+} from '#/shared/service/failure';
 import { fieldErrorsOf } from '#/shared/service/fieldErrors';
 import { counted } from '#/shared/service/format';
 import type { GatewayFailure, GatewayResult, Problem } from '#/shared/service/result';
@@ -16,6 +22,8 @@ export const OVERRIDES_DESCRIPTION =
   'The tenant’s own wording for the messages its pages show, per language. A language with no override shows the catalogue’s text. Mail is not changed by these.';
 
 export const OVERRIDE_CAP = MESSAGE_OVERRIDE_LIMIT;
+
+export const OVERRIDE_KEY_LENGTH = MESSAGE_OVERRIDE_KEY_MAX_LENGTH;
 
 export const OVERRIDE_LENGTH = MESSAGE_OVERRIDE_MAX_LENGTH;
 
@@ -63,7 +71,9 @@ export function overrideProblems(values: OverrideValues): OverrideErrors {
   const key = values.key.trim();
   return {
     ...(key === '' ? { key: KEY_REQUIRED } : {}),
-    ...(key.length > 128 ? { key: 'A key is at most 128 characters.' } : {}),
+    ...(key.length > OVERRIDE_KEY_LENGTH
+      ? { key: `A key is at most ${String(OVERRIDE_KEY_LENGTH)} characters.` }
+      : {}),
     ...(values.message === '' ? { message: MESSAGE_REQUIRED } : {}),
     ...(values.message.length > OVERRIDE_LENGTH
       ? { message: `The text is at most ${String(OVERRIDE_LENGTH)} characters.` }
@@ -82,10 +92,6 @@ export function clearedOverrideError(
   return Object.fromEntries(Object.entries(errors).filter(([name]) => name !== field));
 }
 
-function typeOf(problem: Problem): string {
-  return problem.type.split('#')[1] ?? '';
-}
-
 function unknownKey(errors: readonly FieldError[] | undefined): boolean {
   return errors?.some((error) => error.path === 'key') === true;
 }
@@ -100,7 +106,7 @@ export interface OverrideOutcome {
 const NO_OUTCOME: OverrideOutcome = { errors: {}, message: null, report: false };
 
 function problemOutcome(problem: Problem): OverrideOutcome {
-  if (problem.status === 409 && typeOf(problem) === 'message-overrides-full') {
+  if (problem.status === 409 && problemSubtype(problem) === 'message-overrides-full') {
     return { ...NO_OUTCOME, message: OVER_BOUND };
   }
   if (problem.status === 400 && unknownKey(problem.errors)) {
@@ -158,8 +164,13 @@ export function removeOutcome(result: GatewayResult<unknown>): RemovalOutcome {
   );
 }
 
-export function capText(held: number): string {
-  return `${counted(held, 'override', 'overrides')} in this language; the tenant may hold ${String(OVERRIDE_CAP)} across every language.`;
+// How many are shown, said as a total only once no page is left to load.
+export function capText(loaded: number, more: boolean): string {
+  const shown = counted(loaded, 'override', 'overrides');
+  const held = `The tenant may hold ${String(OVERRIDE_CAP)} across every language.`;
+  return more
+    ? `${shown} loaded so far; more follow. ${held}`
+    : `${shown} in this language. ${held}`;
 }
 
 // The page size of the table; the server pages at most 200.
@@ -196,4 +207,34 @@ export function shownLocale(
   opening: string,
 ): string {
   return picked !== null && supported.includes(picked) ? picked : opening;
+}
+
+export interface OverrideAttempt {
+  errors: OverrideErrors;
+  // What is sent, or null while the form has problems.
+  sent: { locale: string; key: string; message: string } | null;
+}
+
+// The form as it is sent: the key trimmed, or the problems that hold it back.
+export function overrideAttempt(locale: string, values: OverrideValues): OverrideAttempt {
+  const errors = overrideProblems(values);
+  return {
+    errors,
+    sent: hasProblems(errors) ? null : { locale, key: values.key.trim(), message: values.message },
+  };
+}
+
+export interface AfterSave extends SaveOutcome {
+  // The refusal to report to whoami, when the answer was a refusal.
+  reported: GatewayFailure | null;
+}
+
+// What to do with the answer to a save: the form, the toast and the refusal.
+export function afterSave(
+  result: GatewayResult<unknown>,
+  sent: { locale: string; key: string },
+  values: OverrideValues,
+): AfterSave {
+  const outcome = saveOutcome(result, sent, values);
+  return { ...outcome, reported: outcome.report && !result.ok ? result : null };
 }
