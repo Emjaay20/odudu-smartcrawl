@@ -182,3 +182,11 @@ export function publishedTemplateProblems(
     wording: (error) => detailed(error.message, error),
   });
 }
+
+export const SCRIPT_NOTE =
+  'This page uses a script, which the preview leaves out. The real page runs it.';
+
+// What the preview of a kind leaves out, when it leaves anything.
+export function omissionNote(kind: PageKind): string | null {
+  return MANIFESTS[kind].required.includes('script') ? SCRIPT_NOTE : null;
+}

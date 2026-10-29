@@ -1,4 +1,4 @@
-import { PAGE_KINDS, type PageKind } from '@odudu/kernel';
+import { PAGE_KINDS, scanSlots, type PageKind } from '@odudu/kernel';
 import { describe, expect, it } from 'vitest';
 import {
   isOverridableMessageKey,
@@ -71,6 +71,16 @@ describe('pageMessageCatalogue', () => {
       expect(keys).toEqual([...keys].sort());
       expect(new Set(keys).size).toBe(keys.length);
       for (const key of keys) expect(isOverridableMessageKey(key), key).toBe(true);
+    }
+  });
+
+  it('lists only keys a template can write as {{t "key"}}, so a pick is never malformed', () => {
+    for (const section of sections) {
+      for (const { key } of section.messages) {
+        expect(scanSlots(`{{t "${key}"}}`), key).toEqual([
+          { kind: 'text', name: key, index: 0, end: key.length + 8 },
+        ]);
+      }
     }
   });
 

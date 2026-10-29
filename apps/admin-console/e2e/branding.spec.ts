@@ -521,7 +521,7 @@ test('sets a message override, refuses a key that is not a message, and removes 
   const { languages } = branding;
   await signIn(page, languages);
   await page.goto(`/console/${languages.tenant}/branding?tab=languages`);
-  const key = page.getByRole('textbox', { name: /Message key/u });
+  const key = page.getByRole('combobox', { name: /Message key/u });
   const text = page.getByRole('textbox', { name: /Text shown instead/u });
 
   await key.fill('no.such.key');
@@ -530,7 +530,19 @@ test('sets a message override, refuses a key that is not a message, and removes 
   await expect(page.getByText(/not the key of any page message/u)).toBeVisible();
   forgive(problems, '/message-overrides/en/no.such.key');
 
-  await key.fill('login.title');
+  // The list offers the keys the pages hold, a bounded number at a time, each
+  // with its English text; one is chosen by keyboard.
+  await key.fill('');
+  await page.getByRole('button', { name: /^Show Message key options/u }).click();
+  const options = page.getByRole('option');
+  await expect(options.first()).toBeVisible();
+  expect(await options.count()).toBeLessThanOrEqual(50);
+  await page.keyboard.press('Escape');
+  await key.fill('login.titl');
+  await expect(options.first()).toContainText('login.title');
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
+  await expect(key).toHaveValue('login.title');
   await text.fill('Welcome back');
   await page.getByRole('button', { name: 'Save override' }).click();
   const table = page.getByRole('grid', { name: 'Message overrides' });
@@ -539,4 +551,38 @@ test('sets a message override, refuses a key that is not a message, and removes 
   await page.getByRole('button', { name: 'Remove login.title' }).click();
   await page.getByRole('button', { name: 'Remove override' }).click();
   await expect(page.getByText('No overrides yet')).toBeVisible();
+});
+
+test('inserts a message from the list into a template, and says the preview shows no draft until there is one', async ({
+  page,
+}) => {
+  test.slow();
+  const { catalogue } = branding;
+  await signIn(page, catalogue);
+  await page.goto(`/console/${catalogue.tenant}/branding?tab=pages`);
+  const section = page.getByRole('region', { name: 'Page templates' });
+  const editor = section.getByRole('textbox', { name: 'Sign in: template' });
+  const notice = page.getByRole('group', { name: 'What the preview shows' });
+  await expect(notice).toContainText(
+    'There is no saved draft or published theme, so the preview shows Instrument’s default look.',
+  );
+
+  await editor.fill('{{error}}{{form.open}}{{fields}}{{submit}}{{form.close}}<h2></h2>');
+  await editor.press('ControlOrMeta+End');
+  // The caret goes back before the closing tag, so the message lands in the heading.
+  for (const key of Array.from('</h2>', () => 'ArrowLeft')) await editor.press(key);
+  const picker = section.getByRole('combobox', { name: 'Insert a message' });
+  await picker.fill('login.titl');
+  const options = page.getByRole('option');
+  await expect(options.first()).toContainText('login.title');
+  expect(await options.count()).toBeLessThanOrEqual(50);
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('Enter');
+  await expect(editor).toHaveValue(/<h2>\{\{t "login\.title"\}\}<\/h2>$/u);
+  await expect(editor).toBeFocused();
+  await expectAccessible(page, { exclude: [FRAME] });
+
+  await save(section);
+  await expect(page.getByRole('group', { name: 'What the preview shows' })).toBeHidden();
+  await expect(preview(page).getByRole('heading', { level: 2, name: 'Sign in' })).toBeVisible();
 });

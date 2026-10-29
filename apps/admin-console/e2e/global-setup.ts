@@ -535,6 +535,7 @@ export default function globalSetup(): void {
       mail: { tenant: `${run}-b7`, username: 'lark', password: password() },
       languages: { tenant: `${run}-b8`, username: 'tern', password: password() },
       styled: { tenant: `${run}-b9`, username: 'kite', password: password() },
+      catalogue: { tenant: `${run}-b10`, username: 'piper', password: password() },
     },
     lockouts: {
       main: { tenant: `${run}-l1`, username: 'curie', password: password() },
