@@ -1,9 +1,11 @@
 import { MAX_TEMPLATE_BYTES, THEME_PAGE_KINDS } from '@odudu/contracts';
 import {
   detailed,
+  NO_PROBLEMS,
   placedProblems,
   type PlacedProblems,
 } from '#/features/branding/service/problems';
+import type { PublishOutcome } from '#/features/branding/service/edits';
 import type { PageKind } from '#/features/branding/service/values';
 import type { FieldError } from '@odudu/contracts/admin';
 
@@ -150,6 +152,8 @@ export function formNote(manifest: Manifest): string | null {
 
 export const TEMPLATE_REFUSED = 'The template was not saved.';
 
+export const TEMPLATE_UNPUBLISHABLE = 'The saved template was refused at publish.';
+
 // What a refused save says about one page's template.
 export function templateProblems(
   kind: PageKind,
@@ -159,6 +163,22 @@ export function templateProblems(
   return placedProblems(errors, saved, {
     path: `templates.${kind}`,
     refused: TEMPLATE_REFUSED,
+    wording: (error) => detailed(error.message, error),
+  });
+}
+
+// What a refused publish says about one page's template, for as long as the
+// draft it refused is the one on screen.
+export function publishedTemplateProblems(
+  kind: PageKind,
+  outcome: PublishOutcome,
+  tag: string,
+  changed: boolean,
+): PlacedProblems {
+  if (changed || outcome.atTag !== tag) return NO_PROBLEMS;
+  return placedProblems(outcome.errors, undefined, {
+    path: `templates.${kind}`,
+    refused: TEMPLATE_UNPUBLISHABLE,
     wording: (error) => detailed(error.message, error),
   });
 }

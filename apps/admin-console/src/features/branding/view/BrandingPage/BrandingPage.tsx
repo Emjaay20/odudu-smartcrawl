@@ -49,6 +49,8 @@ function Branding({ tenant }: { tenant: string }) {
                   view={view}
                   tag={tag}
                   gone={page.record.gone}
+                  published={page.published}
+                  onPublished={page.setPublished}
                 />
               }
             />
@@ -65,6 +67,7 @@ function Branding({ tenant }: { tenant: string }) {
                   gone={page.record.gone}
                   kind={preview.choice.kind}
                   onKind={preview.setKind}
+                  published={page.published}
                 />
               }
             />

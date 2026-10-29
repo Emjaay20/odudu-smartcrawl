@@ -366,6 +366,65 @@ test('a long line keeps the text, the colour and the caret in one place', async 
   await expectFitsViewport(page);
 });
 
+test('undo and redo restore the text and the caret after typing, an indent, an outdent and a paste', async ({
+  page,
+  context,
+}) => {
+  test.slow();
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  const { layout } = branding;
+  await signIn(page, layout);
+  await openBranding(page, layout.tenant);
+  const section = page.getByRole('region', { name: 'Stylesheet', exact: true });
+  const editor = section.getByRole('textbox', { name: 'Stylesheet CSS' });
+  const caret = (): Promise<number> =>
+    editor.evaluate((a: HTMLTextAreaElement) => a.selectionStart);
+  const undo = (): Promise<void> => page.keyboard.press('ControlOrMeta+z');
+  const redo = (): Promise<void> => page.keyboard.press('ControlOrMeta+Shift+z');
+  const at = async (value: string, position: number): Promise<void> => {
+    await expect(editor).toHaveValue(value);
+    expect(await caret()).toBe(position);
+  };
+
+  await editor.click();
+  await page.keyboard.type('ab cd');
+  await undo();
+  await at('ab ', 3);
+  await undo();
+  await at('', 0);
+  await redo();
+  await at('ab ', 3);
+  await redo();
+  await at('ab cd', 5);
+
+  await page.keyboard.press('Enter');
+  await page.keyboard.type('x');
+  await page.keyboard.press('Tab');
+  await at('ab cd\nx  ', 9);
+  await undo();
+  await at('ab cd\nx', 7);
+  await redo();
+  await at('ab cd\nx  ', 9);
+
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Tab');
+  await at('ab cd\nx  \n  ', 12);
+  await page.keyboard.press('Shift+Tab');
+  await at('ab cd\nx  \n', 10);
+  await undo();
+  await at('ab cd\nx  \n  ', 12);
+  await redo();
+  await at('ab cd\nx  \n', 10);
+
+  await page.evaluate(() => navigator.clipboard.writeText('PASTE'));
+  await page.keyboard.press('ControlOrMeta+v');
+  await at('ab cd\nx  \nPASTE', 15);
+  await undo();
+  await at('ab cd\nx  \n', 10);
+  await redo();
+  await at('ab cd\nx  \nPASTE', 15);
+});
+
 const MAIL_FRAME = 'iframe[title="Preview of the verification mail"]';
 
 test('frames the verification mail without a script, in either scheme', async ({ page }) => {

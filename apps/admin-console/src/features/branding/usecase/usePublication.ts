@@ -1,12 +1,11 @@
 import type { ThemeView } from '@odudu/contracts/admin';
-import { useState } from 'react';
 import { useRefusal } from '#/features/session';
 import type { ThemeWrites } from '#/features/branding/repository/useThemeWrites';
 import {
-  NO_OUTCOME,
   publishFailure,
   publishHold,
   publishOutcomeOf,
+  NO_OUTCOME,
   type PublishOutcome,
 } from '#/features/branding/service';
 import { useToast } from '#/shared/repository/useToasts';
@@ -27,6 +26,8 @@ export function usePublication({
   unsaved,
   contrast,
   writes,
+  outcome,
+  onOutcome,
 }: {
   tenant: string;
   view: ThemeView;
@@ -36,12 +37,14 @@ export function usePublication({
   // Why the colours would be refused, from the pairs on screen.
   contrast: string | undefined;
   writes: ThemeWrites;
+  // The last answer, held by the page so every tab can mark what it refused.
+  outcome: PublishOutcome;
+  onOutcome: (outcome: PublishOutcome) => void;
 }): Publication {
   const refusal = useRefusal(tenant);
   const toast = useToast();
-  const [outcome, setOutcome] = useState(NO_OUTCOME);
   const answered = (next: PublishOutcome): void => {
-    setOutcome(next);
+    onOutcome(next);
     if (next.toast !== null) toast.succeeded(next.toast);
   };
   return {
@@ -49,7 +52,7 @@ export function usePublication({
     hold: publishHold({ view, unsaved, contrast }),
     outcome,
     publish: () => {
-      setOutcome(NO_OUTCOME);
+      onOutcome(NO_OUTCOME);
       writes.publish
         .run(tag)
         .then((result) => {

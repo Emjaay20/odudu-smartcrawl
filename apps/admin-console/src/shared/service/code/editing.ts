@@ -13,6 +13,15 @@ export interface KeyPress {
   composing: boolean;
 }
 
+// Undo and redo from the keyboard, for a browser that gives the field no
+// `beforeinput` to hear them by.
+export function historyKey(press: KeyPress): 'undo' | 'redo' | null {
+  if (press.composing || press.altKey || !(press.ctrlKey || press.metaKey)) return null;
+  const key = press.key.toLowerCase();
+  if (key === 'z') return press.shiftKey ? 'redo' : 'undo';
+  return key === 'y' && press.ctrlKey && !press.shiftKey ? 'redo' : null;
+}
+
 export interface KeyStep {
   action: 'indent' | 'outdent' | 'none';
   // Whether Escape was the last key, so the next Tab leaves the field.

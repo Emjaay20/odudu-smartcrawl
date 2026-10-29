@@ -16,7 +16,6 @@ import {
   type CodeLanguage,
   type CodeToken,
   type LineIssue,
-  type TextEdit,
   type TokenKind,
 } from '#/shared/service/code';
 import {
@@ -28,6 +27,7 @@ import {
   VALIDATION,
   type Chrome,
 } from '#/shared/view/Field';
+import { useCodeHistory } from '#/shared/usecase/useCodeHistory';
 import { KeyHint } from '#/shared/view/KeyHint';
 import type { SizeReading } from '#/shared/service/format';
 import styles from '#/shared/view/CodeField/CodeField.module.css';
@@ -87,30 +87,6 @@ function Gutter({ count, marked }: { count: number; marked: readonly number[] })
   );
 }
 
-// The browser's own text insertion keeps its undo history, and the only way
-// to ask for it is the deprecated execCommand, so it is looked up rather than
-// named. Where it is missing or declines, the edit is made by hand and undo
-// cannot see it.
-function insertedWithHistory(text: string): boolean {
-  const run: unknown = Reflect.get(document, 'execCommand');
-  if (typeof run !== 'function') return false;
-  const done: unknown = Reflect.apply(run, document, ['insertText', false, text]);
-  return done === true;
-}
-
-function replaceRange(
-  area: HTMLTextAreaElement,
-  edit: TextEdit,
-  onChange: (value: string) => void,
-): void {
-  area.setSelectionRange(edit.from, edit.to);
-  if (!insertedWithHistory(edit.text)) {
-    area.setRangeText(edit.text, edit.from, edit.to, 'end');
-    onChange(area.value);
-  }
-  area.setSelectionRange(edit.selectionStart, edit.selectionEnd);
-}
-
 // A text field for code: the textarea is the control, with a coloured copy
 // of its text behind it and line numbers beside it. Tab indents; Escape then
 // Tab leaves. Where the server refused a line, that line carries a mark and
@@ -136,24 +112,23 @@ export function CodeField({
   const issuesId = useId();
   const readOnly = use(FieldsReadOnly);
   const escaped = useRef(false);
-  const composing = useRef(false);
+  const [areaRef, history] = useCodeHistory({ value, onChange, readOnly });
   const { tokens, plain } = highlight(language, value);
   const count = lineCount(normalisedBreaks(value));
   const marks = markedLines(issues, count);
 
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>): void => {
     if (readOnly) return;
-    const step = keyStep(
-      {
-        key: event.key,
-        shiftKey: event.shiftKey,
-        ctrlKey: event.ctrlKey,
-        metaKey: event.metaKey,
-        altKey: event.altKey,
-        composing: event.nativeEvent.isComposing || composing.current,
-      },
-      escaped.current,
-    );
+    const press = {
+      key: event.key,
+      shiftKey: event.shiftKey,
+      ctrlKey: event.ctrlKey,
+      metaKey: event.metaKey,
+      altKey: event.altKey,
+      composing: event.nativeEvent.isComposing || history.composing(),
+    };
+    if (history.keyed(press, event)) return;
+    const step = keyStep(press, escaped.current);
     escaped.current = step.escaped;
     if (step.action === 'none') return;
     event.preventDefault();
@@ -164,7 +139,7 @@ export function CodeField({
       area.selectionEnd,
       step.action === 'outdent',
     );
-    if (edit !== null) replaceRange(area, edit, onChange);
+    if (edit !== null) history.replace(edit);
   };
 
   return (
@@ -174,7 +149,7 @@ export function CodeField({
       isDisabled={isDisabled ?? false}
       isReadOnly={readOnly}
       value={value}
-      onChange={onChange}
+      onChange={history.change}
       autoComplete="off"
       className={styles.field ?? ''}
       data-changed={changed === true || undefined}
@@ -187,6 +162,7 @@ export function CodeField({
           <div className={styles.stage}>
             {plain ? null : <Layer tokens={tokens} marked={new Set(marks)} />}
             <TextArea
+              ref={areaRef}
               className={styles.area ?? ''}
               data-control
               wrap="off"
@@ -197,15 +173,8 @@ export function CodeField({
               onPointerDown={() => {
                 escaped.current = false;
               }}
-              onCompositionStart={() => {
-                composing.current = true;
-              }}
-              onCompositionEnd={() => {
-                // A key that ends a composition is still delivered to keydown.
-                setTimeout(() => {
-                  composing.current = false;
-                }, 0);
-              }}
+              onCompositionStart={history.compositionStart}
+              onCompositionEnd={history.compositionEnd}
               onBlur={() => {
                 escaped.current = false;
               }}

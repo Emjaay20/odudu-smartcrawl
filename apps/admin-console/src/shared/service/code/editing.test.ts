@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { indentEdit, keyStep, type KeyPress, type TextEdit } from '#/shared/service/code';
+import {
+  historyKey,
+  indentEdit,
+  keyStep,
+  type KeyPress,
+  type TextEdit,
+} from '#/shared/service/code';
 
 function applyEdit(value: string, edit: TextEdit): string {
   return value.slice(0, edit.from) + edit.text + value.slice(edit.to);
@@ -114,5 +120,22 @@ describe('indentEdit outdenting', () => {
 
   it('is nothing when nothing leads the lines', () => {
     expect(indentEdit('a\nb', 0, 3, true)).toBeNull();
+  });
+});
+
+describe('historyKey', () => {
+  it('is undo on Ctrl or Cmd+Z, redo on Shift+Z and on Ctrl+Y', () => {
+    expect(historyKey(press('z', { ctrlKey: true }))).toBe('undo');
+    expect(historyKey(press('Z', { metaKey: true }))).toBe('undo');
+    expect(historyKey(press('Z', { metaKey: true, shiftKey: true }))).toBe('redo');
+    expect(historyKey(press('z', { ctrlKey: true, shiftKey: true }))).toBe('redo');
+    expect(historyKey(press('y', { ctrlKey: true }))).toBe('redo');
+  });
+
+  it('is nothing for a bare letter, Alt, Cmd+Y, or while composing', () => {
+    expect(historyKey(press('z'))).toBeNull();
+    expect(historyKey(press('z', { ctrlKey: true, altKey: true }))).toBeNull();
+    expect(historyKey(press('y', { metaKey: true }))).toBeNull();
+    expect(historyKey(press('z', { ctrlKey: true, composing: true }))).toBeNull();
   });
 });

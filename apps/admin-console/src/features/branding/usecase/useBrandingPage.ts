@@ -1,11 +1,14 @@
 import type { ThemeView } from '@odudu/contracts/admin';
+import { useState } from 'react';
 import { useThemeRecord } from '#/features/branding/repository/useThemeRecord';
 import {
+  NO_OUTCOME,
   OFFERED_TABS,
   selectOffered,
   tabsWithEdits,
   themeRecord,
   type OfferedTab,
+  type PublishOutcome,
   type ThemeScope,
 } from '#/features/branding/service';
 import { useMailTab, type MailTab } from '#/features/branding/usecase/useMailTab';
@@ -25,12 +28,16 @@ export interface BrandingPage {
   dirty: ReadonlySet<OfferedTab>;
   preview: Preview;
   mail: MailTab;
+  // What the last publish answered, kept here so each tab can mark its refusals.
+  published: PublishOutcome;
+  setPublished: (outcome: PublishOutcome) => void;
 }
 
 export function useBrandingPage(tenant: string, scope: ThemeScope): BrandingPage {
   const record = useThemeRecord(tenant, scope);
   const { tab, selectTab } = useRecordTab(OFFERED_TABS);
   const dirty = useDirtySections(tenant, themeRecord(scope));
+  const [published, setPublished] = useState(NO_OUTCOME);
   return {
     record,
     view: record.data,
@@ -42,5 +49,7 @@ export function useBrandingPage(tenant: string, scope: ThemeScope): BrandingPage
     dirty: tabsWithEdits(dirty),
     preview: usePreview(tenant, scope, record.data, record.etag),
     mail: useMailTab(tenant, record.data, tab === 'mail'),
+    published,
+    setPublished,
   };
 }

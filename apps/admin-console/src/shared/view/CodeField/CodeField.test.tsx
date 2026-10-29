@@ -240,6 +240,15 @@ describe('CodeField', () => {
     });
   });
 
+  it('outdents a whitespace-only line to nothing', async () => {
+    const user = userEvent.setup();
+    render(<Editor start={'a\n  \nb'} />);
+    await user.click(box());
+    (box() as HTMLTextAreaElement).setSelectionRange(3, 3);
+    await user.keyboard('{Shift>}{Tab}{/Shift}');
+    expect(box()).toHaveValue('a\n\nb');
+  });
+
   it('indents again after a click, though Escape came before it', async () => {
     const user = userEvent.setup();
     render(<Editor start="a" />);
@@ -249,58 +258,6 @@ describe('CodeField', () => {
     await user.keyboard('{Tab}');
     expect(box()).toHaveFocus();
     expect(box()).toHaveValue('a  ');
-  });
-
-  describe('with a browser that can insert text and keep undo', () => {
-    function withInsert(run: (text: string) => boolean, test: () => Promise<void>) {
-      return async () => {
-        Object.defineProperty(document, 'execCommand', {
-          configurable: true,
-          value: (command: string, _ui: boolean, text: string) =>
-            command === 'insertText' && run(text),
-        });
-        try {
-          await test();
-        } finally {
-          Reflect.deleteProperty(document, 'execCommand');
-        }
-      };
-    }
-
-    it(
-      'asks the browser to insert, and does not insert by hand as well',
-      withInsert(
-        (text) => {
-          const area = box() as HTMLTextAreaElement;
-          area.setRangeText(text, area.selectionStart, area.selectionEnd, 'end');
-          fireEvent.input(area);
-          return true;
-        },
-        async () => {
-          const user = userEvent.setup();
-          const onValue = vi.fn();
-          render(<Editor start="a" onValue={onValue} />);
-          await user.click(box());
-          await user.keyboard('{Tab}');
-          expect(box()).toHaveValue('a  ');
-          expect(onValue).toHaveBeenCalledTimes(1);
-        },
-      ),
-    );
-
-    it(
-      'falls back to editing by hand when the browser declines',
-      withInsert(
-        () => false,
-        async () => {
-          const user = userEvent.setup();
-          render(<Editor start="a" />);
-          await user.click(box());
-          await user.keyboard('{Tab}');
-          expect(box()).toHaveValue('a  ');
-        },
-      ),
-    );
   });
 
   it('shows an error under the field', () => {
@@ -327,5 +284,169 @@ describe('CodeField', () => {
         />
       )),
     ).toEqual({ light: [], dark: [] });
+  });
+});
+
+describe('undo and redo', () => {
+  const area = () => box() as HTMLTextAreaElement;
+  const undo = '{Control>}z{/Control}';
+  const redo = '{Control>}{Shift>}z{/Shift}{/Control}';
+
+  it('undoes typing a word at a time and redoes it', async () => {
+    const user = userEvent.setup();
+    render(<Editor />);
+    await user.click(box());
+    await user.keyboard('ab cd');
+    await user.keyboard(undo);
+    expect(box()).toHaveValue('ab ');
+    await user.keyboard(undo);
+    expect(box()).toHaveValue('');
+    await user.keyboard(undo);
+    expect(box()).toHaveValue('');
+    await user.keyboard(redo);
+    expect(box()).toHaveValue('ab ');
+    await user.keyboard('{Control>}y{/Control}');
+    expect(box()).toHaveValue('ab cd');
+  });
+
+  it('undoes a Tab indent and puts the caret where it was', async () => {
+    const user = userEvent.setup();
+    render(<Editor start={'a\nb'} />);
+    await user.click(box());
+    area().setSelectionRange(3, 3);
+    await user.keyboard('{Tab}');
+    expect(box()).toHaveValue('a\nb  ');
+    await user.keyboard(undo);
+    expect(box()).toHaveValue('a\nb');
+    expect([area().selectionStart, area().selectionEnd]).toEqual([3, 3]);
+    await user.keyboard(redo);
+    expect(box()).toHaveValue('a\nb  ');
+    expect(area().selectionStart).toBe(5);
+  });
+
+  it('undoes an outdent, including of a line that was only space', async () => {
+    const user = userEvent.setup();
+    render(<Editor start={'a\n  \nb'} />);
+    await user.click(box());
+    area().setSelectionRange(3, 3);
+    await user.keyboard('{Shift>}{Tab}{/Shift}');
+    expect(box()).toHaveValue('a\n\nb');
+    await user.keyboard(undo);
+    expect(box()).toHaveValue('a\n  \nb');
+    expect(area().selectionStart).toBe(3);
+    await user.keyboard(redo);
+    expect(box()).toHaveValue('a\n\nb');
+  });
+
+  it('undoes a paste as one step, not with the typing before it', async () => {
+    const user = userEvent.setup();
+    render(<Editor />);
+    await user.click(box());
+    await user.keyboard('ab');
+    await user.paste('XYZ');
+    expect(box()).toHaveValue('abXYZ');
+    await user.keyboard(undo);
+    expect(box()).toHaveValue('ab');
+    await user.keyboard(undo);
+    expect(box()).toHaveValue('');
+  });
+
+  it('hears historyUndo and historyRedo from the browser too, and keeps the browser out of it', async () => {
+    const user = userEvent.setup();
+    render(<Editor />);
+    await user.click(box());
+    await user.keyboard('ab');
+    const undoing = new InputEvent('beforeinput', {
+      inputType: 'historyUndo',
+      bubbles: true,
+      cancelable: true,
+    });
+    box().dispatchEvent(undoing);
+    expect(undoing.defaultPrevented).toBe(true);
+    expect(box()).toHaveValue('');
+    const redoing = new InputEvent('beforeinput', {
+      inputType: 'historyRedo',
+      bubbles: true,
+      cancelable: true,
+    });
+    box().dispatchEvent(redoing);
+    expect(redoing.defaultPrevented).toBe(true);
+    expect(box()).toHaveValue('ab');
+  });
+
+  it('reports every step through the one onChange typing uses', async () => {
+    const user = userEvent.setup();
+    const onValue = vi.fn();
+    render(<Editor onValue={onValue} />);
+    await user.click(box());
+    await user.keyboard('a');
+    await user.keyboard(undo);
+    expect(onValue).toHaveBeenLastCalledWith('');
+  });
+
+  it('does nothing in a read-only field', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <ReadOnlyFields when>
+        <CodeField label="Stylesheet" language="css" value="a {}" onChange={onChange} />
+      </ReadOnlyFields>,
+    );
+    await user.click(box());
+    await user.keyboard(undo);
+    await user.keyboard(redo);
+    expect(box()).toHaveValue('a {}');
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('leaves the history alone while an input method composes, and notes one entry after', async () => {
+    const user = userEvent.setup();
+    render(<Editor start="a" />);
+    await user.click(box());
+    fireEvent.compositionStart(box());
+    const mid = new InputEvent('beforeinput', {
+      inputType: 'insertCompositionText',
+      data: 'あ',
+      bubbles: true,
+      cancelable: true,
+    });
+    box().dispatchEvent(mid);
+    await user.keyboard(undo);
+    expect(box()).toHaveValue('a');
+    fireEvent.change(box(), { target: { value: 'aあ' } });
+    fireEvent.compositionEnd(box());
+    await vi.waitFor(() => {
+      const probe = createEvent.keyDown(box(), { key: 'x' });
+      fireEvent(box(), probe);
+    });
+    await user.keyboard(undo);
+    expect(box()).toHaveValue('a');
+  });
+
+  it('forgets its history when the text is replaced from outside', async () => {
+    const user = userEvent.setup();
+    function Outside() {
+      const [value, setValue] = useState('');
+      return (
+        <>
+          <CodeField label="Stylesheet" language="css" value={value} onChange={setValue} />
+          <button
+            type="button"
+            onClick={() => {
+              setValue('from outside');
+            }}
+          >
+            Replace
+          </button>
+        </>
+      );
+    }
+    render(<Outside />);
+    await user.click(box());
+    await user.keyboard('typed');
+    await user.click(screen.getByRole('button', { name: 'Replace' }));
+    await user.click(box());
+    await user.keyboard(undo);
+    expect(box()).toHaveValue('from outside');
   });
 });

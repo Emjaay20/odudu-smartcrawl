@@ -17,7 +17,9 @@ import {
   stylesheetRequest,
   stylesheetSize,
   stylesheetValues,
+  publishedTemplateProblems,
   templateProblems,
+  TEMPLATE_UNPUBLISHABLE,
   templateSize,
   TEMPLATE_REFUSED,
 } from '#/features/branding/service';
@@ -135,6 +137,27 @@ describe('what a refused template says', () => {
       message: TEMPLATE_REFUSED,
     });
     expect(templateProblems('notice', errors, 'Their words.').message).toBe('Their words.');
+  });
+});
+
+describe('what a refused publish says of a template', () => {
+  const errors = [
+    error({ path: 'templates.sign-in', message: 'Needs {{form.close}}.', line: 2 }),
+    error({ path: 'templates.consent', message: 'Elsewhere.', line: 1 }),
+  ];
+  const outcome = { ...NO_OUTCOME, errors, atTag: '"d1"' };
+
+  it('marks its own kind’s line while the refused draft stands, and no other kind’s', () => {
+    expect(publishedTemplateProblems('sign-in', outcome, '"d1"', false)).toEqual({
+      lines: [{ line: 2, text: 'Needs {{form.close}}.' }],
+      message: TEMPLATE_UNPUBLISHABLE,
+    });
+    expect(publishedTemplateProblems('notice', outcome, '"d1"', false)).toEqual(NO_PROBLEMS);
+  });
+
+  it('lets go once the draft moved or the template was edited', () => {
+    expect(publishedTemplateProblems('sign-in', outcome, '"d2"', false)).toEqual(NO_PROBLEMS);
+    expect(publishedTemplateProblems('sign-in', outcome, '"d1"', true)).toEqual(NO_PROBLEMS);
   });
 });
 

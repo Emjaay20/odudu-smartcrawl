@@ -2,7 +2,10 @@ import type { ThemeView } from '@odudu/contracts/admin';
 import { useRefusal } from '#/features/session';
 import { templateSave } from '#/features/branding/repository/themeSaves';
 import {
+  firstProblems,
   limitedIssues,
+  publishedTemplateProblems,
+  type PublishOutcome,
   templateProblems,
   templateSize,
   templateField,
@@ -35,12 +38,15 @@ export function useTemplates({
   view,
   tag,
   gone,
+  published,
 }: {
   tenant: string;
   scope: ThemeScope;
   view: ThemeView;
   tag: string;
   gone: boolean;
+  // What the last publish answered, for a refusal of a template in it.
+  published: PublishOutcome;
 }): Templates {
   const refusal = useRefusal(tenant);
   const save = useSectionSave({
@@ -60,10 +66,13 @@ export function useTemplates({
     save,
     text: (kind) => save.values[templateField(kind)],
     problems: (kind) =>
-      templateProblems(
-        kind,
-        save.refusals[templateField(kind)] ?? [],
-        limitedIssues(save.fieldErrors[templateField(kind)]),
+      firstProblems(
+        templateProblems(
+          kind,
+          save.refusals[templateField(kind)] ?? [],
+          limitedIssues(save.fieldErrors[templateField(kind)]),
+        ),
+        publishedTemplateProblems(kind, published, tag, save.changed.includes(templateField(kind))),
       ),
     size: (kind) => templateSize(save.values[templateField(kind)]),
     edit: (kind, text) => {

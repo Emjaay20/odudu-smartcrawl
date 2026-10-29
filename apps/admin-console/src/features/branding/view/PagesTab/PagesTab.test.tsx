@@ -2,7 +2,7 @@ import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
-import { brandingRoutes, draftedView, TH, themeAnswer } from '#/testing/brandingFixtures';
+import { brandingRoutes, draftedView, EMPTY, TH, themeAnswer } from '#/testing/brandingFixtures';
 import { problem } from '#/testing/fakeTransport';
 import { consoleAt, renderConsoleAt } from '#/testing/renderConsole';
 import { resetConsole } from '#/testing/resetConsole';
@@ -75,6 +75,49 @@ it('marks the line the server refused in a template, and lists why', async () =>
   expect(within(section).getByText('The template was not saved.')).toBeVisible();
   const scroller = section.querySelector('textarea')?.parentElement?.parentElement;
   expect(scroller?.firstElementChild?.querySelectorAll('span')).toHaveLength(1);
+});
+
+it('marks the template line a refused publish names, on the Pages tab', async () => {
+  const user = userEvent.setup();
+  const view = draftedView();
+  renderConsoleAt(
+    '/console/acme/branding',
+    brandingRoutes(
+      themeAnswer(
+        {
+          ...view,
+          draft: {
+            ...EMPTY,
+            templates: { 'sign-in': '<p>{{form.open}}</p>\n<p>{{nope}}</p>' },
+          },
+        },
+        '"d1"',
+      ),
+      {
+        [`POST ${TH}/publish`]: problem(400, 'about:blank', 'Bad Request', {
+          errors: [
+            {
+              path: 'templates.sign-in',
+              message: 'The slot is not a part of this page kind.',
+              code: 'unknown-slot',
+              detail: 'nope',
+              line: 2,
+              column: 4,
+            },
+          ],
+        }),
+      },
+    ),
+  );
+  await user.click(await screen.findByRole('button', { name: 'Publish the draft' }));
+  await user.click(await screen.findByRole('tab', { name: /Pages/u }));
+  const section = await screen.findByRole('region', { name: 'Page templates' });
+  expect(
+    await within(section).findByText('Line 2: The slot is not a part of this page kind. (nope)'),
+  ).toBeVisible();
+  expect(within(section).getByText('The saved template was refused at publish.')).toBeVisible();
+  await user.type(within(section).getByRole('textbox', { name: 'Sign in: template' }), 'x');
+  expect(within(section).queryByText(/Line 2:/u)).toBeNull();
 });
 
 it('has nothing axe can find in either theme', async () => {

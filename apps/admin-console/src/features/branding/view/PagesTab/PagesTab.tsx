@@ -20,6 +20,7 @@ import {
   templateField,
   pageKindOf,
   type PageKind,
+  type PublishOutcome,
   type ThemeScope,
 } from '#/features/branding/service';
 import { useTemplates } from '#/features/branding/usecase/useTemplates';
@@ -71,6 +72,7 @@ export function PagesTab({
   gone,
   kind,
   onKind,
+  published,
 }: {
   tenant: string;
   scope: ThemeScope;
@@ -79,8 +81,9 @@ export function PagesTab({
   gone: boolean;
   kind: PageKind;
   onKind: (kind: PageKind) => void;
+  published: PublishOutcome;
 }) {
-  const templates = useTemplates({ tenant, scope, view, tag, gone });
+  const templates = useTemplates({ tenant, scope, view, tag, gone, published });
   const { save } = templates;
   const problems = templates.problems(kind);
   return (

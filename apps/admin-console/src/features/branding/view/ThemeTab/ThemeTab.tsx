@@ -3,6 +3,7 @@ import {
   DELETE_BODY,
   DELETE_LABEL,
   DELETE_TITLE,
+  type PublishOutcome,
   type ThemeScope,
 } from '#/features/branding/service';
 import { useThemeTab } from '#/features/branding/usecase/useThemeTab';
@@ -24,14 +25,18 @@ export function ThemeTab({
   view,
   tag,
   gone,
+  published,
+  onPublished,
 }: {
   tenant: string;
   scope: ThemeScope;
   view: ThemeView;
   tag: string;
   gone: boolean;
+  published: PublishOutcome;
+  onPublished: (outcome: PublishOutcome) => void;
 }) {
-  const theme = useThemeTab({ tenant, scope, view, tag, gone });
+  const theme = useThemeTab({ tenant, scope, view, tag, gone, published, onPublished });
   const { deletion } = theme;
   return (
     <div className={styles.tab}>
