@@ -1,9 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   defaultChoices,
   languageSettingsOf,
   languagesHold,
   languagesOf,
+  addLanguage,
+  addsOnKey,
   languageAdded,
   languagesRequest,
   openingLocale,
@@ -105,5 +107,25 @@ describe('adding a language', () => {
       (_, i) => `x${String.fromCharCode(97 + (i % 26))}${String(i)}`,
     );
     expect(languageAdded(full, 'fr').problem).toMatch(/at most 32/u);
+  });
+});
+
+describe('adding what was typed', () => {
+  it('hands on the new list and clears the problem, or hands on only the problem', () => {
+    const to = { problem: vi.fn(), accepted: vi.fn() };
+    addLanguage(['en'], 'fr', to);
+    expect(to.problem).toHaveBeenCalledExactlyOnceWith(undefined);
+    expect(to.accepted).toHaveBeenCalledExactlyOnceWith(['en', 'fr']);
+
+    const refused = { problem: vi.fn(), accepted: vi.fn() };
+    addLanguage(['en'], 'EN', refused);
+    expect(refused.problem).toHaveBeenCalledExactlyOnceWith('That language is already offered.');
+    expect(refused.accepted).not.toHaveBeenCalled();
+  });
+
+  it('is done by Enter, except when Enter chooses the option the list points at', () => {
+    expect(addsOnKey('Enter', false)).toBe(true);
+    expect(addsOnKey('Enter', true)).toBe(false);
+    expect(addsOnKey('a', false)).toBe(false);
   });
 });

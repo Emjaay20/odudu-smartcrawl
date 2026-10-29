@@ -246,6 +246,32 @@ it('adds a language by its tag, lists it ticked, and saves the whole list', asyn
   });
 });
 
+it('adds the typed tag on Enter and does not save the section', async () => {
+  const user = userEvent.setup();
+  const { sent } = renderConsoleAt(AT, languagesRoutes());
+  await screen.findByRole('grid', { name: 'Message overrides' });
+  await user.type(screen.getByRole('combobox', { name: /Add a language/u }), 'pt-BR{Enter}');
+  expect(await screen.findByRole('checkbox', { name: /pt-BR/u })).toBeChecked();
+  expect(sent.some((request) => request.method === 'PATCH')).toBe(false);
+});
+
+it('marks the tab with an unsaved dot while a language is added and not saved', async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(AT, languagesRoutes());
+  await screen.findByRole('grid', { name: 'Message overrides' });
+  expect(screen.getByRole('tab', { name: 'Languages' })).toBeInTheDocument();
+  await user.type(screen.getByRole('combobox', { name: /Add a language/u }), 'pt-BR');
+  await user.click(screen.getByRole('button', { name: 'Add language' }));
+  expect(
+    await screen.findByRole('tab', { name: 'Languages, unsaved changes' }),
+  ).toBeInTheDocument();
+});
+
+it('names the Add control where it says which languages stay listed', async () => {
+  renderConsoleAt(AT, languagesRoutes());
+  expect(await screen.findByText(/“Add a language” below/u)).toBeVisible();
+});
+
 it('refuses to add a tag that is not one, and one already offered, sending nothing', async () => {
   const user = userEvent.setup();
   const { sent } = renderConsoleAt(AT, languagesRoutes());

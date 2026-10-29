@@ -19,15 +19,14 @@ export const LANGUAGES_DESCRIPTION =
 
 export const SUPPORTED_LABEL = 'Supported languages';
 
-export const SUPPORTED_NOTE =
-  'A language the build ships with is complete. Any other the tenant already offers stays listed; its pages use the English text unless a message override says otherwise.';
+export const ADD_LABEL = 'Add a language';
+
+export const SUPPORTED_NOTE = `A language the build ships with is complete. Any other the tenant already offers stays listed, and “${ADD_LABEL}” below adds one; its pages use the English text unless a message override says otherwise.`;
 
 export const DEFAULT_LABEL = 'Default language';
 
 export const DEFAULT_NOTE =
   'Used ahead of the browser’s preference, when the request names no language.';
-
-export const ADD_LABEL = 'Add a language';
 
 export const ADD_NOTE =
   'Choose a language or type its tag, such as fr or pt-BR. Its pages use the English text unless a message override says otherwise.';
@@ -155,4 +154,22 @@ export function languageAdded(supported: readonly string[], text: string): Added
   }
   if (supported.length >= LOCALISED_TEXT_ENTRIES_MAX) return { supported: null, problem: ADD_FULL };
   return { supported: [...supported, tag], problem: null };
+}
+
+export interface AddedTo {
+  // The problem with what was typed, or undefined to clear one shown.
+  problem: (problem: string | undefined) => void;
+  accepted: (supported: string[]) => void;
+}
+
+// Adds what was typed, or says why it cannot be.
+export function addLanguage(supported: readonly string[], text: string, to: AddedTo): void {
+  const added = languageAdded(supported, text);
+  to.problem(added.problem ?? undefined);
+  if (added.supported !== null) to.accepted(added.supported);
+}
+
+// Enter adds the typed tag, unless it is choosing the option the list points at.
+export function addsOnKey(key: string, optionPointedAt: boolean): boolean {
+  return key === 'Enter' && !optionPointedAt;
 }

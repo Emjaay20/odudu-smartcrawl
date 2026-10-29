@@ -8,7 +8,7 @@ import {
   afterSave,
   askedRemoval,
   EMPTY_OVERRIDE,
-  languageAdded,
+  addLanguage,
   languageFields,
   languageSettingsOf,
   languagesOf,
@@ -82,11 +82,13 @@ export function useLanguagesSection({
       setAddProblem(undefined);
     },
     add: () => {
-      const added = languageAdded(save.values.supported_locales, adding);
-      setAddProblem(added.problem ?? undefined);
-      if (added.supported === null) return;
-      save.edit('supported_locales', added.supported);
-      setAdding('');
+      addLanguage(save.values.supported_locales, adding, {
+        problem: setAddProblem,
+        accepted: (supported) => {
+          save.edit('supported_locales', supported);
+          setAdding('');
+        },
+      });
     },
   };
 }

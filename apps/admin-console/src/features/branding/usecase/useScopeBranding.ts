@@ -4,6 +4,7 @@ import { useThemeRecord } from '#/features/branding/repository/useThemeRecord';
 import {
   NO_OUTCOME,
   placedOver,
+  TENANT_SCOPE,
   tabsWithEdits,
   themeRecord,
   type OfferedTab,
@@ -13,6 +14,7 @@ import {
 import { usePreview, type Preview } from '#/features/branding/usecase/usePreview';
 import { useDirtySections } from '#/shared/repository/useDirtySections';
 import type { RecordState } from '#/shared/repository/useRecord';
+import { TENANT_SETTINGS_RECORD } from '#/shared/service/tenantSettings';
 
 export interface ScopeBranding {
   record: RecordState<ThemeView>;
@@ -51,4 +53,13 @@ export function useScopeBranding(
 // The tabs of a scope's theme holding unsaved edits, for their dots.
 export function useScopeEdits(tenant: string, scope: ThemeScope): ReadonlySet<OfferedTab> {
   return tabsWithEdits(useDirtySections(tenant, themeRecord(scope)));
+}
+
+// The tabs of the tenant's Branding holding unsaved edits: the theme's, and
+// the languages, which save to the tenant's settings.
+export function useTenantEdits(tenant: string): ReadonlySet<OfferedTab> {
+  return tabsWithEdits(
+    useDirtySections(tenant, themeRecord(TENANT_SCOPE)),
+    useDirtySections(tenant, TENANT_SETTINGS_RECORD),
+  );
 }

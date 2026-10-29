@@ -135,6 +135,8 @@ export function ComboBoxField({
   if (shown.value !== value) {
     current = { value, text: labelOf(value) };
     setShown(current);
+    // A field emptied from outside, as after an add, would reopen its list.
+    if (value === '') setCloses((n) => n + 1);
   }
   if (readOnly) {
     return (

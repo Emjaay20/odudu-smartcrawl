@@ -46,7 +46,42 @@ function Controlled({
   );
 }
 
+function ClearedOnEnter() {
+  const [value, setValue] = useState('');
+  return (
+    <div
+      role="group"
+      aria-label="Adds"
+      onKeyDown={(event) => {
+        if (event.key === 'Enter') setValue('');
+      }}
+    >
+      <ComboBoxField
+        label="Time zone"
+        options={ZONES}
+        value={value}
+        onChange={setValue}
+        allowsCustomValue
+        autoComplete="off"
+      />
+    </div>
+  );
+}
+
 describe('ComboBoxField', () => {
+  it('closes its list when the value is cleared from outside while it has focus', async () => {
+    const user = userEvent.setup();
+    render(<ClearedOnEnter />);
+    const box = screen.getByRole('combobox', { name: 'Time zone' });
+    await user.type(box, 'Asia');
+    expect(await screen.findAllByRole('option')).toHaveLength(1);
+    await user.keyboard('{Enter}');
+    await waitFor(() => {
+      expect(screen.queryAllByRole('option')).toHaveLength(0);
+    });
+    expect(box).toHaveValue('');
+  });
+
   it('narrows the list as you type, and stores the chosen option', async () => {
     const user = userEvent.setup();
     render(<Controlled />);

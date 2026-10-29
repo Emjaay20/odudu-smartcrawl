@@ -22,11 +22,13 @@ export const BRANDING_TAB_SECTIONS: Readonly<Record<BrandingTab, readonly string
   theme: ['colours', 'images', 'stylesheet'],
   pages: ['templates'],
   mail: [],
-  languages: [],
+  languages: ['languages'],
 };
 
-export function tabsWithEdits(dirty: ReadonlySet<string>): ReadonlySet<OfferedTab> {
-  return dirtyTabs(OFFERED_TABS, (tab) => BRANDING_TAB_SECTIONS[tab], dirty);
+// Takes the dirty sections of each record the tabs save to.
+export function tabsWithEdits(...dirty: readonly ReadonlySet<string>[]): ReadonlySet<OfferedTab> {
+  const names = new Set(dirty.flatMap((records) => [...records]));
+  return dirtyTabs(OFFERED_TABS, (tab) => BRANDING_TAB_SECTIONS[tab], names);
 }
 
 // The tabs that frame a preview of a page.

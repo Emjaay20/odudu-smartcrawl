@@ -2,6 +2,7 @@ import type { MessageOverride, Settings } from '@odudu/contracts/admin';
 import { useRef } from 'react';
 import {
   ADD_BUTTON,
+  addsOnKey,
   ADD_LABEL,
   ADD_NOTE,
   capText,
@@ -93,16 +94,29 @@ function LanguagesSection({ tenant, data, etag, gone }: Props) {
           />
         </GridCell>
         <GridCell span="wide">
-          <LocaleField
-            label={ADD_LABEL}
-            description={ADD_NOTE}
-            error={addProblem}
-            value={adding}
-            onChange={typeAdding}
-          />
-          <Button variant="quiet" onPress={add}>
-            {ADD_BUTTON}
-          </Button>
+          <div
+            role="group"
+            aria-label={ADD_LABEL}
+            onKeyDown={(event) => {
+              const pointing =
+                event.target instanceof HTMLElement &&
+                event.target.getAttribute('aria-activedescendant') !== null;
+              if (!addsOnKey(event.key, pointing)) return;
+              event.preventDefault();
+              add();
+            }}
+          >
+            <LocaleField
+              label={ADD_LABEL}
+              description={ADD_NOTE}
+              error={addProblem}
+              value={adding}
+              onChange={typeAdding}
+            />
+            <Button variant="quiet" onPress={add}>
+              {ADD_BUTTON}
+            </Button>
+          </div>
         </GridCell>
         <GridCell span="wide">
           <SelectField

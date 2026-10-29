@@ -8,7 +8,7 @@ import {
 import { useMailTab, type MailTab } from '#/features/branding/usecase/useMailTab';
 import {
   useScopeBranding,
-  useScopeEdits,
+  useTenantEdits,
   type ScopeBranding,
 } from '#/features/branding/usecase/useScopeBranding';
 import { useRecordTab } from '#/shared/repository/useRecordTab';
@@ -31,7 +31,7 @@ export function useBrandingPage(tenant: string): BrandingPage {
     selectTab: (next) => {
       selectOffered(next, selectTab);
     },
-    dirty: useScopeEdits(tenant, TENANT_SCOPE),
+    dirty: useTenantEdits(tenant),
     mail: useMailTab(tenant, branding.view, tab === 'mail'),
   };
 }

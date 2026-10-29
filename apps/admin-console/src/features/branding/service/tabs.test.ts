@@ -29,6 +29,14 @@ describe('the tabs', () => {
     expect([...tabsWithEdits(new Set(['templates']))]).toEqual(['pages']);
     expect([...tabsWithEdits(new Set())]).toEqual([]);
   });
+
+  it('count the sections of every record they save to, the languages among them', () => {
+    expect([...tabsWithEdits(new Set(['images']), new Set(['languages']))]).toEqual([
+      'theme',
+      'languages',
+    ]);
+    expect([...tabsWithEdits(new Set(), new Set(['languages']))]).toEqual(['languages']);
+  });
 });
 
 describe('the scope', () => {
