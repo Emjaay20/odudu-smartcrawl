@@ -44,17 +44,13 @@ export {
   HISTORY_MAX_JOIN,
   HISTORY_PAUSE_MS,
   inputIntent,
-  patchBetween,
   reconciled,
-  snapshotOf,
   travelled,
   type EditKind,
   type History,
   type HistoryEdit,
   type InputIntent,
-  type Patch,
   type Pending,
-  type Snapshot,
   type Stepped,
 } from '#/shared/service/code/history';
 export {
@@ -65,3 +61,4 @@ export {
   type Scroll,
   type Viewport,
 } from '#/shared/service/code/scroll';
+export { patchBetween, snapshotOf, type Patch, type Snapshot } from '#/shared/service/code/patch';
