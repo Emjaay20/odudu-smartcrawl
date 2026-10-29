@@ -29,7 +29,7 @@ it('frames the address it is given, allowing nothing', () => {
 
 it('says the preview is loading, and hides the frame meanwhile', () => {
   render(<PreviewPane preview={preview({ loading: true })} pickKind />);
-  expect(screen.getByRole('status')).toHaveTextContent('Loading the preview');
+  expect(screen.getByText('Loading the preview')).toBeVisible();
 });
 
 it('offers the page picker only where the editor does not', () => {
@@ -41,7 +41,7 @@ it('offers the page picker only where the editor does not', () => {
 
 it('says nothing about a fallback when there is none to say', () => {
   render(<PreviewPane preview={preview()} pickKind />);
-  expect(screen.queryByRole('group', { name: 'What the preview shows' })).toBeNull();
+  expect(screen.queryAllByRole('note')).toEqual([]);
 });
 
 it('says, beside the frame, each thing the preview shows other than the saved draft', () => {
@@ -56,7 +56,7 @@ it('says, beside the frame, each thing the preview shows other than the saved dr
       pickKind
     />,
   );
-  const group = screen.getByRole('group', { name: 'What the preview shows' });
+  const group = screen.getByRole('status', { name: 'What the preview shows' });
   expect(
     within(group)
       .getAllByRole('note')
@@ -79,4 +79,15 @@ it('has nothing axe can find in either theme', async () => {
     { frames: false },
   );
   expect(found).toEqual({ light: [], dark: [] });
+});
+
+it('keeps its notice in one polite live region that stays in place as the lines change', () => {
+  const { rerender } = render(<PreviewPane preview={preview()} pickKind />);
+  const region = screen.getByRole('status', { name: 'What the preview shows' });
+  expect(region).toBeEmptyDOMElement();
+  rerender(
+    <PreviewPane preview={preview({ fallback: ['The draft could not be read.'] })} pickKind />,
+  );
+  expect(screen.getByRole('status', { name: 'What the preview shows' })).toBe(region);
+  expect(region).toHaveTextContent('The draft could not be read.');
 });

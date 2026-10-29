@@ -562,7 +562,7 @@ test('inserts a message from the list into a template, and says the preview show
   await page.goto(`/console/${catalogue.tenant}/branding?tab=pages`);
   const section = page.getByRole('region', { name: 'Page templates' });
   const editor = section.getByRole('textbox', { name: 'Sign in: template' });
-  const notice = page.getByRole('group', { name: 'What the preview shows' });
+  const notice = page.getByRole('status', { name: 'What the preview shows' });
   await expect(notice).toContainText(
     'There is no saved draft or published theme, so the preview shows Instrument’s default look.',
   );
@@ -583,6 +583,6 @@ test('inserts a message from the list into a template, and says the preview show
   await expectAccessible(page, { exclude: [FRAME] });
 
   await save(section);
-  await expect(page.getByRole('group', { name: 'What the preview shows' })).toBeHidden();
+  await expect(notice).toBeEmpty();
   await expect(preview(page).getByRole('heading', { level: 2, name: 'Sign in' })).toBeVisible();
 });

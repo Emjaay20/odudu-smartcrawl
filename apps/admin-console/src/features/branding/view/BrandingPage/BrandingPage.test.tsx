@@ -602,7 +602,7 @@ describe('images', () => {
 });
 
 describe('what the preview says about itself', () => {
-  const group = () => screen.queryByRole('group', { name: 'What the preview shows' });
+  const group = () => screen.getByRole('status', { name: 'What the preview shows' });
 
   it('shows nothing when the draft is what the frame shows', async () => {
     renderConsoleAt(AT, brandingRoutes(themeAnswer(draftedView(), '"d1"')));
@@ -610,7 +610,7 @@ describe('what the preview says about itself', () => {
     await waitFor(() => {
       expect(screen.getByTitle('Preview of the page')).toBeVisible();
     });
-    expect(group()).toBeNull();
+    expect(within(group()).queryAllByRole('note')).toEqual([]);
   });
 
   it('says which layer is shown and why, from the answer for the same page and scheme', async () => {
@@ -625,9 +625,9 @@ describe('what the preview says about itself', () => {
         ),
       }),
     );
-    const notice = await screen.findByRole('group', { name: 'What the preview shows' });
+    const notice = await screen.findByRole('status', { name: 'What the preview shows' });
     expect(
-      within(notice).getByText('The draft names an image that no longer exists.'),
+      await within(notice).findByText('The draft names an image that no longer exists.'),
     ).toBeVisible();
     expect(
       within(notice).getByText('The preview shows Instrument’s default look instead.'),
@@ -650,7 +650,7 @@ describe('what the preview says about itself', () => {
       }),
     );
     await screen.findByTitle('Preview of the page');
-    expect(group()).toBeNull();
+    expect(within(group()).queryAllByRole('note')).toEqual([]);
     const preview = screen.getByRole('complementary');
     await user.click(within(preview).getByRole('button', { name: /Colour scheme/u }));
     await user.click(await screen.findByRole('option', { name: 'Dark' }));
