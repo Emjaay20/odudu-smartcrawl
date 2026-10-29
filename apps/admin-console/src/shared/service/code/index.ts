@@ -41,6 +41,7 @@ export {
   HISTORY_MAX_BURST,
   HISTORY_MAX_CHARS,
   HISTORY_MAX_ENTRIES,
+  HISTORY_MAX_JOIN,
   HISTORY_PAUSE_MS,
   inputIntent,
   patchBetween,

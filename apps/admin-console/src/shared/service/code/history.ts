@@ -40,8 +40,12 @@ interface Burst {
   caret: number;
 }
 
-// An entry is the patches of one undo step, in the order they were made.
-type Entry = readonly Patch[];
+// An entry is one undo step: its patches in the order they were made, and the
+// characters they hold, kept as they are added so no one counts them again.
+interface Entry {
+  patches: readonly Patch[];
+  weight: number;
+}
 
 // `past` holds the steps an undo takes back, oldest first; `future` the steps
 // a redo makes again, the next one last.
@@ -55,8 +59,10 @@ export const HISTORY_MAX_ENTRIES = 200;
 // The characters the patches of all the steps hold together. A step costs
 // what it changed, so a 128 KiB stylesheet keeps its depth under typing.
 export const HISTORY_MAX_CHARS = 1_000_000;
-// A burst of typing is cut into steps of at most this many edits.
+// A burst of typing is cut into steps of at most this many edits, and only
+// edits this small join one.
 export const HISTORY_MAX_BURST = 500;
+export const HISTORY_MAX_JOIN = 1000;
 // A pause longer than this ends a burst of typing.
 export const HISTORY_PAUSE_MS = 1000;
 
@@ -78,25 +84,43 @@ export function snapshotOf(field: {
   };
 }
 
+// The length of the text both share at its start. `hint` is where the change
+// is expected to begin (the caret); a start that really is shared up to it is
+// checked in one native comparison, and only what follows is read a character
+// at a time. A wrong hint costs a read from the start.
+function sharedStart(was: string, now: string, hint: number): number {
+  const shortest = Math.min(was.length, now.length);
+  let from = hint > 0 && hint <= shortest && was.startsWith(now.slice(0, hint)) ? hint : 0;
+  while (from < shortest && was.charCodeAt(from) === now.charCodeAt(from)) from += 1;
+  return from;
+}
+
+// The length of the text both share at its end, not reaching into the first
+// `from` characters. `hint` is the length expected to be shared.
+function sharedEnd(was: string, now: string, from: number, hint: number): number {
+  const room = Math.min(was.length, now.length) - from;
+  let length = hint > 0 && hint <= room && was.endsWith(now.slice(now.length - hint)) ? hint : 0;
+  while (
+    length < room &&
+    was.charCodeAt(was.length - 1 - length) === now.charCodeAt(now.length - 1 - length)
+  ) {
+    length += 1;
+  }
+  return length;
+}
+
 // The one patch that turns `before` into `after`, or null when the text is
-// the same. It is found from both ends, so its cost is the length of the text
-// once and its size the size of the change.
+// the same. What is stored is the size of the change; finding it reads the
+// start and the end of the text in native comparisons, guided by the selection
+// the edit began with, and falls back to reading from both ends one character
+// at a time when the guess was wrong.
 export function patchBetween(before: Snapshot, after: Snapshot): Patch | null {
   const was = before.value;
   const now = after.value;
-  const shortest = Math.min(was.length, now.length);
-  let from = 0;
-  while (from < shortest && was.charCodeAt(from) === now.charCodeAt(from)) from += 1;
-  let wasEnd = was.length;
-  let nowEnd = now.length;
-  while (
-    wasEnd > from &&
-    nowEnd > from &&
-    was.charCodeAt(wasEnd - 1) === now.charCodeAt(nowEnd - 1)
-  ) {
-    wasEnd -= 1;
-    nowEnd -= 1;
-  }
+  const from = sharedStart(was, now, Math.min(before.selectionStart, after.selectionStart));
+  const tail = sharedEnd(was, now, from, was.length - before.selectionEnd);
+  const wasEnd = was.length - tail;
+  const nowEnd = now.length - tail;
   if (wasEnd === from && nowEnd === from) return null;
   return {
     from,
@@ -114,35 +138,41 @@ function patched(text: string, patch: Patch, direction: 'undo' | 'redo'): string
   return text.slice(0, patch.from) + there + text.slice(patch.from + here.length);
 }
 
-function weight(entries: readonly Entry[]): number {
-  return entries.reduce(
-    (sum, entry) =>
-      sum + entry.reduce((inner, patch) => inner + patch.removed.length + patch.inserted.length, 0),
-    0,
-  );
+function weightOf(patch: Patch): number {
+  return patch.removed.length + patch.inserted.length;
 }
 
+// Drops the oldest entries while there are too many or they hold too much;
+// the newest is always kept. Each entry brings its own weight, so this adds up
+// at most `HISTORY_MAX_ENTRIES` numbers and reads no text.
 function capped(entries: readonly Entry[]): readonly Entry[] {
   let first = 0;
-  let chars = weight(entries);
+  let chars = entries.reduce((sum, entry) => sum + entry.weight, 0);
   while (
     entries.length - first > 1 &&
     (entries.length - first > HISTORY_MAX_ENTRIES || chars > HISTORY_MAX_CHARS)
   ) {
-    chars -= weight([entries[first] ?? []]);
+    chars -= entries[first]?.weight ?? 0;
     first += 1;
   }
   return first === 0 ? entries : entries.slice(first);
 }
 
-function joins(history: History, before: Snapshot, edit: HistoryEdit, now: number): boolean {
+function joins(
+  history: History,
+  before: Snapshot,
+  edit: HistoryEdit,
+  patch: Patch,
+  now: number,
+): boolean {
   const { burst } = history;
   const last = history.past[history.past.length - 1];
   return (
     edit.kind !== 'discrete' &&
     burst !== null &&
     last !== undefined &&
-    last.length < HISTORY_MAX_BURST &&
+    last.patches.length < HISTORY_MAX_BURST &&
+    weightOf(patch) <= HISTORY_MAX_JOIN &&
     burst.kind === edit.kind &&
     !burst.boundary &&
     now - burst.at <= HISTORY_PAUSE_MS &&
@@ -180,10 +210,15 @@ export function committed(
           caret: after.selectionEnd,
         };
   const last = base.past[base.past.length - 1];
-  if (last !== undefined && joins(base, before, edit, now)) {
-    return { past: [...base.past.slice(0, -1), [...last, patch]], future: [], burst };
+  if (last !== undefined && joins(base, before, edit, patch, now)) {
+    const grown = { patches: [...last.patches, patch], weight: last.weight + weightOf(patch) };
+    return { past: capped([...base.past.slice(0, -1), grown]), future: [], burst };
   }
-  return { past: capped([...base.past, [patch]]), future: [], burst };
+  return {
+    past: capped([...base.past, { patches: [patch], weight: weightOf(patch) }]),
+    future: [],
+    burst,
+  };
 }
 
 // An edit heard before it was made, waiting for the text it made.
@@ -226,12 +261,12 @@ export function travelled(
   const stack = direction === 'undo' ? base.past : base.future;
   const entry = stack[stack.length - 1];
   if (entry === undefined) return { history: base, to: null };
-  const order = direction === 'undo' ? [...entry].reverse() : entry;
+  const order = direction === 'undo' ? [...entry.patches].reverse() : entry.patches;
   let text: string | null = current;
   for (const patch of order) {
     text = text === null ? null : patched(text, patch, direction);
   }
-  const edge = direction === 'undo' ? entry[0] : entry[entry.length - 1];
+  const edge = direction === 'undo' ? entry.patches[0] : entry.patches[entry.patches.length - 1];
   if (text === null || edge === undefined) return { history: EMPTY_HISTORY, to: null };
   const place = direction === 'undo' ? edge.before : edge.after;
   return {

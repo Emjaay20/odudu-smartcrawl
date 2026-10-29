@@ -349,7 +349,7 @@ test('a long line keeps the text, the colour and the caret in one place', async 
   await editor.fill(`.logo { content: "${'x'.repeat(600)}"; }\n.logo { opacity: 0.5 }`);
   const widths = await editor.evaluate((area) => {
     const layer = area.parentElement?.querySelector('pre');
-    const scroller = area.parentElement?.parentElement;
+    const scroller = area.closest('[data-code-scroller]');
     return {
       area: area.getBoundingClientRect().width,
       layer: layer?.getBoundingClientRect().width ?? 0,
@@ -449,13 +449,13 @@ test('undo, redo and an indent bring the caret back into view in a long styleshe
     }, line);
   const away = (): Promise<void> =>
     editor.evaluate((area) => {
-      const scroller = area.parentElement?.parentElement;
+      const scroller = area.closest('[data-code-scroller]');
       if (scroller) scroller.scrollTop = scroller.scrollHeight;
     });
   // Whether the caret's line sits inside what the scroller shows.
   const caretShows = (): Promise<boolean> =>
     editor.evaluate((area: HTMLTextAreaElement) => {
-      const scroller = area.parentElement?.parentElement;
+      const scroller = area.closest('[data-code-scroller]');
       if (!scroller) return false;
       const style = getComputedStyle(area);
       const line = area.value.slice(0, area.selectionEnd).split('\n').length - 1;

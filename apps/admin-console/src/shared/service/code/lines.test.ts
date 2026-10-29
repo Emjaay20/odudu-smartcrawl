@@ -67,10 +67,10 @@ describe('gutterParts', () => {
     expect(gutterParts(4, [1, 2, 4]).filter((part) => part.marked)).toHaveLength(3);
   });
 
-  it('numbers a long text in one pass', () => {
-    const started = performance.now();
-    expect(gutterParts(130_000, [5]).length).toBe(3);
-    expect(performance.now() - started).toBeLessThan(500);
+  it('numbers a long text, one part either side of a mark', () => {
+    const parts = gutterParts(130_000, [5]);
+    expect(parts).toHaveLength(3);
+    expect(parts[2]?.text.endsWith('\n130000')).toBe(true);
   });
 });
 

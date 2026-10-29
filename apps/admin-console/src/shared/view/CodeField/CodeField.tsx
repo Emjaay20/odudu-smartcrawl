@@ -89,29 +89,46 @@ function Gutter({ count, marked }: { count: number; marked: readonly number[] })
   );
 }
 
-// A monospace face is about this many ems across.
-const CHARACTER_EM = 0.6;
-const TAB_WIDTH = 2;
+const FALLBACK_TAB_WIDTH = 8;
+const PROBE_LENGTH = 20;
+
+// How wide one character is where the text is drawn, measured with a hidden
+// run of them set in the same face.
+function characterWidth(scroller: HTMLElement): number {
+  const probe = document.createElement('span');
+  probe.className = styles.probe ?? '';
+  probe.textContent = '0'.repeat(PROBE_LENGTH);
+  scroller.append(probe);
+  const width = probe.getBoundingClientRect().width / PROBE_LENGTH;
+  probe.remove();
+  return width;
+}
 
 // After the field set the caret from code, which does not scroll to it:
 // brings it into view in whatever scrolls, the layer's scroller or, beyond
 // the colouring limit, the textarea itself.
 function reveal(area: HTMLTextAreaElement): void {
   const plain = area.closest('[data-plain]') !== null;
-  const scroller = plain ? area : area.parentElement?.parentElement;
+  const scroller = plain ? area : area.closest('[data-code-scroller]');
   const style = getComputedStyle(area);
   const lineHeight = Number.parseFloat(style.lineHeight);
-  const fontSize = Number.parseFloat(style.fontSize);
-  if (!(scroller instanceof HTMLElement) || !Number.isFinite(lineHeight + fontSize)) return;
+  if (!(scroller instanceof HTMLElement) || !Number.isFinite(lineHeight)) return;
+  const charWidth = characterWidth(plain ? (area.parentElement ?? area) : scroller);
+  if (!(charWidth > 0)) return;
   const frame = scroller.getBoundingClientRect();
   const box = area.getBoundingClientRect();
   const offsetX = plain ? 0 : box.left - frame.left + scroller.scrollLeft;
   const offsetY = plain ? 0 : box.top - frame.top + scroller.scrollTop;
+  const tabWidth = Number.parseInt(style.tabSize, 10);
   const target = scrollTarget(
-    caretAt(area.value, area.selectionEnd, TAB_WIDTH),
+    caretAt(
+      area.value,
+      area.selectionEnd,
+      Number.isFinite(tabWidth) ? tabWidth : FALLBACK_TAB_WIDTH,
+    ),
     {
       lineHeight,
-      charWidth: fontSize * CHARACTER_EM,
+      charWidth,
       originX: offsetX + Number.parseFloat(style.paddingLeft),
       originY: offsetY + Number.parseFloat(style.paddingTop),
       inset: offsetX,
@@ -198,7 +215,7 @@ export function CodeField({
     >
       <Header label={label} {...(changed === undefined ? {} : { changed })} />
       <div className={styles.frame} data-plain={plain || undefined}>
-        <div className={styles.scroller}>
+        <div className={styles.scroller} data-code-scroller>
           {plain ? null : <Gutter count={count} marked={marks} />}
           <div className={styles.stage}>
             {plain ? null : <Layer tokens={tokens} marked={new Set(marks)} />}

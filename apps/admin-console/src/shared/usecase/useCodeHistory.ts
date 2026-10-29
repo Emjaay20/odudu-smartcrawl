@@ -88,6 +88,7 @@ export function useCodeHistory({
       event.data,
       readOnly || event.isComposing || composing.current,
     );
+    pending.current = null;
     if (area === null || intent === 'ignore') return;
     if (typeof intent === 'string') {
       undoing(area, event, intent);
@@ -153,6 +154,7 @@ export function useCodeHistory({
     compositionStart: () => {
       const area = areaRef.current;
       composing.current = true;
+      pending.current = null;
       if (area === null) return;
       history.current = reconciled(history.current, seen.current, area.value);
       started.current = snapshotOf(area);

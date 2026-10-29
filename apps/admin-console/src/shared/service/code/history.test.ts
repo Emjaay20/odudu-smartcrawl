@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   changed,
   committed,
@@ -7,6 +7,7 @@ import {
   HISTORY_MAX_BURST,
   HISTORY_MAX_CHARS,
   HISTORY_MAX_ENTRIES,
+  HISTORY_MAX_JOIN,
   HISTORY_PAUSE_MS,
   inputIntent,
   patchBetween,
@@ -161,6 +162,12 @@ describe('coalescing', () => {
     expect(run.history.past).toHaveLength(2);
   });
 
+  it('does not join an edit larger than a keystroke to a burst', () => {
+    const big = 'x'.repeat(HISTORY_MAX_JOIN + 1);
+    const run = edit(typing('ab'), big, typed(big), 30);
+    expect(run.history.past).toHaveLength(2);
+  });
+
   it('does not note an edit that changed nothing, and keeps the redo line', () => {
     const back = travelled(typing('ab').history, 'ab', 'ab', 'undo');
     const same = committed(back.history, '', at(''), at('', 0), typed(''), 5);
@@ -231,15 +238,39 @@ describe('undo and redo', () => {
 
   it('end the history instead of putting a step where it does not fit', () => {
     const run = typing('abc');
-    const patch = run.history.past[0]?.[0];
+    const entry = run.history.past[0];
+    const patch = entry?.patches[0];
     expect(patch).toBeDefined();
     const broken = travelled(
-      { ...run.history, past: patch === undefined ? [] : [[{ ...patch, from: 50 }]] },
+      {
+        ...run.history,
+        past:
+          entry === undefined || patch === undefined
+            ? []
+            : [{ ...entry, patches: [{ ...patch, from: 50 }] }],
+      },
       'abc',
       'abc',
       'undo',
     );
     expect(broken).toEqual({ history: EMPTY_HISTORY, to: null });
+  });
+
+  it('put back an astral character, and a pair that an edit split', () => {
+    const smile = '\u{1F600}';
+    let run = edit(START, `a${smile}b`, DISCRETE, 0);
+    run = edit(run, '\u{1F601}', DISCRETE, 5, [1, 3]);
+    expect(run.text.value).toBe('a\u{1F601}b');
+    expect(run.history.past[1]?.patches[0]).toMatchObject({
+      removed: '\uDE00',
+      inserted: '\uDE01',
+    });
+    const { back, forth } = walk(run);
+    expect(back).toEqual([`a${smile}b`, '']);
+    expect(forth).toEqual([`a${smile}b`, 'a\u{1F601}b']);
+    const typedSmile = edit(typing('x'), smile, typed(smile), 30);
+    expect(walk(typedSmile).back).toEqual(['']);
+    expect(typedSmile.text.value).toBe(`x${smile}`);
   });
 });
 
@@ -290,20 +321,79 @@ describe('the caps', () => {
 
 describe('on a 128 KiB text', () => {
   const big = 'a { color: red }\n'.repeat(8192);
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
-  it('typing 200 characters, and undoing them, stays linear and quick', () => {
+  it('typing 200 characters stores 200 one-character patches in one step', () => {
     let run: Run = { history: EMPTY_HISTORY, text: at(big, 6) };
-    const started = performance.now();
     for (let index = 0; index < 200; index += 1) {
       run = edit(run, 'x', typed('x'), index * 5, [6 + index, 6 + index]);
     }
-    const typedIn = performance.now() - started;
-    expect(typedIn).toBeLessThan(1500);
     expect(run.history.past).toHaveLength(1);
+    const [entry] = run.history.past;
+    expect(entry?.patches).toHaveLength(200);
+    expect(entry?.patches.every((patch) => patch.removed.length + patch.inserted.length <= 1)).toBe(
+      true,
+    );
+    expect(entry?.weight).toBe(200);
     const back = travelled(run.history, run.text.value, run.text.value, 'undo');
     expect(back.to?.value).toBe(big);
     expect(back.to?.selectionStart).toBe(6);
-    expect(performance.now() - started).toBeLessThan(3000);
+  });
+
+  it('finds the change at the caret without reading the text, and reads it once when the guess is wrong', () => {
+    const middle = big.length / 2;
+    const reads = vi.spyOn(String.prototype, 'charCodeAt');
+    const near = patchBetween(
+      at(big, middle),
+      at(`${big.slice(0, middle)}x${big.slice(middle)}`, middle + 1),
+    );
+    expect(near).toMatchObject({ from: middle, inserted: 'x' });
+    expect(reads.mock.calls.length).toBeLessThan(20);
+    reads.mockClear();
+    const wrong = patchBetween(
+      { value: big, selectionStart: big.length, selectionEnd: big.length },
+      at(`x${big}`, 1),
+    );
+    expect(wrong).toMatchObject({ from: 0, inserted: 'x' });
+    expect(reads.mock.calls.length).toBeLessThanOrEqual(2 * big.length + 10);
+  });
+
+  it('agrees with reading from both ends, whatever the selection says', () => {
+    let seed = 11;
+    const random = (): number => {
+      seed = (seed * 1_103_515_245 + 12_345) % 2_147_483_648;
+      return seed / 2_147_483_648;
+    };
+    const naive = (was: string, now: string): [number, string, string] | null => {
+      let from = 0;
+      while (from < Math.min(was.length, now.length) && was[from] === now[from]) from += 1;
+      let a = was.length;
+      let b = now.length;
+      while (a > from && b > from && was[a - 1] === now[b - 1]) {
+        a -= 1;
+        b -= 1;
+      }
+      return a === from && b === from ? null : [from, was.slice(from, a), now.slice(from, b)];
+    };
+    for (let round = 0; round < 400; round += 1) {
+      const was = Array.from(
+        { length: Math.floor(random() * 12) },
+        () => 'ab\n'[Math.floor(random() * 3)],
+      ).join('');
+      const from = Math.floor(random() * (was.length + 1));
+      const to = Math.min(was.length, from + Math.floor(random() * 4));
+      const put = 'abx'.slice(0, Math.floor(random() * 4));
+      const now = was.slice(0, from) + put + was.slice(to);
+      const guess = Math.floor(random() * (was.length + 2));
+      const patch = patchBetween(
+        { value: was, selectionStart: guess, selectionEnd: Math.min(was.length, guess + 1) },
+        at(now, Math.floor(random() * (now.length + 1))),
+      );
+      const expected = naive(was, now);
+      expect(patch === null ? null : [patch.from, patch.removed, patch.inserted]).toEqual(expected);
+    }
   });
 });
 

@@ -68,6 +68,14 @@ describe('CodeField', () => {
     expect(box()).toHaveValue('.a { color: red }\n/* x */');
   });
 
+  it('marks the scroller that holds the numbers and the text, for the caret to be brought into view', () => {
+    const { container } = render(<Editor start="a" />);
+    const scroller = container.querySelector('[data-code-scroller]');
+    expect(scroller).not.toBeNull();
+    expect(scroller?.contains(box())).toBe(true);
+    expect(scroller?.querySelector('pre')).not.toBeNull();
+  });
+
   it('colours a template with its parts', () => {
     const { container } = render(<Editor language="template" start="<p>{{intro}}</p>" />);
     expect(layer(container).textContent).toBe('<p>{{intro}}</p>\n');

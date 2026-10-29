@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cssTokens } from '#/shared/service/code/css';
 import { HIGHLIGHT_LIMIT, type CodeToken } from '#/shared/service/code/tokens';
 import { highlight, normalisedBreaks } from '#/shared/service/code';
@@ -88,25 +88,33 @@ describe('cssTokens', () => {
     });
   });
 
-  describe('size', () => {
-    it('reads a very long single line in one pass and keeps it whole', () => {
-      const source = `a { color: ${'red '.repeat(9000)}}`;
-      const started = performance.now();
-      const tokens = cssTokens(source);
-      expect(performance.now() - started).toBeLessThan(500);
-      expect(joined(tokens)).toBe(source);
+  describe('the work it does', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
     });
 
-    it('does not cost more than linear for unclosed openers', () => {
+    // The characters it reads, as a multiple of the text: a step moves on at
+    // least one character and looks at a few around it, so a few reads each.
+    const MOST_PER_CHARACTER = 10;
+
+    function reads(source: string): number {
+      const spy = vi.spyOn(String.prototype, 'charCodeAt');
+      cssTokens(source);
+      return spy.mock.calls.length;
+    }
+
+    it('reads a very long single line a few times over, and keeps it whole', () => {
+      const source = `a { color: ${'red '.repeat(9000)}}`;
+      expect(reads(source)).toBeLessThanOrEqual(MOST_PER_CHARACTER * source.length);
+      expect(joined(cssTokens(source))).toBe(source);
+    });
+
+    it('does not read more per character for more unclosed openers', () => {
       const small = '"'.repeat(10_000);
       const large = '"'.repeat(40_000);
-      const time = (text: string): number => {
-        const started = performance.now();
-        cssTokens(text);
-        return performance.now() - started;
-      };
-      time(small);
-      expect(time(large)).toBeLessThan(500);
+      expect(reads(small)).toBeLessThanOrEqual(MOST_PER_CHARACTER * small.length);
+      vi.restoreAllMocks();
+      expect(reads(large)).toBeLessThanOrEqual(MOST_PER_CHARACTER * large.length);
     });
 
     it('handles deep nesting of braces', () => {

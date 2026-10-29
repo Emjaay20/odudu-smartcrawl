@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MARKER_LIMIT, templateTokens } from '#/shared/service/code/template';
 import type { CodeToken } from '#/shared/service/code/tokens';
 
@@ -77,11 +77,17 @@ describe('templateTokens', () => {
   });
 
   describe('size', () => {
-    it('stays linear for many unclosed openers', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('reads each character a bounded number of times for many unclosed openers', () => {
       const source = '{{ x '.repeat(8000);
-      const started = performance.now();
+      const spy = vi.spyOn(String.prototype, 'charCodeAt');
       const tokens = templateTokens(source);
-      expect(performance.now() - started).toBeLessThan(500);
+      // An opener looks ahead at most MARKER_LIMIT characters for its close,
+      // and an opener comes every five.
+      expect(spy.mock.calls.length).toBeLessThanOrEqual((MARKER_LIMIT / 5 + 10) * source.length);
       expect(joined(tokens)).toBe(source);
     });
 

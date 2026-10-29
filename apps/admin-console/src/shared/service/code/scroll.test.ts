@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { caretAt, scrollTarget, type Metrics, type Viewport } from '#/shared/service/code';
 
 describe('caretAt', () => {
@@ -9,11 +9,17 @@ describe('caretAt', () => {
     expect(caretAt('a\n\n\nb', 99, 2)).toEqual({ line: 3, column: 1 });
   });
 
-  it('is linear in the text', () => {
-    const text = 'x\n'.repeat(70_000);
-    const started = performance.now();
-    expect(caretAt(text, text.length, 2).line).toBe(70_000);
-    expect(performance.now() - started).toBeLessThan(200);
+  describe('the work it does', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('reads no more of the text than the caret is into it', () => {
+      const text = 'x\n'.repeat(70_000);
+      const reads = vi.spyOn(String.prototype, 'charCodeAt');
+      expect(caretAt(text, 5000, 2).line).toBe(2500);
+      expect(reads.mock.calls.length).toBeLessThanOrEqual(5000);
+    });
   });
 });
 
