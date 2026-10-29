@@ -34,7 +34,7 @@ export function tenantLayerRead(
   if (record.status === 'loading') return { status: 'loading' };
   return {
     status: 'failed',
-    refused: record.failure !== null && isRefused(record.failure),
+    refused: record.failure === null ? false : isRefused(record.failure),
     retry: record.retry,
   };
 }
