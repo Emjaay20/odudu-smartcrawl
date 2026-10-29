@@ -1,4 +1,5 @@
-import { screen, within } from '@testing-library/react';
+import { focusManager } from '@tanstack/react-query';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, expect, it } from 'vitest';
 import { axeInBothThemes } from '#/testing/axeInBothThemes';
@@ -77,6 +78,25 @@ it('reads each image once, and keeps what it read when the page reads the theme 
   await screen.findByRole('img', { name: 'Acme' });
   const reads = fake.calls.filter((call) => call.path.endsWith(`${LOGO_ID}/content`));
   expect(reads).toHaveLength(1);
+});
+
+it('does not read an image again when the window regains focus, as it does the theme', async () => {
+  const fake = renderConsoleAt(AT, brandingRoutes(themeAnswer(draftedView(), '"d1"')));
+  await screen.findByRole('img', { name: 'Acme' });
+  const themeReads = () => fake.calls.filter((call) => call.path.endsWith('/theme')).length;
+  const imageReads = () =>
+    fake.calls.filter((call) => call.path.endsWith(`${LOGO_ID}/content`)).length;
+  const before = themeReads();
+
+  act(() => {
+    focusManager.setFocused(false);
+    focusManager.setFocused(true);
+  });
+
+  await waitFor(() => {
+    expect(themeReads()).toBeGreaterThan(before);
+  });
+  expect(imageReads()).toBe(1);
 });
 
 it('says an image could not be shown, and shows it once the read is tried again', async () => {

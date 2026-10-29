@@ -82,6 +82,12 @@ That client is guarded on the admin API like every field outside
   each in the tenant's `supported_locales` on a write, each value at the base column's
   limit (client name 256, which the name column itself does not have; description 1000;
   consent text 500) and free of bidirectional controls.
+- **Migration `0110_theme_version_unique.sql`** makes the database refuse a version number
+  used twice in a theme scope (draft rows excluded); the per-scope lock already prevents it.
+- **Import refuses an override naming an argument its page does not supply.** Message
+  overrides exist only in this unreleased phase, so an override stored before that check
+  (a development database) exports and is then refused on import, naming the key and the
+  argument at `document.message_overrides[n].message`, until the file is corrected.
 - **A PATCH replaces the whole map**, as it does a list field, and a PATCH naming a
   client's map must carry `If-Match` (428 otherwise). A scope's is optional, as every
   scope amendment's is. An empty object clears. A language dropped from the tenant's

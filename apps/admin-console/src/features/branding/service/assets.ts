@@ -188,14 +188,23 @@ export function imageDataUrl(bytes: Uint8Array, contentType: string | null): str
   return `data:${type};base64,${btoa(binary)}`;
 }
 
+// Whether a slot holds an image to read, and its id (empty when it holds none).
+export interface SlotAsk {
+  id: string;
+  asked: boolean;
+}
+
 // The image each slot holds, which the thumbnails are read for.
-export function slotAssetIds(values: ImageValues): Record<ImageSlot, string | null> {
-  const idOf = (slot: ImageSlot): string | null => values[imageField(slot)]?.assetId ?? null;
+export function slotAssetIds(values: ImageValues): Record<ImageSlot, SlotAsk> {
+  const askOf = (slot: ImageSlot): SlotAsk => {
+    const id = values[imageField(slot)]?.assetId;
+    return { id: id ?? '', asked: id !== undefined };
+  };
   return {
-    logo: idOf('logo'),
-    darkLogo: idOf('darkLogo'),
-    favicon: idOf('favicon'),
-    background: idOf('background'),
+    logo: askOf('logo'),
+    darkLogo: askOf('darkLogo'),
+    favicon: askOf('favicon'),
+    background: askOf('background'),
   };
 }
 
@@ -203,8 +212,8 @@ export function slotAssetIds(values: ImageValues): Record<ImageSlot, string | nu
 // else the state of reading the one it holds.
 export type Thumbnail = { status: 'none' } | Read<string>;
 
-export function slotThumbnail(assetId: string | null, read: Read<string>): Thumbnail {
-  return assetId === null ? { status: 'none' } : read;
+export function slotThumbnail(asked: boolean, read: Read<string>): Thumbnail {
+  return !asked ? { status: 'none' } : read;
 }
 
 // A logo's thumbnail says what the logo is; an image with no alt text of its
