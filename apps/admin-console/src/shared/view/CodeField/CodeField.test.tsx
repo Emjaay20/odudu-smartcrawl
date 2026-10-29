@@ -474,7 +474,15 @@ describe('undo and redo', () => {
       );
     }
 
-    function WithTools({ start = '', readOnly = false }: { start?: string; readOnly?: boolean }) {
+    function WithTools({
+      start = '',
+      readOnly = false,
+      disabled = false,
+    }: {
+      start?: string;
+      readOnly?: boolean;
+      disabled?: boolean;
+    }) {
       const [value, setValue] = useState(start);
       return (
         <ReadOnlyFields when={readOnly}>
@@ -483,6 +491,7 @@ describe('undo and redo', () => {
             language="template"
             value={value}
             onChange={setValue}
+            isDisabled={disabled}
             tools={<InsertA />}
           />
         </ReadOnlyFields>
@@ -511,6 +520,25 @@ describe('undo and redo', () => {
       expect(box()).toHaveValue('{{t "a"}} two');
       await user.keyboard(undoKeys);
       expect(box()).toHaveValue('one two');
+    });
+
+    it('offers nothing to a disabled field', () => {
+      render(<WithTools start="x" disabled />);
+      expect(screen.queryByRole('button', { name: 'Insert a' })).toBeNull();
+    });
+
+    it('does not take focus after it is gone', () => {
+      vi.useFakeTimers();
+      try {
+        const { unmount } = render(<WithTools start="x" />);
+        const focus = vi.spyOn(box(), 'focus');
+        fireEvent.click(screen.getByRole('button', { name: 'Insert a' }));
+        unmount();
+        vi.advanceTimersByTime(50);
+        expect(focus).not.toHaveBeenCalled();
+      } finally {
+        vi.useRealTimers();
+      }
     });
 
     it('offers nothing to a read-only field', () => {

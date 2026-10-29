@@ -2,6 +2,7 @@ import {
   createContext,
   Fragment,
   use,
+  useEffect,
   useId,
   useRef,
   type KeyboardEvent,
@@ -186,6 +187,14 @@ export function CodeField({
   const issuesId = useId();
   const readOnly = use(FieldsReadOnly);
   const escaped = useRef(false);
+  const refocus = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(
+    () => () => {
+      clearTimeout(refocus.current);
+    },
+    [],
+  );
+  const inert = readOnly || (isDisabled ?? false);
   const [areaRef, history] = useCodeHistory({ value, onChange, readOnly, moved: reveal });
   const { tokens, plain } = highlight(language, value);
   const count = lineCount(normalisedBreaks(value));
@@ -193,10 +202,11 @@ export function CodeField({
 
   const insert = (text: string): void => {
     const area = areaRef.current;
-    if (area === null || readOnly) return;
+    if (area === null || inert) return;
     history.replace(insertEdit(area.value, area.selectionStart, area.selectionEnd, text));
     // After the control that chose the text has put its own focus back.
-    setTimeout(() => {
+    clearTimeout(refocus.current);
+    refocus.current = setTimeout(() => {
       area.focus();
     }, 0);
   };
@@ -229,7 +239,7 @@ export function CodeField({
 
   return (
     <div className={styles.root}>
-      {tools === undefined || readOnly ? null : <CodeInsert value={insert}>{tools}</CodeInsert>}
+      {tools === undefined || inert ? null : <CodeInsert value={insert}>{tools}</CodeInsert>}
       <AriaTextField
         {...VALIDATION}
         {...invalid(error)}
