@@ -324,7 +324,7 @@ export async function startAdminFixture(options: AdminFixtureOptions = {}): Prom
           isKnownKey: (key) => (options.messageKeys ?? isOidcMessageKey)(key),
           // The real check parses the message syntax; a balanced-braces test is
           // all a route-level test needs to see a refusal answered.
-          messageProblem: (message) =>
+          messageProblem: (_key, message) =>
             message.split('{').length === message.split('}').length
               ? null
               : 'is not a valid message',

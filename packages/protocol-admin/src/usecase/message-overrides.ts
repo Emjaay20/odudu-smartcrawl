@@ -26,7 +26,7 @@ export interface MessageOverrideDeps {
   // wrong with a message as text to show; the packages that own the catalogues
   // answer both, since this one may not import them.
   readonly isKnownKey: (key: string) => boolean;
-  readonly messageProblem: (message: string) => string | null;
+  readonly messageProblem: (key: string, message: string) => string | null;
 }
 
 export interface Actor {
@@ -112,7 +112,7 @@ export async function putMessageOverride(
   tx: TenantScopedDatabase,
   input: PutMessageOverrideInput,
 ): Promise<PutMessageOverrideOutcome> {
-  const problem = deps.messageProblem(input.message);
+  const problem = deps.messageProblem(input.key, input.message);
   if (problem !== null) return { kind: 'invalid_message', problem };
   const repository = messageOverrideRepository(tx, { isKnownKey: deps.isKnownKey });
   const outcome = await repository.put({

@@ -21,13 +21,13 @@ import { createDatabaseMessageOverrides, type MessageOverrides } from '#/message
 import {
   isOverridableMessageKey,
   isThemeMessageKey,
+  overrideProblemFor,
   pageMessageCatalogue,
 } from '#/theme-message-keys';
 import { THEME_PREVIEW_PAGES } from '#/theme-preview-pages';
 import { brandRoutes, frameworkError } from '#/brand-routes';
 import { requiredActionRepository } from '@odudu/authn-flows';
 import { consoleGateway } from '@odudu/console-gateway';
-import { overrideProblem } from '@odudu/i18n';
 import { instrumentRoutes } from '@odudu/instrument';
 import {
   credentialRepository,
@@ -515,7 +515,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
       messageCatalogue: pageMessageCatalogue,
       messageOverrides: {
         isKnownKey: isOverridableMessageKey,
-        messageProblem: overrideProblem,
+        messageProblem: overrideProblemFor,
         invalidate: messageOverrides.invalidateTenant,
       },
       themePreviewPages: THEME_PREVIEW_PAGES,

@@ -75,7 +75,7 @@ export interface ImportTenantDeps {
   readonly tlsClientAuthEnabled: boolean;
   readonly messageOverrides: {
     readonly isKnownKey: (key: string) => boolean;
-    readonly messageProblem: (message: string) => string | null;
+    readonly messageProblem: (key: string, message: string) => string | null;
   };
   readonly claimMappers: MapperCatalogue;
   /** Through the owner connection: under row-level security no tenant sees another's name. */

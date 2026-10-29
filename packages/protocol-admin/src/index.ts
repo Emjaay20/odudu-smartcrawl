@@ -324,7 +324,7 @@ export interface AdminRoutesDeps {
   // cached overrides in this process once a write has committed.
   messageOverrides: {
     isKnownKey: (key: string) => boolean;
-    messageProblem: (message: string) => string | null;
+    messageProblem: (key: string, message: string) => string | null;
     invalidate: (tenantId: string) => void;
   };
   // Each page kind rendered by its own package's renderer with sample values,

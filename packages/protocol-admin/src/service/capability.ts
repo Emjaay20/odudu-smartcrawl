@@ -973,7 +973,7 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     description:
       'Sets the text a page shows in `locale` for the message `key`, replacing any earlier ' +
       'one. `key` must be the key of a page message, such as `login.title`, else `400`; the ' +
-      'text is checked as a message, so an unbalanced brace is refused with `400`. Markup in ' +
+      'text is checked as a message, so an unbalanced brace is refused with `400`, and so is an argument such as `{name}` that the page\u2019s English text of the same key does not read, because the page would not supply it. Markup in ' +
       'it is shown as text, never rendered. `409` (`about:blank#message-overrides-full`) when ' +
       'the tenant already holds 500, though changing one that exists is always allowed. ' +
       'Pages in this process show the change at once; another replica shows the previous text ' +

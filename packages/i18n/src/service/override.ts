@@ -26,6 +26,54 @@ export function overrideProblem(message: string): string | null {
   return null;
 }
 
+type Element = ReturnType<IntlMessageFormat['getAst']>[number];
+
+const LITERAL = 0;
+const POUND = 7;
+
+// Every argument a message reads, wherever it sits: bare, as the subject of a
+// plural or select, or inside an arm.
+function argumentNames(elements: readonly Element[], into: Set<string>): Set<string> {
+  for (const element of elements) {
+    // The element kinds are an enum of the parser package, which is not a dependency here.
+    const kind: number = element.type;
+    if (kind === LITERAL || kind === POUND) continue;
+    if ('value' in element) into.add(element.value);
+    if ('options' in element) {
+      for (const arm of Object.values(element.options)) argumentNames(arm.value, into);
+    }
+    if ('children' in element) argumentNames(element.children, into);
+  }
+  return into;
+}
+
+const NAMES_SHOWN = 5;
+const NAME_LENGTH = 40;
+
+function braced(names: readonly string[]): string {
+  const shown = names.slice(0, NAMES_SHOWN).map((name) => `{${name.slice(0, NAME_LENGTH)}}`);
+  return names.length > NAMES_SHOWN ? `${shown.join(', ')} and more` : shown.join(', ');
+}
+
+// What is wrong with an override reading an argument the page it replaces
+// does not supply: the page would show the catalogue's text instead, with
+// nothing to say why. Null for what does not parse, which `overrideProblem`
+// refuses on its own.
+export function placeholderProblem(message: string, original: string): string | null {
+  let wanted: Set<string>;
+  let supplied: Set<string>;
+  try {
+    wanted = argumentNames(formatterFor(message, 'en').getAst(), new Set());
+    supplied = argumentNames(formatterFor(original, 'en').getAst(), new Set());
+  } catch {
+    return null;
+  }
+  const unknown = [...wanted].filter((name) => !supplied.has(name));
+  if (unknown.length === 0) return null;
+  const given = supplied.size === 0 ? 'supplies no value' : `supplies ${braced([...supplied])}`;
+  return `uses ${braced(unknown)}, which the page does not supply; the page ${given}`;
+}
+
 // One parsed message per (map, key): the map is the cached per-tenant,
 // per-locale one, so the parse is paid once while it lives.
 const parsed = new WeakMap<object, Map<string, IntlMessageFormat | null>>();

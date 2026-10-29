@@ -171,6 +171,25 @@ describe('a message override set through the admin API', () => {
     ).toHaveLength(1);
   });
 
+  it('may read only the arguments the page it replaces supplies', async () => {
+    const t = await tenant();
+    const extra = await admin(t, 'PUT', '/message-overrides/en/login.context', {
+      message: 'to reach {app} for {client}',
+    });
+    expect(extra.statusCode).toBe(400);
+    expect(extra.payload).toContain('{app}');
+    expect(extra.payload).toContain('{client}');
+    const none = await admin(t, 'PUT', '/message-overrides/en/login.title', {
+      message: 'Welcome, {name}',
+    });
+    expect(none.statusCode).toBe(400);
+    expect(none.payload).toContain('supplies no value');
+    const fewer = await admin(t, 'PUT', '/message-overrides/en/login.context', {
+      message: 'to reach {client}',
+    });
+    expect(fewer.statusCode, fewer.payload).toBe(200);
+  });
+
   it('is not shown to another tenant', async () => {
     const mine = await tenant();
     const theirs = await tenant();
