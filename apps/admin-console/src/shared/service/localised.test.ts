@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  describeTranslations,
   isTranslated,
   languagesNote,
   LANGUAGES_FAILED,
@@ -43,6 +44,12 @@ describe('the languages a text is translated into', () => {
     expect(isTranslated({ fr: ' ' }, 'fr')).toBe(false);
     expect(isTranslated({}, 'fr')).toBe(false);
   });
+});
+
+it('names the languages a map holds for a conflict, or none', () => {
+  expect(describeTranslations({ fr: 'a', de: 'b' })).toBe('fr, de');
+  expect(describeTranslations({})).toBe('none');
+  expect(describeTranslations(undefined)).toBe('none');
 });
 
 describe('the offered languages as a read', () => {

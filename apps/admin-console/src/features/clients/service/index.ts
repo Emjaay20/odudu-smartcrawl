@@ -47,7 +47,6 @@ export {
   NAME_TRANSLATIONS_LABEL,
   NAME_TRANSLATIONS_NOTE,
   TRANSLATIONS_LEAD,
-  describeTranslations,
   translationsPatch,
 } from '#/features/clients/service/translations';
 export { deleteConsequence } from '#/features/clients/service/confirm';

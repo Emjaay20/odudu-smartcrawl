@@ -17,7 +17,6 @@ import {
   clientsHref,
   deleteConsequence,
   deleteFixed,
-  describeTranslations,
   enabledFixed,
   FIELD,
   SECTION,
@@ -28,6 +27,7 @@ import { useConfirmedRemoval, type Removal } from '#/shared/usecase/useConfirmed
 import { deletedText, writeFailureText } from '#/shared/service/failure';
 import { DESCRIPTION_MAX, DESCRIPTION_RULE } from '#/shared/service/labels';
 import { orBlank } from '#/shared/service/format';
+import { describeTranslations } from '#/shared/service/localised';
 import type { Read } from '#/shared/service/read';
 import { useOfferedLocales } from '#/shared/usecase/useOfferedLocales';
 

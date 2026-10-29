@@ -26,10 +26,3 @@ export function translationsPatch(changes: TranslationValues): TranslationValues
       : { description_i18n: changes.description_i18n }),
   };
 }
-
-// A map as a conflict panel names it: the languages it holds text for.
-export function describeTranslations(value: unknown): string {
-  if (typeof value !== 'object' || value === null) return 'none';
-  const tags = Object.keys(value);
-  return tags.length === 0 ? 'none' : tags.join(', ');
-}

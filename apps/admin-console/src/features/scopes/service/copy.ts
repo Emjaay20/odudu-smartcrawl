@@ -122,9 +122,7 @@ export function copyBody(scope: ClientScope, description: string) {
       : { default_client_assignment: scope.default_client_assignment }),
     ...(scope.consent_text === null ? {} : { consent_text: scope.consent_text }),
     ...(translated(scope.description_i18n) ? { description_i18n: scope.description_i18n } : {}),
-    ...(translated(scope.consent_text_i18n)
-      ? { consent_text_i18n: scope.consent_text_i18n }
-      : {}),
+    ...(translated(scope.consent_text_i18n) ? { consent_text_i18n: scope.consent_text_i18n } : {}),
     display_order: scope.display_order,
   };
 }

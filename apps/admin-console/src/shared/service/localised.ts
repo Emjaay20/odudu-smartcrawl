@@ -57,3 +57,10 @@ export function offeredOf(read: Read<string[]>): string[] {
 export function offersTag(read: Read<string[]>, tag: string): boolean {
   return read.status !== 'ready' || read.data.includes(tag);
 }
+
+// A map as a conflict panel names it: the languages it holds text for.
+export function describeTranslations(value: unknown): string {
+  if (typeof value !== 'object' || value === null) return 'none';
+  const tags = Object.keys(value);
+  return tags.length === 0 ? 'none' : tags.join(', ');
+}
