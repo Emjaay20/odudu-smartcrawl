@@ -3,14 +3,20 @@ import { type TenantScopedDatabase } from '@odudu/db';
 import { assetRepository, buildBranding, themeRepository } from '@odudu/domain-theme';
 import {
   inlinePreview,
-  MAX_PREVIEW_BYTES,
   withBranding,
   type InlinedPreview,
   type PageKind,
   type PreviewRender,
   type RenderedPage,
 } from '@odudu/kernel';
-import { imageIdsOf, dataUri, layerOf, previewInfoView, usedImages } from '#/service/theme-preview';
+import {
+  dataUri,
+  imageIdsOf,
+  layerOf,
+  MAX_PREVIEW_BYTES,
+  previewInfoView,
+  usedImages,
+} from '#/service/theme-preview';
 import { clientExists, type ThemeTarget } from '#/usecase/theme';
 
 // The page shown when none is asked for.

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { brandingCss, tokensCss } from '#/service/branding-css';
+import { backgroundCss, brandingCss, tokensCss } from '#/service/branding-css';
 import { buildBranding } from '#/service/build-branding';
 import { type PublishedLayer } from '#/service/record';
 
@@ -69,11 +69,13 @@ describe('the background image', () => {
     expect(build([bare, tenantWithBackground()]).css).toContain(ASSET.sha256);
   });
 
-  it('writes a url that no character of a tenant name can break out of', () => {
-    const out = build([tenantWithBackground()], "a');}body{x:y");
-    const rule = out.css.split('\n').find((line) => line.includes('background-image')) ?? '';
-    expect(out.css).not.toContain("a')");
-    expect(rule === '' || rule.match(/[()'\\]/gu)?.length === 4).toBe(true);
+  it('writes a url that nothing in the path can break out of', () => {
+    const rule = backgroundCss('/x\');}body{y:z\\ a"');
+    const inside = /url\('(.*)'\)/u.exec(rule)?.[1] ?? '';
+    expect(inside).not.toMatch(/['")\\\s]/u);
+    expect(inside).toContain('%27');
+    expect(inside).toContain('%29');
+    expect(rule.match(/[()]/gu)).toHaveLength(2);
   });
 
   it('adds nothing for a theme with no background', () => {

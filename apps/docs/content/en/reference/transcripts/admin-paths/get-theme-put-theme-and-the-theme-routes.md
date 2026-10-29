@@ -49,7 +49,7 @@ one of another tenant, or that does not exist, answers `404`.
   published theme, and a scope with no draft shows its own published theme, then what is below it. The
   stylesheet and the images the page shows are inside the document as `data:`
   addresses, so an image that no public address serves still appears; together
-  they may come to 1 MiB, counting an image once for each place it is written, past which the answer is `422`
+  they may come to 2.1 MiB, counting an image once for each place it is written, past which the answer is `422`
   (`about:blank#theme-preview-too-large`). The response is meant for a frame
   whose parent is the same origin: its policy allows no script, so a page that
   needs one (`passkey-enrolment`) is rendered without it and the response says

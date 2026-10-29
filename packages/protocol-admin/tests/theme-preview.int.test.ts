@@ -199,7 +199,7 @@ describe('the images of a preview', () => {
     expect(res.body).not.toContain('/brand/');
   });
 
-  it('leaves an image the page does not show out of the page and out of its weight', async () => {
+  it('leaves an image the draft does not name out of the page and out of its weight', async () => {
     const ctx = await tenantCtx();
     await storeImage(ctx, 'unused', Buffer.alloc(1_200_000, 'u'));
     await saveDraft(ctx, { stylesheet: '.logo { display: none; }' });
@@ -224,10 +224,23 @@ describe('the images of a preview', () => {
     expect(policy).toMatch(/style-src 'self' 'sha256-/u);
   });
 
-  it('counts a background that the page draws in the weight of the preview', async () => {
+  it('previews a background of the largest size an upload can store', async () => {
     const ctx = await tenantCtx();
-    const big = await storeImage(ctx, 'bigbackdrop', Buffer.alloc(1_200_000, 'u'));
+    const big = await storeImage(ctx, 'bigbackdrop', Buffer.alloc(1_310_720, 'u'));
     await saveDraft(ctx, { assets: { background: { assetId: big } } });
+    const res = await preview(ctx);
+    expect(res.statusCode, res.body.slice(0, 200)).toBe(200);
+    expect(res.body).toContain("background-image:url('data:image/png;base64,");
+  });
+
+  it('refuses a background that, with the other images shown, passes the bound', async () => {
+    const ctx = await tenantCtx();
+    const big = (label: string) => storeImage(ctx, label, Buffer.alloc(1_310_720, label));
+    const background = await big('x');
+    const logo = await big('y');
+    await saveDraft(ctx, {
+      assets: { background: { assetId: background }, logo: { assetId: logo, alt: 'Acme' } },
+    });
     const res = await preview(ctx);
     expect(res.statusCode).toBe(422);
   });
@@ -243,9 +256,9 @@ describe('the images of a preview', () => {
     );
   });
 
-  it('refuses a draft whose inlined files come to over 1 MiB', async () => {
+  it('refuses a draft whose inlined files come to over the bound', async () => {
     const ctx = await tenantCtx();
-    const big = (label: string) => storeImage(ctx, label, Buffer.alloc(420_000, label));
+    const big = (label: string) => storeImage(ctx, label, Buffer.alloc(1_100_000, label));
     const logo = await big('a');
     const dark = await big('b');
     await saveDraft(ctx, {

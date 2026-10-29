@@ -76,7 +76,7 @@ export {
   stylesheetPath,
   type BrandFile,
 } from '#/service/branding-urls';
-export { brandingCss, tokensCss } from '#/service/branding-css';
+export { backgroundCss, brandingCss, tokensCss } from '#/service/branding-css';
 export {
   BRANDING_BACKOFF_MS,
   MAX_BRANDING_BACKOFFS,
@@ -91,6 +91,7 @@ export {
 } from '#/usecase/resolve-branding';
 export {
   ASSET_LIMITS,
+  MAX_STORED_ASSET_BYTES,
   OUTPUT_GROWTH,
   TENANT_ASSET_CAP_BYTES,
   inspectLimitsFor,
