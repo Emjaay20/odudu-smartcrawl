@@ -201,11 +201,35 @@ describe('the images of a preview', () => {
 
   it('leaves an image the page does not show out of the page and out of its weight', async () => {
     const ctx = await tenantCtx();
-    const unused = await storeImage(ctx, 'unused', Buffer.alloc(1_200_000, 'u'));
-    await saveDraft(ctx, { assets: { background: { assetId: unused } } });
+    await storeImage(ctx, 'unused', Buffer.alloc(1_200_000, 'u'));
+    await saveDraft(ctx, { stylesheet: '.logo { display: none; }' });
     const res = await preview(ctx);
     expect(res.statusCode, res.body.slice(0, 300)).toBe(200);
     expect(res.body).not.toContain('data:image');
+  });
+
+  it('draws a draft background behind the page, carried inside the stylesheet', async () => {
+    const ctx = await tenantCtx();
+    const bytes = Buffer.from('backdrop-bytes');
+    const background = await storeImage(ctx, 'backdrop', bytes);
+    await saveDraft(ctx, { assets: { background: { assetId: background } } });
+    const res = await preview(ctx);
+    expect(res.statusCode, res.body).toBe(200);
+    expect(res.body).toContain(
+      `body{background-image:url('data:image/png;base64,${bytes.toString('base64')}');`,
+    );
+    expect(res.body).not.toContain('/brand/');
+    const policy = String(res.headers['content-security-policy']);
+    expect(policy.split('; ')).toContain('img-src data:');
+    expect(policy).toMatch(/style-src 'self' 'sha256-/u);
+  });
+
+  it('counts a background that the page draws in the weight of the preview', async () => {
+    const ctx = await tenantCtx();
+    const big = await storeImage(ctx, 'bigbackdrop', Buffer.alloc(1_200_000, 'u'));
+    await saveDraft(ctx, { assets: { background: { assetId: big } } });
+    const res = await preview(ctx);
+    expect(res.statusCode).toBe(422);
   });
 
   it('carries the favicon the page links as a data address', async () => {
