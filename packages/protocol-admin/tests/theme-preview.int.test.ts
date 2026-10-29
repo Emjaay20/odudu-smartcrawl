@@ -433,3 +433,176 @@ describe('access', () => {
     );
   });
 });
+
+describe('what the preview says about itself', () => {
+  const info = (ctx: Ctx, query = '', base = '') =>
+    call(ctx, 'GET', `${base}/theme/preview/info${query}`);
+  interface Info {
+    kind: string;
+    from: string;
+    shown: string;
+    faults: { layer: string; code: string }[];
+    refused: { layer: string; codes: string[] }[];
+    unfilled: boolean;
+  }
+  const read = async (ctx: Ctx, query = '', base = ''): Promise<Info> =>
+    (await info(ctx, query, base)).json<Info>();
+  const NO_FORM = '<p>nothing placed</p>';
+  const UNFILLABLE =
+    '<p>{{t "no.such.key"}}</p>{{form.open}}{{fields}}{{submit}}{{error}}{{form.close}}';
+
+  async function clientCtx(): Promise<{ ctx: Ctx; base: string }> {
+    const ctx = await tenantCtx();
+    const client = await fixture.createConfidentialClient(ctx.tenant.name, {});
+    return { ctx, base: `/clients/${client.id}` };
+  }
+
+  it('says there is nothing of the scope’s own and the default look is shown', async () => {
+    const res = await info(await tenantCtx());
+    expect(res.statusCode, res.body).toBe(200);
+    expect(res.json()).toEqual({
+      kind: 'sign-in',
+      from: 'none',
+      shown: 'default',
+      faults: [],
+      refused: [],
+      unfilled: false,
+    });
+  });
+
+  it('says a draft is shown, and a published theme when there is no draft', async () => {
+    const ctx = await tenantCtx();
+    await saveDraft(ctx, { templates: { 'sign-in': SIGN_IN('mine') } });
+    expect(await read(ctx)).toMatchObject({
+      from: 'draft',
+      shown: 'tenant',
+      faults: [],
+    });
+    await publish(ctx);
+    expect(await read(ctx)).toMatchObject({
+      from: 'published',
+      shown: 'tenant',
+    });
+  });
+
+  it('names a template that failed the checks, and the codes', async () => {
+    const ctx = await tenantCtx();
+    await plantDraft(ctx, { templates: { 'sign-in': NO_FORM } });
+    const body = await read(ctx);
+    expect(body.refused).toHaveLength(1);
+    expect(body.refused[0]?.layer).toBe('tenant');
+    expect(body.refused[0]?.codes.length).toBeGreaterThan(0);
+    expect(header(await preview(ctx), 'x-odudu-preview-fallback')).toBe('sign-in');
+    expect((await read(ctx, '?kind=consent')).refused).toEqual([]);
+  });
+
+  it('says a template that passed the checks could not be filled', async () => {
+    const ctx = await tenantCtx();
+    await plantDraft(ctx, { templates: { 'sign-in': UNFILLABLE } });
+    expect(await read(ctx)).toMatchObject({
+      unfilled: true,
+      refused: [],
+    });
+    expect(header(await preview(ctx), 'x-odudu-preview-fallback')).toBe('sign-in');
+    expect(await read(ctx, '?kind=consent')).toMatchObject({
+      unfilled: false,
+    });
+  });
+
+  it('names a layer that names an image that is gone, and shows the default look', async () => {
+    const ctx = await tenantCtx();
+    await plantDraft(ctx, {
+      assets: { logo: { assetId: newId(), alt: 'Acme' } },
+      templates: { 'sign-in': SIGN_IN('gone') },
+    });
+    expect(await read(ctx)).toMatchObject({
+      shown: 'default',
+      faults: [{ layer: 'tenant', code: 'image_gone' }],
+    });
+    expect((await preview(ctx)).body).not.toContain('class="gone"');
+  });
+
+  it('reports a client’s draft and the tenant layer it falls back to', async () => {
+    const { ctx, base } = await clientCtx();
+    await saveDraft(ctx, { templates: { 'sign-in': SIGN_IN('from-tenant') } });
+    await publish(ctx);
+    expect(await read(ctx, '', base)).toMatchObject({
+      from: 'none',
+      shown: 'tenant',
+      faults: [],
+    });
+    const scope = { tenantId: ctx.tenant.id, clientId: base.split('/').pop() ?? '' };
+    await withTenant(fixture.app.db, ctx.tenant.id, async (tx) => {
+      await themeRepository(tx).saveDraft(
+        scope,
+        { tokens: {}, stylesheet: null, templates: { 'sign-in': NO_FORM }, assets: {} },
+        null,
+      );
+    });
+    const body = await read(ctx, '', base);
+    expect(body.from).toBe('draft');
+    expect(body.shown, 'its own layer is used, only that template is not').toBe('client');
+    expect(body.refused.map((entry) => entry.layer)).toEqual(['client']);
+
+    await withTenant(fixture.app.db, ctx.tenant.id, async (tx) => {
+      const themes = themeRepository(tx);
+      await themes.saveDraft(
+        scope,
+        {
+          tokens: {},
+          stylesheet: null,
+          templates: {},
+          assets: { logo: { assetId: newId(), alt: 'Gone' } },
+        },
+        (await themes.draft(scope))?.etag ?? null,
+      );
+    });
+    expect(await read(ctx, '', base)).toMatchObject({
+      shown: 'tenant',
+      faults: [{ layer: 'client', code: 'image_gone' }],
+    });
+  });
+
+  it('answers 404 for a client of another tenant and for one that does not exist', async () => {
+    const { ctx } = await clientCtx();
+    const other = await clientCtx();
+    for (const base of [other.base, `/clients/${newId()}`]) {
+      expect((await info(ctx, '', base)).statusCode).toBe(404);
+    }
+  });
+
+  it('is a query of the preview’s own: an unknown kind is refused', async () => {
+    expect((await info(await tenantCtx(), '?kind=nonesuch')).statusCode).toBe(400);
+  });
+
+  it('is two routes with the capabilities of the previews, and refuses without them', async () => {
+    const routes = ADMIN_ROUTES.filter((route) => route.pattern.endsWith('/theme/preview/info'));
+    expect(routes.map((route) => [route.pattern, route.capability])).toEqual([
+      ['/admin/tenants/:tenant/theme/preview/info', 'manage-tenant'],
+      ['/admin/tenants/:tenant/clients/:id/theme/preview/info', 'manage-clients'],
+    ]);
+    const readOnly = await tenantCtx(['view-users']);
+    const clientsOnly = await tenantCtx(['manage-clients']);
+    const anonymous = await fixture.http.inject({
+      method: 'GET',
+      url: `/admin/tenants/${readOnly.tenant.name}/theme/preview/info`,
+    });
+    expect(anonymous.statusCode).toBe(401);
+    expect((await info(readOnly)).statusCode).toBe(403);
+    expect((await info(clientsOnly)).statusCode).toBe(403);
+    const own = await fixture.createConfidentialClient(clientsOnly.tenant.name, {});
+    expect((await info(clientsOnly, '', `/clients/${own.id}`)).statusCode).toBe(200);
+  });
+
+  it('answers a foreign tenant exactly as a missing one', async () => {
+    const mine = await tenantCtx();
+    const theirs = await tenantCtx();
+    await saveDraft(theirs, { stylesheet: '.page { color: #333333; }' });
+    const foreign = await info({ ...mine, tenant: theirs.tenant });
+    const missing = await info({ ...mine, tenant: { id: newId(), name: `nonesuch-${newId()}` } });
+    expect(foreign.statusCode).toBe(missing.statusCode);
+    expect(foreign.body.replace(/"instance":"[^"]*"/u, '')).toBe(
+      missing.body.replace(/"instance":"[^"]*"/u, ''),
+    );
+  });
+});

@@ -19,7 +19,7 @@ import {
   amendSubjectRequestSchema,
   assignScopeToClientRequestSchema,
   assignScopeToClientResponseSchema,
-  clientSchema,
+  clientRecordSchema,
   createClientRequestSchema,
   createClientResponseSchema,
   createGroupRequestSchema,
@@ -129,9 +129,13 @@ import {
   TENANT_IMPORT_BODY_LIMIT,
   THEME_ASSET_BODY_LIMIT,
   previewThemeQuerySchema,
+  themePreviewInfoSchema,
+  previewMailQuerySchema,
+  mailBrandingViewSchema,
   THEME_BODY_LIMIT,
   listMessageOverridesQuerySchema,
   listMessageOverridesResponseSchema,
+  messageCatalogueResponseSchema,
   messageOverrideSchema,
   putMessageOverrideRequestSchema,
   listThemeVersionsResponseSchema,
@@ -328,6 +332,22 @@ function themeRoutes(
         'page, and `X-Odudu-Preview-Fallback` lists the kinds. Refused with `422` (`about:blank#theme-preview-too-large`) when the ' +
         'stylesheet and the images the page shows come to over 1 MiB once inlined. Reads ' +
         'the draft only: nothing is saved and nothing is published.',
+    },
+    {
+      method: 'GET',
+      pattern: `${base}/theme/preview/info`,
+      capability,
+      responseSchema: themePreviewInfoSchema,
+      querystringSchema: previewThemeQuerySchema,
+      description:
+        `What the preview of the same request shows and why, since a frame cannot read the ` +
+        `headers of the page it loads. Takes the preview\u2019s own query and is computed by ` +
+        `the code that renders it, so the two cannot disagree: whether the ${noun}\u2019s ` +
+        '`draft`, its `published` theme or neither is the scope\u2019s own layer, the layer ' +
+        'the page is `shown` from, the layers or stylesheets left out and why, the templates ' +
+        'of this page kind that failed the checks, and whether the template could not be ' +
+        'filled. Reads the draft and the published themes only, at most five statements ' +
+        'whatever the theme names. `404` for a client that is not the tenant\u2019s.',
     },
     {
       method: 'DELETE',
@@ -891,6 +911,32 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
       'committed and in batches, as `PATCH /admin/tenants/{tenant}` does.',
   },
   ...themeRoutes('/admin/tenants/:tenant', 'manage-tenant', 'tenant'),
+  {
+    method: 'GET',
+    pattern: '/admin/tenants/:tenant/mail/preview',
+    capability: 'manage-tenant',
+    responseSchema: z.string(),
+    successMediaType: 'text/html',
+    querystringSchema: previewMailQuerySchema,
+    description:
+      'The address-verification mail as the tenant\u2019s published theme dresses it, built by ' +
+      'the code that builds the real one, with a sample address and link. The answer is a ' +
+      'whole HTML document under a policy of its own, for a frame whose parent is this ' +
+      'origin: it licenses no script, and images only from the logo\u2019s origin. `scheme` ' +
+      'fixes the light or the dark palette and logo, which a mail client otherwise chooses ' +
+      'by its own setting. A mail uses the tenant\u2019s theme, never a client\u2019s. Reads ' +
+      'the published theme only: nothing is queued, saved or sent.',
+  },
+  {
+    method: 'GET',
+    pattern: '/admin/tenants/:tenant/mail/branding',
+    capability: 'manage-tenant',
+    responseSchema: mailBrandingViewSchema,
+    description:
+      'The colours and the logo the tenant\u2019s mail inherits from its published theme, ' +
+      'for each scheme, and for each palette whether the theme or Odudu\u2019s default ' +
+      'supplies it. A scheme the theme does not set shows the default\u2019s colours.',
+  },
   // A tenant's own wording for the messages its pages show, per language. The
   // languages themselves are the `supported_locales` and `default_locale`
   // settings above.
@@ -903,6 +949,20 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     description:
       'The overrides of one `locale`, in key order. A tenant holds at most 500 across every ' +
       'locale, so a locale is listed in at most three pages of 200.',
+  },
+  {
+    method: 'GET',
+    pattern: '/admin/tenants/:tenant/message-catalogue',
+    capability: 'manage-tenant',
+    responseSchema: messageCatalogueResponseSchema,
+    description:
+      'The messages a tenant\u2019s pages are filled from, as the keys a template may name in ' +
+      '`{{t "key"}}` and a message override may be set under, each with its English text. ' +
+      'The catalogue is part of the build and the same for every tenant, so the answer is ' +
+      'built once and reads nothing from the database: three sections, one per package ' +
+      'that fills pages, a few hundred messages in all and well under 100 KB, never paged. ' +
+      'A template of a page kind may name only a key of the section that lists that kind; ' +
+      'an override may name the key of any section. Mail messages are not listed.',
   },
   {
     method: 'PUT',
@@ -1003,14 +1063,14 @@ export const ADMIN_ROUTES: readonly AdminRoute[] = [
     method: 'GET',
     pattern: '/admin/tenants/:tenant/clients/:id',
     capability: 'manage-clients',
-    responseSchema: clientSchema,
+    responseSchema: clientRecordSchema,
     description: CLIENT_REACH,
   },
   {
     method: 'PATCH',
     pattern: '/admin/tenants/:tenant/clients/:id',
     capability: 'manage-clients',
-    responseSchema: clientSchema,
+    responseSchema: clientRecordSchema,
     bodySchema: amendClientRequestSchema,
     description:
       `${SERVICE_ACCOUNT_CEILING} ${CLIENT_LIST_BOUND}` +

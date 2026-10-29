@@ -71,6 +71,24 @@ describe('copying a scope', () => {
     });
   });
 
+  it('carries the translations of the description and the consent text', () => {
+    const translated = {
+      ...SCOPE,
+      description_i18n: { fr: 'Factures' },
+      consent_text_i18n: { fr: 'Lire les factures', de: 'Rechnungen lesen' },
+    };
+    expect(copyBody(translated, 'Edited')).toMatchObject({
+      description: 'Edited',
+      description_i18n: { fr: 'Factures' },
+      consent_text_i18n: { fr: 'Lire les factures', de: 'Rechnungen lesen' },
+    });
+  });
+
+  it('leaves a map nobody filled out of the copy', () => {
+    expect(copyBody(SCOPE, 'd')).not.toHaveProperty('description_i18n');
+    expect(copyBody(SCOPE, 'd')).not.toHaveProperty('consent_text_i18n');
+  });
+
   it('sends a plain scope as its name and description, a copy as the source with them', () => {
     expect(createBodyOf('n', 'd', { status: 'none' })).toEqual({ name: 'n', description: 'd' });
     const source: CopyRead = { status: 'ready', scope: SCOPE, roles: [], bound: [] };

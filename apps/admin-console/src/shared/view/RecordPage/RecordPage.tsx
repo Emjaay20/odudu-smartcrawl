@@ -23,6 +23,7 @@ export type RecordPanelProps<Key extends string, R> = {
 export function RecordPage({
   record,
   breadcrumb,
+  kicker,
   title,
   status,
   description,
@@ -37,7 +38,9 @@ export function RecordPage({
 }: {
   record: RecordView;
   // Up to the list the record sits in, ending with the record itself.
-  breadcrumb: readonly Crumb[];
+  breadcrumb?: readonly Crumb[];
+  // In place of a breadcrumb, for a page that is an area of its own.
+  kicker?: ReactNode;
   title: ReactNode;
   status?: ReactNode;
   description?: ReactNode;
@@ -57,7 +60,8 @@ export function RecordPage({
   const readOnly = readOnlyChoice ?? viewOnly !== undefined;
   const head = (ready: boolean) => (
     <PageHeader
-      breadcrumb={breadcrumb}
+      {...(breadcrumb === undefined ? {} : { breadcrumb })}
+      {...(kicker === undefined ? {} : { kicker })}
       title={title}
       {...(ready && status !== undefined ? { status } : {})}
       {...(description === undefined ? {} : { description })}

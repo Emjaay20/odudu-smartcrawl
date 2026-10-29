@@ -41,13 +41,18 @@ function withoutScript(page: RenderedPage): { html: string; omitted: boolean } {
   };
 }
 
+// An icon link to one of Instrument's own icons, found by its address so that
+// the head's layout does not matter.
+const STOCK_ICON_LINK = /<link rel="icon" href="\/instrument\/favicon\.(?:svg|ico)"[^>]*>\n?/gu;
+
 // The page as `page` rendered it, with the theme's own files carried inside
 // it, so nothing the draft holds needs a public URL. A stylesheet that
 // contains `<` is left out: the sanitiser refuses one, and a policy hash
-// cannot make an element that closes early safe.
+// cannot make an element that closes early safe. The stock icon links go too:
+// a framed page has no tab, and the policy loads no image but a `data:` one.
 export function inlinePreview(page: RenderedPage, inline: PreviewInline): InlinedPreview {
   const stripped = withoutScript(page);
-  let html = stripped.html;
+  let html = stripped.html.replace(STOCK_ICON_LINK, '');
   let styleSha256: string | null = null;
   if (inline.stylesheetUrl !== null) {
     let css = inline.css;
@@ -64,6 +69,17 @@ export function inlinePreview(page: RenderedPage, inline: PreviewInline): Inline
   return { html, styleSha256, scriptOmitted: stripped.omitted };
 }
 
+// What every framed preview sends beyond its policy: the console frames it,
+// so nothing is cached, sniffed or referred.
+function framed(directives: readonly string[]): readonly (readonly [string, string])[] {
+  return [
+    ['content-security-policy', [...directives, "frame-ancestors 'self'"].join('; ')],
+    ['referrer-policy', 'no-referrer'],
+    ['cache-control', 'no-store'],
+    ['x-content-type-options', 'nosniff'],
+  ];
+}
+
 // The headers of the preview response and the only ones: it is a response of
 // its own, never run through `pageHeaders`, which keeps every other page
 // unframable. The console frames this one, so `frame-ancestors` is the
@@ -72,21 +88,27 @@ export function inlinePreview(page: RenderedPage, inline: PreviewInline): Inline
 // which is public and fetched without credentials.
 export function previewHeaders(inlined: InlinedPreview): readonly (readonly [string, string])[] {
   const style = inlined.styleSha256 === null ? "'self'" : `'self' 'sha256-${inlined.styleSha256}'`;
-  return [
-    [
-      'content-security-policy',
-      [
-        "default-src 'none'",
-        `style-src ${style}`,
-        "font-src 'self'",
-        'img-src data:',
-        "frame-ancestors 'self'",
-        "form-action 'none'",
-        "base-uri 'none'",
-      ].join('; '),
-    ],
-    ['referrer-policy', 'no-referrer'],
-    ['cache-control', 'no-store'],
-    ['x-content-type-options', 'nosniff'],
-  ];
+  return framed([
+    "default-src 'none'",
+    `style-src ${style}`,
+    "font-src 'self'",
+    'img-src data:',
+    "form-action 'none'",
+    "base-uri 'none'",
+  ]);
+}
+
+// The headers of a mail preview. A mail carries every colour inline, in a
+// style block and in attributes, so styles are inline and nothing is fetched
+// but images: data addresses and the origins its logos are served from.
+export function mailPreviewHeaders(
+  logoOrigins: readonly string[],
+): readonly (readonly [string, string])[] {
+  return framed([
+    "default-src 'none'",
+    "style-src 'unsafe-inline'",
+    `img-src ${['data:', ...logoOrigins].join(' ')}`,
+    "form-action 'none'",
+    "base-uri 'none'",
+  ]);
 }

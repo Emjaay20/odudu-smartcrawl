@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { loadedData, mapRead, readOutcome } from '#/shared/service/read';
+import { loadedData, mapRead, readOutcome, recordRead } from '#/shared/service/read';
 import type { GatewayResult } from '#/shared/service/result';
 
 const retry = (): void => undefined;
@@ -56,5 +56,45 @@ describe('loadedData', () => {
     expect(loadedData({ status: 'loading' })).toBeUndefined();
     const failed = { status: 'failed' as const, retry };
     expect(loadedData(failed)).toBeUndefined();
+  });
+});
+
+describe('recordRead', () => {
+  const failure = problem(403) as Extract<GatewayResult<number>, { ok: false }>;
+
+  it('is ready once there is data, and loading until a read answers', () => {
+    expect(recordRead({ status: 'ready', data: 3, failure: null, retry })).toEqual({
+      status: 'ready',
+      data: 3,
+    });
+    expect(recordRead({ status: 'loading', data: undefined, failure: null, retry })).toEqual({
+      status: 'loading',
+    });
+  });
+
+  it('keeps data it already has when a later read fails', () => {
+    expect(recordRead({ status: 'failed', data: 3, failure, retry })).toEqual({
+      status: 'ready',
+      data: 3,
+    });
+  });
+
+  it('says a refusal was one, and any other failure was not', () => {
+    expect(recordRead({ status: 'failed', data: undefined, failure, retry })).toMatchObject({
+      status: 'failed',
+      refused: true,
+    });
+    expect(
+      recordRead({
+        status: 'failed',
+        data: undefined,
+        failure: problem(500) as typeof failure,
+        retry,
+      }),
+    ).toMatchObject({ refused: false });
+    expect(recordRead({ status: 'missing', data: undefined, failure: null, retry })).toMatchObject({
+      status: 'failed',
+      refused: false,
+    });
   });
 });

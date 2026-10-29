@@ -5,6 +5,7 @@ import { ACME_ADMIN } from '#/testing/tenantPaths';
 import { graceRoutes } from '#/testing/renderConsole';
 import { ROLES } from '#/testing/rolesFixtures';
 import { EVERY_TENANT_CAPABILITY } from '#/testing/roleAnswers';
+import { settingsAnswer, ST } from '#/testing/settingsFixtures';
 export const SC = `${ACME_ADMIN}/scopes`;
 
 export interface ScopeAnswer {
@@ -142,6 +143,7 @@ export function scopeRoutes(
       ),
       [`GET ${SC}/s-bill/impact`]: json(impact(1, 1)),
       [`GET ${SC}/builtins`]: json(builtinsPresent()),
+      [`GET ${ST}`]: settingsAnswer({ supported_locales: ['en', 'fr', 'de'] }),
       [`GET ${SC}/s-bill/roles`]: json({ items: [MAPPED] }, 200, { etag: '"s-bill-r1"' }),
       [`GET ${SC}/s-bill/clients`]: json({ items: [BILLING_CARRIES] }),
       [`GET ${ACME_ADMIN}/roles`]: (request) =>

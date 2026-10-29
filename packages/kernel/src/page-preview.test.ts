@@ -1,7 +1,12 @@
 import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import { pageHeaders, stylesheetLink, type RenderedPage } from '#/page';
-import { MAX_PREVIEW_BYTES, inlinePreview, previewHeaders } from '#/page-preview';
+import { brandingHead, pageHeaders, stylesheetLink, type RenderedPage } from '#/page';
+import {
+  MAX_PREVIEW_BYTES,
+  inlinePreview,
+  mailPreviewHeaders,
+  previewHeaders,
+} from '#/page-preview';
 
 const SHEET = '/tenants/acme/brand/' + 'a'.repeat(64) + '.css';
 const LOGO = '/tenants/acme/brand/' + 'b'.repeat(64) + '.png';
@@ -57,6 +62,34 @@ describe('inlinePreview', () => {
     expect(out.scriptOmitted).toBe(true);
   });
 
+  it('leaves out the icon links the real head carries, wherever they sit in it', () => {
+    const head = brandingHead({ tag: 'en', dir: 'ltr' });
+    expect(head).toContain('rel="icon"');
+    for (const page of [
+      `<head>${head}</head><p>x</p>`,
+      `<head>${head}<meta name="a" content="b"></head>`,
+      `<head><meta name="a" content="b">${head}</head>`,
+    ]) {
+      const out = inlinePreview(pageWith(page), {
+        stylesheetUrl: null,
+        css: '',
+        images: new Map(),
+      });
+      expect(out.html).not.toContain('rel="icon"');
+      expect(out.html).toContain('<head>');
+    }
+  });
+
+  it('keeps a theme’s own favicon, carried as the data it was swapped for', () => {
+    const icon = `<link rel="icon" href="${LOGO}">`;
+    const out = inlinePreview(pageWith(`<head>${icon}</head>`), {
+      stylesheetUrl: null,
+      css: '',
+      images: new Map([[LOGO, LOGO_URI]]),
+    });
+    expect(out.html).toBe(`<head><link rel="icon" href="${LOGO_URI}"></head>`);
+  });
+
   it('does not inline a stylesheet that could close its own element', () => {
     const out = inlinePreview(pageWith(stylesheetLink(SHEET)), {
       stylesheetUrl: SHEET,
@@ -99,6 +132,30 @@ describe('previewHeaders', () => {
     const headers = Object.fromEntries(pageHeaders(pageWith('<p>')));
     expect(headers['x-frame-options']).toBe('DENY');
     expect(headers['content-security-policy']).toContain("frame-ancestors 'none'");
+  });
+});
+
+describe('mailPreviewHeaders', () => {
+  const policy = (origins: string[]): string[] => POLICY(mailPreviewHeaders(origins)).split('; ');
+
+  it('licenses images from the logo origins and data addresses, and no script', () => {
+    const directives = policy(['https://id.example']);
+    expect(directives).toContain('img-src data: https://id.example');
+    expect(directives).toContain("default-src 'none'");
+    expect(directives).toContain("frame-ancestors 'self'");
+    expect(directives.join(';')).not.toContain('script-src');
+  });
+
+  it('allows data images alone when no logo is set', () => {
+    expect(policy([])).toContain('img-src data:');
+  });
+
+  it('sends what every framed preview sends', () => {
+    const headers = Object.fromEntries(mailPreviewHeaders([]));
+    expect(headers['cache-control']).toBe('no-store');
+    expect(headers['x-content-type-options']).toBe('nosniff');
+    expect(headers['referrer-policy']).toBe('no-referrer');
+    expect(headers['x-frame-options']).toBeUndefined();
   });
 });
 

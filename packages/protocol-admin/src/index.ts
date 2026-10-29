@@ -1,3 +1,4 @@
+import { type MessageCatalogueResponse } from '@odudu/contracts/admin';
 import { type MailBrandingResolver } from '@odudu/email';
 import { sessionRepository } from '@odudu/authn-flows';
 import { signingKeyRepository } from '@odudu/crypto';
@@ -167,11 +168,13 @@ import { themeHandlers, type ThemeRouteDeps } from '#/view/routes/theme';
 import {
   deleteMessageOverrideHandler,
   listMessageOverridesHandler,
+  messageCatalogueHandler,
   putMessageOverrideHandler,
   type MessageOverridesRouteDeps,
 } from '#/view/routes/message-overrides';
 import { themeAssetHandlers, type ThemeAssetRouteDeps } from '#/view/routes/theme-assets';
-import { themePreviewHandler } from '#/view/routes/theme-preview';
+import { themePreviewHandler, themePreviewInfoHandler } from '#/view/routes/theme-preview';
+import { mailBrandingHandler, mailPreviewHandler } from '#/view/routes/mail-preview';
 import { type ThemePreviewDeps } from '#/usecase/theme-preview';
 import { exportTenantHandler, type TenantExportRouteDeps } from '#/view/routes/tenant-export';
 import { importTenantHandler, type TenantImportRouteDeps } from '#/view/routes/tenant-import';
@@ -312,6 +315,9 @@ export interface AdminRoutesDeps {
   // catalogue its page is filled from, which the packages that render
   // pages own.
   isThemeMessageKey: (kind: PageKind, key: string) => boolean;
+  // The page catalogues' keys with their English text, by the page kinds each
+  // fills, for the template editor and the override form.
+  messageCatalogue: () => MessageCatalogueResponse;
   // What a tenant's message overrides are checked against, which the packages
   // that own the page catalogues answer: whether a key names a message, and
   // what is wrong with a text as a message. `invalidate` drops a tenant's
@@ -549,6 +555,13 @@ function buildAdminRoutes(
     const previewDeps = { database: deps.database.db, pages: deps.themePreviewPages };
     const tenantPreview = themePreviewHandler(previewDeps, 'tenant');
     const clientPreview = themePreviewHandler(previewDeps, 'client');
+    const tenantPreviewInfo = themePreviewInfoHandler(previewDeps, 'tenant');
+    const clientPreviewInfo = themePreviewInfoHandler(previewDeps, 'client');
+    const mailDeps = {
+      database: deps.database.db,
+      resolveMailBranding: deps.resolveMailBranding,
+      now: () => clock.now(),
+    };
     const clientsDeps: ClientsRouteDeps = {
       database: deps.database.db,
       cursorKey: deps.cursorKey,
@@ -716,8 +729,14 @@ function buildAdminRoutes(
       'POST /admin/tenants/:tenant/theme/assets': themeAssets.upload,
       'DELETE /admin/tenants/:tenant/theme/assets/:assetId': themeAssets.remove,
       'GET /admin/tenants/:tenant/theme/preview': tenantPreview,
+      'GET /admin/tenants/:tenant/theme/preview/info': tenantPreviewInfo,
+      'GET /admin/tenants/:tenant/mail/preview': mailPreviewHandler(mailDeps),
+      'GET /admin/tenants/:tenant/mail/branding': mailBrandingHandler(mailDeps),
       'GET /admin/tenants/:tenant/theme/versions': tenantTheme.versions,
       'POST /admin/tenants/:tenant/theme/versions/:versionId/restore': tenantTheme.restore,
+      'GET /admin/tenants/:tenant/message-catalogue': messageCatalogueHandler(
+        deps.messageCatalogue,
+      ),
       'GET /admin/tenants/:tenant/message-overrides':
         listMessageOverridesHandler(messageOverridesDeps),
       'PUT /admin/tenants/:tenant/message-overrides/:locale/:key':
@@ -729,6 +748,7 @@ function buildAdminRoutes(
       'DELETE /admin/tenants/:tenant/clients/:id/theme': clientTheme.reset,
       'POST /admin/tenants/:tenant/clients/:id/theme/publish': clientTheme.publish,
       'GET /admin/tenants/:tenant/clients/:id/theme/preview': clientPreview,
+      'GET /admin/tenants/:tenant/clients/:id/theme/preview/info': clientPreviewInfo,
       'GET /admin/tenants/:tenant/clients/:id/theme/versions': clientTheme.versions,
       'POST /admin/tenants/:tenant/clients/:id/theme/versions/:versionId/restore':
         clientTheme.restore,

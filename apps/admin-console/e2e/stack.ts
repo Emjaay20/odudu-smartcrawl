@@ -231,6 +231,26 @@ const seededSchema = z.object({
       fixed: account,
       fixedTenantOnly: account,
     }),
+    // One tenant per test that changes its theme, each with its administrator
+    // and an application whose sign-in page it themes.
+    branding: z.object({
+      publish: account,
+      upload: account,
+      contrast: account,
+      reset: account,
+      keyed: account,
+      // Read only: the editors' layout at each width.
+      layout: account,
+      // The Mail tab's frame and the Languages tab's overrides.
+      mail: account,
+      languages: account,
+      // The stylesheet editor: a refusal marked on its line, then a published one.
+      styled: account,
+      // The Pages tab's message picker and the preview's notice.
+      catalogue: account,
+      // A client's own theme over the tenant's, and its name in French.
+      client: account,
+    }),
     // One tenant per test that reads its mail, each with its outbox seeded.
     mail: z.object({
       main: account,

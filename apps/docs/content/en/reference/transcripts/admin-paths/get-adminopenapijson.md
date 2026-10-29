@@ -11,7 +11,7 @@ cannot drift. It takes no `{tenant}` — it describes the API rather than reachi
 into one — and is served without authentication, since a client that cannot read
 it cannot generate against it.
 
-The `content-length`, the path count and the size below were derived from the generated document rather than from a fresh run, and the `Date` and request id belong to an earlier run; the block is run again when the documentation is closed.
+The `content-length`, the path count and the size below were derived from the generated document rather than from a fresh run, and the `Date` and request id belong to an earlier run; the `content-length` and the size were edited by hand to the derived values, so this block is not a real capture until Task 26 runs it again.
 
 ```bash
 curl -sS -D - -o openapi.json http://localhost:3197/admin/openapi.json
@@ -23,15 +23,15 @@ HTTP/1.1 200 OK
 x-request-id: 01a17d3a-0eac-7866-a52b-cbe602ff1565
 access-control-allow-origin: *
 content-type: application/json; charset=utf-8
-content-length: 593231
+content-length: 624835
 Date: Tue, 27 Oct 2026 11:58:39 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-92
+97
 ```
 
-579 KB and 92 paths, which is the whole route table. It is the one admin
+610 KB and 97 paths, which is the whole route table. It is the one admin
 response readable from any origin, so a viewer served from another port can load
 it — the local stack's optional Swagger UI does exactly that (see [Browsing the
 admin API](../../../contributing/run-from-a-checkout.md)). No admin route carries that header, so a page on

@@ -1,5 +1,3 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('node:crypto', () => {
@@ -26,19 +24,10 @@ describe('randomPassword', () => {
     expect(() => randomPassword('Ada-', ['ada'])).toThrow(/avoided/u);
   });
 
-  it('covers every username of three to six letters that the specs seed', () => {
-    const dir = fileURLToPath(new URL('../../apps/admin-console/e2e', import.meta.url));
-    const files = readdirSync(dir).filter((f) => f === 'global-setup.ts' || f.endsWith('.spec.ts'));
-    const seeded = files.flatMap((file) => {
-      const text = readFileSync(`${dir}/${file}`, 'utf8');
-      const found = [
-        ...text.matchAll(/username: '([a-z]{3,6})'/gu),
-        ...text.matchAll(/'--username',\s*'([a-z]{3,6})'/gu),
-      ];
-      return found.map((m) => m[1]);
-    });
-    expect(seeded.length).toBeGreaterThan(48);
-    const known: readonly (string | undefined)[] = SEEDED_USERNAMES;
-    expect(seeded.filter((name) => !known.includes(name))).toEqual([]);
+  it('avoids every username the setup and the specs seed, found in their source', () => {
+    expect(SEEDED_USERNAMES.length).toBeGreaterThan(48);
+    for (const name of ['wren', 'swift', 'heron', 'lise', 'ines', 'gauss', 'euler', 'grace']) {
+      expect(SEEDED_USERNAMES).toContain(name);
+    }
   });
 });

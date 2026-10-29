@@ -23,47 +23,21 @@ const ADAPTERS = [
 const TEST = /\.test\.tsx?$/u;
 const METHODS = new Set(['GET', 'POST', 'PUT', 'PATCH', 'DELETE']);
 
+// The previews are framed by address, as `previewSource` and
+// `mailPreviewSource` build it, and never requested by an adapter.
+const FRAMED =
+  'Framed by address (previewSource), not requested by an adapter: the Branding preview is an iframe whose own navigation fetches it.';
+
 // Routes the console deliberately never calls, each with the reason.
 const NEVER: Readonly<Record<string, string>> = {
   'POST /admin/tenants/:tenant/subjects/bulk':
     'API-only: acts on up to 100 subjects in one call for scripts and migrations. Every console list and record page acts on one subject at a time and has no multi-select.',
   'GET /admin/tenants/:tenant/audit/count':
     'The audit trail has no count, by design: over a trail that long a capped total would be an estimate the page cannot stand behind, so it says how far back the loaded rows reach instead.',
-  ...pendingBrandingRoutes(),
+  'GET /admin/tenants/:tenant/theme/preview': FRAMED,
+  'GET /admin/tenants/:tenant/clients/:id/theme/preview': FRAMED,
+  'GET /admin/tenants/:tenant/mail/preview': FRAMED,
 };
-
-// The theme routes are the Branding area's: until its screens call them an
-// entry here stands for each, and the entry fails this test the moment a
-// screen does, so it cannot outlive the screen.
-function pendingBrandingRoutes(): Record<string, string> {
-  const reason =
-    'The console has no Branding area yet; the theme routes are called by its Theme and client Branding tabs when they land.';
-  const tails: [string, string][] = [
-    ['GET', '/theme'],
-    ['PUT', '/theme'],
-    ['DELETE', '/theme'],
-    ['POST', '/theme/publish'],
-    ['GET', '/theme/preview'],
-    ['GET', '/theme/versions'],
-    ['POST', '/theme/versions/:versionId/restore'],
-  ];
-  const entries: [string, string][] = [
-    ...['/admin/tenants/:tenant', '/admin/tenants/:tenant/clients/:id'].flatMap((base) =>
-      tails.map(([method, tail]): [string, string] => [`${method} ${base}${tail}`, reason]),
-    ),
-    ['POST /admin/tenants/:tenant/theme/assets', reason],
-    ['DELETE /admin/tenants/:tenant/theme/assets/:assetId', reason],
-    ...[
-      'GET /admin/tenants/:tenant/message-overrides',
-      'PUT /admin/tenants/:tenant/message-overrides/:locale/:key',
-      'DELETE /admin/tenants/:tenant/message-overrides/:locale/:key',
-    ].map((route): [string, string] => [
-      route,
-      'The console has no Languages tab yet; the message override routes are called by it when it lands.',
-    ]),
-  ];
-  return Object.fromEntries(entries);
-}
 
 function template(pattern: string): string {
   return pattern.replace(/\/:[^/]+/gu, '/:');

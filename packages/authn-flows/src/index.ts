@@ -152,4 +152,5 @@ export { userRequiredActions, type RequiredAction } from '#/schema/required-acti
 export { renderRequiredActionPage } from '#/view/required-action-html';
 export { DEFAULT_TEMPLATES } from '#/view/templates/index';
 export { hasMessage as isAuthnMessageKey } from '#/view/template';
+export { en as AUTHN_PAGE_MESSAGES } from '#/view/messages';
 export { PREVIEW_PAGES as AUTHN_PREVIEW_PAGES } from '#/view/preview-pages';

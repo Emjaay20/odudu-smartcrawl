@@ -79,6 +79,8 @@ export interface ThemeViewResult {
   } | null;
   readonly sources: Record<string, Source>;
   readonly draftSources: Record<string, Source> | null;
+  // What the tenant's published theme supplies, for a client's view; null for the tenant's own.
+  readonly tenantSources: Record<string, Source> | null;
   // The draft's validator, for the `ETag` header; null without a draft.
   readonly draftEtag: string | null;
 }
@@ -138,6 +140,7 @@ async function viewOf(tx: TenantScopedDatabase, target: ThemeTarget): Promise<Th
           },
     sources: sourcesOf([published?.body ?? null, ...below], names),
     draftSources: draft === null ? null : sourcesOf([draft.body, ...below], names),
+    tenantSources: client ? sourcesOf([tenant?.body ?? null], ['tenant']) : null,
     draftEtag: draft?.etag ?? null,
   };
 }

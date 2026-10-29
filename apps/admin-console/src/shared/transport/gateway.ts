@@ -11,6 +11,11 @@ export type Fetch = (url: string, init: RequestInit) => Promise<Response>;
 
 export interface RequestOptions<T> {
   body?: unknown;
+  // A file sent as the body in place of JSON, under its own media type.
+  file?: Blob;
+  // The write carries no If-Match on purpose, as a first write to a resource
+  // that has no ETag yet, so a 428 is the server's answer and not a console defect.
+  withoutTag?: boolean;
   ifMatch?: string;
   schema: ZodType<T>;
 }
@@ -40,7 +45,10 @@ export interface GatewayDependencies {
   timeoutMs?: number;
 }
 
-const BASE = '/console/api/';
+// Where the console's own origin answers for the gateway: what a page links
+// to or frames, such as the theme preview, begins here.
+export const GATEWAY_BASE = '/console/api/';
+const BASE = GATEWAY_BASE;
 const ADMIN = 'admin/';
 const SUBJECT_HEADER = 'x-odudu-console-subject';
 const BACKOFF_MS = 250;
@@ -156,7 +164,7 @@ export function createGateway(dependencies: GatewayDependencies = {}): Gateway {
   async function exchange(
     method: Method,
     path: string,
-    options: { body?: unknown; ifMatch?: string },
+    options: { body?: unknown; file?: Blob; ifMatch?: string; withoutTag?: boolean },
   ): Promise<{ ok: true; answer: Answer; where: string } | GatewayFailure> {
     const url = resolve(path);
     const where = `${method} ${url.pathname.slice(BASE.length)}`;
@@ -169,6 +177,10 @@ export function createGateway(dependencies: GatewayDependencies = {}): Gateway {
       headers.set('content-type', 'application/json');
       init.body = JSON.stringify(options.body);
     }
+    if (options.file !== undefined) {
+      headers.set('content-type', options.file.type);
+      init.body = options.file;
+    }
 
     const answer = await send(
       method,
@@ -180,7 +192,7 @@ export function createGateway(dependencies: GatewayDependencies = {}): Gateway {
     const { response, text } = answer;
 
     if (!response.ok) {
-      if (response.status === 428) {
+      if (response.status === 428 && options.withoutTag !== true) {
         log(`console defect: ${where} answered 428: the server required If-Match`);
         return { ok: false, kind: 'defect' };
       }

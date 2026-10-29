@@ -133,3 +133,26 @@ export function sessionKey() {
 export function overviewKey(tenant: string, ...read: readonly string[]) {
   return ['overview', tenant, ...read] as const;
 }
+
+// The published and archived versions of one scope's theme.
+export function themeVersionsKey(tenant: string, scope: string) {
+  return ['theme-versions', tenant, scope] as const;
+}
+
+// What a tenant's mail inherits from its published theme, read again once
+// a newer version is published.
+export function mailBrandingKey(tenant: string, publishedVersion: number) {
+  return ['mail-branding', tenant, publishedVersion] as const;
+}
+
+// The messages a tenant's pages are filled from: the same for every tenant and
+// fixed for a build, so it is read once.
+export function messageCatalogueKey(tenant: string) {
+  return ['message-catalogue', tenant] as const;
+}
+
+// What the preview of one page of a scope shows and why, read again whenever
+// the frame is reloaded (`frame` is the frame's own key).
+export function previewInfoKey(tenant: string, scope: string, frame: string) {
+  return ['preview-info', tenant, scope, frame] as const;
+}

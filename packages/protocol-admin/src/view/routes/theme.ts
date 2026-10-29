@@ -61,6 +61,7 @@ function wireView(view: ThemeViewResult): ThemeView {
           },
     sources: view.sources,
     draft_sources: view.draftSources,
+    tenant_sources: view.tenantSources,
   };
 }
 

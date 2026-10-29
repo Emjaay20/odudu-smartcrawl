@@ -29,6 +29,7 @@ import {
   listClientsQuerySchema,
   logoutDeliverySchema,
   rotateClientSecretResponseSchema,
+  clientRecordSchema,
 } from '#/admin/clients';
 import { consentSchema } from '#/admin/consents';
 import { countResponseSchema } from '#/admin/counts';
@@ -133,6 +134,9 @@ import {
   exportedMessageOverrideSchema,
   listMessageOverridesQuerySchema,
   listMessageOverridesResponseSchema,
+  messageCatalogueEntrySchema,
+  messageCatalogueResponseSchema,
+  messageCatalogueSectionSchema,
   messageOverrideSchema,
   putMessageOverrideRequestSchema,
 } from '#/admin/message-overrides';
@@ -147,12 +151,22 @@ import {
   publishedThemeSchema,
   themeAssetSchema,
   previewThemeQuerySchema,
+  themePreviewFaultSchema,
+  themePreviewInfoSchema,
+  themePreviewRefusedSchema,
   uploadThemeAssetQuerySchema,
   themeVersionSchema,
   themeViewSchema,
   themeWarningSchema,
   publishThemeResponseSchema,
 } from '#/admin/theme';
+import {
+  mailBrandingViewSchema,
+  mailColoursSchema,
+  mailLogoSchema,
+  mailSchemeSchema,
+  previewMailQuerySchema,
+} from '#/admin/mail-preview';
 import { whoamiResponseSchema } from '#/admin/whoami';
 import {
   paletteSchema,
@@ -737,6 +751,10 @@ describeFields(subjectSchema, {
 describeFields(usernamePolicySchema, {
   username_editable: 'Whether the tenant lets a username be changed.',
 });
+describeFields(clientRecordSchema, {
+  supported_locales:
+    'The languages the tenant offers (its `supported_locales` setting), at most 32: the languages `name_i18n` and `description_i18n` may be written in. Only the client’s own read and amendment carry it, so a caller who may manage clients can see them without reading the tenant’s settings.',
+});
 describeFields(exportedClientSchema, {
   client_id:
     'The `client_id` the application sends to the authorization and token endpoints. Chosen when the client is created and unique within the tenant.',
@@ -932,7 +950,7 @@ describeFields(tenantSettingsDocumentSchema, {
   supported_locales:
     'The language tags the tenant’s pages are offered in, 1 to 32, each such as `fr` or `zh-Hant-TW`; discovery advertises them as `ui_locales_supported`.',
   default_locale:
-    'The language a page is shown in ahead of the browser’s preference, when the request names none; one of `supported_locales`. Null when the browser decides.',
+    'The language a page is shown in ahead of the browser’s preference, when the request names none; one of `supported_locales`. Null when the browser decides; send an empty string to clear it.',
 });
 describeFields(createTenantRequestSchema, {
   name: 'The tenant name, used in every address of the tenant (`/tenants/{name}/...`). 1 to 63 lowercase letters, digits or hyphens, not starting or ending with a hyphen.',
@@ -1124,6 +1142,8 @@ describeFields(themeViewSchema, {
     'For each piece of the published theme, the layer that supplies it: `client`, `tenant` or `default` (Instrument). A client with no theme of its own shows `tenant` for every piece the tenant sets.',
   draft_sources:
     'The same for the draft as it would be if published, or null when there is no draft.',
+  tenant_sources:
+    'On a client’s theme, the layer that supplies each piece of the tenant’s own published theme: `tenant` where the tenant sets it, `default` where it does not, so a piece the client sets can say which of the tenant’s it hides. Null on the tenant’s own theme. It needs no capability beyond the client’s own theme read.',
 });
 describeFields(publishedThemeSchema, {
   id: 'The version’s identifier, which `restore` names.',
@@ -1151,6 +1171,62 @@ describeFields(previewThemeQuerySchema, {
   kind: 'The page to render, one of the kinds a theme has a template for; `sign-in` when left out.',
   scheme:
     'Render in the `light` or the `dark` palette; the viewer\u2019s own colour scheme when left out.',
+});
+describeFields(themePreviewInfoSchema, {
+  kind: 'The page kind the preview shows.',
+  from: 'Where the scope\u2019s own layer comes from: its `draft`, its `published` version when it has no draft, or `none` when it has neither.',
+  shown:
+    'The most specific layer the page is drawn from: the `client`\u2019s, the `tenant`\u2019s, or the `default` look when no layer could be used.',
+  faults:
+    'Layers, or a layer\u2019s stylesheet, that were not used, each with the reason; empty when everything was used.',
+  refused:
+    'Templates of this page kind that failed the checks, by layer; the page then uses the template of the layer below or the default one.',
+  unfilled:
+    'True when a template passed the checks but could not be filled, so the default page is shown.',
+});
+describeFields(themePreviewFaultSchema, {
+  layer: 'The layer that was not fully used.',
+  code: '`invalid_body`: the stored theme could not be read; `image_gone`: it names an image that no longer exists; `stylesheet_refused`: its stylesheet fails today\u2019s checks and was left out.',
+});
+describeFields(themePreviewRefusedSchema, {
+  layer: 'The layer whose template was refused.',
+  codes: 'The codes of the checks it failed.',
+});
+describeFields(previewMailQuerySchema, {
+  kind: 'The mail to render; `verify-email`, the address-verification mail, when left out.',
+  scheme:
+    'Render in the `light` or the `dark` palette and logo. A mail client chooses by its own setting, so the preview fixes one; `light` when left out.',
+  locale:
+    'The language of the mail, one of the languages a mail catalogue exists for; the tenant\u2019s `default_locale`, then English, when left out.',
+});
+describeFields(mailBrandingViewSchema, {
+  light:
+    'The nine colours a mail is drawn in under a light scheme, and whether the tenant\u2019s published theme or Odudu\u2019s own supplies them.',
+  dark: 'The same under a dark scheme.',
+  logo: 'The logo in the mail\u2019s header, or null when the mail carries Odudu\u2019s own mark.',
+  dark_logo:
+    'The logo a dark scheme swaps in, or null when the light one is shown in both schemes.',
+});
+describeFields(mailSchemeSchema, {
+  source: '`tenant` when the published theme sets this scheme\u2019s palette, else `default`.',
+  colours: 'The colours as `#rrggbb`, which is how a mail client takes them.',
+});
+describeFields(mailColoursSchema, {
+  page: 'The background around the message.',
+  panel: 'The background of the message itself.',
+  sunken: 'The background of a code or an address shown inside it.',
+  border: 'The outline of the message and of what is shown inside it.',
+  ink: 'The text.',
+  muted: 'The quieter text of the footer and the notes.',
+  link: 'A link.',
+  button: 'The background of the button.',
+  button_ink: 'The text on the button.',
+});
+describeFields(mailLogoSchema, {
+  src: 'The absolute address a mail client fetches the image from, on this server\u2019s public origin.',
+  alt: 'The text a mail client shows where it does not load the image.',
+  width: 'The width in pixels the mail draws it at.',
+  height: 'The height in pixels the mail draws it at.',
 });
 describeFields(uploadThemeAssetQuerySchema, {
   kind: 'The slot the image is for, which sets its limits: `logo`, `darkLogo` and `favicon` at most 256 KiB and 1024 pixels on the longer side, `background` at most 1 MiB and 2560 pixels.',
@@ -1190,6 +1266,20 @@ describeFields(listMessageOverridesQuerySchema, {
 });
 describeFields(listMessageOverridesResponseSchema, {
   items: 'The overrides of the locale in key order.',
+});
+describeFields(messageCatalogueResponseSchema, {
+  sections:
+    'One section per package that fills pages, each with the page kinds it fills. The list is the same for every tenant and holds a few hundred messages in all.',
+});
+describeFields(messageCatalogueSectionSchema, {
+  kinds:
+    'The page kinds filled from this section. A template of one of them may name, in `{{t "key"}}`, only a key of its own section.',
+  messages:
+    'Every message of the section in key order. A message override may name the key of any section.',
+});
+describeFields(messageCatalogueEntrySchema, {
+  key: 'The key a template names in `{{t "key"}}` and an override is set under.',
+  en: 'The English text of the message, as the catalogue holds it, placeholders included.',
 });
 
 // Words for a field of this name wherever it appears and nothing says otherwise.

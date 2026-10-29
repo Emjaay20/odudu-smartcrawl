@@ -261,6 +261,12 @@ export function withBranding(
 
 const STOCK_FAVICONS = ['/instrument/favicon.svg', '/instrument/favicon.ico'] as const;
 
+// The icon links of a page whose theme names no favicon.
+const STOCK_FAVICON_LINKS = [
+  '<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">',
+  '<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">',
+] as const;
+
 function attribute(value: string): string {
   return value.replace(/&/gu, '&amp;').replace(/"/gu, '&quot;').replace(/</gu, '&lt;');
 }
@@ -285,10 +291,7 @@ export function brandingHead(locale: PageLocale): string {
   if (branding?.faviconUrl) {
     lines.push(`<link rel="icon" href="${attribute(branding.faviconUrl)}">`);
   } else {
-    lines.push(
-      '<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">',
-      '<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">',
-    );
+    lines.push(...STOCK_FAVICON_LINKS);
   }
   return lines.join('\n');
 }

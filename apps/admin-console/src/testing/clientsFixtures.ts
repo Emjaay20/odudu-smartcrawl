@@ -46,6 +46,7 @@ export interface ClientAnswer {
   builtin_admin: boolean;
   skip_logout_confirmation: boolean;
   name_i18n: Record<string, string>;
+  supported_locales: readonly string[];
   description_i18n: Record<string, string>;
   service_subject_id: string | null;
   service_account_admin_reach: readonly string[];
@@ -105,6 +106,7 @@ export function client(
     builtin_admin: false,
     skip_logout_confirmation: false,
     name_i18n: {},
+    supported_locales: ['en', 'fr', 'de'],
     description_i18n: {},
     service_subject_id: serviceAccountOf(id),
     service_account_admin_reach: [],

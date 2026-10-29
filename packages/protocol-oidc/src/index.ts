@@ -1105,5 +1105,6 @@ export {
 } from '#/usecase/evaluate-claims';
 export { DEFAULT_TEMPLATES } from '#/view/templates/index';
 export { hasMessage as isOidcMessageKey } from '#/view/template';
+export { en as OIDC_PAGE_MESSAGES } from '#/view/messages';
 export { renderLoggedOutRedirectPage } from '#/view/logout-html';
 export { PREVIEW_PAGES as OIDC_PREVIEW_PAGES } from '#/view/preview-pages';

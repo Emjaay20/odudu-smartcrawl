@@ -577,9 +577,16 @@ describe('a client’s theme', () => {
     await saved(ctx, { templates: { 'sign-in': SIGN_IN } }, base);
     await publish(ctx, base);
 
-    const sources = (await call(ctx, 'GET', `${base}/theme`)).json<{
+    const read = (await call(ctx, 'GET', `${base}/theme`)).json<{
       sources: Record<string, string>;
-    }>().sources;
+      tenant_sources: Record<string, string> | null;
+    }>();
+    const { sources } = read;
+    expect(read.tenant_sources).toMatchObject({
+      stylesheet: 'tenant',
+      'tokens.light': 'tenant',
+      'templates.sign-in': 'default',
+    });
 
     expect(sources).toMatchObject({
       'templates.sign-in': 'client',
@@ -662,8 +669,8 @@ describe('access', () => {
     (route) => /\/theme(\/|$)/u.test(route.pattern) && !route.pattern.includes('/theme/assets'),
   );
 
-  it('covers the fourteen routes of a tenant’s and a client’s theme', () => {
-    expect(themeRoutes).toHaveLength(14);
+  it('covers the sixteen routes of a tenant’s and a client’s theme', () => {
+    expect(themeRoutes).toHaveLength(16);
   });
 
   it('every route needs its capability, and a read-only role is refused', async () => {

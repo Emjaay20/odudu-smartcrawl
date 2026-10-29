@@ -15,6 +15,7 @@ it('keeps the tabs in the order the record page shows them', () => {
     'tokens',
     'scopes',
     'logout',
+    'branding',
     'advanced',
     'roles',
     'service',
@@ -57,4 +58,13 @@ it('names each section once', () => {
 it('narrows a tab name to a tab, and to none for one that is not', () => {
   expect(chosenTab('redirects')).toBe('redirects');
   expect(chosenTab('nonsense')).toBeUndefined();
+});
+
+it('marks the branding tab from the theme saved on the client’s own record', () => {
+  expect([...tabsWithEdits(new Set(), new Set(), new Set(['theme']))]).toEqual(['branding']);
+  expect([...tabsWithEdits(new Set(['details']), new Set(), new Set(['pages']))]).toEqual([
+    'general',
+    'branding',
+  ]);
+  expect(tabsWithEdits(new Set(), new Set(), new Set())).toEqual(new Set());
 });

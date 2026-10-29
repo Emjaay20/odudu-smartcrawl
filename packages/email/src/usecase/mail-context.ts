@@ -35,6 +35,30 @@ async function resolved(
   }
 }
 
+export interface TenantMailContext extends MailContext {
+  readonly displayName: string | null;
+}
+
+// The same read that also names the tenant, for a caller that shows a mail
+// before it is sent: one theme read and one tenant statement, whatever the
+// theme names.
+export async function tenantMailContext(
+  tx: TenantScopedDatabase,
+  resolve: MailBrandingResolver | undefined,
+  scope: MailTenantScope,
+): Promise<TenantMailContext> {
+  const branding = resolve === undefined ? null : await resolved(resolve, tx, scope);
+  const [row] = await tx
+    .select({ defaultLocale: tenants.defaultLocale, displayName: tenants.displayName })
+    .from(tenants)
+    .where(eq(tenants.id, scope.tenantId));
+  return {
+    branding,
+    tenantDefaultLocale: row?.defaultLocale ?? null,
+    displayName: row?.displayName ?? null,
+  };
+}
+
 // What a mail needs from its tenant beyond the text, decided once when the
 // mail is queued: the outbox row keeps the rendered result, so a theme
 // published after this moment does not reach a mail already queued. Both
@@ -45,10 +69,6 @@ export async function mailContext(
   resolve: MailBrandingResolver | undefined,
   scope: MailTenantScope,
 ): Promise<MailContext> {
-  const branding = resolve === undefined ? null : await resolved(resolve, tx, scope);
-  const [row] = await tx
-    .select({ defaultLocale: tenants.defaultLocale })
-    .from(tenants)
-    .where(eq(tenants.id, scope.tenantId));
-  return { branding, tenantDefaultLocale: row?.defaultLocale ?? null };
+  const { branding, tenantDefaultLocale } = await tenantMailContext(tx, resolve, scope);
+  return { branding, tenantDefaultLocale };
 }

@@ -32,7 +32,15 @@ export {
 } from '#/usecase/send-pending';
 export {
   mailContext,
+  tenantMailContext,
+  type TenantMailContext,
   type MailBrandingResolver,
   type MailContext,
   type MailTenantScope,
 } from '#/usecase/mail-context';
+export {
+  brandingInScheme,
+  inlineMark,
+  mailSchemeColours,
+  type SchemeColours,
+} from '#/service/preview';

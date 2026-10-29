@@ -1,5 +1,5 @@
 import { isRefused } from '#/shared/service/failure';
-import type { GatewayResult } from '#/shared/service/result';
+import type { GatewayFailure, GatewayResult } from '#/shared/service/result';
 
 // A read as the hooks hand it to a service: the services judge what it says
 // without knowing which hook made it.
@@ -16,6 +16,22 @@ export function readOutcome<T>(result: GatewayResult<T> | undefined, retry: () =
   if (result === undefined) return { status: 'loading' };
   if (result.ok) return { status: 'ready', data: result.data };
   return { status: 'failed', refused: isRefused(result), retry };
+}
+
+// A record the way the hooks hold it (status, data, failure) as a read.
+export function recordRead<T>(record: {
+  status: 'loading' | 'ready' | 'missing' | 'failed';
+  data: T | undefined;
+  failure: GatewayFailure | null;
+  retry: () => void;
+}): Read<T> {
+  if (record.data !== undefined) return { status: 'ready', data: record.data };
+  if (record.status === 'loading') return { status: 'loading' };
+  return {
+    status: 'failed',
+    refused: record.failure === null ? false : isRefused(record.failure),
+    retry: record.retry,
+  };
 }
 
 export function loadedData<T>(

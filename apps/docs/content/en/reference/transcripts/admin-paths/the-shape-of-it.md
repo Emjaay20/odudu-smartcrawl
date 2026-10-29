@@ -146,6 +146,7 @@ shown once — a registration token, a client secret, a one-time password.
 | `DELETE` | `/admin/tenants/{tenant}/sessions`                                      | End every session in the tenant            |
 | `GET`    | `/admin/tenants/{tenant}/settings`                                      | Read a tenant's settings                   |
 | `PATCH`  | `/admin/tenants/{tenant}/settings`                                      | Amend a tenant's settings                  |
+| `GET`    | `/admin/tenants/{tenant}/message-catalogue`                             | List the page messages overrides may name  |
 | `GET`    | `/admin/tenants/{tenant}/message-overrides`                             | List a locale's message overrides          |
 | `PUT`    | `/admin/tenants/{tenant}/message-overrides/:locale/:key`                | Set a message override                     |
 | `DELETE` | `/admin/tenants/{tenant}/message-overrides/:locale/:key`                | Remove a message override                  |
@@ -156,6 +157,9 @@ shown once — a registration token, a client secret, a one-time password.
 | `POST`   | `/admin/tenants/{tenant}/theme/assets`                                  | Upload an image for a tenant's themes      |
 | `DELETE` | `/admin/tenants/{tenant}/theme/assets/:assetId`                         | Delete an uploaded image                   |
 | `GET`    | `/admin/tenants/{tenant}/theme/preview`                                 | Preview a page of a tenant's draft theme   |
+| `GET`    | `/admin/tenants/{tenant}/theme/preview/info`                            | Say what a tenant's preview shows and why  |
+| `GET`    | `/admin/tenants/{tenant}/mail/preview`                                  | Preview the verification mail              |
+| `GET`    | `/admin/tenants/{tenant}/mail/branding`                                 | Read the branding a mail inherits          |
 | `GET`    | `/admin/tenants/{tenant}/theme/versions`                                | List a tenant's theme versions             |
 | `POST`   | `/admin/tenants/{tenant}/theme/versions/:versionId/restore`             | Restore a tenant's earlier theme           |
 | `GET`    | `/admin/tenants/{tenant}/clients/:id/theme`                             | Read a client's draft and published theme  |
@@ -163,6 +167,7 @@ shown once — a registration token, a client secret, a one-time password.
 | `DELETE` | `/admin/tenants/{tenant}/clients/:id/theme`                             | Reset a client's theme to its tenant's     |
 | `POST`   | `/admin/tenants/{tenant}/clients/:id/theme/publish`                     | Publish a client's draft theme             |
 | `GET`    | `/admin/tenants/{tenant}/clients/:id/theme/preview`                     | Preview a page of a client's draft theme   |
+| `GET`    | `/admin/tenants/{tenant}/clients/:id/theme/preview/info`                | Say what a client's preview shows and why  |
 | `GET`    | `/admin/tenants/{tenant}/clients/:id/theme/versions`                    | List a client's theme versions             |
 | `POST`   | `/admin/tenants/{tenant}/clients/:id/theme/versions/:versionId/restore` | Restore a client's earlier theme           |
 | `GET`    | `/admin/tenants/{tenant}/clients`                                       | List clients                               |

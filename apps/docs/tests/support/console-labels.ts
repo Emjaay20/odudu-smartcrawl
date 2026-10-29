@@ -156,6 +156,7 @@ export const DEFINED: Readonly<Record<string, Defined>> = {
     feature(ACCESS, "title: 'Sessions'"),
   ),
   Settings: rail('settings', 'Settings'),
+  Branding: rail('branding', 'Branding'),
   Email: several(
     rail('email', 'Email'),
     feature('subjects/view/NewSubjectPage/NewSubjectPage.tsx', 'label="Email"'),
@@ -525,6 +526,60 @@ export const DEFINED: Readonly<Record<string, Defined>> = {
   'not sent': feature('email/service/effective.ts', "return 'not sent'"),
   'deployment sender': feature('email/service/effective.ts', "return 'deployment sender'"),
   'own relay': feature('email/service/effective.ts', "return 'own relay'"),
+
+  // Branding.
+  Theme: tab('branding', 'theme', 'Theme'),
+  Pages: tab('branding', 'pages', 'Pages'),
+  Mail: tab('branding', 'mail', 'Mail'),
+  Languages: tab('branding', 'languages', 'Languages'),
+  'What the mail inherits': several(
+    feature('branding/service/mail.ts', "MAIL_INHERITS_TITLE = 'What the mail inherits'"),
+    feature('branding/view/MailTab/MailTab.tsx', '{MAIL_INHERITS_TITLE}'),
+  ),
+  'Message background': feature('branding/service/mail.ts', "label: 'Message background'"),
+  'Link box background': feature('branding/service/mail.ts', "label: 'Link box background'"),
+  'Quiet text': feature('branding/service/mail.ts', "label: 'Quiet text'"),
+  'Button text': feature('branding/service/mail.ts', "label: 'Button text'"),
+  'Supported languages': feature(
+    'branding/service/languages.ts',
+    "SUPPORTED_LABEL = 'Supported languages'",
+  ),
+  'Default language': feature(
+    'branding/service/languages.ts',
+    "DEFAULT_LABEL = 'Default language'",
+  ),
+  'Message overrides': feature(
+    'branding/service/overrides.ts',
+    "OVERRIDES_TITLE = 'Message overrides'",
+  ),
+  Edit: feature('branding/view/LanguagesTab/LanguagesTab.tsx', '> Edit </Button>'),
+  Remove: feature('branding/view/LanguagesTab/LanguagesTab.tsx', '> Remove </Button>'),
+  'Colours and font': feature('branding/service/fields.ts', "COLOURS_TITLE = 'Colours and font'"),
+  'Use my own light colours': template(
+    [inFeature('branding/service/copy.ts', 'Use my own ${scheme} colours')],
+    'Use my own ${scheme} colours',
+    { scheme: 'light' },
+  ),
+  Images: feature('branding/service/fields.ts', "IMAGES_TITLE = 'Images'"),
+  Stylesheet: feature('branding/service/fields.ts', "STYLESHEET_SECTION_TITLE = 'Stylesheet'"),
+  Contrast: feature('branding/service/copy.ts', "CONTRAST_TITLE = 'Contrast'"),
+  Publish: feature('branding/service/publish.ts', "PUBLISH_TITLE = 'Publish'"),
+  Versions: feature('branding/service/versions.ts', "VERSIONS_TITLE = 'Versions'"),
+  'Reset to default': feature('branding/service/versions.ts', "RESET_TITLE = 'Reset to default'"),
+  'Delete image': feature('branding/service/copy.ts', "DELETE_LABEL = 'Delete image'"),
+  Preview: feature('branding/service/preview.ts', "PREVIEW_TITLE = 'Preview'"),
+  'Message key': feature('branding/service/overrides.ts', "KEY_LABEL = 'Message key'"),
+  'Add language': feature('branding/service/languages.ts', "ADD_BUTTON = 'Add language'"),
+  'Insert a message': feature('branding/service/catalogue.ts', "INSERT_LABEL = 'Insert a message'"),
+  Translations: feature('clients/service/labels.ts', "translations: 'Translations'"),
+  'Description by language': feature(
+    'scopes/service/general.ts',
+    "DESCRIPTION_LANGUAGES_LABEL = 'Description by language'",
+  ),
+  'Consent text by language': feature(
+    'scopes/service/general.ts',
+    "CONSENT_LANGUAGES_LABEL = 'Consent text by language'",
+  ),
 
   // The audit trail.
   'Event type': feature(FILTERS, 'label="Event type"'),

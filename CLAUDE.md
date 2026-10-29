@@ -583,8 +583,14 @@ wording constant to a console feature, search `shared/` and the sibling
 features for an equivalent by behaviour, not only by name. If one exists,
 import it; a feature reaches another only through its `index.ts`. If two
 features need the same thing, move it to `shared/` (any layer) in its own
-commit and repoint both. A task's report says what was searched and what was
-reused or moved. Do not merge things that merely look alike and change for
+commit and repoint both. A task's report carries a "Reuse scan" that lists
+the searches run, the candidates each one turned up and what became of
+each. The searches go by behaviour words and synonyms across `shared/` and
+every sibling feature (for a byte formatter: `KiB`, `MiB`, `toFixed`,
+`formatBytes`), and cover what the lints below cannot see: a copy under
+another name, a nested declaration, the same behaviour written differently.
+A report that names only what was reused is returned, and a reviewer re-runs
+a sample of the searches rather than trusting the list. Do not merge things that merely look alike and change for
 different reasons: feature-specific wording stays in its feature. Each
 of these is a lint with no allowlist, so resolving a finding means changing the
 code, and each header lists the forms it cannot see, so a green

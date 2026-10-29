@@ -32,6 +32,9 @@ export const themeViewSchema = z.object({
   published: publishedThemeSchema.nullable(),
   sources: themeSourcesSchema,
   draft_sources: themeSourcesSchema.nullable(),
+  // A client's view only: what the tenant's published theme supplies, so each
+  // piece the client sets can say which of the tenant's it hides.
+  tenant_sources: themeSourcesSchema.nullable(),
 });
 export type ThemeView = z.infer<typeof themeViewSchema>;
 
@@ -66,6 +69,30 @@ export const previewThemeQuerySchema = z.strictObject({
   scheme: z.enum(['light', 'dark']).optional(),
 });
 export type PreviewThemeQuery = z.infer<typeof previewThemeQuerySchema>;
+
+// What the preview of one page shows and why, for a console that frames the
+// preview and so cannot read its headers.
+export const PREVIEW_FAULT_CODES = ['invalid_body', 'image_gone', 'stylesheet_refused'] as const;
+
+export const themePreviewFaultSchema = z.object({
+  layer: z.enum(['client', 'tenant']),
+  code: z.enum(PREVIEW_FAULT_CODES),
+});
+
+export const themePreviewRefusedSchema = z.object({
+  layer: z.enum(['client', 'tenant']),
+  codes: z.array(z.string()),
+});
+
+export const themePreviewInfoSchema = z.object({
+  kind: z.enum(THEME_PAGE_KINDS),
+  from: z.enum(['draft', 'published', 'none']),
+  shown: z.enum(['client', 'tenant', 'default']),
+  faults: z.array(themePreviewFaultSchema),
+  refused: z.array(themePreviewRefusedSchema),
+  unfilled: z.boolean(),
+});
+export type ThemePreviewInfo = z.infer<typeof themePreviewInfoSchema>;
 
 // The slots an uploaded image may fill; the theme package keeps each one's
 // limits, and a test holds the two lists equal.

@@ -20,8 +20,17 @@ export interface BuildInput {
 }
 
 export interface TemplateRefused {
+  // The layer whose template it was.
+  layer: 'client' | 'tenant';
   kind: PageKind;
   reason: string;
+}
+
+// Why part of a layer was not used, as a code a caller can word; `problems`
+// holds the same facts as log lines.
+export interface LayerFault {
+  layer: 'client' | 'tenant';
+  code: 'invalid_body' | 'image_gone' | 'stylesheet_refused';
 }
 
 export interface BuildOutcome {
@@ -33,6 +42,11 @@ export interface BuildOutcome {
   problems: string[];
   // Templates dropped for the layer below, or the default.
   refused: TemplateRefused[];
+  // The layers the page is drawn from, most specific first; empty when the
+  // default look is shown, whatever the reason.
+  used: ('client' | 'tenant')[];
+  // Layers or stylesheets that were not used, and why.
+  faults: LayerFault[];
   // What the hashed stylesheet holds, and the one the page links; empty when
   // the theme sets no css or is not used.
   css: string;
@@ -41,6 +55,7 @@ export interface BuildOutcome {
 }
 
 interface Kept {
+  name: 'client' | 'tenant';
   // The client's row id when this is a client's layer.
   clientId: string | null;
   body: ThemeBody;
@@ -53,15 +68,16 @@ interface Kept {
 // the layer below answers. A template or stylesheet that fails today's
 // checks drops that piece alone.
 function keepLayer(
-  name: string,
+  name: 'client' | 'tenant',
   tenantName: string,
   layer: PublishedLayer,
-  problems: string[],
-  refused: TemplateRefused[],
+  report: { problems: string[]; refused: TemplateRefused[]; faults: LayerFault[] },
 ): Kept | null {
+  const { problems, refused, faults } = report;
   const parsed = parseThemeBody(layer.body);
   if (!parsed.ok) {
     problems.push(`${name} theme version ${String(layer.version)} is not a valid body`);
+    faults.push({ layer: name, code: 'invalid_body' });
     return null;
   }
   const { body } = parsed;
@@ -73,6 +89,7 @@ function keepLayer(
     const path = asset === undefined ? null : assetPath(tenantName, asset.sha256, asset.mime);
     if (path === null) {
       problems.push(`${name} theme version ${String(layer.version)} names an image that is gone`);
+      faults.push({ layer: name, code: 'image_gone' });
       return null;
     }
     urls.set(id, path);
@@ -86,14 +103,15 @@ function keepLayer(
     if (template === undefined) continue;
     const issues = checkTemplate(kind, template, { isAssetUrl });
     if (issues.length === 0) accepted[kind] = template;
-    else refused.push({ kind, reason: issues.map((issue) => issue.code).join(',') });
+    else refused.push({ layer: name, kind, reason: issues.map((issue) => issue.code).join(',') });
   }
   body.templates = accepted;
   if (body.stylesheet !== null && checkStylesheet(body.stylesheet, { isAssetUrl }).length > 0) {
     body.stylesheet = null;
     problems.push(`${name} theme version ${String(layer.version)} has a stylesheet that fails`);
+    faults.push({ layer: name, code: 'stylesheet_refused' });
   }
-  return { clientId: layer.clientId, body, urls, sizes };
+  return { name, clientId: layer.clientId, body, urls, sizes };
 }
 
 function logoOf(body: ThemeBody, urls: Map<string, string>): ResolvedBranding['logo'] {
@@ -110,6 +128,8 @@ function logoOf(body: ThemeBody, urls: Map<string, string>): ResolvedBranding['l
 export function buildBranding(input: BuildInput): BuildOutcome {
   const problems: string[] = [];
   const refused: TemplateRefused[] = [];
+  const faults: LayerFault[] = [];
+  let used: ('client' | 'tenant')[] = [];
   const version = (name: string): string =>
     String(input.layers.find((entry) => entry.name === name)?.layer.version ?? 0);
   const outcome = (
@@ -121,14 +141,21 @@ export function buildBranding(input: BuildInput): BuildOutcome {
     version: `${version('tenant')}.${version('client')}`,
     problems,
     refused,
+    used: branding === null ? [] : used,
+    faults,
     css: branding === null ? '' : css,
     mail: branding === null ? null : mail,
   });
   const kept = input.layers.flatMap((entry) => {
-    const layer = keepLayer(entry.name, input.tenantName, entry.layer, problems, refused);
+    const layer = keepLayer(entry.name, input.tenantName, entry.layer, {
+      problems,
+      refused,
+      faults,
+    });
     return layer === null ? [] : [layer];
   });
   if (kept.length === 0) return outcome(null);
+  used = kept.map((layer) => layer.name);
 
   const body = resolvePieces(kept.map((layer) => layer.body));
   const urls = new Map(kept.flatMap((layer) => [...layer.urls]));
