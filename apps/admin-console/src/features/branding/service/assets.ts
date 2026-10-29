@@ -174,15 +174,13 @@ export function imagesHold(values: ImageValues): string | undefined {
 
 const UPLOADING_NAME = 'Uploading';
 
-const THUMBNAIL_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
+const CHUNK = 0x8000;
 
 // Whatever the server says it is, a data address carries it into the page, so
 // only the three types an upload can be stored as are shown.
-const CHUNK = 0x8000;
-
 export function imageDataUrl(bytes: Uint8Array, contentType: string | null): string | null {
   const type = contentType?.split(';')[0]?.trim().toLowerCase() ?? '';
-  if (!THUMBNAIL_TYPES.includes(type)) return null;
+  if (!TYPES.includes(type)) return null;
   let binary = '';
   for (let at = 0; at < bytes.length; at += CHUNK) {
     binary += String.fromCharCode(...bytes.subarray(at, at + CHUNK));
