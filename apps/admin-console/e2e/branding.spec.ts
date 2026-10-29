@@ -571,7 +571,7 @@ test('adds a language by its tag with Enter, marks the tab, saves it and keeps i
   await add.press('Enter');
   await expect(section.getByRole('checkbox', { name: /pt-BR/u })).toBeChecked();
   await expect(add).toHaveValue('');
-  await expect(page.getByRole('tab', { name: 'Languages, unsaved changes' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: /^Languages\s*, unsaved changes$/u })).toBeVisible();
   await expectAccessible(page);
 
   await save(section);
