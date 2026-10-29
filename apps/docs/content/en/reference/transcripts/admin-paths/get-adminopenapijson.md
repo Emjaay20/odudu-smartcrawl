@@ -11,24 +11,24 @@ cannot drift. It takes no `{tenant}` — it describes the API rather than reachi
 into one — and is served without authentication, since a client that cannot read
 it cannot generate against it.
 
-The `content-length`, the path count and the size below were derived from the generated document rather than from a fresh run, and the `Date` and request id belong to an earlier run; the `content-length` and the size were edited by hand to the derived values, so this block is not a real capture until Task 26 runs it again.
-
 ```bash
-curl -sS -D - -o openapi.json http://localhost:3197/admin/openapi.json
+curl -sS -D - -o openapi.json http://localhost:3000/admin/openapi.json
 jq '.paths | length' openapi.json
+wc -c < openapi.json | tr -d ' '
 ```
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a17d3a-0eac-7866-a52b-cbe602ff1565
+x-request-id: 01a18716-8991-774b-986d-cd758c42d9ea
 access-control-allow-origin: *
 content-type: application/json; charset=utf-8
 content-length: 627891
-Date: Tue, 27 Oct 2026 11:58:39 GMT
+Date: Thu, 29 Oct 2026 09:56:03 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
 98
+627891
 ```
 
 613 KB and 98 paths, which is the whole route table. It is the one admin
@@ -56,7 +56,7 @@ grep -o '"securitySchemes":{"bearerAuth":{[^}]*}}' openapi.json
 ```
 
 `security` is declared once at the top level, so every path inherits it
-rather than repeating it. `/admin/openapi.json` is not among those 86
+rather than repeating it. `/admin/openapi.json` is not among those 98
 paths: the document does not describe itself, which is why serving it
 unauthenticated does not contradict the blanket `security` above.
 

@@ -186,6 +186,20 @@ async function beforeRawBody(
   if (granted === null) return reply;
   GRANTED.set(request, granted);
 
+  // Fastify refuses an undeclared type itself, generically, once the parsers
+  // are replaced; the route's own refusal is given here instead.
+  const unsupported = rawBody.unsupportedType;
+  if (unsupported !== undefined) {
+    const essence = (request.headers['content-type'] ?? '').split(';')[0]?.trim().toLowerCase();
+    if (essence === undefined || !rawBody.contentTypes.includes(essence)) {
+      return sendProblem(
+        reply,
+        request,
+        problem(415, unsupported.type, unsupported.title, unsupported.detail),
+      );
+    }
+  }
+
   // The refusal Fastify's own validation would give, which only runs after
   // the body has been read.
   const query = route.querystringSchema?.safeParse(request.query);

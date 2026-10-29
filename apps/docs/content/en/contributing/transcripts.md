@@ -721,6 +721,31 @@ token, got the way "Getting the token" shows, is `$ADMIN_TOKEN`, and a tenant
 `smtp-audit-demo` made through `POST /admin/tenants`. It was torn down with
 `docker compose down -v` when the capture finished.
 
+**The branding captures.** The theme, message-override, mail-preview and brand-route
+pages, the registration page for names in other languages, and the pages that show a
+client, a scope, a tenant's settings or an export once they carried languages (settings,
+export, import, clients, `PATCH /clients`, scopes, built-in scopes, the scope-client
+delete, the secret rotation, the OpenAPI page and the audit page up to its load test),
+were run on one stack: compose project `odudu-26a` on port 3000, its Postgres on 5442,
+built from the branch (the stack was rebuilt once, for the fix that made an undeclared
+upload type answer the asset problem) on an empty volume, with
+`ODUDU_THROTTLE_LIMIT=10000` and `ODUDU_LOGIN_THROTTLE_LIMIT=10000` and a console key made
+for it. `seed admin --username ada` made the administrator, whose token, got the way
+"Getting the token" shows, is `$ADMIN_TOKEN`. A script ran each command and wrote the block
+that followed it, so no output was typed. Each page creates the tenants it names with
+commands shown on the page; between runs of a page the script deleted those tenants, so
+a page is what it printed against tenants that did not yet exist. The tokens of a
+tenant's own subject (`$OPERATOR_TOKEN`, `$IVY_TOKEN`) were got by the sign-in "Getting the
+token" shows, which is not repeated on the page. The OpenAPI page's block printed 98 paths
+and 627891 bytes, the figures the test derives. The PNGs the pages upload are
+solid-colour images made for them and were not kept.
+
+**Pages that name more than one run.** [Getting the
+token](../reference/transcripts/admin-paths/getting-the-token.md) is the run of its first
+half on a stack of its own; its client listing was run again on this stack and says so.
+The last section of [the audit page](../reference/transcripts/admin-paths/get-audit.md) is
+a load test of twelve million rows on stacks of their own, and says so.
+
 ### Built-in scopes
 
 [The built-in scopes page](../reference/transcripts/admin-paths/get-scopesidimpact-get-scopesbuiltins-and-post-scopesrestore-builtins.md)
