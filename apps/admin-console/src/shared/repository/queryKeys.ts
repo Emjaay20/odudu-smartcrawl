@@ -152,7 +152,7 @@ export function messageCatalogueKey(tenant: string) {
 }
 
 // An uploaded image's bytes as a data address. An image's content never
-// changes under its id, so it is read once.
+// changes under its id, so it is read with `immutable` and kept.
 export function assetImageKey(tenant: string, assetId: string) {
   return ['asset-image', tenant, assetId] as const;
 }

@@ -150,15 +150,20 @@ describe('the thumbnail of an uploaded image', () => {
         'assets.logo': { assetId: 'a', alt: 'A' },
         'assets.background': { assetId: 'b' },
       }),
-    ).toEqual({ logo: 'a', darkLogo: null, favicon: null, background: 'b' });
+    ).toEqual({
+      logo: { id: 'a', asked: true },
+      darkLogo: { id: '', asked: false },
+      favicon: { id: '', asked: false },
+      background: { id: 'b', asked: true },
+    });
   });
 
   it('is nothing for an empty slot, whatever its read says, and the read for a held one', () => {
     const loading = { status: 'loading' } as const;
-    expect(slotThumbnail(null, loading)).toEqual({ status: 'none' });
-    expect(slotThumbnail('a', loading)).toEqual(loading);
+    expect(slotThumbnail(false, loading)).toEqual({ status: 'none' });
+    expect(slotThumbnail(true, loading)).toEqual(loading);
     const ready = { status: 'ready', data: 'data:image/png;base64,AA==' } as const;
-    expect(slotThumbnail('a', ready)).toEqual(ready);
+    expect(slotThumbnail(true, ready)).toEqual(ready);
   });
 
   it('says what it shows from the logo’s alt text, else from the slot', () => {
