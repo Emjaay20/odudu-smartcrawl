@@ -32,6 +32,7 @@ export function initialSection<T extends Values>(
     source: 'kept',
     phase: 'idle',
     fieldErrors: {},
+    refusals: {},
     message: null,
   };
 }
@@ -83,6 +84,7 @@ export function editedSection<T extends Values, K extends keyof T & string>(
     fieldErrors: Object.fromEntries(
       Object.entries(state.fieldErrors).filter(([name]) => name !== field),
     ),
+    refusals: Object.fromEntries(Object.entries(state.refusals).filter(([name]) => name !== field)),
     phase: state.phase === 'saving' ? 'saving' : 'idle',
     message: null,
   };
@@ -107,7 +109,15 @@ export function theirsTaken<T extends Values>(state: SectionState<T>): SectionSt
 }
 
 export function discardedSection<T extends Values>(state: SectionState<T>): SectionState<T> {
-  return { ...state, edits: {}, conflicts: [], phase: 'idle', fieldErrors: {}, message: null };
+  return {
+    ...state,
+    edits: {},
+    conflicts: [],
+    phase: 'idle',
+    fieldErrors: {},
+    refusals: {},
+    message: null,
+  };
 }
 
 // Edits made while the save was in flight are still unsaved.

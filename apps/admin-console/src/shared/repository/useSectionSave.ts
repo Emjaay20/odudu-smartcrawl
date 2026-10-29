@@ -1,3 +1,4 @@
+import type { FieldError } from '@odudu/contracts/admin';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { recordKey } from '#/shared/repository/queryKeys';
@@ -45,6 +46,9 @@ export type { ConflictSource, SaveStatus };
 export interface SectionSave<T extends Values> {
   status: SaveStatus;
   fieldErrors: Readonly<Partial<Record<keyof T & string, string>>>;
+  // What the server refused in each field, with the line and column it
+  // named, until the field is edited or the section saved.
+  refusals: Readonly<Partial<Record<keyof T & string, readonly FieldError[]>>>;
   conflicts: readonly Conflict[];
   conflictSource: ConflictSource;
   // Why Save is held, for Section's `blocked`.
@@ -147,6 +151,7 @@ export function useSectionSave<T extends Values, R>({
   return {
     status: statusOf(current),
     fieldErrors: current.fieldErrors as SectionSave<T>['fieldErrors'],
+    refusals: current.refusals as SectionSave<T>['refusals'],
     conflicts,
     conflictSource: current.source,
     blocked: sectionBlocked(gone, conflicts.length, current.phase),
