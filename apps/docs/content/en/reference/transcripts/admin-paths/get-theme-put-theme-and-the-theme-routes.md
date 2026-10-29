@@ -135,11 +135,11 @@ curl -sS -D - -H "Authorization: Bearer $ADMIN_TOKEN" $P/theme
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a18707-3695-717d-bea7-52a908b0562f
+x-request-id: 01a18731-8ab0-7460-8532-9e08baf2e99a
 cache-control: no-store
 content-type: application/json; charset=utf-8
 content-length: 908
-Date: Thu, 29 Oct 2026 09:39:19 GMT
+Date: Thu, 29 Oct 2026 10:25:33 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -173,9 +173,9 @@ curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" $P/theme | jq -c '{draft, publi
 ```
 
 ```
-{"type":"about:blank","title":"Bad Request","status":400,"detail":"the theme was not saved: 1 problem(s), listed under errors","errors":[{"path":"templates.sign-in","message":"The element is not allowed in a template.","code":"element-not-allowed","detail":"main","line":1,"column":1}],"instance":"01a18707-36a7-700c-919b-410ab311c7b3"}
-{"type":"about:blank","title":"Bad Request","status":400,"detail":"the theme was not saved: 1 problem(s), listed under errors","errors":[{"path":"templates.sign-in","message":"The message key is not in the catalogue this page is filled from.","code":"unknown-message-key","detail":"login.nope","line":1,"column":10}],"instance":"01a18707-36ba-7d16-9436-eba709688b29"}
-{"type":"about:blank","title":"Bad Request","status":400,"detail":"the theme was not saved: 1 problem(s), listed under errors","errors":[{"path":"stylesheet","message":"The class is not one of the page’s documented hooks.","code":"unknown-class","detail":"warm","line":1,"column":1}],"instance":"01a18707-36cc-7125-b720-7d80a0b93919"}
+{"type":"about:blank","title":"Bad Request","status":400,"detail":"the theme was not saved: 1 problem(s), listed under errors","errors":[{"path":"templates.sign-in","message":"The element is not allowed in a template.","code":"element-not-allowed","detail":"main","line":1,"column":1}],"instance":"01a18731-8ac7-70d3-beca-975e2bcfc2a3"}
+{"type":"about:blank","title":"Bad Request","status":400,"detail":"the theme was not saved: 1 problem(s), listed under errors","errors":[{"path":"templates.sign-in","message":"The message key is not in the catalogue this page is filled from.","code":"unknown-message-key","detail":"login.nope","line":1,"column":10}],"instance":"01a18731-8aea-7eaf-b1f5-7d7a421e8829"}
+{"type":"about:blank","title":"Bad Request","status":400,"detail":"the theme was not saved: 1 problem(s), listed under errors","errors":[{"path":"stylesheet","message":"The class is not one of the page’s documented hooks.","code":"unknown-class","detail":"warm","line":1,"column":1}],"instance":"01a18731-8b04-791d-848e-a7dce9762373"}
 {"draft":null,"published":null}
 ```
 
@@ -214,12 +214,12 @@ curl -sS -D - -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: a
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a18707-36f8-7c32-8ae6-4736531731a9
+x-request-id: 01a18731-8b3a-7960-9c86-0f94beba82c1
 cache-control: no-store
 etag: "ac0e6a06fac52ca3153ec081fe9c8d49cd108fa7389ce95e6005fc1043c22d90"
 content-type: application/json; charset=utf-8
 content-length: 2223
-Date: Thu, 29 Oct 2026 09:39:19 GMT
+Date: Thu, 29 Oct 2026 10:25:33 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -240,11 +240,11 @@ curl -sS -D - -H "Authorization: Bearer $ADMIN_TOKEN" "$P/theme/preview/info?kin
 ```
 {"published":null,"draft_sources":{"tokens.light":"tenant","stylesheet":"tenant","templates.sign-in":"tenant"}}
 HTTP/1.1 200 OK
-x-request-id: 01a18707-3723-7057-8e7b-a5c502a94ab3
+x-request-id: 01a18731-8b70-713f-9f67-b7613271b4e5
 cache-control: no-store
 content-type: application/json; charset=utf-8
 content-length: 92
-Date: Thu, 29 Oct 2026 09:39:19 GMT
+Date: Thu, 29 Oct 2026 10:25:33 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -263,14 +263,14 @@ grep -n -E 'stylesheet|page-sign-in|<h1>' preview.html | cut -c1-200
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a18707-3737-76a2-ad80-e56441755758
+x-request-id: 01a18731-8b8e-7c65-8e94-a159d7c3d2b3
 cache-control: no-store
 content-type: text/html; charset=utf-8
 content-security-policy: default-src 'none'; style-src 'self' 'sha256-1DktTfInWBxB93XYhl/aJU27QE6CYWoUiHFWUlRP63Y='; font-src 'self'; img-src data:; form-action 'none'; base-uri 'none'; frame-ancestors 'self'
 referrer-policy: no-referrer
 x-content-type-options: nosniff
 content-length: 1864
-Date: Thu, 29 Oct 2026 09:39:19 GMT
+Date: Thu, 29 Oct 2026 10:25:33 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -294,25 +294,25 @@ curl -sS -D - -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: a
 
 ```
 HTTP/1.1 428 Precondition Required
-x-request-id: 01a18707-3753-7d01-88a4-39b4c1432b7d
+x-request-id: 01a18731-8baf-7d9a-94aa-0434099a8be2
 cache-control: no-store
 content-type: application/problem+json; charset=utf-8
 content-length: 176
-Date: Thu, 29 Oct 2026 09:39:19 GMT
+Date: Thu, 29 Oct 2026 10:25:33 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"type":"about:blank","title":"Precondition Required","status":428,"detail":"If-Match is required to replace the draft theme","instance":"01a18707-3753-7d01-88a4-39b4c1432b7d"}
+{"type":"about:blank","title":"Precondition Required","status":428,"detail":"If-Match is required to replace the draft theme","instance":"01a18731-8baf-7d9a-94aa-0434099a8be2"}
 HTTP/1.1 412 Precondition Failed
-x-request-id: 01a18707-3768-786b-86ec-0a197b954bd8
+x-request-id: 01a18731-8bc6-71cc-ae6d-f0e952818a19
 cache-control: no-store
 content-type: application/problem+json; charset=utf-8
 content-length: 153
-Date: Thu, 29 Oct 2026 09:39:19 GMT
+Date: Thu, 29 Oct 2026 10:25:33 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"type":"about:blank","title":"Precondition Failed","status":412,"detail":"If-Match no longer matches","instance":"01a18707-3768-786b-86ec-0a197b954bd8"}
+{"type":"about:blank","title":"Precondition Failed","status":412,"detail":"If-Match no longer matches","instance":"01a18731-8bc6-71cc-ae6d-f0e952818a19"}
 ```
 
 ### Publishing
@@ -328,15 +328,15 @@ curl -sS -D - -X POST -H "Authorization: Bearer $ADMIN_TOKEN" $P/theme/publish
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a18707-377c-71c7-942a-79d55593afb2
+x-request-id: 01a18731-8bde-7063-a634-1ca47423265d
 cache-control: no-store
 content-type: application/json; charset=utf-8
 content-length: 2001
-Date: Thu, 29 Oct 2026 09:39:19 GMT
+Date: Thu, 29 Oct 2026 10:25:33 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"scope":"tenant","draft":null,"published":{"id":"01a18707-3703-74f7-906d-9b345b6ee4e1","version":1,"published_at":"2026-10-29T09:39:19.557Z","body":{"assets":{},"tokens":{"light":{"inkMuted":"#555555","focusRing":"#0044aa","inkPrimary":"#111111","surfacePage":"#fff4e0","borderStrong":"#777777","signalActive":"#ddeedd","signalDanger":"#fde0d0","surfacePanel":"#fffaf0","surfaceSunken":"#f0e6d0","signalActiveInk":"#004400","signalDangerInk":"#802000"}},"templates":{"sign-in":"<div class=\"page-sign-in\"><h1>{{t \"login.title\"}}</h1>{{error}}{{form.open}}{{fields}}{{submit}}{{form.close}}</div>"},"stylesheet":".page-sign-in h1 { border-top: 4px solid #0044aa; }"}},"sources":{"tokens.light":"tenant","tokens.dark":"default","tokens.font":"default","stylesheet":"tenant","templates.sign-in":"tenant","templates.consent":"default","templates.select-account":"default","templates.logout-confirm":"default","templates.totp-enrolment":"default","templates.passkey-enrolment":"default","templates.recovery-codes":"default","templates.update-password":"default","templates.required-action":"default","templates.registration":"default","templates.reset":"default","templates.verification":"default","templates.required-actions":"default","templates.authorize-error":"default","templates.email-unverified":"default","templates.logged-out":"default","templates.notice":"default","assets.logo":"default","assets.darkLogo":"default","assets.favicon":"default","assets.background":"default"},"draft_sources":null,"tenant_sources":null,"warnings":[{"piece":"stylesheet","code":"stylesheet-unverified","message":"A stylesheet can change any colour or hide any element, so its contrast and legibility are not checked; keeping it accessible is the tenant’s responsibility."},{"piece":"templates.sign-in","code":"template-unverified","message":"A template places the page’s parts as its author chose, so its reading order and layout are not checked; keeping it accessible is the tenant’s responsibility."}]}
+{"scope":"tenant","draft":null,"published":{"id":"01a18731-8b4a-726d-87b2-97523153118e","version":1,"published_at":"2026-10-29T10:25:33.673Z","body":{"assets":{},"tokens":{"light":{"inkMuted":"#555555","focusRing":"#0044aa","inkPrimary":"#111111","surfacePage":"#fff4e0","borderStrong":"#777777","signalActive":"#ddeedd","signalDanger":"#fde0d0","surfacePanel":"#fffaf0","surfaceSunken":"#f0e6d0","signalActiveInk":"#004400","signalDangerInk":"#802000"}},"templates":{"sign-in":"<div class=\"page-sign-in\"><h1>{{t \"login.title\"}}</h1>{{error}}{{form.open}}{{fields}}{{submit}}{{form.close}}</div>"},"stylesheet":".page-sign-in h1 { border-top: 4px solid #0044aa; }"}},"sources":{"tokens.light":"tenant","tokens.dark":"default","tokens.font":"default","stylesheet":"tenant","templates.sign-in":"tenant","templates.consent":"default","templates.select-account":"default","templates.logout-confirm":"default","templates.totp-enrolment":"default","templates.passkey-enrolment":"default","templates.recovery-codes":"default","templates.update-password":"default","templates.required-action":"default","templates.registration":"default","templates.reset":"default","templates.verification":"default","templates.required-actions":"default","templates.authorize-error":"default","templates.email-unverified":"default","templates.logged-out":"default","templates.notice":"default","assets.logo":"default","assets.darkLogo":"default","assets.favicon":"default","assets.background":"default"},"draft_sources":null,"tenant_sources":null,"warnings":[{"piece":"stylesheet","code":"stylesheet-unverified","message":"A stylesheet can change any colour or hide any element, so its contrast and legibility are not checked; keeping it accessible is the tenant’s responsibility."},{"piece":"templates.sign-in","code":"template-unverified","message":"A template places the page’s parts as its author chose, so its reading order and layout are not checked; keeping it accessible is the tenant’s responsibility."}]}
 ```
 
 ```bash
@@ -345,15 +345,15 @@ curl -sS -D - -H "Authorization: Bearer $ADMIN_TOKEN" $P/theme/versions
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a18707-3794-78e9-aa7e-3981469ffb56
+x-request-id: 01a18731-8bfc-7b68-9bce-e510565a9a0d
 cache-control: no-store
 content-type: application/json; charset=utf-8
 content-length: 171
-Date: Thu, 29 Oct 2026 09:39:19 GMT
+Date: Thu, 29 Oct 2026 10:25:33 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"items":[{"id":"01a18707-3703-74f7-906d-9b345b6ee4e1","version":1,"state":"published","created_at":"2026-10-29T09:39:19.425Z","published_at":"2026-10-29T09:39:19.557Z"}]}
+{"items":[{"id":"01a18731-8b4a-726d-87b2-97523153118e","version":1,"state":"published","created_at":"2026-10-29T10:25:33.509Z","published_at":"2026-10-29T10:25:33.673Z"}]}
 ```
 
 ### A palette that fails contrast saves, and does not publish
@@ -372,7 +372,7 @@ curl -sS -X POST -H "Authorization: Bearer $ADMIN_TOKEN" $P/theme/publish
 
 ```
 200
-{"type":"about:blank","title":"Bad Request","status":400,"detail":"the theme was not published: 3 problem(s), listed under errors","errors":[{"path":"tokens.light.inkMuted","message":"Contrast against surfacePage is 1.06:1; 4.5:1 is required.","code":"contrast","detail":"inkMuted/surfacePage"},{"path":"tokens.light.inkMuted","message":"Contrast against surfacePanel is 1.12:1; 4.5:1 is required.","code":"contrast","detail":"inkMuted/surfacePanel"},{"path":"tokens.light.inkMuted","message":"Contrast against surfaceSunken is 1.07:1; 4.5:1 is required.","code":"contrast","detail":"inkMuted/surfaceSunken"}],"instance":"01a18707-37bf-7971-874a-17d2fbb63a65"}
+{"type":"about:blank","title":"Bad Request","status":400,"detail":"the theme was not published: 3 problem(s), listed under errors","errors":[{"path":"tokens.light.inkMuted","message":"Contrast against surfacePage is 1.06:1; 4.5:1 is required.","code":"contrast","detail":"inkMuted/surfacePage"},{"path":"tokens.light.inkMuted","message":"Contrast against surfacePanel is 1.12:1; 4.5:1 is required.","code":"contrast","detail":"inkMuted/surfacePanel"},{"path":"tokens.light.inkMuted","message":"Contrast against surfaceSunken is 1.07:1; 4.5:1 is required.","code":"contrast","detail":"inkMuted/surfaceSunken"}],"instance":"01a18731-8c37-7344-b22f-b727d955cd07"}
 ```
 
 ### A second version, and restoring the first
@@ -406,15 +406,15 @@ curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" $P/theme/versions | jq -c '.ite
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a18707-3839-7dc3-bf9b-f7439b8219ac
+x-request-id: 01a18731-8cd4-7d8c-8eb0-32477344c0ea
 cache-control: no-store
 content-type: application/json; charset=utf-8
 content-length: 1528
-Date: Thu, 29 Oct 2026 09:39:19 GMT
+Date: Thu, 29 Oct 2026 10:25:33 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"scope":"tenant","draft":null,"published":{"id":"01a18707-3843-717b-9965-1b452d090c43","version":3,"published_at":"2026-10-29T09:39:19.745Z","body":{"assets":{},"tokens":{"light":{"inkMuted":"#555555","focusRing":"#0044aa","inkPrimary":"#111111","surfacePage":"#fff4e0","borderStrong":"#777777","signalActive":"#ddeedd","signalDanger":"#fde0d0","surfacePanel":"#fffaf0","surfaceSunken":"#f0e6d0","signalActiveInk":"#004400","signalDangerInk":"#802000"}},"templates":{"sign-in":"<div class=\"page-sign-in\"><h1>{{t \"login.title\"}}</h1>{{error}}{{form.open}}{{fields}}{{submit}}{{form.close}}</div>"},"stylesheet":".page-sign-in h1 { border-top: 4px solid #0044aa; }"}},"sources":{"tokens.light":"tenant","tokens.dark":"default","tokens.font":"default","stylesheet":"tenant","templates.sign-in":"tenant","templates.consent":"default","templates.select-account":"default","templates.logout-confirm":"default","templates.totp-enrolment":"default","templates.passkey-enrolment":"default","templates.recovery-codes":"default","templates.update-password":"default","templates.required-action":"default","templates.registration":"default","templates.reset":"default","templates.verification":"default","templates.required-actions":"default","templates.authorize-error":"default","templates.email-unverified":"default","templates.logged-out":"default","templates.notice":"default","assets.logo":"default","assets.darkLogo":"default","assets.favicon":"default","assets.background":"default"},"draft_sources":null,"tenant_sources":null}
+{"scope":"tenant","draft":null,"published":{"id":"01a18731-8ce2-7950-84f7-71531caf9651","version":3,"published_at":"2026-10-29T10:25:33.918Z","body":{"assets":{},"tokens":{"light":{"inkMuted":"#555555","focusRing":"#0044aa","inkPrimary":"#111111","surfacePage":"#fff4e0","borderStrong":"#777777","signalActive":"#ddeedd","signalDanger":"#fde0d0","surfacePanel":"#fffaf0","surfaceSunken":"#f0e6d0","signalActiveInk":"#004400","signalDangerInk":"#802000"}},"templates":{"sign-in":"<div class=\"page-sign-in\"><h1>{{t \"login.title\"}}</h1>{{error}}{{form.open}}{{fields}}{{submit}}{{form.close}}</div>"},"stylesheet":".page-sign-in h1 { border-top: 4px solid #0044aa; }"}},"sources":{"tokens.light":"tenant","tokens.dark":"default","tokens.font":"default","stylesheet":"tenant","templates.sign-in":"tenant","templates.consent":"default","templates.select-account":"default","templates.logout-confirm":"default","templates.totp-enrolment":"default","templates.passkey-enrolment":"default","templates.recovery-codes":"default","templates.update-password":"default","templates.required-action":"default","templates.registration":"default","templates.reset":"default","templates.verification":"default","templates.required-actions":"default","templates.authorize-error":"default","templates.email-unverified":"default","templates.logged-out":"default","templates.notice":"default","assets.logo":"default","assets.darkLogo":"default","assets.favicon":"default","assets.background":"default"},"draft_sources":null,"tenant_sources":null}
 {"version":3,"state":"published"}
 {"version":2,"state":"archived"}
 {"version":1,"state":"archived"}
@@ -434,7 +434,7 @@ curl -sS -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: appli
 ```
 
 ```
-{"id":"01a18707-387d-77b9-bc79-09fd25c6fab3","client_id":"portal","type":"public"}
+{"id":"01a18731-8d10-7aa9-a9f2-382c900f8755","client_id":"portal","type":"public"}
 ```
 
 ```bash
@@ -447,11 +447,11 @@ curl -sS -D - -H "Authorization: Bearer $ADMIN_TOKEN" $P/clients/$CID/theme
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a18707-38a7-7fbb-ae59-2fcd9c554930
+x-request-id: 01a18731-8d45-70b2-afc3-91a9bec28162
 cache-control: no-store
 content-type: application/json; charset=utf-8
 content-length: 1704
-Date: Thu, 29 Oct 2026 09:39:19 GMT
+Date: Thu, 29 Oct 2026 10:25:34 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -474,23 +474,23 @@ curl -sS -D - -H "Authorization: Bearer $ADMIN_TOKEN" "$P/clients/$CID/theme/pre
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a18707-38bc-7734-ac30-99798857233d
+x-request-id: 01a18731-8d65-724d-9c5a-a123e5f021f5
 cache-control: no-store
 etag: "8fc14f34b3d7337fb14e4637584f9c6750ccd05745daadcff0210c32bb1eb6cc"
 content-type: application/json; charset=utf-8
 content-length: 2838
-Date: Thu, 29 Oct 2026 09:39:19 GMT
+Date: Thu, 29 Oct 2026 10:25:34 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
 {"scope":"client","draft":{"assets":{},"tokens":{"light":{"inkMuted":"#555555","focusRing":"#0044aa","inkPrimary":"#111111","surfacePage":"#e8f0ff","borderStrong":"#777777","signalActive":"#ddeedd","signalDanger":"#fde0d0","surfacePanel":"#f4f8ff","surfaceSunken":"#d8e4f8","signalActiveInk":"#004400","signalDangerInk":"#802000"}},"templates":{},"stylesheet":null},"published":null,"sources":{"tokens.light":"tenant","tokens.dark":"default","tokens.font":"default","stylesheet":"tenant","templates.sign-in":"tenant","templates.consent":"default","templates.select-account":"default","templates.logout-confirm":"default","templates.totp-enrolment":"default","templates.passkey-enrolment":"default","templates.recovery-codes":"default","templates.update-password":"default","templates.required-action":"default","templates.registration":"default","templates.reset":"default","t
 {"draft_sources":{"tokens.light":"client","stylesheet":"tenant","templates.sign-in":"tenant"},"tenant_sources":{"tokens.light":"tenant","stylesheet":"tenant","templates.sign-in":"tenant"}}
 HTTP/1.1 200 OK
-x-request-id: 01a18707-38e6-7457-909b-529fe9ae7b1e
+x-request-id: 01a18731-8d9e-7323-90e8-d6550fe51edc
 cache-control: no-store
 content-type: application/json; charset=utf-8
 content-length: 92
-Date: Thu, 29 Oct 2026 09:39:19 GMT
+Date: Thu, 29 Oct 2026 10:25:34 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -506,14 +506,14 @@ grep -n -E 'page-sign-in|--surface-page' client-preview.html | cut -c1-160
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a18707-38fa-7e0d-900d-e63386f2cb18
+x-request-id: 01a18731-8db8-74c3-90a7-0a04618f2059
 cache-control: no-store
 content-type: text/html; charset=utf-8
 content-security-policy: default-src 'none'; style-src 'self' 'sha256-iutXvhUioEQ5vx0C4gW4CxH0k1cr7GVXWvGWRCjwFyw='; font-src 'self'; img-src data:; form-action 'none'; base-uri 'none'; frame-ancestors 'self'
 referrer-policy: no-referrer
 x-content-type-options: nosniff
 content-length: 1845
-Date: Thu, 29 Oct 2026 09:39:19 GMT
+Date: Thu, 29 Oct 2026 10:25:34 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -536,15 +536,15 @@ curl -sS -D - -H "Authorization: Bearer $ADMIN_TOKEN" $P/clients/$CID/theme/vers
 ```
 {"version":1,"sources":{"tokens.light":"client","stylesheet":"tenant","templates.sign-in":"tenant"},"warnings":[]}
 HTTP/1.1 200 OK
-x-request-id: 01a18707-392d-73c8-81c9-951ec897e2a0
+x-request-id: 01a18731-8df8-79b2-88cc-e464b483076c
 cache-control: no-store
 content-type: application/json; charset=utf-8
 content-length: 171
-Date: Thu, 29 Oct 2026 09:39:19 GMT
+Date: Thu, 29 Oct 2026 10:25:34 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"items":[{"id":"01a18707-38c6-7f3a-98f9-db760788490f","version":1,"state":"published","created_at":"2026-10-29T09:39:19.876Z","published_at":"2026-10-29T09:39:19.964Z"}]}
+{"items":[{"id":"01a18731-8d74-73d5-8c50-2e0dc960947e","version":1,"state":"published","created_at":"2026-10-29T10:25:34.065Z","published_at":"2026-10-29T10:25:34.182Z"}]}
 ```
 
 ```bash
@@ -557,11 +557,11 @@ curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" $P/clients/$CID/theme | jq -c '
 ```
 {"version":2,"draft":null}
 HTTP/1.1 200 OK
-x-request-id: 01a18707-396d-7ac5-b292-75a86f8ddd86
+x-request-id: 01a18731-8e41-716e-8cfb-5d8c6156638e
 cache-control: no-store
 content-type: application/json; charset=utf-8
 content-length: 1704
-Date: Thu, 29 Oct 2026 09:39:20 GMT
+Date: Thu, 29 Oct 2026 10:25:34 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -585,15 +585,15 @@ echo
 ```
 logo.png: PNG image data, 96 x 32, 8-bit/color RGB, non-interlaced
 HTTP/1.1 201 Created
-x-request-id: 01a18707-3998-76e0-afe2-8d830c3437f1
+x-request-id: 01a18731-8e79-73e5-abb0-945691385cd1
 cache-control: no-store
 content-type: application/json; charset=utf-8
 content-length: 189
-Date: Thu, 29 Oct 2026 09:39:20 GMT
+Date: Thu, 29 Oct 2026 10:25:34 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"id":"01a18707-39a5-7379-a4e3-3d444b5582cc","sha256":"f49c86eb1cd9ab9d6d375c9eca74c13a8dc49208de6ccddefcc1e76be257caba","mime":"image/png","width":96,"height":32,"bytes":144,"kind":"logo"}
+{"id":"01a18731-8e94-7f79-b66c-a51d1608eb8d","sha256":"f49c86eb1cd9ab9d6d375c9eca74c13a8dc49208de6ccddefcc1e76be257caba","mime":"image/png","width":96,"height":32,"bytes":144,"kind":"logo"}
 ```
 
 ```bash
@@ -613,12 +613,12 @@ curl -sS -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $ADMIN_TOKEN
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a18707-39c8-7a5d-bb8e-0d906351dd06
+x-request-id: 01a18731-8ebe-7ee4-b9c3-aeba57214bc7
 cache-control: private, no-store
 content-type: image/png
 x-content-type-options: nosniff
 content-length: 144
-Date: Thu, 29 Oct 2026 09:39:20 GMT
+Date: Thu, 29 Oct 2026 10:25:34 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -627,11 +627,29 @@ stored-logo.png: PNG image data, 96 x 32, 8-bit/color RGB, non-interlaced
 400
 ```
 
-A refused upload stores nothing. Bytes that are no image are `415`
-`asset-unsupported-type` whatever type the request declared. A declared type that
-is none of the four allowed is refused before the body is read, and a body longer
-than the kind allows (`logo` takes 256 KiB; the file here is 300,000 bytes of
-zeros) is `413`:
+A refused upload stores nothing. Two files are made for it: `notimage.png` is twenty
+bytes of text with an image name, and `big.png` is 300,000 bytes of zeros, more than
+a `logo` may be (256 KiB):
+
+```bash
+printf 'this is not an image' > notimage.png
+head -c 300000 /dev/zero > big.png
+file notimage.png
+wc -c < notimage.png
+wc -c < big.png
+```
+
+```
+notimage.png: ASCII text, with no line terminators
+      20
+  300000
+```
+
+Bytes that are no image are `415` `asset-unsupported-type` whatever type the request
+declared (here `image/png`). A declared type that is none of the four allowed, or
+none at all, is refused with the same problem before the body is read, naming the
+declared type as the cause rather than the bytes; and a body longer than the kind
+allows is `413`:
 
 ```bash
 curl -sS -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: image/png" \
@@ -640,20 +658,24 @@ echo
 curl -sS -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: image/svg+xml" \
   --data-binary @logo.png "$P/theme/assets?kind=logo"
 echo
+curl -sS -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type:" \
+  --data-binary @logo.png "$P/theme/assets?kind=logo"
+echo
 curl -sS -D - -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: image/png" \
   --data-binary @big.png "$P/theme/assets?kind=logo" | grep -v -E '^(Date|Connection|Keep-Alive)'
 ```
 
 ```
-{"type":"about:blank#asset-unsupported-type","title":"Unsupported Media Type","status":415,"detail":"the image is not a PNG, a JPEG or a WebP","instance":"01a18707-3a08-7665-aa7f-20aa6840d0e2"}
-{"type":"about:blank","title":"FastifyError","status":415,"detail":"Unsupported Media Type","instance":"01a18707-3a1f-7824-8f59-5f294cd074eb"}
+{"type":"about:blank#asset-unsupported-type","title":"Unsupported Media Type","status":415,"detail":"the image is not a PNG, a JPEG or a WebP","instance":"01a18731-8f09-7fc1-b619-fa97402c34c6"}
+{"type":"about:blank#asset-unsupported-type","title":"Unsupported Media Type","status":415,"detail":"the declared type is not image/png, image/jpeg, image/webp or application/octet-stream","instance":"01a18731-8f1f-7eec-8bb5-9595a638e316"}
+{"type":"about:blank#asset-unsupported-type","title":"Unsupported Media Type","status":415,"detail":"the declared type is not image/png, image/jpeg, image/webp or application/octet-stream","instance":"01a18731-8f34-7d5e-b2ee-0e9d318d99a0"}
 HTTP/1.1 413 Payload Too Large
-x-request-id: 01a18707-3a3c-789c-96c9-ebe00564066b
+x-request-id: 01a18731-8f48-7d7b-8db4-978dd0301eb9
 cache-control: no-store
 content-type: application/problem+json; charset=utf-8
 content-length: 150
 
-{"type":"about:blank","title":"Content Too Large","status":413,"detail":"Request body is too large","instance":"01a18707-3a3c-789c-96c9-ebe00564066b"}
+{"type":"about:blank","title":"Content Too Large","status":413,"detail":"Request body is too large","instance":"01a18731-8f48-7d7b-8db4-978dd0301eb9"}
 ```
 
 An image a draft names cannot be deleted: `409` with the first drafts and
@@ -667,17 +689,17 @@ curl -sS -D - -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" $P/theme/assets/
 ```
 
 ```
-{"draft":{"logo":{"alt":"Theme Demo","assetId":"01a18707-39a5-7379-a4e3-3d444b5582cc"}},"draft_sources":{"assets.logo":"tenant"}}
+{"draft":{"logo":{"alt":"Theme Demo","assetId":"01a18731-8e94-7f79-b66c-a51d1608eb8d"}},"draft_sources":{"assets.logo":"tenant"}}
 HTTP/1.1 409 Conflict
-x-request-id: 01a18707-3a72-7a07-8329-9f243c393dbe
+x-request-id: 01a18731-8f7a-78b6-bcc1-03113f9d2d73
 cache-control: no-store
 content-type: application/problem+json; charset=utf-8
 content-length: 254
-Date: Thu, 29 Oct 2026 09:39:20 GMT
+Date: Thu, 29 Oct 2026 10:25:34 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"type":"about:blank#asset-in-use","title":"Conflict","status":409,"detail":"a theme still names the image","errors":[{"path":"theme","message":"named by the draft 01a18707-3a60-7821-8b57-c1db21ebce3e"}],"instance":"01a18707-3a72-7a07-8329-9f243c393dbe"}
+{"type":"about:blank#asset-in-use","title":"Conflict","status":409,"detail":"a theme still names the image","errors":[{"path":"theme","message":"named by the draft 01a18731-8f6c-7412-9916-a5f193b2702d"}],"instance":"01a18731-8f7a-78b6-bcc1-03113f9d2d73"}
 ```
 
 ```bash
@@ -689,20 +711,20 @@ curl -sS -D - -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" $P/theme/assets/
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a18707-3a87-76e0-ba40-fe2cefa32051
+x-request-id: 01a18731-8f91-7bf1-84e0-00941aaf0e0f
 cache-control: no-store
 content-type: application/json; charset=utf-8
 content-length: 908
-Date: Thu, 29 Oct 2026 09:39:20 GMT
+Date: Thu, 29 Oct 2026 10:25:34 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
 {"scope":"tenant","draft":null,"published":null,"sources":{"tokens.light":"default","tokens.dark":"default","tokens.font":"default","stylesheet":"default","templates.sign-in":"default","templates.consent":"default","templates.select-account":"default","templates.logout-confirm":"default","templates.totp-enrolment":"default","templates.passkey-enrolment":"default","templates.recovery-codes":"default","templates.update-password":"default","templates.required-action":"default","templates.registration":"default","templates.reset":"default","templates.verification":"default","templates.required-actions":"default","templates.authorize-error":"default","templates.email-unverified":"default","templates.logged-out":"default","templates.notice":"default","assets.logo":"default","assets.darkLogo":"default","assets.favicon":"default","assets.background":"default"},"draft_sources":null,"tenant_sources":null}
 {"draft":null,"published":null,"sources":{}}
 HTTP/1.1 204 No Content
-x-request-id: 01a18707-3aac-740f-b0d7-7358df5e80df
+x-request-id: 01a18731-8fc2-70c5-ae6b-31668dc59523
 cache-control: no-store
-Date: Thu, 29 Oct 2026 09:39:20 GMT
+Date: Thu, 29 Oct 2026 10:25:34 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 

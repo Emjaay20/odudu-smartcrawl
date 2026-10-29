@@ -15,6 +15,7 @@ How they were captured is in [How the transcripts are captured and checked](../.
 
 - [The shape of it](./the-shape-of-it.md)
 - [Bootstrap](./bootstrap.md)
+- [Registering a client with names in other languages](./registering-a-client-with-names-in-other-languages.md)
 - [Path A: authorization code with PKCE](./path-a-authorization-code-with-pkce.md)
 - [Path A, as a confidential client](./path-a-as-a-confidential-client.md)
 - [Self-registration](./self-registration.md)

@@ -97,11 +97,11 @@ jq -c '.sections[].messages[] | select(.key | startswith("login.")) | select(.ke
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a18708-4a2c-75fe-9cd7-28a89c2a20f5
+x-request-id: 01a18731-e620-70ec-8403-94f9038c6bc4
 cache-control: no-store
 content-type: application/json; charset=utf-8
 content-length: 16478
-Date: Thu, 29 Oct 2026 09:40:29 GMT
+Date: Thu, 29 Oct 2026 10:25:56 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -126,16 +126,16 @@ echo
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a18708-4a43-7729-9906-c7de8f6ab82b
+x-request-id: 01a18731-e643-7fd3-9a88-8e0a0fd8064e
 cache-control: no-store
 content-type: application/json; charset=utf-8
 content-length: 12
-Date: Thu, 29 Oct 2026 09:40:29 GMT
+Date: Thu, 29 Oct 2026 10:25:56 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
 {"items":[]}
-{"type":"about:blank","title":"Error","status":400,"detail":"querystring must have required property 'locale'","errors":[{"path":"locale","message":"must have required property 'locale'"}],"instance":"01a18708-4a56-7dac-91b1-de54291c50af"}
+{"type":"about:blank","title":"Error","status":400,"detail":"querystring must have required property 'locale'","errors":[{"path":"locale","message":"must have required property 'locale'"}],"instance":"01a18731-e669-7ec3-be11-75cc58d861a1"}
 ```
 
 Setting one answers the override, and the locale is stored spelled `fr`:
@@ -150,16 +150,16 @@ echo
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a18708-4a5e-75d2-a93a-4f22d2311265
+x-request-id: 01a18731-e675-756f-a77c-5ebdd5aab0ce
 cache-control: no-store
 content-type: application/json; charset=utf-8
 content-length: 97
-Date: Thu, 29 Oct 2026 09:40:29 GMT
+Date: Thu, 29 Oct 2026 10:25:56 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"locale":"fr","key":"login.title","message":"Connexion","updated_at":"2026-10-29T09:40:29.926Z"}
-{"items":[{"locale":"fr","key":"login.title","message":"Connexion","updated_at":"2026-10-29T09:40:29.926Z"}]}
+{"locale":"fr","key":"login.title","message":"Connexion","updated_at":"2026-10-29T10:25:56.869Z"}
+{"items":[{"locale":"fr","key":"login.title","message":"Connexion","updated_at":"2026-10-29T10:25:56.869Z"}]}
 ```
 
 The language is then offered through the tenant's settings, and the page it
@@ -204,9 +204,9 @@ curl -sS -X PUT -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: applic
 ```
 
 ```
-{"type":"about:blank","title":"Bad Request","status":400,"detail":"key: is not the key of any page message","errors":[{"path":"key","message":"is not the key of any page message"}],"instance":"01a18708-4ab2-796c-ac77-9d8fd6ee3846"}
-{"type":"about:blank","title":"Bad Request","status":400,"detail":"message: is not a valid message: check its braces and plural arms","errors":[{"path":"message","message":"is not a valid message: check its braces and plural arms"}],"instance":"01a18708-4ac4-77b6-83c6-1e89eb9c4f9a"}
-{"type":"about:blank","title":"Bad Request","status":400,"detail":"message: uses {nope}, which the page does not supply; the page supplies {client}","errors":[{"path":"message","message":"uses {nope}, which the page does not supply; the page supplies {client}"}],"instance":"01a18708-4ad6-75af-8805-c1bb681d2d5f"}
+{"type":"about:blank","title":"Bad Request","status":400,"detail":"key: is not the key of any page message","errors":[{"path":"key","message":"is not the key of any page message"}],"instance":"01a18731-e6e5-7cc1-957d-720c85a4cecd"}
+{"type":"about:blank","title":"Bad Request","status":400,"detail":"message: is not a valid message: check its braces and plural arms","errors":[{"path":"message","message":"is not a valid message: check its braces and plural arms"}],"instance":"01a18731-e6fe-7be5-bfba-f9ac36c429d4"}
+{"type":"about:blank","title":"Bad Request","status":400,"detail":"message: uses {nope}, which the page does not supply; the page supplies {client}","errors":[{"path":"message","message":"uses {nope}, which the page does not supply; the page supplies {client}"}],"instance":"01a18731-e716-7b88-9539-3624363ddc2d"}
 ```
 
 Markup in a message is not refused. It is stored as written and the page shows it
@@ -238,9 +238,9 @@ curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" "$P/message-overrides?locale=fr
 
 ```
 HTTP/1.1 204 No Content
-x-request-id: 01a18708-4b18-754f-97d7-5b0712b2895e
+x-request-id: 01a18731-e774-7d9c-a852-e15921dfc98d
 cache-control: no-store
-Date: Thu, 29 Oct 2026 09:40:30 GMT
+Date: Thu, 29 Oct 2026 10:25:57 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 

@@ -54,11 +54,11 @@ curl -sS -D - -H "Authorization: Bearer $ADMIN_TOKEN" $P/mail/branding
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a18709-2da1-7b5d-bafb-527424a1f03d
+x-request-id: 01a18731-ef9a-7343-ad6f-bda8868bf48c
 cache-control: no-store
 content-type: application/json; charset=utf-8
 content-length: 443
-Date: Thu, 29 Oct 2026 09:41:28 GMT
+Date: Thu, 29 Oct 2026 10:25:59 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -76,14 +76,14 @@ grep -c 'data:image' default-mail.html
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a18709-2db3-7c35-a8d8-191b6467e682
+x-request-id: 01a18731-efb1-7918-a747-91e8a34f4ed1
 cache-control: no-store
 content-type: text/html; charset=utf-8
 content-security-policy: default-src 'none'; style-src 'unsafe-inline'; img-src data:; form-action 'none'; base-uri 'none'; frame-ancestors 'self'
 referrer-policy: no-referrer
 x-content-type-options: nosniff
 content-length: 6856
-Date: Thu, 29 Oct 2026 09:41:28 GMT
+Date: Thu, 29 Oct 2026 10:25:59 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -138,11 +138,11 @@ curl -sS -D - -H "Authorization: Bearer $ADMIN_TOKEN" $P/mail/branding
 {"light":{"source":"default","colours":{"page":"#e7eae9","panel":"#ffffff","sunken":"#f3f5f4","border":"#d4d9d7","ink":"#161b1a","muted":"#56605d","link":"#0a6344","button":"#161b1a","button_ink":"#ffffff"}},"dark":{"source":"default","colours":{"page":"#151a19","panel":"#1c2221","sunken":"#121716","border":"#2a3230","ink":"#e4e9e7","muted":"#9ba6a2","link":"#6fd8a8","button":"#e4e9e7","button_ink":"#1c2221"}},"logo":null,"dark_logo":null}
 200
 HTTP/1.1 200 OK
-x-request-id: 01a18709-2e34-7754-94eb-750998790367
+x-request-id: 01a18731-f08a-74ca-a356-323dfb163559
 cache-control: no-store
 content-type: application/json; charset=utf-8
 content-length: 763
-Date: Thu, 29 Oct 2026 09:41:28 GMT
+Date: Thu, 29 Oct 2026 10:25:59 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -151,8 +151,9 @@ Keep-Alive: timeout=72
 
 The preview is the mail itself, built by the code that builds the real one, with
 a sample address and link. The light palette and logo are the default; `scheme=dark`
-fixes the dark ones; the `Content-Security-Policy` allows images only from the
-logo's own origin, and the response is `no-store`:
+fixes the dark ones; the `Content-Security-Policy` allows images from `data:`
+addresses and from the origin the logos are served from, and nothing else, and
+the response is `no-store`:
 
 ```bash
 curl -sS -D - -o mail-light.html -H "Authorization: Bearer $ADMIN_TOKEN" "$P/mail/preview"
@@ -163,14 +164,14 @@ grep -o -E 'background(-color)?:#[0-9a-f]{6}|<img [^>]*>' mail-dark.html | sort 
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a18709-2e46-7215-b776-420c0387d206
+x-request-id: 01a18731-f0a5-7857-84f6-893cf64019db
 cache-control: no-store
 content-type: text/html; charset=utf-8
 content-security-policy: default-src 'none'; style-src 'unsafe-inline'; img-src data: http://localhost:3000; form-action 'none'; base-uri 'none'; frame-ancestors 'self'
 referrer-policy: no-referrer
 x-content-type-options: nosniff
 content-length: 6198
-Date: Thu, 29 Oct 2026 09:41:28 GMT
+Date: Thu, 29 Oct 2026 10:25:59 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -207,7 +208,7 @@ echo
 ```
 <html lang="ar" dir="rtl">
 <title>تحقق من عنوان بريدك الإلكتروني</title>
-{"type":"about:blank","title":"Error","status":400,"detail":"querystring/kind must be equal to one of the allowed values","errors":[{"path":"kind","message":"must be equal to one of the allowed values"}],"instance":"01a18709-2e81-7513-b91b-1f683a2984c7"}
-{"type":"about:blank","title":"Error","status":400,"detail":"querystring/scheme must be equal to one of the allowed values","errors":[{"path":"scheme","message":"must be equal to one of the allowed values"}],"instance":"01a18709-2e89-779e-ba52-a52e54a7bcfc"}
-{"type":"about:blank","title":"Error","status":400,"detail":"querystring/locale must be equal to one of the allowed values","errors":[{"path":"locale","message":"must be equal to one of the allowed values"}],"instance":"01a18709-2e91-7f90-9d3b-33d6578c3a12"}
+{"type":"about:blank","title":"Error","status":400,"detail":"querystring/kind must be equal to one of the allowed values","errors":[{"path":"kind","message":"must be equal to one of the allowed values"}],"instance":"01a18731-f0f5-7203-bcb5-2ad40b9a28f4"}
+{"type":"about:blank","title":"Error","status":400,"detail":"querystring/scheme must be equal to one of the allowed values","errors":[{"path":"scheme","message":"must be equal to one of the allowed values"}],"instance":"01a18731-f0ff-799b-a1e6-7eb4b2fd02e4"}
+{"type":"about:blank","title":"Error","status":400,"detail":"querystring/locale must be equal to one of the allowed values","errors":[{"path":"locale","message":"must be equal to one of the allowed values"}],"instance":"01a18731-f10b-7078-92de-b4928a5f6523"}
 ```

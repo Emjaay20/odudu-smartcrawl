@@ -16,6 +16,11 @@ nothing else in the tenant. `$B` is the tenant's protocol path and `$P` its admi
 path:
 
 ```bash
+curl -sS -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
+  -d '{"name":"brand-demo","display_name":"Brand Demo"}' http://localhost:3000/admin/tenants -o /dev/null
+```
+
+```bash
 B=http://localhost:3000/tenants/brand-demo
 P=http://localhost:3000/admin/tenants/brand-demo
 ```
@@ -54,11 +59,11 @@ curl -sS -D - -o /dev/null "$B/brand/$(printf '0%.0s' $(seq 1 64)).css"
 10:<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
 16:<h1>Sign in</h1>
 HTTP/1.1 404 Not Found
-x-request-id: 01a18715-c85c-7cff-b79a-87d03f0986dc
+x-request-id: 01a18732-264c-7088-9e29-ef7ac3d6f0ad
 x-content-type-options: nosniff
 cache-control: no-store
 content-length: 0
-Date: Thu, 29 Oct 2026 09:55:14 GMT
+Date: Thu, 29 Oct 2026 10:26:13 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -120,7 +125,7 @@ grep -n -E '<link|<style|<img|<h1>' signin.html
 ```
 HTTP/1.1 200 OK
 content-type: text/html
-content-security-policy: default-src 'none'; style-src http://localhost:3000/instrument/instrument.css http://localhost:3000/tenants/brand-demo/brand/d4392d4df227581c41f775d8865fda254dbb404e82616a1488715652544feb76.css; font-src 'self'; img-src http://localhost:3000/tenants/brand-demo/brand/f49c86eb1cd9ab9d6d375c9eca74c13a8dc49208de6ccddefcc1e76be257caba.png http://localhost:3000/instrument/favicon.svg http://localhost:3000/instrument/favicon.ico; frame-ancestors 'none'; form-action 'self' https://app.example; base-uri 'none'; script-src 'nonce-ZVwlEvSDehbxlv5nmHxPjw=='; connect-src 'self'
+content-security-policy: default-src 'none'; style-src http://localhost:3000/instrument/instrument.css http://localhost:3000/tenants/brand-demo/brand/d4392d4df227581c41f775d8865fda254dbb404e82616a1488715652544feb76.css; font-src 'self'; img-src http://localhost:3000/tenants/brand-demo/brand/f49c86eb1cd9ab9d6d375c9eca74c13a8dc49208de6ccddefcc1e76be257caba.png http://localhost:3000/instrument/favicon.svg http://localhost:3000/instrument/favicon.ico; frame-ancestors 'none'; form-action 'self' https://app.example; base-uri 'none'; script-src 'nonce-bQ/yZPDHSre0GvcGRzCa/w=='; connect-src 'self'
 content-language: en
 8:<link rel="stylesheet" href="/instrument/instrument.css">
 9:<link rel="stylesheet" href="/tenants/brand-demo/brand/d4392d4df227581c41f775d8865fda254dbb404e82616a1488715652544feb76.css">
@@ -143,13 +148,13 @@ curl -sS -D - "http://localhost:3000$CSS"
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a18715-c91e-7a98-8a0a-ff73e7c4ad86
+x-request-id: 01a18732-26cf-7efe-bda2-be7ac1d08cde
 x-content-type-options: nosniff
 etag: "d4392d4df227581c41f775d8865fda254dbb404e82616a1488715652544feb76"
 cache-control: public, max-age=31536000, immutable
 content-type: text/css; charset=utf-8
 content-length: 669
-Date: Thu, 29 Oct 2026 09:55:14 GMT
+Date: Thu, 29 Oct 2026 10:26:13 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -166,13 +171,13 @@ file brand-logo.png
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a18715-c931-7280-8994-c5a631a76a1b
+x-request-id: 01a18732-26de-7236-b0a0-64d6d231a1d3
 x-content-type-options: nosniff
 etag: "f49c86eb1cd9ab9d6d375c9eca74c13a8dc49208de6ccddefcc1e76be257caba"
 cache-control: public, max-age=31536000, immutable
 content-type: image/png
 content-length: 144
-Date: Thu, 29 Oct 2026 09:55:14 GMT
+Date: Thu, 29 Oct 2026 10:26:13 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -198,11 +203,11 @@ curl -sS -o /dev/null -w '%{http_code}\n' "http://localhost:3000/tenants/system/
 
 ```
 HTTP/1.1 404 Not Found
-x-request-id: 01a18715-c94a-733f-93a7-a7295def0f60
+x-request-id: 01a18732-26f1-7c98-bf32-373c00b18b9c
 x-content-type-options: nosniff
 cache-control: no-store
 content-length: 0
-Date: Thu, 29 Oct 2026 09:55:14 GMT
+Date: Thu, 29 Oct 2026 10:26:13 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
@@ -265,8 +270,8 @@ content-type: text/html
 10:<link rel="icon" href="/instrument/favicon.svg" type="image/svg+xml">
 11:<link rel="icon" href="/instrument/favicon.ico" sizes="48x48">
 16:<h1>Sign out?</h1>
-19:  <input type="hidden" name="session_id" value="01a18715-ca86-7a3d-8bb8-4b439ca225fa">
-20:  <input type="hidden" name="csrf" value="ih-nKsBbSJqapuclYHRJ9OFbMM7muiwBTMU8oHtillc">
+19:  <input type="hidden" name="session_id" value="01a18732-2817-7063-b3bd-80baf0db9d0b">
+20:  <input type="hidden" name="csrf" value="rvhNJSSH3jff2duU78CLy2hUm6WOs7k2-dhiTPOvzb8">
 21:  <button type="submit">Sign out</button>
 ```
 

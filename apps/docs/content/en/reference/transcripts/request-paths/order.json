@@ -2,6 +2,7 @@
   "index.md",
   "the-shape-of-it.md",
   "bootstrap.md",
+  "registering-a-client-with-names-in-other-languages.md",
   "path-a-authorization-code-with-pkce.md",
   "path-a-as-a-confidential-client.md",
   "self-registration.md",

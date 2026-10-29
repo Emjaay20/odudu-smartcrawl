@@ -181,6 +181,22 @@ A scheme whose palette fails the theme's contrast rules at build time is dropped
 mail's own colours; the roles a mail draws (ink and muted on page, panel and sunken, the
 link ink on all three, the button's ink on its fill) are all pairs the validator holds.
 
+## An undeclared upload type got Fastify's own 415
+
+Found while capturing the transcripts: `POST /theme/assets` with `Content-Type:
+image/svg+xml`, or with none, answered the generic framework refusal (`about:blank`,
+title `FastifyError`) rather than `about:blank#asset-unsupported-type`. The route's
+scope keeps only its own content-type parsers, so Fastify refused the type itself before
+any handler ran. A raw-body route may now carry `unsupportedType`, and the router
+refuses a declared type outside its list in the same `onRequest` step that
+authenticates and checks the size, so the body is still never read. The theme page's
+upload section shows the new answer for a declared type and for none.
+
+The registration transcript for `client_name#fr` is its own page, [Registering a client
+with names in other languages](../../apps/docs/content/en/reference/transcripts/request-paths/registering-a-client-with-names-in-other-languages.md),
+because the bootstrap page it was owed on is a record of several earlier runs and a
+section run later would have made it a claim about one more.
+
 ## Owed at phase close
 
 | Owed                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Owner         | Why not yet                                                                                                                                                                                                |
