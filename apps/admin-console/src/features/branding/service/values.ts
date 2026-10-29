@@ -122,10 +122,26 @@ function templatesOf(values: TemplateValues): ThemeBodyRequest['templates'] {
   );
 }
 
+export interface StylesheetValues extends Readonly<Record<string, unknown>> {
+  stylesheet: string;
+}
+
+// An empty stylesheet is none: the page uses the layer below.
+export function stylesheetValues(view: ThemeView): StylesheetValues {
+  return { stylesheet: baseBody(view).stylesheet ?? '' };
+}
+
 // A save replaces the whole draft, so the part not being saved is carried
 // over from the base it was read with.
 export function colourRequest(view: ThemeView, values: ColourValues): ThemeBodyRequest {
   return { ...baseBody(view), tokens: tokensOf(values) };
+}
+
+export function stylesheetRequest(view: ThemeView, values: StylesheetValues): ThemeBodyRequest {
+  return {
+    ...baseBody(view),
+    stylesheet: values.stylesheet.trim() === '' ? null : values.stylesheet,
+  };
 }
 
 export function imageRequest(view: ThemeView, values: ImageValues): ThemeBodyRequest {

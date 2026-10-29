@@ -16,11 +16,13 @@ On the **Theme** tab, **Colours and font** holds a light palette and a dark pale
 
 Each palette has eleven colours: Page background, Panel background, Field background, Text, Muted text, Accent background, Accent text, Error background, Error text, Border and Focus ring. Type each as `#rrggbb` or pick it. The Font is Instrument’s own, IBM Plex Sans or IBM Plex Mono, and is set for both schemes at once.
 
+Under **Stylesheet**, write plain CSS for what the colours cannot do, such as hiding the logo or adjusting spacing. Rules may name only the pages' documented classes, and `@import`, `@font-face`, scripts and addresses outside the theme's own images are refused. The editor numbers the lines and colours the CSS; a refusal is marked on the line it names and listed under the editor, and the size left is shown beside it. Press Escape and then Tab to leave the editor with the keyboard, since Tab indents.
+
 The **Contrast** panel checks every pair of colours as you type. Text must reach 4.5:1 against what it sits on, and borders and the focus ring 3:1. **Publish** is held while a pair falls short, and the panel names it.
 
 ## 2. Change a page's layout
 
-On the **Pages** tab, choose a page and edit its template. The parts the server fills in, such as the form and its fields, are listed beside the editor; a template places them and may not add scripts, styles or forms. A refused template says what is wrong and where.
+On the **Pages** tab, choose a page and edit its template. The parts the server fills in, such as the form and its fields, are listed beside the editor; a template places them and may not add scripts, styles or forms. The template editor works as the stylesheet editor does, and a refused template says what is wrong and marks where.
 
 ## 3. Preview, publish, restore
 

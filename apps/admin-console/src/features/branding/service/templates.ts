@@ -1,5 +1,11 @@
 import { MAX_TEMPLATE_BYTES, THEME_PAGE_KINDS } from '@odudu/contracts';
+import {
+  detailed,
+  placedProblems,
+  type PlacedProblems,
+} from '#/features/branding/service/problems';
 import type { PageKind } from '#/features/branding/service/values';
+import type { FieldError } from '@odudu/contracts/admin';
 
 export const PAGE_KIND_LABELS: Readonly<Record<PageKind, string>> = {
   'sign-in': 'Sign in',
@@ -140,4 +146,19 @@ export function formNote(manifest: Manifest): string | null {
   return inside === ''
     ? null
     : `Between ${slot(FORM[0] ?? '')} and ${slot(FORM[1] ?? '')}: ${inside}.`;
+}
+
+export const TEMPLATE_REFUSED = 'The template was not saved.';
+
+// What a refused save says about one page's template.
+export function templateProblems(
+  kind: PageKind,
+  errors: readonly FieldError[],
+  saved: string | undefined,
+): PlacedProblems {
+  return placedProblems(errors, saved, {
+    path: `templates.${kind}`,
+    refused: TEMPLATE_REFUSED,
+    wording: (error) => detailed(error.message, error),
+  });
 }

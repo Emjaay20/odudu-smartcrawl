@@ -5,6 +5,7 @@ import {
   templateField,
   type ColourValues,
   type ImageValues,
+  type StylesheetValues,
   type TemplateValues,
 } from '#/features/branding/service/values';
 import { SLOT_RULES } from '#/features/branding/service/assets';
@@ -13,6 +14,7 @@ import { THEME_PAGE_KINDS } from '@odudu/contracts';
 export const COLOURS_TITLE = 'Colours and font';
 export const IMAGES_TITLE = 'Images';
 export const TEMPLATES_SECTION_TITLE = 'Page templates';
+export const STYLESHEET_SECTION_TITLE = 'Stylesheet';
 
 function describePalette(value: unknown): string {
   return value === null ? 'Instrument’s own colours' : 'custom colours';
@@ -61,6 +63,17 @@ export function imageFields(now: ImageValues): SectionFields<ImageValues> {
   };
 }
 
+export function stylesheetFields(now: StylesheetValues): SectionFields<StylesheetValues> {
+  return {
+    stylesheet: {
+      value: now.stylesheet,
+      label: STYLESHEET_SECTION_TITLE,
+      kind: 'plain',
+      describe: describeTemplate,
+    },
+  };
+}
+
 export function templateFields(now: TemplateValues): SectionFields<TemplateValues> {
   return Object.fromEntries(
     THEME_PAGE_KINDS.map((kind) => [
@@ -78,6 +91,7 @@ export function templateFields(now: TemplateValues): SectionFields<TemplateValue
 const SECTION_TITLES: Readonly<Record<string, string>> = {
   colours: COLOURS_TITLE,
   images: IMAGES_TITLE,
+  stylesheet: STYLESHEET_SECTION_TITLE,
   templates: TEMPLATES_SECTION_TITLE,
 };
 

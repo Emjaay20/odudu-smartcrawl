@@ -113,4 +113,24 @@ describe('what the Branding screens show of the server', () => {
       }),
     ).toEqual([]);
   });
+
+  it('words every refusal the server’s stylesheet check can make', () => {
+    const codes = (source: string): string[] =>
+      [...source.matchAll(/'([a-z-]+)'/gu)].map((match) => match[1] ?? '').sort();
+    const server = readFileSync(
+      path.resolve(
+        import.meta.dirname,
+        '../../packages/domain-theme/src/service/stylesheet-types.ts',
+      ),
+      'utf8',
+    );
+    const union = /type StylesheetIssueCode =([^;]+);/u.exec(server)?.[1] ?? '';
+    const console_ = readFileSync(path.join(SERVICE, 'stylesheet.ts'), 'utf8');
+    const table = /STYLESHEET_REFUSALS[^=]*=\s*\{([\s\S]*?)\n\};/u.exec(console_)?.[1] ?? '';
+    const keys = [...table.matchAll(/^\s*(?:'([a-z-]+)'|([a-z]+)):/gmu)]
+      .map((match) => match[1] ?? match[2] ?? '')
+      .sort();
+    expect(codes(union).length).toBeGreaterThan(10);
+    expect(keys).toEqual(codes(union));
+  });
 });

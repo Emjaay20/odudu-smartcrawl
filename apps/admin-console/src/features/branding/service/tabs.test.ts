@@ -20,6 +20,7 @@ describe('the tabs', () => {
 
   it('carry a dot when a section they hold has unsaved edits', () => {
     expect([...tabsWithEdits(new Set(['images']))]).toEqual(['theme']);
+    expect([...tabsWithEdits(new Set(['stylesheet']))]).toEqual(['theme']);
     expect([...tabsWithEdits(new Set(['templates']))]).toEqual(['pages']);
     expect([...tabsWithEdits(new Set())]).toEqual([]);
   });

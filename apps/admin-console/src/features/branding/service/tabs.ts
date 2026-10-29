@@ -17,7 +17,7 @@ export const BRANDING_TAB_LABELS: Readonly<Record<BrandingTab, string>> = {
 
 // The sections each tab saves, which carry its unsaved-changes dot.
 export const BRANDING_TAB_SECTIONS: Readonly<Record<BrandingTab, readonly string[]>> = {
-  theme: ['colours', 'images'],
+  theme: ['colours', 'images', 'stylesheet'],
   pages: ['templates'],
   mail: [],
   languages: [],

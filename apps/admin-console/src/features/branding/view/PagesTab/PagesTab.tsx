@@ -23,7 +23,8 @@ import {
   type ThemeScope,
 } from '#/features/branding/service';
 import { useTemplates } from '#/features/branding/usecase/useTemplates';
-import { SelectField, TextAreaField } from '#/shared/view/Field';
+import { CodeField } from '#/shared/view/CodeField';
+import { SelectField } from '#/shared/view/Field';
 import { Panel } from '#/shared/view/Panel';
 import { recordTab } from '#/shared/view/RecordTab';
 import { SaveSection } from '#/shared/view/SaveSection';
@@ -81,6 +82,7 @@ export function PagesTab({
 }) {
   const templates = useTemplates({ tenant, scope, view, tag, gone });
   const { save } = templates;
+  const problems = templates.problems(kind);
   return (
     <div className={styles.tab}>
       <SaveSection title={TEMPLATES_SECTION_TITLE} description={PAGES_LEAD} save={save}>
@@ -93,12 +95,14 @@ export function PagesTab({
             if (next !== undefined) onKind(next);
           }}
         />
-        <TextAreaField
+        <CodeField
           label={`${PAGE_KIND_LABELS[kind]}: ${TEMPLATE_LABEL.toLowerCase()}`}
           description={`${sourceReading(scope, view, templateField(kind))}. ${templateDescription()}`}
-          mono
+          language="template"
           value={templates.text(kind)}
-          error={templates.issue(kind)}
+          size={templates.size(kind)}
+          issues={problems.lines}
+          error={problems.message}
           changed={templates.changed(kind)}
           onChange={(text) => {
             templates.edit(kind, text);

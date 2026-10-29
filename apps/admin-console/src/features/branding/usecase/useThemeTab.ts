@@ -10,6 +10,7 @@ import {
 import { useColours, type Colours } from '#/features/branding/usecase/useColours';
 import { useImageDeletion, type ImageAsk } from '#/features/branding/usecase/useImageDeletion';
 import { useImages, type Images } from '#/features/branding/usecase/useImages';
+import { useStylesheet, type Stylesheet } from '#/features/branding/usecase/useStylesheet';
 import { usePublication, type Publication } from '#/features/branding/usecase/usePublication';
 import { useThemeReset } from '#/features/branding/usecase/useThemeReset';
 import { useVersions, type Versions } from '#/features/branding/usecase/useVersions';
@@ -19,6 +20,7 @@ import type { Confirming, Removal } from '#/shared/usecase/useConfirmedChange';
 export interface ThemeTab {
   colours: Colours;
   images: Images;
+  stylesheet: Stylesheet;
   deletion: Confirming<ImageAsk>;
   report: ContrastReport;
   publication: Publication;
@@ -41,6 +43,7 @@ export function useThemeTab({
 }): ThemeTab {
   const colours = useColours({ tenant, scope, view, tag, gone });
   const images = useImages({ tenant, scope, view, tag, gone });
+  const stylesheet = useStylesheet({ tenant, scope, view, tag, gone });
   const deletion = useImageDeletion(tenant, images.forget);
   const writes = useThemeWrites(tenant, scope);
   const report = contrastReport(colours.save.values);
@@ -48,6 +51,7 @@ export function useThemeTab({
   return {
     colours,
     images,
+    stylesheet,
     deletion,
     report,
     publication: usePublication({

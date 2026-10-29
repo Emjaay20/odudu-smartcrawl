@@ -8,6 +8,7 @@ import {
 import { useThemeTab } from '#/features/branding/usecase/useThemeTab';
 import { ColoursSection, ContrastPanel } from '#/features/branding/view/ColoursSection';
 import { ImagesSection } from '#/features/branding/view/ImagesSection';
+import { StylesheetSection } from '#/features/branding/view/StylesheetSection';
 import {
   PublishPanel,
   ResetPanel,
@@ -38,6 +39,7 @@ export function ThemeTab({
       <ColoursSection scope={scope} view={view} colours={theme.colours} />
       <ContrastPanel report={theme.report} />
       <ImagesSection scope={scope} view={view} images={theme.images} onDelete={deletion.ask} />
+      <StylesheetSection scope={scope} view={view} stylesheet={theme.stylesheet} />
       <PublishPanel publication={theme.publication} />
       <VersionsPanel versions={theme.versions} />
       <ResetPanel scope={scope} reset={theme.reset} />
