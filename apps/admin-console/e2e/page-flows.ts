@@ -36,6 +36,7 @@ const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
 // RFC 6238 with the SHA-1, six digits and thirty seconds the enrolment page asks for.
 export function totp(secret: string, at = Date.now()): string {
   const bits = secret
+    .replace(/=+$/u, '')
     .split('')
     .map((c) => ALPHABET.indexOf(c).toString(2).padStart(5, '0'))
     .join('');
