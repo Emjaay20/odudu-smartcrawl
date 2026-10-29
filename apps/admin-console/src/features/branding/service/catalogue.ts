@@ -1,4 +1,5 @@
 import type { MessageCatalogueResponse } from '@odudu/contracts/admin';
+import { sortedIds } from '#/shared/service/ids';
 import type { PageKind } from '#/features/branding/service/values';
 
 export interface MessageEntry {
@@ -37,7 +38,7 @@ export function allMessages(catalogue: MessageCatalogueResponse): MessageEntry[]
       if (!byKey.has(key)) byKey.set(key, { key, text: en });
     }
   }
-  return [...byKey.values()].sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));
+  return sortedIds([...byKey.keys()]).flatMap((key) => byKey.get(key) ?? []);
 }
 
 // How a template names a message.
