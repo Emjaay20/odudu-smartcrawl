@@ -216,8 +216,27 @@ describe('POST /theme/assets', () => {
 
   it('refuses a declared type that is no image type with 415', async () => {
     const ctx = await tenantCtx();
-    const res = await upload(ctx, 'logo', makePng(), { contentType: 'application/json' });
+    for (const contentType of ['application/json', 'image/svg+xml', 'text/plain; charset=utf-8']) {
+      const res = await upload(ctx, 'logo', makePng(), { contentType });
+      expect(res.statusCode, contentType).toBe(415);
+      expect(res.headers['content-type'], contentType).toContain('application/problem+json');
+      const body = res.json<{ type: string; title: string; detail: string }>();
+      expect(body.type, contentType).toBe('about:blank#asset-unsupported-type');
+      expect(body.title, contentType).toBe('Unsupported Media Type');
+      expect(body.detail, contentType).toContain('declared type');
+    }
+  });
+
+  it('refuses a body with no declared type the same way', async () => {
+    const ctx = await tenantCtx();
+    const res = await fixture.http.inject({
+      method: 'POST',
+      url: `/admin/tenants/${ctx.tenant.name}/theme/assets?kind=logo`,
+      headers: { authorization: `Bearer ${ctx.token}` },
+      payload: makePng(),
+    });
     expect(res.statusCode).toBe(415);
+    expect(res.json()).toMatchObject({ type: 'about:blank#asset-unsupported-type' });
   });
 
   it('refuses an empty body with 400', async () => {

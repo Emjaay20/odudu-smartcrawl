@@ -194,6 +194,20 @@ async function beforeRawBody(
   if (limit === null) {
     return sendProblem(reply, request, problem(400, 'about:blank', 'Bad Request', 'invalid query'));
   }
+  // Fastify refuses an undeclared type itself, generically, once the parsers
+  // are replaced; the route's own refusal is given here instead.
+  const unsupported = rawBody.unsupportedType;
+  if (unsupported !== undefined) {
+    const essence = (request.headers['content-type'] ?? '').split(';')[0]?.trim().toLowerCase();
+    if (essence === undefined || !rawBody.contentTypes.includes(essence)) {
+      return sendProblem(
+        reply,
+        request,
+        problem(415, unsupported.type, unsupported.title, unsupported.detail),
+      );
+    }
+  }
+
   // A chunked body declares no length (NaN, never over); `limited` in
   // preParsing stops it at the limit.
   const declared = Number(request.headers['content-length']);

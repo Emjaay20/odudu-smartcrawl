@@ -98,40 +98,61 @@ group `finance` holding it, and a subject `grace` who belongs to it and owes
 `update-password`. The import names the tenant `import-demo2`. Both tenants and
 the secret below are throwaway.
 
+Everything below ran in one session on a freshly built stack with `odudu seed admin
+--username ada` run against it and `$ADMIN_TOKEN` got as in [Getting the
+token](./getting-the-token.md). `import-source` is made first, with an override of
+the sign-in title in the default language:
+
+```bash
+A="Authorization: Bearer $ADMIN_TOKEN"; J='Content-Type: application/json'
+T=http://localhost:3000/admin/tenants/import-source
+curl -sS -X POST -H "$A" -H "$J" -d '{"name":"import-source","display_name":"Import source"}' http://localhost:3000/admin/tenants -o /dev/null
+curl -sS -X POST -H "$A" -H "$J" \
+  -d '{"client_id":"billing-app","grant_types":["client_credentials"],"token_endpoint_auth_method":"client_secret_basic"}' $T/clients -o /dev/null
+ROLE=$(curl -sS -X POST -H "$A" -H "$J" -d '{"name":"billing-reader"}' $T/roles | jq -r .id)
+GROUP=$(curl -sS -X POST -H "$A" -H "$J" -d '{"name":"finance"}' $T/groups | jq -r .id)
+curl -sS -X PUT -H "$A" -H "$J" -d "{\"role_ids\":[\"$ROLE\"]}" $T/groups/$GROUP/roles -o /dev/null
+GRACE=$(curl -sS -X POST -H "$A" -H "$J" -d '{"username":"grace","email":"grace@navy.example"}' $T/subjects | jq -r .id)
+curl -sS -X PUT -H "$A" -H "$J" -d "{\"group_ids\":[\"$GROUP\"]}" $T/subjects/$GRACE/groups -o /dev/null
+curl -sS -X PUT -H "$A" -H "$J" -d '{"message":"Welcome back"}' $T/message-overrides/en/login.title -o /dev/null
+```
+
 The export, saved, then imported under a new name:
 
 ```bash
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
-  "http://localhost:3080/admin/tenants/import-source/export?include=subjects" > source.json
+  "http://localhost:3000/admin/tenants/import-source/export?include=subjects" > source.json
 jq -n --slurpfile document source.json \
   '{name: "import-demo2", display_name: "Import demo", document: $document[0]}' \
-  | curl -sS -D - -X POST \
+  | curl -sS -D - -o import.json -X POST \
       -H "Authorization: Bearer $ADMIN_TOKEN" \
       -H "Content-Type: application/json" \
       --data-binary @- \
-      http://localhost:3080/admin/tenant-imports
+      http://localhost:3000/admin/tenant-imports
+cat import.json
 ```
 
 ```
 HTTP/1.1 201 Created
-x-request-id: 01a0ea50-3f09-7d61-ae37-ded07c55d6ab
+x-request-id: 01a18736-2db6-766b-adbe-cf3622b60f31
 cache-control: no-store
-etag: "e484b4b5a55af9db632d4bfd1a78673cdf98b7c3e264d006de5be58f721de3f8"
+etag: "639038228c6595803ee9638d93d3dbae6e2638352c504bc4c1c35c409f621b57"
 content-type: application/json; charset=utf-8
 content-length: 264
-Date: Mon, 28 Sep 2026 23:18:42 GMT
+Date: Thu, 29 Oct 2026 10:30:37 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"tenant":{"id":"01a0ea50-3f1f-7f91-b047-452cba78ee10","name":"import-demo2","display_name":"Import demo","enabled":true,"created_at":"2026-09-28T23:18:42.719Z"},"client_secrets":[{"client_id":"billing-app","secret":"aDDFRqLnjfr4hBg9C8l2QQb6vqXn_pjMEe81LPIqTco"}]}
+{"tenant":{"id":"01a18736-2dcc-756d-ab0a-9251fab5650a","name":"import-demo2","display_name":"Import demo","enabled":true,"created_at":"2026-10-29T10:30:37.260Z"},"client_secrets":[{"client_id":"billing-app","secret":"JBjEap08jVreHB5Y9CRBMq5nQR_Fil6IibkNemUG0X8"}]}
 ```
 
 The secret it answered authenticates at the new tenant's `/token`:
 
 ```bash
-curl -sS -u 'billing-app:aDDFRqLnjfr4hBg9C8l2QQb6vqXn_pjMEe81LPIqTco' \
+SECRET=$(jq -r '.client_secrets[0].secret' import.json)
+curl -sS -u "billing-app:$SECRET" \
   --data-urlencode 'grant_type=client_credentials' \
-  http://localhost:3080/tenants/import-demo2/protocol/openid-connect/token \
+  http://localhost:3000/tenants/import-demo2/protocol/openid-connect/token \
   | jq -c '{token_type, expires_in, has_access_token: (.access_token | length > 0)}'
 ```
 
@@ -146,7 +167,7 @@ and then those two fields side by side:
 
 ```bash
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
-  "http://localhost:3080/admin/tenants/import-demo2/export?include=subjects" > imported.json
+  "http://localhost:3000/admin/tenants/import-demo2/export?include=subjects" > imported.json
 diff <(jq -S 'del(.omitted, .settings.display_name)' source.json) \
      <(jq -S 'del(.omitted, .settings.display_name)' imported.json) && echo identical
 jq -c '{display_name: .settings.display_name, omitted}' source.json imported.json
@@ -169,16 +190,16 @@ ids are a fresh run's, not those above:
 ```bash
 for tenant in import-source import-demo2; do
   curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
-    "http://localhost:3082/admin/tenants/$tenant/keys" | jq -c '[.items[].kid]'
+    "http://localhost:3000/admin/tenants/$tenant/keys" | jq -c '[.items[].kid]'
 done
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
-  "http://localhost:3082/admin/tenants/import-demo2/audit?action=tenant.import&resource_type=tenant&resource_id=01a0ea50-3f1f-7f91-b047-452cba78ee10"; echo
+  "http://localhost:3000/admin/tenants/import-demo2/audit?action=tenant.import&resource_type=tenant&resource_id=$(jq -r .tenant.id import.json)"; echo
 ```
 
 ```
-["01a0ee8e-88bc-73b0-ac5d-e23cf428d01a"]
-["01a0ee8e-8967-7770-a633-9779f73c79db"]
-{"items":[{"id":"01a17ae2-798f-79fc-a449-e41c2682d80d","occurred_at":"2026-10-27T01:03:44.853Z","event_type":"admin_mutation","action":"tenant.import","outcome":"allowed","actor_tenant_id":"0199aa00-0000-7000-8000-000000000001","actor_subject_id":"01a0ee8a-bfb8-763c-ac22-0c8d97b0fada","actor_client_id":"01a0ee8a-bf72-77c9-a423-f61084924d9f","actor_name":null,"actor_origin":"system","resource_type":"tenant","resource_id":"01a0ea50-3f1f-7f91-b047-452cba78ee10","request_id":"01a17ae2-78b1-7816-a822-924aade28b00","ip":"172.20.0.1","detail":{"counts":{"roles":9,"groups":1,"scopes":8,"clients":1,"subjects":1},"source_version":1}}]}
+["01a18736-2c5e-78ce-8392-3bd18c0b31ad"]
+["01a18736-2dfe-7b00-b012-0d6990e863cc"]
+{"items":[{"id":"01a18736-2e5e-78cb-b899-184b51e887d5","occurred_at":"2026-10-29T10:30:37.260Z","event_type":"admin_mutation","action":"tenant.import","outcome":"allowed","actor_tenant_id":"0199aa00-0000-7000-8000-000000000001","actor_subject_id":"01a18727-6b60-76f6-9299-36e7692328a0","actor_client_id":"01a18727-6b13-713f-8865-d215040c7828","actor_name":null,"actor_origin":"system","resource_type":"tenant","resource_id":"01a18736-2dcc-756d-ab0a-9251fab5650a","request_id":"01a18736-2db6-766b-adbe-cf3622b60f31","ip":"172.20.0.1","detail":{"counts":{"roles":9,"groups":1,"scopes":8,"clients":1,"subjects":1,"message_overrides":1},"source_version":1}}]}
 ```
 
 A document broken in two places at once — a scope mapping naming a role
@@ -212,15 +233,15 @@ curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
 
 ```
 HTTP/1.1 400 Bad Request
-x-request-id: 01a0e4ef-dd32-77bd-aff1-649ed553a54a
+x-request-id: 01a18736-2f2d-7f41-aeb8-8b9cbaf4e8f5
 cache-control: no-store
 content-type: application/problem+json; charset=utf-8
 content-length: 390
-Date: Sun, 27 Sep 2026 22:15:20 GMT
+Date: Thu, 29 Oct 2026 10:30:37 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"type":"about:blank","title":"Bad Request","status":400,"detail":"the import was refused for 2 problem(s), listed under errors","errors":[{"path":"document.scopes[0].roles[0]","message":"names no role no-such-role"},{"path":"document.clients[0].redirect_uris","message":"redirect_uris entry http://billing.example/callback is not valid"}],"instance":"01a0e4ef-dd32-77bd-aff1-649ed553a54a"}
+{"type":"about:blank","title":"Bad Request","status":400,"detail":"the import was refused for 2 problem(s), listed under errors","errors":[{"path":"document.scopes[0].roles[0]","message":"names no role no-such-role"},{"path":"document.clients[0].redirect_uris","message":"redirect_uris entry http://billing.example/callback is not valid"}],"instance":"01a18736-2f2d-7f41-aeb8-8b9cbaf4e8f5"}
 {"items":[]}
 ```
 
@@ -239,8 +260,8 @@ done
 ```
 
 ```
-{"type":"about:blank","title":"Conflict","status":409,"detail":"the name \"import-source\" is already in use","instance":"01a0e4ef-ba74-7308-b889-648d797eb195"}
-{"type":"about:blank","title":"Bad Request","status":400,"detail":"the import was refused for 1 problem(s), listed under errors","errors":[{"path":"name","message":"the name \"system\" is reserved"}],"instance":"01a0e4ef-ba90-7262-bf3e-1c8e86c8b5ab"}
+{"type":"about:blank","title":"Conflict","status":409,"detail":"the name \"import-source\" is already in use","instance":"01a18736-2f5f-7c30-b53f-0553014eddc4"}
+{"type":"about:blank","title":"Bad Request","status":400,"detail":"the import was refused for 1 problem(s), listed under errors","errors":[{"path":"name","message":"the name \"system\" is reserved"}],"instance":"01a18736-2f77-7cbf-8477-7da0b1eaabd7"}
 ```
 
 And a body over the limit:
@@ -255,7 +276,7 @@ curl -sS -X POST \
 ```
 
 ```
-{"type":"about:blank","title":"FastifyError","status":413,"detail":"Request body is too large","instance":"01a0e4ef-bb76-7124-83a5-7b6d680169cf"}
+{"type":"about:blank","title":"FastifyError","status":413,"detail":"Request body is too large","instance":"01a18736-2fe4-758c-871c-776f557af517"}
 ```
 
 And a document of 10,001 copies of `grace`, each under its own username, built
@@ -278,7 +299,7 @@ echo
 ```
 
 ```
-{"type":"about:blank","title":"Bad Request","status":400,"detail":"the import was refused for 1 problem(s), listed under errors","errors":[{"path":"document.subjects","message":"the tenant holds more than 10000 subjects, too many to export with ?include=subjects; export without it, and move users in bulk through inbound provisioning (P7)"}],"instance":"01a0e5bf-423c-74c8-9938-4e0f9dfc0f84"}
+{"type":"about:blank","title":"Bad Request","status":400,"detail":"the import was refused for 1 problem(s), listed under errors","errors":[{"path":"document.subjects","message":"the tenant holds more than 10000 subjects, too many to export with ?include=subjects; export without it, and move users in bulk through inbound provisioning (P7)"}],"instance":"01a18736-30de-7019-9524-acc75e1971cb"}
 {"count":0,"capped":false}
 ```
 
@@ -304,6 +325,6 @@ echo
 ```
 
 ```
-{"type":"about:blank","title":"Bad Request","status":400,"detail":"the import was refused for 1 problem(s), listed under errors","errors":[{"path":"document.roles[8].composites[0]","message":"nests billing-reader under view-users, which a new tenant provisions without it: nothing is nested under a capability role"}],"instance":"01a0e5f4-02ce-7c7b-9ed1-aa602860f2df"}
+{"type":"about:blank","title":"Bad Request","status":400,"detail":"the import was refused for 1 problem(s), listed under errors","errors":[{"path":"document.roles[8].composites[0]","message":"nests billing-reader under view-users, which a new tenant provisions without it: nothing is nested under a capability role"}],"instance":"01a18736-3510-74b3-b0f5-66fc86db7111"}
 {"count":0,"capped":false}
 ```

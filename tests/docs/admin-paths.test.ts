@@ -53,6 +53,8 @@ const EMITTABLE_PROBLEM_TYPES = new Set([
   'about:blank#key-active',
   'about:blank#key-algorithm-needed',
   'about:blank#key-not-retired',
+  'about:blank#asset-in-use',
+  'about:blank#asset-unsupported-type',
 ]);
 
 const CAPABILITY_SHAPED = /^(?:view|manage)-[a-z]+(?:-[a-z]+)*$/u;
