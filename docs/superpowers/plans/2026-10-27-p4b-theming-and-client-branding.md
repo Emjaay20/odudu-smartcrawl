@@ -466,7 +466,7 @@ Client rules (spec 6): authorization-session pages use the pending request's `cl
 
 **Interfaces:** Documentation rules in CLAUDE.md "The documentation an increment owns": responses carry no language tag; each transcript says what ran before it; a refusal's precondition is shown; a page's prose names no ADR, path or phase (`console-areas.test.ts`).
 
-- [ ] **Step 1:** Bring up a stack (`docs/phases/p4g.md` records the compose invocation) and run every new or changed route, a rejected template and a rejected upload, the always-confirm logout and a themed sign-in; paste real output only.
+- [ ] **Step 1:** Bring up a stack (`docs/phases/p4g.md` records the compose invocation) and run every new or changed route, including the ones Task 25 changed after their transcripts were written and which carry a note saying so: `GET /clients/{id}` and `PATCH /clients/{id}` (`supported_locales`) in `get-clients-post-clients-and-get-clientsid.md` and `patch-clientsid.md`, the client theme read in `get-theme-put-theme-and-the-theme-routes.md` (`tenant_sources`), and `get-adminopenapijson.md`, whose `content-length`, size and path count were hand-edited to the derived values beside an old `Date` header and so is no longer a capture; remove each note when its block is re-run, a rejected template and a rejected upload, the always-confirm logout and a themed sign-in; paste real output only.
 - [ ] **Step 2:** Write `concepts/branding.mdx` (layers, parts and slots, the safety model, the versioned CSS hooks reference generated from `CSS_HOOKS`), the guide, and the console pages; run `pnpm exec vitest run apps/docs tests/docs` and `pnpm docs:screenshots`, then `--check`.
 - [ ] **Step 3:** Commit: `Docs: branding transcripts, console page, concept and guide`.
 

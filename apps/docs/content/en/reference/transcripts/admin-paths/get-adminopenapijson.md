@@ -11,7 +11,7 @@ cannot drift. It takes no `{tenant}` — it describes the API rather than reachi
 into one — and is served without authentication, since a client that cannot read
 it cannot generate against it.
 
-The `content-length`, the path count and the size below were derived from the generated document rather than from a fresh run, and the `Date` and request id belong to an earlier run; the block is run again when the documentation is closed.
+The `content-length`, the path count and the size below were derived from the generated document rather than from a fresh run, and the `Date` and request id belong to an earlier run; the `content-length` and the size were edited by hand to the derived values, so this block is not a real capture until Task 26 runs it again.
 
 ```bash
 curl -sS -D - -o openapi.json http://localhost:3197/admin/openapi.json
