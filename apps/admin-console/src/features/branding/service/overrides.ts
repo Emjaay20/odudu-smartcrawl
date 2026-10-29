@@ -85,13 +85,6 @@ export function hasProblems(errors: OverrideErrors): boolean {
   return Object.keys(errors).length > 0;
 }
 
-export function clearedOverrideError(
-  errors: OverrideErrors,
-  field: keyof OverrideValues,
-): OverrideErrors {
-  return Object.fromEntries(Object.entries(errors).filter(([name]) => name !== field));
-}
-
 function unknownKey(errors: readonly FieldError[] | undefined): boolean {
   return errors?.some((error) => error.path === 'key') === true;
 }

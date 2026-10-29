@@ -7,7 +7,6 @@ import { useMessageKeys } from '#/features/branding/usecase/useMessageKeys';
 import {
   afterSave,
   askedRemoval,
-  clearedOverrideError,
   EMPTY_OVERRIDE,
   languageAdded,
   languageFields,
@@ -25,6 +24,7 @@ import {
   type OverrideErrors,
   type OverrideValues,
 } from '#/features/branding/service';
+import { withoutField } from '#/shared/service/fieldErrors';
 import type { Read } from '#/shared/service/read';
 import { useToast } from '#/shared/repository/useToasts';
 import { useSectionSave, type SectionSave } from '#/shared/repository/useSectionSave';
@@ -145,7 +145,7 @@ export function useOverrides(tenant: string, data: Settings): Overrides {
     message,
     edit: (field, value) => {
       setValues((was) => ({ ...was, [field]: value }));
-      setErrors((was) => clearedOverrideError(was, field));
+      setErrors((was) => withoutField(was, field));
     },
     fill: (override) => {
       setValues(override);
