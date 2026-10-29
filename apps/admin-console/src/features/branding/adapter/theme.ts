@@ -16,6 +16,7 @@ import { staleWhenTagMissing } from '#/shared/service/failure';
 import { GATEWAY_BASE, type Gateway, type GatewayResult } from '#/shared/transport/gateway';
 import {
   ifMatchOf,
+  imageDataUrl,
   tagOf,
   themeParts,
   type PageKind,
@@ -147,6 +148,22 @@ export function uploadAsset(
     file,
     schema: themeAssetSchema,
   });
+}
+
+// What the admin sees of an uploaded image before any public address serves
+// it: its bytes, as a data address a page under this console's policy may show.
+export async function readAssetImage(
+  gateway: Gateway,
+  tenant: string,
+  assetId: string,
+): Promise<GatewayResult<string>> {
+  const result = await gateway.bytes(
+    'GET',
+    `admin/tenants/${segment(tenant)}/theme/assets/${segment(assetId)}/content`,
+  );
+  if (!result.ok) return result;
+  const url = imageDataUrl(result.data.bytes, result.data.contentType);
+  return url === null ? { ok: false, kind: 'schema' } : { ...result, data: url };
 }
 
 export function deleteAsset(

@@ -151,6 +151,12 @@ export function messageCatalogueKey(tenant: string) {
   return ['message-catalogue', tenant] as const;
 }
 
+// An uploaded image's bytes as a data address. An image's content never
+// changes under its id, so it is read once.
+export function assetImageKey(tenant: string, assetId: string) {
+  return ['asset-image', tenant, assetId] as const;
+}
+
 // What the preview of one page of a scope shows and why, read again whenever
 // the frame is reloaded (`frame` is the frame's own key).
 export function previewInfoKey(tenant: string, scope: string, frame: string) {
