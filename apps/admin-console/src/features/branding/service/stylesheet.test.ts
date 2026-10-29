@@ -64,7 +64,7 @@ describe('what a refused stylesheet says', () => {
       'The server’s words.',
     );
     expect(problems.lines).toEqual([
-      { line: 4, text: `${STYLESHEET_REFUSALS['property-not-allowed']} (behavior)` },
+      { line: 4, text: `${STYLESHEET_REFUSALS['property-not-allowed'] ?? ''} (behavior)` },
     ]);
     expect(problems.message).toBe(STYLESHEET_REFUSED);
   });
@@ -76,7 +76,7 @@ describe('what a refused stylesheet says', () => {
     );
     expect(problems.lines).toEqual([]);
     expect(problems.message).toBe(
-      `${STYLESHEET_REFUSED} ${STYLESHEET_REFUSALS['too-large']} (200000 bytes)`,
+      `${STYLESHEET_REFUSED} ${STYLESHEET_REFUSALS['too-large'] ?? ''} (200000 bytes)`,
     );
   });
 
