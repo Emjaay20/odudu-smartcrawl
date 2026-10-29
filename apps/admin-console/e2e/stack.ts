@@ -248,6 +248,8 @@ const seededSchema = z.object({
       styled: account,
       // The Pages tab's message picker and the preview's notice.
       catalogue: account,
+      // A client's own theme over the tenant's, and its name in French.
+      client: account,
     }),
     // One tenant per test that reads its mail, each with its outbox seeded.
     mail: z.object({

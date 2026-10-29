@@ -9,7 +9,6 @@ import {
   tenantLayerNote,
   tenantLayerRead,
 } from '#/features/branding/service/layers';
-import type { Authority } from '#/shared/service/principal';
 import { themeView } from '#/testing/brandingFixtures';
 
 const retry = () => undefined;
@@ -86,7 +85,9 @@ describe('the tenant theme under a client’s', () => {
 describe('who may read the tenant’s theme', () => {
   it('is whoever holds manage-tenant, and anyone until whoami has answered', () => {
     expect(mayReadTenantTheme(undefined)).toBe(true);
-    expect(mayReadTenantTheme({ capabilities: ['manage-tenant'] } as Authority)).toBe(true);
-    expect(mayReadTenantTheme({ capabilities: ['manage-clients'] } as Authority)).toBe(false);
+    expect(mayReadTenantTheme({ capabilities: ['manage-tenant'], crossTenant: false })).toBe(true);
+    expect(mayReadTenantTheme({ capabilities: ['manage-clients'], crossTenant: false })).toBe(
+      false,
+    );
   });
 });

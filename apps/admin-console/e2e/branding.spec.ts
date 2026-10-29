@@ -586,3 +586,55 @@ test('inserts a message from the list into a template, and says the preview show
   await expect(notice).toBeEmpty();
   await expect(preview(page).getByRole('heading', { level: 2, name: 'Sign in' })).toBeVisible();
 });
+
+test('a client has its own theme over the tenant’s, and a name in French', async ({
+  page,
+  browser,
+}) => {
+  test.slow();
+  const { client } = branding;
+  await signIn(page, client);
+  await page.goto(`/console/${client.tenant}/clients`);
+  await page.getByRole('link', { name: 'Brand App' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Brand App' })).toBeVisible();
+
+  const translations = page.getByRole('region', { name: 'Translations' });
+  const name = translations.getByRole('group', { name: 'Name' });
+  await name.getByRole('tab', { name: 'French (fr)' }).click();
+  await name.getByRole('textbox', { name: 'Name in French (fr)' }).fill('Application Marque');
+  await save(translations);
+  await page.reload();
+  await page
+    .getByRole('region', { name: 'Translations' })
+    .getByRole('group', { name: 'Name' })
+    .getByRole('tab', { name: 'French (fr)' })
+    .click();
+  await expect(page.getByRole('textbox', { name: 'Name in French (fr)' })).toHaveValue(
+    'Application Marque',
+  );
+
+  await page.getByRole('tab', { name: 'Branding' }).click();
+  const section = await customiseLight(page, '#ffe8d6');
+  await expect(section).toContainText('Replaces Instrument’s default light colours');
+  await expectAccessible(page, { exclude: [FRAME] });
+  await save(section);
+  const body = preview(page).locator('body');
+  await expect
+    .poll(() => body.evaluate((node) => getComputedStyle(node).backgroundColor))
+    .toBe('rgb(255, 232, 214)');
+
+  const before = await visit(browser, client.tenant);
+  expect(await surface(before.page)).not.toBe('rgb(255, 232, 214)');
+  await before.close();
+  await page.getByRole('button', { name: 'Publish the draft' }).click();
+  await expect(page.getByRole('region', { name: 'Status' })).toContainText(
+    'Version 1 is published.',
+  );
+  const after = await visit(browser, client.tenant);
+  expect(await surface(after.page)).toBe('rgb(255, 232, 214)');
+  await after.close();
+
+  // The tenant's own theme is untouched by the client's.
+  await page.goto(`/console/${client.tenant}/branding`);
+  await expect(page.getByRole('region', { name: 'Status' })).toContainText('Nothing published yet');
+});

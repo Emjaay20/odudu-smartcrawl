@@ -356,6 +356,10 @@ function seedBranding(branding: Seeded['config']['branding']): void {
     administrator(account);
     client(account.tenant, 'brand-app', 'Brand App');
   }
+  // The client's name can be written in a language the tenant offers.
+  psql(
+    `update tenants set supported_locales = array['en', 'fr'] where id = ${inTenant(branding.client.tenant)}`,
+  );
 }
 
 const LOCKED_SUBJECTS = 3;
@@ -536,6 +540,7 @@ export default function globalSetup(): void {
       languages: { tenant: `${run}-b8`, username: 'tern', password: password() },
       styled: { tenant: `${run}-b9`, username: 'kite', password: password() },
       catalogue: { tenant: `${run}-b10`, username: 'piper', password: password() },
+      client: { tenant: `${run}-b11`, username: 'swallow', password: password() },
     },
     lockouts: {
       main: { tenant: `${run}-l1`, username: 'curie', password: password() },
