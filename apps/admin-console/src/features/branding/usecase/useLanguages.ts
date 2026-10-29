@@ -124,6 +124,7 @@ export function useOverrides(tenant: string, data: Settings): Overrides {
   const languages = languageSettingsOf(data);
   const locale = shownLocale(picked, languages.supported_locales, openingLocale(languages));
   const list = useOverrideList(tenant, locale);
+  const keys = useMessageKeys(tenant, null);
   const writes = useOverrideWrites(tenant);
   const [values, setValues] = useState(EMPTY_OVERRIDE);
   const [errors, setErrors] = useState<OverrideErrors>({});
@@ -138,7 +139,7 @@ export function useOverrides(tenant: string, data: Settings): Overrides {
     locale,
     pick: setPicked,
     list,
-    keys: useMessageKeys(tenant, null),
+    keys,
     values,
     errors,
     message,

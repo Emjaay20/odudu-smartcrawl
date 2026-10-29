@@ -6,6 +6,7 @@ import {
   DEFAULT_PREVIEW,
   noticeLines,
   omissionNote,
+  previewAsked,
   previewKey,
   previewWith,
   type PageKind,
@@ -41,7 +42,7 @@ export function usePreview(
   const [choice, setChoice] = useState(DEFAULT_PREVIEW);
   const [loaded, setLoaded] = useState('');
   const frameKey = previewKey(view, tag, choice);
-  const info = usePreviewInfo(tenant, scope, choice, frameKey, asked && view !== undefined);
+  const info = usePreviewInfo(tenant, scope, choice, frameKey, previewAsked(asked, view));
   return {
     choice,
     src: previewSource(tenant, scope, choice),

@@ -26,3 +26,9 @@ export const PREVIEW_FRAME_TITLE = 'Preview of the page';
 export const PREVIEW_LOADING = 'Loading the preview';
 
 export const PREVIEW_FAILED = 'The preview could not be drawn.';
+
+// Whether the preview's account is wanted: a preview is framed and there is a
+// theme to frame it over.
+export function previewAsked(framed: boolean, view: unknown): boolean {
+  return framed && view !== undefined;
+}

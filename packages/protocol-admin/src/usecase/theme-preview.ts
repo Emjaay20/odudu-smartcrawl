@@ -40,7 +40,7 @@ interface Prepared {
 // page of it asked for: a client's draft over its tenant's published theme, a
 // tenant's over the default. A scope with no draft shows its own published
 // theme. The preview and what it says about itself both come from here, so
-// they cannot disagree. Four statements whatever the theme names: the client,
+// they cannot disagree. Five statements whatever the theme names: the client,
 // the draft, the published theme, the tenant's, and the images' sizes.
 async function prepare(
   tx: TenantScopedDatabase,

@@ -76,7 +76,7 @@ describe('GET /message-catalogue', () => {
       ...mine,
       tenant: { id: newId(), name: `nonesuch-${newId()}` },
     });
-    expect(foreign.statusCode).toBeGreaterThanOrEqual(400);
+    expect(foreign.statusCode).toBe(401);
     expect(foreign.statusCode).toBe(missing.statusCode);
     expect(foreign.body.replace(/"instance":"[^"]*"/u, '')).toBe(
       missing.body.replace(/"instance":"[^"]*"/u, ''),

@@ -245,7 +245,6 @@ describe('what a preview says about itself', () => {
     const mine = await world();
     const theirs = await world();
     const res = await get(theirs, '/theme/preview/info', await token(mine));
-    expect(res.statusCode).toBeGreaterThanOrEqual(400);
-    expect(res.statusCode).toBeLessThan(500);
+    expect(res.statusCode).toBe(401);
   });
 });

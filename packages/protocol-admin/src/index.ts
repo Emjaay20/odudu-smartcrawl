@@ -315,13 +315,13 @@ export interface AdminRoutesDeps {
   // catalogue its page is filled from, which the packages that render
   // pages own.
   isThemeMessageKey: (kind: PageKind, key: string) => boolean;
+  // The page catalogues' keys with their English text, by the page kinds each
+  // fills, for the template editor and the override form.
+  messageCatalogue: () => MessageCatalogueResponse;
   // What a tenant's message overrides are checked against, which the packages
   // that own the page catalogues answer: whether a key names a message, and
   // what is wrong with a text as a message. `invalidate` drops a tenant's
   // cached overrides in this process once a write has committed.
-  // The page catalogues' keys with their English text, by the page kinds each
-  // fills, for the template editor and the override form.
-  messageCatalogue: () => MessageCatalogueResponse;
   messageOverrides: {
     isKnownKey: (key: string) => boolean;
     messageProblem: (message: string) => string | null;
