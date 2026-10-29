@@ -1,56 +1,37 @@
-import type { ThemeView } from '@odudu/contracts/admin';
-import { useState } from 'react';
-import { useThemeRecord } from '#/features/branding/repository/useThemeRecord';
 import {
-  NO_OUTCOME,
   OFFERED_TABS,
   selectOffered,
   showsPreview,
-  tabsWithEdits,
-  themeRecord,
+  TENANT_SCOPE,
   type OfferedTab,
-  type PublishOutcome,
-  type ThemeScope,
 } from '#/features/branding/service';
 import { useMailTab, type MailTab } from '#/features/branding/usecase/useMailTab';
-import { usePreview, type Preview } from '#/features/branding/usecase/usePreview';
-import { useDirtySections } from '#/shared/repository/useDirtySections';
+import {
+  useScopeBranding,
+  useScopeEdits,
+  type ScopeBranding,
+} from '#/features/branding/usecase/useScopeBranding';
 import { useRecordTab } from '#/shared/repository/useRecordTab';
-import type { RecordView } from '#/shared/service/record';
 
 export interface BrandingPage {
-  record: RecordView;
-  view: ThemeView | undefined;
-  // The draft's tag, or the one that says there is none.
-  tag: string | null;
+  branding: ScopeBranding;
   tab: OfferedTab;
   selectTab: (tab: string) => void;
   // Tabs with a section holding unsaved edits, for their dots.
   dirty: ReadonlySet<OfferedTab>;
-  preview: Preview;
   mail: MailTab;
-  // What the last publish answered, kept here so each tab can mark its refusals.
-  published: PublishOutcome;
-  setPublished: (outcome: PublishOutcome) => void;
 }
 
-export function useBrandingPage(tenant: string, scope: ThemeScope): BrandingPage {
-  const record = useThemeRecord(tenant, scope);
+export function useBrandingPage(tenant: string): BrandingPage {
   const { tab, selectTab } = useRecordTab(OFFERED_TABS);
-  const dirty = useDirtySections(tenant, themeRecord(scope));
-  const [published, setPublished] = useState(NO_OUTCOME);
+  const branding = useScopeBranding(tenant, TENANT_SCOPE, showsPreview(tab));
   return {
-    record,
-    view: record.data,
-    tag: record.etag,
+    branding,
     tab,
     selectTab: (next) => {
       selectOffered(next, selectTab);
     },
-    dirty: tabsWithEdits(dirty),
-    preview: usePreview(tenant, scope, record.data, record.etag, showsPreview(tab)),
-    mail: useMailTab(tenant, record.data, tab === 'mail'),
-    published,
-    setPublished,
+    dirty: useScopeEdits(tenant, TENANT_SCOPE),
+    mail: useMailTab(tenant, branding.view, tab === 'mail'),
   };
 }

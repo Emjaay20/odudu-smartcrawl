@@ -16,25 +16,14 @@ import { MailInherits, MailPreview } from '#/features/branding/view/MailTab';
 import { PagesTab } from '#/features/branding/view/PagesTab';
 import { PreviewPane } from '#/features/branding/view/PreviewPane';
 import { ThemeTab } from '#/features/branding/view/ThemeTab';
+import { Workspace } from '#/features/branding/view/Workspace';
 import { RecordPage } from '#/shared/view/RecordPage';
-import styles from '#/features/branding/view/BrandingPage/BrandingPage.module.css';
-
-// The editor beside the preview of what it edits, and below it when narrow.
-function Workspace({ editor, aside }: { editor: ReactNode; aside: ReactNode }) {
-  return (
-    <div className={styles.frame}>
-      <div className={styles.workspace}>
-        <div className={styles.editor}>{editor}</div>
-        <aside className={styles.preview}>{aside}</aside>
-      </div>
-    </div>
-  );
-}
 
 function Branding({ tenant }: { tenant: string }) {
   const scope = TENANT_SCOPE;
-  const page = useBrandingPage(tenant, scope);
-  const { view, tag, preview, mail } = page;
+  const page = useBrandingPage(tenant);
+  const { branding, mail } = page;
+  const { view, tag, preview } = branding;
   const panels: Readonly<Record<OfferedTab, ReactNode>> | null =
     view === undefined || tag === null
       ? null
@@ -48,9 +37,9 @@ function Branding({ tenant }: { tenant: string }) {
                   scope={scope}
                   view={view}
                   tag={tag}
-                  gone={page.record.gone}
-                  published={page.published}
-                  onPublished={page.setPublished}
+                  gone={branding.record.gone}
+                  published={branding.published}
+                  onPublished={branding.setPublished}
                 />
               }
             />
@@ -64,10 +53,10 @@ function Branding({ tenant }: { tenant: string }) {
                   scope={scope}
                   view={view}
                   tag={tag}
-                  gone={page.record.gone}
+                  gone={branding.record.gone}
                   kind={preview.choice.kind}
                   onKind={preview.setKind}
-                  published={page.published}
+                  published={branding.published}
                 />
               }
             />
@@ -79,7 +68,7 @@ function Branding({ tenant }: { tenant: string }) {
         };
   return (
     <RecordPage
-      record={page.record}
+      record={branding.record}
       kicker={tenant}
       title={BRANDING_TITLE}
       description={BRANDING_DESCRIPTION}

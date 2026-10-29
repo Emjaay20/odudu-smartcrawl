@@ -10,6 +10,9 @@ import {
   tagOf,
   ifMatchOf,
   NO_DRAFT_TAG,
+  clientScope,
+  SCOPE_TABS,
+  selectScopeTab,
 } from '#/features/branding/service';
 
 describe('the tabs', () => {
@@ -44,5 +47,23 @@ describe('the scope', () => {
 describe('showsPreview', () => {
   it('is the tabs that frame a page, and no other', () => {
     expect(BRANDING_TABS.filter((tab) => showsPreview(tab))).toEqual(['theme', 'pages']);
+  });
+});
+
+describe('a client’s tabs', () => {
+  it('are the two about its own pages, in the area’s order', () => {
+    expect(SCOPE_TABS).toEqual(['theme', 'pages']);
+  });
+
+  it('select a tab a client has, and none for a name it has not', () => {
+    const chosen: string[] = [];
+    selectScopeTab('pages', (tab) => chosen.push(tab));
+    selectScopeTab('mail', (tab) => chosen.push(tab));
+    selectScopeTab('nonsense', (tab) => chosen.push(tab));
+    expect(chosen).toEqual(['pages']);
+  });
+
+  it('is a theme of its own record, which the client’s id names', () => {
+    expect(themeRecord(clientScope('c1'))).toBe('clients/c1/theme');
   });
 });

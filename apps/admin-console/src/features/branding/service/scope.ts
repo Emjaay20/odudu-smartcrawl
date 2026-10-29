@@ -7,6 +7,10 @@ export type ThemeScope = { kind: 'tenant' } | { kind: 'client'; id: string; belo
 
 export const TENANT_SCOPE: ThemeScope = { kind: 'tenant' };
 
+export function clientScope(id: string): ThemeScope {
+  return { kind: 'client', id };
+}
+
 // Where the scope's theme sits under the tenant in the admin API.
 export function themeParts(scope: ThemeScope): readonly string[] {
   return scope.kind === 'tenant' ? ['theme'] : ['clients', scope.id, 'theme'];
