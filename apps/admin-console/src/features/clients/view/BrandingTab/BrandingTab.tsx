@@ -3,11 +3,9 @@ import type { ClientRecord } from '@odudu/contracts/admin';
 import {
   BRANDING_SECTIONS_LABEL,
   BRANDING_TAB_LABELS,
-  PagesTab,
-  PreviewPane,
+  PagesPanel,
   SCOPED_TABS,
-  ThemeTab,
-  Workspace,
+  ThemePanel,
   type ScopedTab,
 } from '#/features/branding';
 import {
@@ -28,47 +26,14 @@ import { Tabs } from '#/shared/view/Tabs';
 function Editing({ tenant, id }: { tenant: string; id: string }) {
   const page = useClientBranding(tenant, id);
   const { branding } = page;
-  const { scope, preview, published, setPublished } = branding;
   return (
     <div className={recordTab.tab}>
       <p className={recordTab.rule}>{BRANDING_LEAD}</p>
       <ReadGate read={branding.record} label={BRANDING_LOADING} fields={4} failed={BRANDING_FAILED}>
         {(view, tag) => {
-          const gone = branding.record.gone;
           const panels: Readonly<Record<ScopedTab, ReactNode>> = {
-            theme: (
-              <Workspace
-                aside={<PreviewPane preview={preview} pickKind />}
-                editor={
-                  <ThemeTab
-                    tenant={tenant}
-                    scope={scope}
-                    view={view}
-                    tag={tag}
-                    gone={gone}
-                    published={published}
-                    onPublished={setPublished}
-                  />
-                }
-              />
-            ),
-            pages: (
-              <Workspace
-                aside={<PreviewPane preview={preview} pickKind={false} />}
-                editor={
-                  <PagesTab
-                    tenant={tenant}
-                    scope={scope}
-                    view={view}
-                    tag={tag}
-                    gone={gone}
-                    kind={preview.choice.kind}
-                    onKind={preview.setKind}
-                    published={published}
-                  />
-                }
-              />
-            ),
+            theme: <ThemePanel tenant={tenant} branding={branding} view={view} tag={tag} />,
+            pages: <PagesPanel tenant={tenant} branding={branding} view={view} tag={tag} />,
           };
           return (
             <Tabs

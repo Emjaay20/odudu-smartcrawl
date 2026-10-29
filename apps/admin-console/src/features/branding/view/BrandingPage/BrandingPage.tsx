@@ -7,60 +7,25 @@ import {
   BRANDING_TAB_LABELS,
   BRANDING_TITLE,
   OFFERED_TABS,
-  TENANT_SCOPE,
   type OfferedTab,
 } from '#/features/branding/service';
 import { useBrandingPage } from '#/features/branding/usecase/useBrandingPage';
 import { LanguagesTab } from '#/features/branding/view/LanguagesTab';
 import { MailInherits, MailPreview } from '#/features/branding/view/MailTab';
-import { PagesTab } from '#/features/branding/view/PagesTab';
-import { PreviewPane } from '#/features/branding/view/PreviewPane';
-import { ThemeTab } from '#/features/branding/view/ThemeTab';
+import { PagesPanel, ThemePanel } from '#/features/branding/view/ScopePanels';
 import { Workspace } from '#/features/branding/view/Workspace';
 import { RecordPage } from '#/shared/view/RecordPage';
 
 function Branding({ tenant }: { tenant: string }) {
-  const scope = TENANT_SCOPE;
   const page = useBrandingPage(tenant);
   const { branding, mail } = page;
-  const { view, tag, preview } = branding;
+  const { view, tag } = branding;
   const panels: Readonly<Record<OfferedTab, ReactNode>> | null =
     view === undefined || tag === null
       ? null
       : {
-          theme: (
-            <Workspace
-              aside={<PreviewPane preview={preview} pickKind />}
-              editor={
-                <ThemeTab
-                  tenant={tenant}
-                  scope={scope}
-                  view={view}
-                  tag={tag}
-                  gone={branding.record.gone}
-                  published={branding.published}
-                  onPublished={branding.setPublished}
-                />
-              }
-            />
-          ),
-          pages: (
-            <Workspace
-              aside={<PreviewPane preview={preview} pickKind={false} />}
-              editor={
-                <PagesTab
-                  tenant={tenant}
-                  scope={scope}
-                  view={view}
-                  tag={tag}
-                  gone={branding.record.gone}
-                  kind={preview.choice.kind}
-                  onKind={preview.setKind}
-                  published={branding.published}
-                />
-              }
-            />
-          ),
+          theme: <ThemePanel tenant={tenant} branding={branding} view={view} tag={tag} />,
+          pages: <PagesPanel tenant={tenant} branding={branding} view={view} tag={tag} />,
           mail: (
             <Workspace aside={<MailPreview mail={mail} />} editor={<MailInherits mail={mail} />} />
           ),

@@ -1,8 +1,5 @@
 export { BrandingPage } from '#/features/branding/view/BrandingPage';
-export { Workspace } from '#/features/branding/view/Workspace';
-export { ThemeTab } from '#/features/branding/view/ThemeTab';
-export { PagesTab } from '#/features/branding/view/PagesTab';
-export { PreviewPane } from '#/features/branding/view/PreviewPane';
+export { PagesPanel, ThemePanel } from '#/features/branding/view/ScopePanels';
 export {
   useScopeBranding,
   useScopeEdits,
