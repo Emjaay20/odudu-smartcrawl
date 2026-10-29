@@ -569,6 +569,7 @@ export const DEFINED: Readonly<Record<string, Defined>> = {
   'Delete image': feature('branding/service/copy.ts', "DELETE_LABEL = 'Delete image'"),
   Preview: feature('branding/service/preview.ts', "PREVIEW_TITLE = 'Preview'"),
   'Message key': feature('branding/service/overrides.ts', "KEY_LABEL = 'Message key'"),
+  'Add language': feature('branding/service/languages.ts', "ADD_BUTTON = 'Add language'"),
   'Insert a message': feature('branding/service/catalogue.ts', "INSERT_LABEL = 'Insert a message'"),
   Translations: feature('clients/service/labels.ts', "translations: 'Translations'"),
   'Description by language': feature(
