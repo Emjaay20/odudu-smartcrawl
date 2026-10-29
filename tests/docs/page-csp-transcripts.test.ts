@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { SHELL_CSP } from '../../packages/console-gateway/src/view/spa.js';
-import { pageHeaders, type RenderedPage } from '../../packages/kernel/src/index.js';
+import {
+  mailPreviewHeaders,
+  pageHeaders,
+  previewHeaders,
+  type RenderedPage,
+  type ResolvedBranding,
+} from '../../packages/kernel/src/index.js';
 import { docsPolicy, UNAVAILABLE_POLICY } from '../../packages/web-assets/src/index.js';
 import { ADMIN_PAGES, CONSOLE_PAGES, loadSource, PROTOCOL_PAGES } from './markdown.js';
 
@@ -40,10 +46,37 @@ function sources(directives: readonly string[], name: string): string[] | undefi
   return found?.slice(name.length + 1).split(' ');
 }
 
+const STOCK_ICONS = ['/instrument/favicon.svg', '/instrument/favicon.ico'];
+
+// A themed page names each stylesheet and image in full instead of `'self'`.
+// The theme that would send those names is rebuilt from them: the origin from
+// the first, the tenant's stylesheet as the second, every image that is not
+// one of Instrument's own icons as an asset.
+function brandingOf(directives: readonly string[]): ResolvedBranding | undefined {
+  const style = sources(directives, 'style-src') ?? [];
+  const first = style[0];
+  if (!first?.startsWith('http')) return undefined;
+  const origin = new URL(first).origin;
+  const path = (url: string): string => url.slice(origin.length);
+  const second = style[1];
+  return {
+    origin,
+    templates: {},
+    tokensCss: '',
+    stylesheetUrl: second === undefined ? null : path(second),
+    faviconUrl: null,
+    logo: null,
+    assetUrls: (sources(directives, 'img-src') ?? [])
+      .map(path)
+      .filter((url) => !STOCK_ICONS.includes(url)),
+  };
+}
+
 function pageOf(policy: string): RenderedPage {
   const directives = policy.split('; ');
   const nonce = /^'nonce-(.+)'$/u.exec(sources(directives, 'script-src')?.[0] ?? '')?.[1];
   const formAction = sources(directives, 'form-action') ?? [];
+  const branding = brandingOf(directives);
   return {
     html: '',
     body: '',
@@ -53,7 +86,7 @@ function pageOf(policy: string): RenderedPage {
         ? null
         : { nonce, fetchesSameOrigin: sources(directives, 'connect-src') !== undefined },
     frames: sources(directives, 'frame-src') ?? [],
-    locale: { tag: 'en', dir: 'ltr' },
+    locale: { tag: 'en', dir: 'ltr', ...(branding === undefined ? {} : { branding }) },
     ...(formAction[1] === undefined ? {} : { redirectsTo: formAction[1] }),
   };
 }
@@ -78,10 +111,42 @@ function isDocs(line: Recorded): boolean {
   return line.following.includes('x-robots-tag: noindex, nofollow');
 }
 
+// The theme preview and the mail preview are responses of their own, framed
+// by the console, which is the one policy that ends in `frame-ancestors 'self'`.
+function isPreview(line: Recorded): boolean {
+  return (
+    line.policy.startsWith("default-src 'none'") && line.policy.endsWith("frame-ancestors 'self'")
+  );
+}
+
 describe('the content-security-policy lines the guides record', () => {
   const everything = recorded();
-  const lines = everything.filter((line) => !isDocs(line));
+  const lines = everything.filter((line) => !isDocs(line) && !isPreview(line));
   const docs = everything.filter(isDocs);
+  const previews = everything.filter(isPreview);
+
+  it('shows a theme preview and a mail preview as their own builders send them', () => {
+    expect(previews.length).toBeGreaterThan(1);
+    const drift = previews.flatMap((line) => {
+      const directives = line.policy.split('; ');
+      const style = sources(directives, 'style-src') ?? [];
+      const hash = style.find((source) => source.startsWith("'sha256-"))?.slice(8, -1) ?? null;
+      const images = (sources(directives, 'img-src') ?? []).filter((source) => source !== 'data:');
+      const sent = style.includes("'unsafe-inline'")
+        ? mailPreviewHeaders(images)
+        : previewHeaders({ html: '', styleSha256: hash, scriptOmitted: false });
+      const policy = sent.find(([name]) => name === 'content-security-policy')?.[1];
+      return [
+        ...(policy === line.policy ? [] : [`${line.where}: expected ${String(policy)}`]),
+        ...sent
+          .filter(([name]) => name !== 'content-security-policy')
+          .map(([name, value]) => `${name}: ${value}`)
+          .filter((header) => !line.following.includes(header))
+          .map((header) => `${line.where}: missing ${header}`),
+      ];
+    });
+    expect(drift).toEqual([]);
+  });
 
   it('finds a recorded policy in each guide, so an empty scan cannot pass', () => {
     for (const guide of GUIDES) {
