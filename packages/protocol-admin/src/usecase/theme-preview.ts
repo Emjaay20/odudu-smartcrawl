@@ -29,7 +29,7 @@ export interface ThemePreviewDeps {
 
 export type PreviewOutcome =
   | { kind: 'not_found' }
-  | { kind: 'too_large'; bytes: number }
+  | { kind: 'too_large'; bytes: number; limit: number }
   | { kind: 'rendered'; inlined: InlinedPreview; fallbacks: PageKind[] };
 
 interface Prepared {
@@ -132,7 +132,7 @@ export async function previewTheme(
   const { images, built, fallbacks, page } = prepared;
   const { used, weight } = usedImages(target.tenantName, images, [page.html, built.css]);
   const bytes = weight + built.css.length;
-  if (bytes > MAX_PREVIEW_BYTES) return { kind: 'too_large', bytes };
+  if (bytes > MAX_PREVIEW_BYTES) return { kind: 'too_large', bytes, limit: MAX_PREVIEW_BYTES };
 
   const held = await assetRepository(tx).bytesOf(
     target.tenantId,
