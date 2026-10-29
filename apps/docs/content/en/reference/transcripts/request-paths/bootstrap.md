@@ -406,6 +406,44 @@ This registration presented no credential, so `registration_origin` is
 (ADR 0027) — an anonymous registrant is not the operator vouching for a
 client the way `seed client` or a token-authorized registration is.
 
+A registration may also name the client in other languages with
+`client_name#<tag>` members (RFC 7591 §2.2). A well-formed tag the tenant
+offers is stored and echoed; one it does not offer is dropped and not echoed.
+A malformed tag, or one written twice, is refused as `invalid_client_metadata`
+without repeating the member's name. These ran in a `reg-demo` created for them
+on a stack of its own, with the policy `open` and `en` and `fr` offered through
+its `supported_locales` setting, so `client_name#fr` is kept and `client_name#de`
+is not:
+
+```bash
+curl -sS -X POST http://localhost:3000/tenants/reg-demo/clients-registrations/openid-connect \
+  -H 'content-type: application/json' \
+  -d '{"redirect_uris":["https://rp.example/cb"],"client_name":"Example RP","client_name#fr":"RP d’exemple","client_name#de":"Beispiel-RP"}'
+```
+
+```
+{"client_id":"01a18714-2281-7e0a-926f-ca5acb5a356e","client_id_issued_at":1793267606,"client_secret":"Z4Mjirt7j8KGeaAkI0WcsWaZSP2DXPg0RvsIbGcZypU","client_secret_expires_at":0,"redirect_uris":["https://rp.example/cb"],"grant_types":["authorization_code"],"token_endpoint_auth_method":"client_secret_basic","client_name":"Example RP","client_name#fr":"RP d’exemple"}
+```
+
+A malformed tag and a tag written twice (`fr` and `FR` are one tag) are each
+refused:
+
+```bash
+curl -sS -X POST http://localhost:3000/tenants/reg-demo/clients-registrations/openid-connect \
+  -H 'content-type: application/json' \
+  -d '{"redirect_uris":["https://rp.example/cb"],"client_name#f":"RP"}'
+echo
+curl -sS -X POST http://localhost:3000/tenants/reg-demo/clients-registrations/openid-connect \
+  -H 'content-type: application/json' \
+  -d '{"redirect_uris":["https://rp.example/cb"],"client_name#fr":"RP","client_name#FR":"RP"}'
+echo
+```
+
+```
+{"error":"invalid_client_metadata","error_description":"a client_name#<language> member does not name a language tag"}
+{"error":"invalid_client_metadata","error_description":"client_name#<language> names one language more than once"}
+```
+
 The `token` policy is stricter: a request with no bearer credential is
 refused before anything is validated, with `WWW-Authenticate` naming the
 scheme and no `error` parameter (RFC 6750 §3.1's distinction between an

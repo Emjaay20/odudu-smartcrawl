@@ -102,36 +102,37 @@ The export, saved, then imported under a new name:
 
 ```bash
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
-  "http://localhost:3080/admin/tenants/import-source/export?include=subjects" > source.json
+  "http://localhost:3000/admin/tenants/import-source/export?include=subjects" > source.json
 jq -n --slurpfile document source.json \
   '{name: "import-demo2", display_name: "Import demo", document: $document[0]}' \
-  | curl -sS -D - -X POST \
+  | curl -sS -D - -o import.json -X POST \
       -H "Authorization: Bearer $ADMIN_TOKEN" \
       -H "Content-Type: application/json" \
       --data-binary @- \
-      http://localhost:3080/admin/tenant-imports
+      http://localhost:3000/admin/tenant-imports
+cat import.json
 ```
 
 ```
 HTTP/1.1 201 Created
-x-request-id: 01a0ea50-3f09-7d61-ae37-ded07c55d6ab
+x-request-id: 01a1870d-41e7-75de-a3b9-0a393bf75945
 cache-control: no-store
-etag: "e484b4b5a55af9db632d4bfd1a78673cdf98b7c3e264d006de5be58f721de3f8"
+etag: "6f30675bcc10f4ebb31b002fe1810f82595d2fcbae5259228f18c4c4f94bcafa"
 content-type: application/json; charset=utf-8
 content-length: 264
-Date: Mon, 28 Sep 2026 23:18:42 GMT
+Date: Thu, 29 Oct 2026 09:45:55 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"tenant":{"id":"01a0ea50-3f1f-7f91-b047-452cba78ee10","name":"import-demo2","display_name":"Import demo","enabled":true,"created_at":"2026-09-28T23:18:42.719Z"},"client_secrets":[{"client_id":"billing-app","secret":"aDDFRqLnjfr4hBg9C8l2QQb6vqXn_pjMEe81LPIqTco"}]}
+{"tenant":{"id":"01a1870d-41f6-70e0-ae75-0fd4350205df","name":"import-demo2","display_name":"Import demo","enabled":true,"created_at":"2026-10-29T09:45:55.446Z"},"client_secrets":[{"client_id":"billing-app","secret":"VYB9aaJAiQ2rSkpFOUkC-0Pl9ZUbIvLdN4f9vMyAEpk"}]}
 ```
 
 The secret it answered authenticates at the new tenant's `/token`:
 
 ```bash
-curl -sS -u 'billing-app:aDDFRqLnjfr4hBg9C8l2QQb6vqXn_pjMEe81LPIqTco' \
+curl -sS -u "billing-app:$SECRET" \
   --data-urlencode 'grant_type=client_credentials' \
-  http://localhost:3080/tenants/import-demo2/protocol/openid-connect/token \
+  http://localhost:3000/tenants/import-demo2/protocol/openid-connect/token \
   | jq -c '{token_type, expires_in, has_access_token: (.access_token | length > 0)}'
 ```
 
@@ -146,7 +147,7 @@ and then those two fields side by side:
 
 ```bash
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
-  "http://localhost:3080/admin/tenants/import-demo2/export?include=subjects" > imported.json
+  "http://localhost:3000/admin/tenants/import-demo2/export?include=subjects" > imported.json
 diff <(jq -S 'del(.omitted, .settings.display_name)' source.json) \
      <(jq -S 'del(.omitted, .settings.display_name)' imported.json) && echo identical
 jq -c '{display_name: .settings.display_name, omitted}' source.json imported.json
@@ -169,16 +170,16 @@ ids are a fresh run's, not those above:
 ```bash
 for tenant in import-source import-demo2; do
   curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
-    "http://localhost:3082/admin/tenants/$tenant/keys" | jq -c '[.items[].kid]'
+    "http://localhost:3000/admin/tenants/$tenant/keys" | jq -c '[.items[].kid]'
 done
 curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
-  "http://localhost:3082/admin/tenants/import-demo2/audit?action=tenant.import&resource_type=tenant&resource_id=01a0ea50-3f1f-7f91-b047-452cba78ee10"; echo
+  "http://localhost:3000/admin/tenants/import-demo2/audit?action=tenant.import&resource_type=tenant&resource_id=$(jq -r .tenant.id import.json)"; echo
 ```
 
 ```
-["01a0ee8e-88bc-73b0-ac5d-e23cf428d01a"]
-["01a0ee8e-8967-7770-a633-9779f73c79db"]
-{"items":[{"id":"01a17ae2-798f-79fc-a449-e41c2682d80d","occurred_at":"2026-10-27T01:03:44.853Z","event_type":"admin_mutation","action":"tenant.import","outcome":"allowed","actor_tenant_id":"0199aa00-0000-7000-8000-000000000001","actor_subject_id":"01a0ee8a-bfb8-763c-ac22-0c8d97b0fada","actor_client_id":"01a0ee8a-bf72-77c9-a423-f61084924d9f","actor_name":null,"actor_origin":"system","resource_type":"tenant","resource_id":"01a0ea50-3f1f-7f91-b047-452cba78ee10","request_id":"01a17ae2-78b1-7816-a822-924aade28b00","ip":"172.20.0.1","detail":{"counts":{"roles":9,"groups":1,"scopes":8,"clients":1,"subjects":1},"source_version":1}}]}
+["01a1870d-4055-72ef-acaa-b8ddf9c1367b"]
+["01a1870d-4225-7136-9cb2-c412f6a4c68d"]
+{"items":[{"id":"01a1870d-429c-7240-bc21-159308c9be85","occurred_at":"2026-10-29T09:45:55.446Z","event_type":"admin_mutation","action":"tenant.import","outcome":"allowed","actor_tenant_id":"0199aa00-0000-7000-8000-000000000001","actor_subject_id":"01a18700-83fd-7993-9628-384d0a4b1893","actor_client_id":"01a18700-83c9-7a02-9b62-8d1956b09dae","actor_name":null,"actor_origin":"system","resource_type":"tenant","resource_id":"01a1870d-41f6-70e0-ae75-0fd4350205df","request_id":"01a1870d-41e7-75de-a3b9-0a393bf75945","ip":"172.20.0.1","detail":{"counts":{"roles":9,"groups":1,"scopes":8,"clients":1,"subjects":1,"message_overrides":0},"source_version":1}}]}
 ```
 
 A document broken in two places at once — a scope mapping naming a role

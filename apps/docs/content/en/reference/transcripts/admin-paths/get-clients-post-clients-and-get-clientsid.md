@@ -5,8 +5,6 @@ description: 'Lists, reads and creates clients: the clients row and its OIDC con
 
 # `GET /clients`, `POST /clients` and `GET /clients/{id}`
 
-> The response below predates the `supported_locales` field of a client's own read and amendment (the tenant's languages, at most 32), which Task 26 re-runs on a live stack along with the rest of this page.
-
 Lists, reads and creates clients — the `clients` row and its OIDC
 configuration (`client_oidc_config`), joined into one resource keyed by the
 client's internal id (`{id}` above is that id, not the OAuth `client_id`
@@ -67,21 +65,21 @@ curl -sS -D - -X POST \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"client_id": "demo-fields-check", "grant_types": ["client_credentials"], "token_endpoint_auth_method": "client_secret_basic", "audiences": ["https://api.demo.example"], "web_origins": ["https://app.demo.example"]}' \
-  http://localhost:3082/admin/tenants/demo/clients
+  http://localhost:3000/admin/tenants/demo/clients
 ```
 
 ```
 HTTP/1.1 201 Created
-x-request-id: 01a17d30-f557-7683-aa91-dfe1990405ae
+x-request-id: 01a1870f-4b09-70ab-aa70-8f3ee0d833ff
 cache-control: no-store
-etag: "747fee312e03aa8a6e50e2b954402e7cf617422a35d4bc8f76f99467a7e6a964"
+etag: "c064dcbb5ca5225fafe39138988c5f5f7050d7499b7e98aa891e04bd8e9e74c0"
 content-type: application/json; charset=utf-8
-content-length: 2081
-Date: Tue, 27 Oct 2026 11:48:43 GMT
+content-length: 2118
+Date: Thu, 29 Oct 2026 09:48:08 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"id":"01a17d30-f5a0-7d73-979e-059aafcb282c","client_id":"demo-fields-check","name":"demo-fields-check","description":null,"type":"confidential","enabled":true,"full_scope_allowed":false,"skip_logout_confirmation":false,"registration_origin":"operator","created_at":"2026-10-27T11:48:42.976Z","redirect_uris":[],"grant_types":["client_credentials"],"token_endpoint_auth_method":"client_secret_basic","audiences":["https://api.demo.example"],"access_token_ttl_seconds":null,"id_token_ttl_seconds":null,"refresh_token_ttl_seconds":null,"client_credentials_scopes":[],"web_origins":["https://app.demo.example"],"post_logout_redirect_uris":[],"jwks":null,"jwks_uri":null,"frontchannel_logout_uri":null,"backchannel_logout_uri":null,"frontchannel_logout_session_required":false,"backchannel_logout_session_required":false,"consent_required":false,"token_exchange_impersonation_allowed":false,"userinfo_signed_response_alg":null,"userinfo_encrypted_response_alg":null,"userinfo_encrypted_response_enc":null,"tls_client_auth_subject_dn":null,"client_uri":null,"policy_uri":null,"tos_uri":null,"id_token_signed_response_alg":null,"default_max_age":null,"require_auth_time":false,"previous_secret_expires_at":null,"builtin_admin":false,"service_subject_id":"01a17d30-f561-7dcd-b5a7-4d82d816b655","scopes":[{"id":"01a17d30-9d74-7bcb-8ffd-607181716855","name":"openid","assignment":"default"},{"id":"01a17d30-9d75-74fa-89e3-c3f4fb9d7e11","name":"profile","assignment":"default"},{"id":"01a17d30-9d77-7f5d-8998-fd2924cecbae","name":"email","assignment":"default"},{"id":"01a17d30-9d78-75c7-a014-aacd0f71e011","name":"address","assignment":"default"},{"id":"01a17d30-9d7a-7afa-8ccc-af48085cba39","name":"phone","assignment":"default"},{"id":"01a17d30-9d7b-7171-8e74-9685376448f0","name":"roles","assignment":"default"},{"id":"01a17d30-9d7d-7126-acc9-adfeccaadcb9","name":"groups","assignment":"default"},{"id":"01a17d30-9d7e-7c84-b318-8606637e19ce","name":"offline_access","assignment":"optional"}],"service_account_admin_reach":[],"client_secret":"zUMxi1Y0ztxY_PuLqUkXLjlasmfHUYGiUB_TE5WvGqk"}
+{"id":"01a1870f-4b2e-763d-b0da-0dffffa6ea64","client_id":"demo-fields-check","name":"demo-fields-check","description":null,"name_i18n":{},"description_i18n":{},"type":"confidential","enabled":true,"full_scope_allowed":false,"skip_logout_confirmation":false,"registration_origin":"operator","created_at":"2026-10-29T09:48:08.849Z","redirect_uris":[],"grant_types":["client_credentials"],"token_endpoint_auth_method":"client_secret_basic","audiences":["https://api.demo.example"],"access_token_ttl_seconds":null,"id_token_ttl_seconds":null,"refresh_token_ttl_seconds":null,"client_credentials_scopes":[],"web_origins":["https://app.demo.example"],"post_logout_redirect_uris":[],"jwks":null,"jwks_uri":null,"frontchannel_logout_uri":null,"backchannel_logout_uri":null,"frontchannel_logout_session_required":false,"backchannel_logout_session_required":false,"consent_required":false,"token_exchange_impersonation_allowed":false,"userinfo_signed_response_alg":null,"userinfo_encrypted_response_alg":null,"userinfo_encrypted_response_enc":null,"tls_client_auth_subject_dn":null,"client_uri":null,"policy_uri":null,"tos_uri":null,"id_token_signed_response_alg":null,"default_max_age":null,"require_auth_time":false,"previous_secret_expires_at":null,"builtin_admin":false,"service_subject_id":"01a1870f-4b13-7756-8fdc-470eed456014","scopes":[{"id":"01a1870f-49a9-7b18-8d43-43317ef5cebc","name":"openid","assignment":"default"},{"id":"01a1870f-49ab-7f74-be08-d377dfac7bba","name":"profile","assignment":"default"},{"id":"01a1870f-49ac-704d-924f-6c53ed1a92f3","name":"email","assignment":"default"},{"id":"01a1870f-49ad-7dd3-a582-b4729cbe66e5","name":"address","assignment":"default"},{"id":"01a1870f-49ae-78b8-8b90-b25e012b6562","name":"phone","assignment":"default"},{"id":"01a1870f-49af-76a0-8af6-4abcd45c8848","name":"roles","assignment":"default"},{"id":"01a1870f-49b0-74d4-a3e2-3cb8653a7921","name":"groups","assignment":"default"},{"id":"01a1870f-49b2-761c-8b9f-ff0cf588f042","name":"offline_access","assignment":"optional"}],"service_account_admin_reach":[],"client_secret":"9nMuwzu79hDa9V05oRsHZCbqygVqJJNYlUwGhCDpc0U"}
 ```
 
 `GET`ting it back shows both fields still set, from the row rather than the
@@ -91,21 +89,21 @@ create response — and now also carries `builtin_admin` and
 ```bash
 curl -sS -D - \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
-  http://localhost:3082/admin/tenants/demo/clients/01a17d30-f5a0-7d73-979e-059aafcb282c
+  http://localhost:3000/admin/tenants/demo/clients/$FID
 ```
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a17d30-f63d-73e2-af1f-07d844d01876
+x-request-id: 01a1870f-4b76-7b61-907e-a2cc9fa4eea1
 cache-control: no-store
-etag: "747fee312e03aa8a6e50e2b954402e7cf617422a35d4bc8f76f99467a7e6a964"
+etag: "c064dcbb5ca5225fafe39138988c5f5f7050d7499b7e98aa891e04bd8e9e74c0"
 content-type: application/json; charset=utf-8
-content-length: 2019
-Date: Tue, 27 Oct 2026 11:48:43 GMT
+content-length: 2083
+Date: Thu, 29 Oct 2026 09:48:08 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"id":"01a17d30-f5a0-7d73-979e-059aafcb282c","client_id":"demo-fields-check","name":"demo-fields-check","description":null,"type":"confidential","enabled":true,"full_scope_allowed":false,"skip_logout_confirmation":false,"registration_origin":"operator","created_at":"2026-10-27T11:48:42.976Z","redirect_uris":[],"grant_types":["client_credentials"],"token_endpoint_auth_method":"client_secret_basic","audiences":["https://api.demo.example"],"access_token_ttl_seconds":null,"id_token_ttl_seconds":null,"refresh_token_ttl_seconds":null,"client_credentials_scopes":[],"web_origins":["https://app.demo.example"],"post_logout_redirect_uris":[],"jwks":null,"jwks_uri":null,"frontchannel_logout_uri":null,"backchannel_logout_uri":null,"frontchannel_logout_session_required":false,"backchannel_logout_session_required":false,"consent_required":false,"token_exchange_impersonation_allowed":false,"userinfo_signed_response_alg":null,"userinfo_encrypted_response_alg":null,"userinfo_encrypted_response_enc":null,"tls_client_auth_subject_dn":null,"client_uri":null,"policy_uri":null,"tos_uri":null,"id_token_signed_response_alg":null,"default_max_age":null,"require_auth_time":false,"previous_secret_expires_at":null,"builtin_admin":false,"service_subject_id":"01a17d30-f561-7dcd-b5a7-4d82d816b655","scopes":[{"id":"01a17d30-9d74-7bcb-8ffd-607181716855","name":"openid","assignment":"default"},{"id":"01a17d30-9d75-74fa-89e3-c3f4fb9d7e11","name":"profile","assignment":"default"},{"id":"01a17d30-9d77-7f5d-8998-fd2924cecbae","name":"email","assignment":"default"},{"id":"01a17d30-9d78-75c7-a014-aacd0f71e011","name":"address","assignment":"default"},{"id":"01a17d30-9d7a-7afa-8ccc-af48085cba39","name":"phone","assignment":"default"},{"id":"01a17d30-9d7b-7171-8e74-9685376448f0","name":"roles","assignment":"default"},{"id":"01a17d30-9d7d-7126-acc9-adfeccaadcb9","name":"groups","assignment":"default"},{"id":"01a17d30-9d7e-7c84-b318-8606637e19ce","name":"offline_access","assignment":"optional"}],"service_account_admin_reach":[]}
+{"id":"01a1870f-4b2e-763d-b0da-0dffffa6ea64","client_id":"demo-fields-check","name":"demo-fields-check","description":null,"name_i18n":{},"description_i18n":{},"type":"confidential","enabled":true,"full_scope_allowed":false,"skip_logout_confirmation":false,"registration_origin":"operator","created_at":"2026-10-29T09:48:08.849Z","redirect_uris":[],"grant_types":["client_credentials"],"token_endpoint_auth_method":"client_secret_basic","audiences":["https://api.demo.example"],"access_token_ttl_seconds":null,"id_token_ttl_seconds":null,"refresh_token_ttl_seconds":null,"client_credentials_scopes":[],"web_origins":["https://app.demo.example"],"post_logout_redirect_uris":[],"jwks":null,"jwks_uri":null,"frontchannel_logout_uri":null,"backchannel_logout_uri":null,"frontchannel_logout_session_required":false,"backchannel_logout_session_required":false,"consent_required":false,"token_exchange_impersonation_allowed":false,"userinfo_signed_response_alg":null,"userinfo_encrypted_response_alg":null,"userinfo_encrypted_response_enc":null,"tls_client_auth_subject_dn":null,"client_uri":null,"policy_uri":null,"tos_uri":null,"id_token_signed_response_alg":null,"default_max_age":null,"require_auth_time":false,"previous_secret_expires_at":null,"builtin_admin":false,"service_subject_id":"01a1870f-4b13-7756-8fdc-470eed456014","scopes":[{"id":"01a1870f-49a9-7b18-8d43-43317ef5cebc","name":"openid","assignment":"default"},{"id":"01a1870f-49ab-7f74-be08-d377dfac7bba","name":"profile","assignment":"default"},{"id":"01a1870f-49ac-704d-924f-6c53ed1a92f3","name":"email","assignment":"default"},{"id":"01a1870f-49ad-7dd3-a582-b4729cbe66e5","name":"address","assignment":"default"},{"id":"01a1870f-49ae-78b8-8b90-b25e012b6562","name":"phone","assignment":"default"},{"id":"01a1870f-49af-76a0-8af6-4abcd45c8848","name":"roles","assignment":"default"},{"id":"01a1870f-49b0-74d4-a3e2-3cb8653a7921","name":"groups","assignment":"default"},{"id":"01a1870f-49b2-761c-8b9f-ff0cf588f042","name":"offline_access","assignment":"optional"}],"service_account_admin_reach":[],"supported_locales":["en"]}
 ```
 
 An unknown field, on the same tenant:
@@ -156,32 +154,30 @@ listing and the disable/delete/rotate blocks under `PATCH /clients/{id}`,
 tenant of their own, `client-facts-demo`, created for them the same way `GET
 /admin/tenants` above shows, as `ada`, so the ids in them are that run's; the
 `demo`-tenant blocks between them (the amendment and `If-Match` narrative) are
-from another, and say so where they appear:
+from another, and say so where they appear. The create answers `201`, the whole
+client, the tenant's default scope assignments, and the one-time secret. The
+`scopes` ids are `client-facts-demo`'s own, created with the tenant:
 
 ```bash
 curl -sS -D - -X POST \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"client_id": "demo-backend", "grant_types": ["client_credentials"], "token_endpoint_auth_method": "client_secret_basic"}' \
-  http://localhost:3082/admin/tenants/client-facts-demo/clients
+  http://localhost:3000/admin/tenants/client-facts-demo/clients
 ```
-
-`201`, the whole client, the tenant's default scope assignments, and the
-one-time secret. The `scopes` ids are `client-facts-demo`'s own, created
-with the tenant above:
 
 ```
 HTTP/1.1 201 Created
-x-request-id: 01a17d30-f684-7dfe-8b10-c833d3deda9e
+x-request-id: 01a1870f-4be5-77ff-8b38-98f408549587
 cache-control: no-store
-etag: "ad9ea3ab1276bd88bb5d050c4e79f255e96153b91ce51454ef9ef0c4605d0d6c"
+etag: "dde0c2a98627fe1d43de78ef52bda4c96f4d5c8e2000aceb6197d694145e178a"
 content-type: application/json; charset=utf-8
-content-length: 2019
-Date: Tue, 27 Oct 2026 11:48:43 GMT
+content-length: 2056
+Date: Thu, 29 Oct 2026 09:48:09 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"id":"01a17d30-f6bf-7f10-b111-f613b93105fb","client_id":"demo-backend","name":"demo-backend","description":null,"type":"confidential","enabled":true,"full_scope_allowed":false,"skip_logout_confirmation":false,"registration_origin":"operator","created_at":"2026-10-27T11:48:43.287Z","redirect_uris":[],"grant_types":["client_credentials"],"token_endpoint_auth_method":"client_secret_basic","audiences":[],"access_token_ttl_seconds":null,"id_token_ttl_seconds":null,"refresh_token_ttl_seconds":null,"client_credentials_scopes":[],"web_origins":[],"post_logout_redirect_uris":[],"jwks":null,"jwks_uri":null,"frontchannel_logout_uri":null,"backchannel_logout_uri":null,"frontchannel_logout_session_required":false,"backchannel_logout_session_required":false,"consent_required":false,"token_exchange_impersonation_allowed":false,"userinfo_signed_response_alg":null,"userinfo_encrypted_response_alg":null,"userinfo_encrypted_response_enc":null,"tls_client_auth_subject_dn":null,"client_uri":null,"policy_uri":null,"tos_uri":null,"id_token_signed_response_alg":null,"default_max_age":null,"require_auth_time":false,"previous_secret_expires_at":null,"builtin_admin":false,"service_subject_id":"01a17d30-f699-79b5-b8eb-264c767951f2","scopes":[{"id":"01a17d30-9dc4-71ad-9969-bb32fb3553f5","name":"openid","assignment":"default"},{"id":"01a17d30-9dc6-7064-9cd5-efdb8efceac3","name":"profile","assignment":"default"},{"id":"01a17d30-9dc7-7f33-9c63-df1bcfcb3a93","name":"email","assignment":"default"},{"id":"01a17d30-9dc9-7b65-907c-edf2cbb4d8f9","name":"address","assignment":"default"},{"id":"01a17d30-9dca-7bfe-bbd4-499683f46766","name":"phone","assignment":"default"},{"id":"01a17d30-9dcc-792c-97ce-9ceb98881273","name":"roles","assignment":"default"},{"id":"01a17d30-9dcd-7d5d-8406-2953bbfc060b","name":"groups","assignment":"default"},{"id":"01a17d30-9dce-725d-82b3-d9f031b0d9c2","name":"offline_access","assignment":"optional"}],"service_account_admin_reach":[],"client_secret":"TDXIBbG5pw8S0NtEEf7_KFiatzjWHnIQ9YyPhT2a3jY"}
+{"id":"01a1870f-4c08-71a9-bc26-e8ff451945b9","client_id":"demo-backend","name":"demo-backend","description":null,"name_i18n":{},"description_i18n":{},"type":"confidential","enabled":true,"full_scope_allowed":false,"skip_logout_confirmation":false,"registration_origin":"operator","created_at":"2026-10-29T09:48:09.069Z","redirect_uris":[],"grant_types":["client_credentials"],"token_endpoint_auth_method":"client_secret_basic","audiences":[],"access_token_ttl_seconds":null,"id_token_ttl_seconds":null,"refresh_token_ttl_seconds":null,"client_credentials_scopes":[],"web_origins":[],"post_logout_redirect_uris":[],"jwks":null,"jwks_uri":null,"frontchannel_logout_uri":null,"backchannel_logout_uri":null,"frontchannel_logout_session_required":false,"backchannel_logout_session_required":false,"consent_required":false,"token_exchange_impersonation_allowed":false,"userinfo_signed_response_alg":null,"userinfo_encrypted_response_alg":null,"userinfo_encrypted_response_enc":null,"tls_client_auth_subject_dn":null,"client_uri":null,"policy_uri":null,"tos_uri":null,"id_token_signed_response_alg":null,"default_max_age":null,"require_auth_time":false,"previous_secret_expires_at":null,"builtin_admin":false,"service_subject_id":"01a1870f-4bee-75da-8087-3ce7f7fdb5f9","scopes":[{"id":"01a1870f-4bb4-7f53-88cc-0e8e22c3b7dd","name":"openid","assignment":"default"},{"id":"01a1870f-4bb5-70fe-b2c1-2d1fbc748cea","name":"profile","assignment":"default"},{"id":"01a1870f-4bb7-7268-8c96-511d23ae0560","name":"email","assignment":"default"},{"id":"01a1870f-4bb8-7781-a1b3-44627f4f59c5","name":"address","assignment":"default"},{"id":"01a1870f-4bb9-7526-9ffc-f0a40a302c45","name":"phone","assignment":"default"},{"id":"01a1870f-4bbb-7763-9301-f524199beb49","name":"roles","assignment":"default"},{"id":"01a1870f-4bbc-7983-a2bc-aab1a0e58d90","name":"groups","assignment":"default"},{"id":"01a1870f-4bbd-72df-81c2-9d78899e23be","name":"offline_access","assignment":"optional"}],"service_account_admin_reach":[],"client_secret":"fhunvUdsDFZUOfwlW_TovLBqsDVI_ffcCWO0GF0W5VM"}
 ```
 
 `client_secret` is the only member of that object nothing reads back.
@@ -214,11 +210,11 @@ page held two clients, the tenant's own `odudu-admin` and `demo-backend` above:
 ```bash
 curl -sS \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
-  http://localhost:3000/admin/tenants/demo/clients?limit=50
+  http://localhost:3000/admin/tenants/client-facts-demo/clients?limit=50
 ```
 
 ```
-{"items":[{"id":"01a17d30-9d81-72de-ac11-975f0a504d39","client_id":"odudu-admin","name":"Odudu administration","description":null,"type":"confidential","enabled":true,"full_scope_allowed":false,"skip_logout_confirmation":true,"registration_origin":"seeded","created_at":"2026-10-27T11:48:20.464Z","redirect_uris":["http://127.0.0.1:8080/callback","http://localhost:3194/console/auth/callback"],"grant_types":["authorization_code","refresh_token"],"token_endpoint_auth_method":"private_key_jwt","audiences":["urn:odudu:params:admin-api"],"access_token_ttl_seconds":300,"id_token_ttl_seconds":300,"refresh_token_ttl_seconds":1209600,"client_credentials_scopes":[],"web_origins":[],"post_logout_redirect_uris":["http://localhost:3194/console/"],"jwks":{"keys":[{"x":"r3y1WxvGoTuqW65jRhE6D3Tdt-pUrR1Vb6YLCSA-BpY","y":"izqiTlNSTYoHg-TA7rXAmVYyW-v5zuK8S98K8oekLrU","alg":"ES256","crv":"P-256","kid":"B5FFaeoY8pdJr3O2uWmpJGhml_GYya_Rs76ltUqKwWc","kty":"EC","use":"sig"}]},"jwks_uri":null,"frontchannel_logout_uri":null,"backchannel_logout_uri":null,"frontchannel_logout_session_required":false,"backchannel_logout_session_required":false,"consent_required":false,"token_exchange_impersonation_allowed":false,"userinfo_signed_response_alg":null,"userinfo_encrypted_response_alg":null,"userinfo_encrypted_response_enc":null,"tls_client_auth_subject_dn":null,"client_uri":null,"policy_uri":null,"tos_uri":null,"id_token_signed_response_alg":null,"default_max_age":null,"require_auth_time":false,"previous_secret_expires_at":null,"builtin_admin":true,"service_subject_id":null,"scopes":[{"id":"01a17d30-9d74-7bcb-8ffd-607181716855","name":"openid","assignment":"default"},{"id":"01a17d30-9d75-74fa-89e3-c3f4fb9d7e11","name":"profile","assignment":"default"},{"id":"01a17d30-9d77-7f5d-8998-fd2924cecbae","name":"email","assignment":"default"},{"id":"01a17d30-9d78-75c7-a014-aacd0f71e011","name":"address","assignment":"default"},{"id":"01a17d30-9d7a-7afa-8ccc-af48085cba39","name":"phone","assignment":"default"},{"id":"01a17d30-9d7b-7171-8e74-9685376448f0","name":"roles","assignment":"default"},{"id":"01a17d30-9d7d-7126-acc9-adfeccaadcb9","name":"groups","assignment":"default"},{"id":"01a17d30-9d7e-7c84-b318-8606637e19ce","name":"offline_access","assignment":"optional"}],"service_account_admin_reach":[]},{"id":"01a17d30-f44f-7d25-b1c0-b0401d0c03cd","client_id":"demo-backend","name":"demo-backend","description":null,"type":"confidential","enabled":true,"full_scope_allowed":false,"skip_logout_confirmation":false,"registration_origin":"operator","created_at":"2026-10-27T11:48:42.636Z","redirect_uris":[],"grant_types":["client_credentials"],"token_endpoint_auth_method":"client_secret_basic","audiences":[],"access_token_ttl_seconds":null,"id_token_ttl_seconds":null,"refresh_token_ttl_seconds":null,"client_credentials_scopes":[],"web_origins":[],"post_logout_redirect_uris":[],"jwks":null,"jwks_uri":null,"frontchannel_logout_uri":null,"backchannel_logout_uri":null,"frontchannel_logout_session_required":false,"backchannel_logout_session_required":false,"consent_required":false,"token_exchange_impersonation_allowed":false,"userinfo_signed_response_alg":null,"userinfo_encrypted_response_alg":null,"userinfo_encrypted_response_enc":null,"tls_client_auth_subject_dn":null,"client_uri":null,"policy_uri":null,"tos_uri":null,"id_token_signed_response_alg":null,"default_max_age":null,"require_auth_time":false,"previous_secret_expires_at":null,"builtin_admin":false,"service_subject_id":"01a17d30-f410-76b6-8ad0-85a113949c01","scopes":[{"id":"01a17d30-9d74-7bcb-8ffd-607181716855","name":"openid","assignment":"default"},{"id":"01a17d30-9d75-74fa-89e3-c3f4fb9d7e11","name":"profile","assignment":"default"},{"id":"01a17d30-9d77-7f5d-8998-fd2924cecbae","name":"email","assignment":"default"},{"id":"01a17d30-9d78-75c7-a014-aacd0f71e011","name":"address","assignment":"default"},{"id":"01a17d30-9d7a-7afa-8ccc-af48085cba39","name":"phone","assignment":"default"},{"id":"01a17d30-9d7b-7171-8e74-9685376448f0","name":"roles","assignment":"default"},{"id":"01a17d30-9d7d-7126-acc9-adfeccaadcb9","name":"groups","assignment":"default"},{"id":"01a17d30-9d7e-7c84-b318-8606637e19ce","name":"offline_access","assignment":"optional"}],"service_account_admin_reach":[]}]}
+{"items":[{"id":"01a1870f-4bbf-7e66-8fda-5b19d0c28428","client_id":"odudu-admin","name":"Odudu administration","description":null,"name_i18n":{},"description_i18n":{},"type":"confidential","enabled":true,"full_scope_allowed":false,"skip_logout_confirmation":true,"registration_origin":"seeded","created_at":"2026-10-29T09:48:09.010Z","redirect_uris":["http://127.0.0.1:8080/callback","http://localhost:3000/console/auth/callback"],"grant_types":["authorization_code","refresh_token"],"token_endpoint_auth_method":"private_key_jwt","audiences":["urn:odudu:params:admin-api"],"access_token_ttl_seconds":300,"id_token_ttl_seconds":300,"refresh_token_ttl_seconds":1209600,"client_credentials_scopes":[],"web_origins":[],"post_logout_redirect_uris":["http://localhost:3000/console/"],"jwks":{"keys":[{"x":"aGq8ehE1zvB68TgqZayK_lkYRNm0vA6h952baJXQc8U","y":"oQ9TfiTytJOTeGH_4qdFyVQuZmlfg5GW_7ZokhBYvWg","alg":"ES256","crv":"P-256","kid":"ryDJgLR1j3NaIONgY2PD1W3iDMdkhNlsu0lel927CAs","kty":"EC","use":"sig"}]},"jwks_uri":null,"frontchannel_logout_uri":null,"backchannel_logout_uri":null,"frontchannel_logout_session_required":false,"backchannel_logout_session_required":false,"consent_required":false,"token_exchange_impersonation_allowed":false,"userinfo_signed_response_alg":null,"userinfo_encrypted_response_alg":null,"userinfo_encrypted_response_enc":null,"tls_client_auth_subject_dn":null,"client_uri":null,"policy_uri":null,"tos_uri":null,"id_token_signed_response_alg":null,"default_max_age":null,"require_auth_time":false,"previous_secret_expires_at":null,"builtin_admin":true,"service_subject_id":null,"scopes":[{"id":"01a1870f-4bb4-7f53-88cc-0e8e22c3b7dd","name":"openid","assignment":"default"},{"id":"01a1870f-4bb5-70fe-b2c1-2d1fbc748cea","name":"profile","assignment":"default"},{"id":"01a1870f-4bb7-7268-8c96-511d23ae0560","name":"email","assignment":"default"},{"id":"01a1870f-4bb8-7781-a1b3-44627f4f59c5","name":"address","assignment":"default"},{"id":"01a1870f-4bb9-7526-9ffc-f0a40a302c45","name":"phone","assignment":"default"},{"id":"01a1870f-4bbb-7763-9301-f524199beb49","name":"roles","assignment":"default"},{"id":"01a1870f-4bbc-7983-a2bc-aab1a0e58d90","name":"groups","assignment":"default"},{"id":"01a1870f-4bbd-72df-81c2-9d78899e23be","name":"offline_access","assignment":"optional"}],"service_account_admin_reach":[]},{"id":"01a1870f-4c08-71a9-bc26-e8ff451945b9","client_id":"demo-backend","name":"demo-backend","description":null,"name_i18n":{},"description_i18n":{},"type":"confidential","enabled":true,"full_scope_allowed":false,"skip_logout_confirmation":false,"registration_origin":"operator","created_at":"2026-10-29T09:48:09.069Z","redirect_uris":[],"grant_types":["client_credentials"],"token_endpoint_auth_method":"client_secret_basic","audiences":[],"access_token_ttl_seconds":null,"id_token_ttl_seconds":null,"refresh_token_ttl_seconds":null,"client_credentials_scopes":[],"web_origins":[],"post_logout_redirect_uris":[],"jwks":null,"jwks_uri":null,"frontchannel_logout_uri":null,"backchannel_logout_uri":null,"frontchannel_logout_session_required":false,"backchannel_logout_session_required":false,"consent_required":false,"token_exchange_impersonation_allowed":false,"userinfo_signed_response_alg":null,"userinfo_encrypted_response_alg":null,"userinfo_encrypted_response_enc":null,"tls_client_auth_subject_dn":null,"client_uri":null,"policy_uri":null,"tos_uri":null,"id_token_signed_response_alg":null,"default_max_age":null,"require_auth_time":false,"previous_secret_expires_at":null,"builtin_admin":false,"service_subject_id":"01a1870f-4bee-75da-8087-3ce7f7fdb5f9","scopes":[{"id":"01a1870f-4bb4-7f53-88cc-0e8e22c3b7dd","name":"openid","assignment":"default"},{"id":"01a1870f-4bb5-70fe-b2c1-2d1fbc748cea","name":"profile","assignment":"default"},{"id":"01a1870f-4bb7-7268-8c96-511d23ae0560","name":"email","assignment":"default"},{"id":"01a1870f-4bb8-7781-a1b3-44627f4f59c5","name":"address","assignment":"default"},{"id":"01a1870f-4bb9-7526-9ffc-f0a40a302c45","name":"phone","assignment":"default"},{"id":"01a1870f-4bbb-7763-9301-f524199beb49","name":"roles","assignment":"default"},{"id":"01a1870f-4bbc-7983-a2bc-aab1a0e58d90","name":"groups","assignment":"default"},{"id":"01a1870f-4bbd-72df-81c2-9d78899e23be","name":"offline_access","assignment":"optional"}],"service_account_admin_reach":[]}]}
 ```
 
 **Search and filters** follow `GET /admin/tenants` above: a prefix of
@@ -233,46 +229,45 @@ held `demo-backend`, `demo-exchanger`, `demo-fields-check` and `demo-operator`
 ```bash
 curl -sS -D - \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
-  "http://localhost:3082/admin/tenants/demo/clients?client_id=DEMO&type=confidential&limit=1"
+  "http://localhost:3000/admin/tenants/demo/clients?client_id=DEMO&type=confidential&limit=1"
 ```
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a17d31-1734-7a9b-8b9e-fc4fbaf4cf38
+x-request-id: 01a1870f-4c5f-7da6-8cec-6a4eb3531a61
 cache-control: no-store
-link: </admin/tenants/demo/clients?limit=1&client_id=DEMO&type=confidential&cursor=eyJhZnRlciI6IjAxYTE3ZDMwLWY0NGYtN2QyNS1iMWMwLWIwNDAxZDBjMDNjZCIsInNvcnQiOiJkZW1vLWJhY2tlbmQiLCJjb2xsZWN0aW9uIjoiY2xpZW50cyIsInRlbmFudElkIjoiMDFhMTdkMzAtOWQ3MC03NzQ1LThiY2EtY2FmM2M1ZGNjYWRiIiwiZmlsdGVycyI6Ik9BZENoUUxJNEt5UGtUMUhLc05ESld5WDM4NS1YaWFsQktSbkNXOUNPZHMifQ.htd8qlwp_uSCeZ3wfgHBwuTIAAyVKCsiJ5v3pbMqUDY>; rel="next"
+link: </admin/tenants/demo/clients?limit=1&client_id=DEMO&type=confidential&cursor=eyJhZnRlciI6IjAxYTE4NzBmLTRhMGEtNzg2Zi05NDg2LTQyYmU3NzAwYTNhNSIsInNvcnQiOiJkZW1vLWJhY2tlbmQiLCJjb2xsZWN0aW9uIjoiY2xpZW50cyIsInRlbmFudElkIjoiMDFhMTg3MGYtNDlhNi03MmIxLWFiM2EtODE1OTM4MGMwODBhIiwiZmlsdGVycyI6Ik9BZENoUUxJNEt5UGtUMUhLc05ESld5WDM4NS1YaWFsQktSbkNXOUNPZHMifQ.kxwi54LyToAPVBE1bN9HRJJrPHcmAUKmzB2FCdWYtT0>; rel="next"
 content-type: application/json; charset=utf-8
-content-length: 2289
-Date: Tue, 27 Oct 2026 11:48:51 GMT
+content-length: 2326
+Date: Thu, 29 Oct 2026 09:48:09 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"items":[{"id":"01a17d30-f44f-7d25-b1c0-b0401d0c03cd","client_id":"demo-backend","name":"demo-backend","description":null,"type":"confidential","enabled":true,"full_scope_allowed":false,"skip_logout_confirmation":false,"registration_origin":"operator","created_at":"2026-10-27T11:48:42.636Z","redirect_uris":[],"grant_types":["client_credentials"],"token_endpoint_auth_method":"client_secret_basic","audiences":[],"access_token_ttl_seconds":null,"id_token_ttl_seconds":null,"refresh_token_ttl_seconds":null,"client_credentials_scopes":[],"web_origins":[],"post_logout_redirect_uris":[],"jwks":null,"jwks_uri":null,"frontchannel_logout_uri":null,"backchannel_logout_uri":null,"frontchannel_logout_session_required":false,"backchannel_logout_session_required":false,"consent_required":false,"token_exchange_impersonation_allowed":false,"userinfo_signed_response_alg":null,"userinfo_encrypted_response_alg":null,"userinfo_encrypted_response_enc":null,"tls_client_auth_subject_dn":null,"client_uri":null,"policy_uri":null,"tos_uri":null,"id_token_signed_response_alg":null,"default_max_age":null,"require_auth_time":false,"previous_secret_expires_at":null,"builtin_admin":false,"service_subject_id":"01a17d30-f410-76b6-8ad0-85a113949c01","scopes":[{"id":"01a17d30-9d74-7bcb-8ffd-607181716855","name":"openid","assignment":"default"},{"id":"01a17d30-9d75-74fa-89e3-c3f4fb9d7e11","name":"profile","assignment":"default"},{"id":"01a17d30-9d77-7f5d-8998-fd2924cecbae","name":"email","assignment":"default"},{"id":"01a17d30-9d78-75c7-a014-aacd0f71e011","name":"address","assignment":"default"},{"id":"01a17d30-9d7a-7afa-8ccc-af48085cba39","name":"phone","assignment":"default"},{"id":"01a17d30-9d7b-7171-8e74-9685376448f0","name":"roles","assignment":"default"},{"id":"01a17d30-9d7d-7126-acc9-adfeccaadcb9","name":"groups","assignment":"default"},{"id":"01a17d30-9d7e-7c84-b318-8606637e19ce","name":"offline_access","assignment":"optional"}],"service_account_admin_reach":[]}],"next":"eyJhZnRlciI6IjAxYTE3ZDMwLWY0NGYtN2QyNS1iMWMwLWIwNDAxZDBjMDNjZCIsInNvcnQiOiJkZW1vLWJhY2tlbmQiLCJjb2xsZWN0aW9uIjoiY2xpZW50cyIsInRlbmFudElkIjoiMDFhMTdkMzAtOWQ3MC03NzQ1LThiY2EtY2FmM2M1ZGNjYWRiIiwiZmlsdGVycyI6Ik9BZENoUUxJNEt5UGtUMUhLc05ESld5WDM4NS1YaWFsQktSbkNXOUNPZHMifQ.htd8qlwp_uSCeZ3wfgHBwuTIAAyVKCsiJ5v3pbMqUDY"}
+{"items":[{"id":"01a1870f-4a0a-786f-9486-42be7700a3a5","client_id":"demo-backend","name":"demo-backend","description":null,"name_i18n":{},"description_i18n":{},"type":"confidential","enabled":true,"full_scope_allowed":false,"skip_logout_confirmation":false,"registration_origin":"operator","created_at":"2026-10-29T09:48:08.557Z","redirect_uris":[],"grant_types":["client_credentials"],"token_endpoint_auth_method":"client_secret_basic","audiences":[],"access_token_ttl_seconds":null,"id_token_ttl_seconds":null,"refresh_token_ttl_seconds":null,"client_credentials_scopes":[],"web_origins":[],"post_logout_redirect_uris":[],"jwks":null,"jwks_uri":null,"frontchannel_logout_uri":null,"backchannel_logout_uri":null,"frontchannel_logout_session_required":false,"backchannel_logout_session_required":false,"consent_required":false,"token_exchange_impersonation_allowed":false,"userinfo_signed_response_alg":null,"userinfo_encrypted_response_alg":null,"userinfo_encrypted_response_enc":null,"tls_client_auth_subject_dn":null,"client_uri":null,"policy_uri":null,"tos_uri":null,"id_token_signed_response_alg":null,"default_max_age":null,"require_auth_time":false,"previous_secret_expires_at":null,"builtin_admin":false,"service_subject_id":"01a1870f-49ee-7275-9775-657f21be909b","scopes":[{"id":"01a1870f-49a9-7b18-8d43-43317ef5cebc","name":"openid","assignment":"default"},{"id":"01a1870f-49ab-7f74-be08-d377dfac7bba","name":"profile","assignment":"default"},{"id":"01a1870f-49ac-704d-924f-6c53ed1a92f3","name":"email","assignment":"default"},{"id":"01a1870f-49ad-7dd3-a582-b4729cbe66e5","name":"address","assignment":"default"},{"id":"01a1870f-49ae-78b8-8b90-b25e012b6562","name":"phone","assignment":"default"},{"id":"01a1870f-49af-76a0-8af6-4abcd45c8848","name":"roles","assignment":"default"},{"id":"01a1870f-49b0-74d4-a3e2-3cb8653a7921","name":"groups","assignment":"default"},{"id":"01a1870f-49b2-761c-8b9f-ff0cf588f042","name":"offline_access","assignment":"optional"}],"service_account_admin_reach":[]}],"next":"eyJhZnRlciI6IjAxYTE4NzBmLTRhMGEtNzg2Zi05NDg2LTQyYmU3NzAwYTNhNSIsInNvcnQiOiJkZW1vLWJhY2tlbmQiLCJjb2xsZWN0aW9uIjoiY2xpZW50cyIsInRlbmFudElkIjoiMDFhMTg3MGYtNDlhNi03MmIxLWFiM2EtODE1OTM4MGMwODBhIiwiZmlsdGVycyI6Ik9BZENoUUxJNEt5UGtUMUhLc05ESld5WDM4NS1YaWFsQktSbkNXOUNPZHMifQ.kxwi54LyToAPVBE1bN9HRJJrPHcmAUKmzB2FCdWYtT0"}
 ```
 
-Following that link, then `?name=Demo-S`, each cut down with `jq` to the
-fields that show the point; then the same cursor replayed with `?type=`
-dropped:
+Following that link (`$CURSOR` is the `cursor` in its `link` header), then
+`?name=Demo-S`, each cut down with `jq` to the fields that show the point; then
+the same cursor replayed with `?type=` dropped:
 
 ```bash
-CURSOR='eyJhZnRlciI6IjAxYTE3ZDMwLWY0NGYtN2QyNS1iMWMwLWIwNDAxZDBjMDNjZCIsInNvcnQiOiJkZW1vLWJhY2tlbmQiLCJjb2xsZWN0aW9uIjoiY2xpZW50cyIsInRlbmFudElkIjoiMDFhMTdkMzAtOWQ3MC03NzQ1LThiY2EtY2FmM2M1ZGNjYWRiIiwiZmlsdGVycyI6Ik9BZENoUUxJNEt5UGtUMUhLc05ESld5WDM4NS1YaWFsQktSbkNXOUNPZHMifQ.htd8qlwp_uSCeZ3wfgHBwuTIAAyVKCsiJ5v3pbMqUDY'
 curl -sS \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
-  "http://localhost:3082/admin/tenants/demo/clients?limit=1&client_id=DEMO&type=confidential&cursor=$CURSOR" \
+  "http://localhost:3000/admin/tenants/demo/clients?limit=1&client_id=DEMO&type=confidential&cursor=$CURSOR" \
   | jq -c '{items: [.items[] | {client_id, name, type}], next}'
 curl -sS \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
-  "http://localhost:3082/admin/tenants/demo/clients?name=Demo-S" \
+  "http://localhost:3000/admin/tenants/demo/clients?name=Demo-S" \
   | jq -c '{items: [.items[] | {client_id, name, type}], next}'
 curl -sS \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
-  "http://localhost:3082/admin/tenants/demo/clients?limit=1&client_id=DEMO&cursor=$CURSOR"
+  "http://localhost:3000/admin/tenants/demo/clients?limit=1&client_id=DEMO&cursor=$CURSOR"
 ```
 
 ```
-{"items":[{"client_id":"demo-exchanger","name":"demo-exchanger","type":"confidential"}],"next":"eyJhZnRlciI6IjAxYTE3ZDMwLWY0YmUtNzBmZS04OTVlLTllMTZjYWFiOWMxYyIsInNvcnQiOiJkZW1vLWV4Y2hhbmdlciIsImNvbGxlY3Rpb24iOiJjbGllbnRzIiwidGVuYW50SWQiOiIwMWExN2QzMC05ZDcwLTc3NDUtOGJjYS1jYWYzYzVkY2NhZGIiLCJmaWx0ZXJzIjoiT0FkQ2hRTEk0S3lQa1QxSEtzTkRKV3lYMzg1LVhpYWxCS1JuQ1c5Q09kcyJ9.V_G5EwP8v09rph_gXYHowuYXUK706NzqkErY258O2no"}
+{"items":[{"client_id":"demo-exchanger","name":"demo-exchanger","type":"confidential"}],"next":"eyJhZnRlciI6IjAxYTE4NzBmLTRhNTAtNzRlMi05Yzk3LTAwYjg0MTAwMTUyZCIsInNvcnQiOiJkZW1vLWV4Y2hhbmdlciIsImNvbGxlY3Rpb24iOiJjbGllbnRzIiwidGVuYW50SWQiOiIwMWExODcwZi00OWE2LTcyYjEtYWIzYS04MTU5MzgwYzA4MGEiLCJmaWx0ZXJzIjoiT0FkQ2hRTEk0S3lQa1QxSEtzTkRKV3lYMzg1LVhpYWxCS1JuQ1c5Q09kcyJ9.vCBMILeZfx7IzVl-vS7TP3O0yDSfPU5kBcDZdEJvFJY"}
 {"items":[{"client_id":"demo-spa","name":"demo-spa","type":"public"}],"next":null}
-{"type":"about:blank","title":"Bad Request","status":400,"detail":"cursor is invalid or expired","errors":[{"path":"cursor","message":"is invalid or expired"}],"instance":"01a17d31-178f-7961-b109-fdd80d2319be"}
+{"type":"about:blank","title":"Bad Request","status":400,"detail":"cursor is invalid or expired","errors":[{"path":"cursor","message":"is invalid or expired"}],"instance":"01a1870f-4cda-7361-80ee-b21cbba60611"}
 ```
 
 A `type` outside the enum, then two search fields at once (the second refusal
@@ -299,19 +294,19 @@ secret, whether or not one was ever generated:
 ```bash
 curl -sS -D - \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
-  http://localhost:3000/admin/tenants/demo/clients/01a17d30-9d81-72de-ac11-975f0a504d39
+  http://localhost:3000/admin/tenants/demo/clients/$AID
 ```
 
 ```
 HTTP/1.1 200 OK
-x-request-id: 01a17d31-17ad-79df-89e4-69e0a326dad0
+x-request-id: 01a1870f-4cff-7b62-b226-04500e0dd41b
 cache-control: no-store
-etag: "583c7ee6a1f765962287bb4df7eae1f830b70ac710ae49091ff2b6e187a25da2"
+etag: "18c6b10442099bde6ae6c27bfa03d65c6944e216f7a01bdfe46c55bc1ae0c570"
 content-type: application/json; charset=utf-8
-content-length: 2288
-Date: Tue, 27 Oct 2026 11:48:51 GMT
+content-length: 2352
+Date: Thu, 29 Oct 2026 09:48:09 GMT
 Connection: keep-alive
 Keep-Alive: timeout=72
 
-{"id":"01a17d30-9d81-72de-ac11-975f0a504d39","client_id":"odudu-admin","name":"Odudu administration","description":null,"type":"confidential","enabled":true,"full_scope_allowed":false,"skip_logout_confirmation":true,"registration_origin":"seeded","created_at":"2026-10-27T11:48:20.464Z","redirect_uris":["http://127.0.0.1:8080/callback","http://localhost:3194/console/auth/callback"],"grant_types":["authorization_code","refresh_token"],"token_endpoint_auth_method":"private_key_jwt","audiences":["urn:odudu:params:admin-api"],"access_token_ttl_seconds":300,"id_token_ttl_seconds":300,"refresh_token_ttl_seconds":1209600,"client_credentials_scopes":[],"web_origins":[],"post_logout_redirect_uris":["http://localhost:3194/console/"],"jwks":{"keys":[{"x":"r3y1WxvGoTuqW65jRhE6D3Tdt-pUrR1Vb6YLCSA-BpY","y":"izqiTlNSTYoHg-TA7rXAmVYyW-v5zuK8S98K8oekLrU","alg":"ES256","crv":"P-256","kid":"B5FFaeoY8pdJr3O2uWmpJGhml_GYya_Rs76ltUqKwWc","kty":"EC","use":"sig"}]},"jwks_uri":null,"frontchannel_logout_uri":null,"backchannel_logout_uri":null,"frontchannel_logout_session_required":false,"backchannel_logout_session_required":false,"consent_required":false,"token_exchange_impersonation_allowed":false,"userinfo_signed_response_alg":null,"userinfo_encrypted_response_alg":null,"userinfo_encrypted_response_enc":null,"tls_client_auth_subject_dn":null,"client_uri":null,"policy_uri":null,"tos_uri":null,"id_token_signed_response_alg":null,"default_max_age":null,"require_auth_time":false,"previous_secret_expires_at":null,"builtin_admin":true,"service_subject_id":null,"scopes":[{"id":"01a17d30-9d74-7bcb-8ffd-607181716855","name":"openid","assignment":"default"},{"id":"01a17d30-9d75-74fa-89e3-c3f4fb9d7e11","name":"profile","assignment":"default"},{"id":"01a17d30-9d77-7f5d-8998-fd2924cecbae","name":"email","assignment":"default"},{"id":"01a17d30-9d78-75c7-a014-aacd0f71e011","name":"address","assignment":"default"},{"id":"01a17d30-9d7a-7afa-8ccc-af48085cba39","name":"phone","assignment":"default"},{"id":"01a17d30-9d7b-7171-8e74-9685376448f0","name":"roles","assignment":"default"},{"id":"01a17d30-9d7d-7126-acc9-adfeccaadcb9","name":"groups","assignment":"default"},{"id":"01a17d30-9d7e-7c84-b318-8606637e19ce","name":"offline_access","assignment":"optional"}],"service_account_admin_reach":[]}
+{"id":"01a1870f-49b4-7f69-9ea1-cc2c0bfb04e4","client_id":"odudu-admin","name":"Odudu administration","description":null,"name_i18n":{},"description_i18n":{},"type":"confidential","enabled":true,"full_scope_allowed":false,"skip_logout_confirmation":true,"registration_origin":"seeded","created_at":"2026-10-29T09:48:08.487Z","redirect_uris":["http://127.0.0.1:8080/callback","http://localhost:3000/console/auth/callback"],"grant_types":["authorization_code","refresh_token"],"token_endpoint_auth_method":"private_key_jwt","audiences":["urn:odudu:params:admin-api"],"access_token_ttl_seconds":300,"id_token_ttl_seconds":300,"refresh_token_ttl_seconds":1209600,"client_credentials_scopes":[],"web_origins":[],"post_logout_redirect_uris":["http://localhost:3000/console/"],"jwks":{"keys":[{"x":"aGq8ehE1zvB68TgqZayK_lkYRNm0vA6h952baJXQc8U","y":"oQ9TfiTytJOTeGH_4qdFyVQuZmlfg5GW_7ZokhBYvWg","alg":"ES256","crv":"P-256","kid":"ryDJgLR1j3NaIONgY2PD1W3iDMdkhNlsu0lel927CAs","kty":"EC","use":"sig"}]},"jwks_uri":null,"frontchannel_logout_uri":null,"backchannel_logout_uri":null,"frontchannel_logout_session_required":false,"backchannel_logout_session_required":false,"consent_required":false,"token_exchange_impersonation_allowed":false,"userinfo_signed_response_alg":null,"userinfo_encrypted_response_alg":null,"userinfo_encrypted_response_enc":null,"tls_client_auth_subject_dn":null,"client_uri":null,"policy_uri":null,"tos_uri":null,"id_token_signed_response_alg":null,"default_max_age":null,"require_auth_time":false,"previous_secret_expires_at":null,"builtin_admin":true,"service_subject_id":null,"scopes":[{"id":"01a1870f-49a9-7b18-8d43-43317ef5cebc","name":"openid","assignment":"default"},{"id":"01a1870f-49ab-7f74-be08-d377dfac7bba","name":"profile","assignment":"default"},{"id":"01a1870f-49ac-704d-924f-6c53ed1a92f3","name":"email","assignment":"default"},{"id":"01a1870f-49ad-7dd3-a582-b4729cbe66e5","name":"address","assignment":"default"},{"id":"01a1870f-49ae-78b8-8b90-b25e012b6562","name":"phone","assignment":"default"},{"id":"01a1870f-49af-76a0-8af6-4abcd45c8848","name":"roles","assignment":"default"},{"id":"01a1870f-49b0-74d4-a3e2-3cb8653a7921","name":"groups","assignment":"default"},{"id":"01a1870f-49b2-761c-8b9f-ff0cf588f042","name":"offline_access","assignment":"optional"}],"service_account_admin_reach":[],"supported_locales":["en"]}
 ```

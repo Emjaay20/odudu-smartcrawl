@@ -56,21 +56,20 @@ curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
 {"action":"client.rotate_secret","outcome":"allowed","detail":{"secret_hash":{"changed":true},"grace_seconds":3600,"previous_secret_expires_at":"2026-10-05T00:13:29.089Z"}}
 ```
 
-A rotation without grace, on `client-facts-demo`'s `demo-backend`:
+A rotation without grace, on `client-facts-demo`'s `demo-backend`, straight
+after the disable above, which is why `enabled` reads `false` here: rotating a
+disabled client's secret is allowed, the guard being on the built-in client
+rather than on a disabled one. `demo-backend` was deleted afterward, in the
+`DELETE` section above.
 
 ```bash
 curl -sS -X POST \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
-  http://localhost:3082/admin/tenants/client-facts-demo/clients/01a17d30-f6bf-7f10-b111-f613b93105fb/secret
+  http://localhost:3000/admin/tenants/client-facts-demo/clients/$BACKEND/secret
 ```
 
-Straight after the disable above, which is why `enabled` reads `false` here:
-rotating a disabled client's secret is allowed, the guard being on the built-in
-client rather than on a disabled one. `demo-backend` was deleted afterward, in
-the `DELETE` section above.
-
 ```
-{"id":"01a17d30-f6bf-7f10-b111-f613b93105fb","client_id":"demo-backend","name":"demo-backend","description":null,"type":"confidential","enabled":false,"full_scope_allowed":false,"skip_logout_confirmation":false,"registration_origin":"operator","created_at":"2026-10-27T11:48:43.287Z","redirect_uris":[],"grant_types":["client_credentials"],"token_endpoint_auth_method":"client_secret_basic","audiences":[],"access_token_ttl_seconds":null,"id_token_ttl_seconds":null,"refresh_token_ttl_seconds":null,"client_credentials_scopes":[],"web_origins":[],"post_logout_redirect_uris":[],"jwks":null,"jwks_uri":null,"frontchannel_logout_uri":null,"backchannel_logout_uri":null,"frontchannel_logout_session_required":false,"backchannel_logout_session_required":false,"consent_required":false,"token_exchange_impersonation_allowed":false,"userinfo_signed_response_alg":null,"userinfo_encrypted_response_alg":null,"userinfo_encrypted_response_enc":null,"tls_client_auth_subject_dn":null,"client_uri":null,"policy_uri":null,"tos_uri":null,"id_token_signed_response_alg":null,"default_max_age":null,"require_auth_time":false,"previous_secret_expires_at":null,"builtin_admin":false,"service_subject_id":"01a17d30-f699-79b5-b8eb-264c767951f2","scopes":[{"id":"01a17d30-9dc4-71ad-9969-bb32fb3553f5","name":"openid","assignment":"default"},{"id":"01a17d30-9dc6-7064-9cd5-efdb8efceac3","name":"profile","assignment":"default"},{"id":"01a17d30-9dc7-7f33-9c63-df1bcfcb3a93","name":"email","assignment":"default"},{"id":"01a17d30-9dc9-7b65-907c-edf2cbb4d8f9","name":"address","assignment":"default"},{"id":"01a17d30-9dca-7bfe-bbd4-499683f46766","name":"phone","assignment":"default"},{"id":"01a17d30-9dcc-792c-97ce-9ceb98881273","name":"roles","assignment":"default"},{"id":"01a17d30-9dcd-7d5d-8406-2953bbfc060b","name":"groups","assignment":"default"},{"id":"01a17d30-9dce-725d-82b3-d9f031b0d9c2","name":"offline_access","assignment":"optional"}],"service_account_admin_reach":[],"client_secret":"fRAn9HpZzqwwQFpMONr7iYABDlQExd9qf569rlQNsQw"}
+{"id":"01a18711-835e-7d10-a840-d25d8f0c6913","client_id":"demo-backend","name":"demo-backend","description":null,"name_i18n":{},"description_i18n":{},"type":"confidential","enabled":false,"full_scope_allowed":false,"skip_logout_confirmation":false,"registration_origin":"operator","created_at":"2026-10-29T09:50:34.307Z","redirect_uris":[],"grant_types":["client_credentials"],"token_endpoint_auth_method":"client_secret_basic","audiences":[],"access_token_ttl_seconds":null,"id_token_ttl_seconds":null,"refresh_token_ttl_seconds":null,"client_credentials_scopes":[],"web_origins":[],"post_logout_redirect_uris":[],"jwks":null,"jwks_uri":null,"frontchannel_logout_uri":null,"backchannel_logout_uri":null,"frontchannel_logout_session_required":false,"backchannel_logout_session_required":false,"consent_required":false,"token_exchange_impersonation_allowed":false,"userinfo_signed_response_alg":null,"userinfo_encrypted_response_alg":null,"userinfo_encrypted_response_enc":null,"tls_client_auth_subject_dn":null,"client_uri":null,"policy_uri":null,"tos_uri":null,"id_token_signed_response_alg":null,"default_max_age":null,"require_auth_time":false,"previous_secret_expires_at":null,"builtin_admin":false,"service_subject_id":"01a18711-8344-73c5-8316-35912bfb7fa2","scopes":[{"id":"01a18711-8300-7911-a72a-e4415c270eb0","name":"openid","assignment":"default"},{"id":"01a18711-8303-7766-b3dd-3ad8269a70bb","name":"profile","assignment":"default"},{"id":"01a18711-8306-76a5-850e-4cfe7835aa27","name":"email","assignment":"default"},{"id":"01a18711-8309-7528-ab73-9ba0ec08be97","name":"address","assignment":"default"},{"id":"01a18711-830e-7d25-bb90-a0e9bdd4dd1c","name":"phone","assignment":"default"},{"id":"01a18711-8311-77e6-a868-7e509a78d398","name":"roles","assignment":"default"},{"id":"01a18711-8312-7985-ab88-e78af519d7f2","name":"groups","assignment":"default"},{"id":"01a18711-8313-7fd8-895d-1992d6117026","name":"offline_access","assignment":"optional"}],"service_account_admin_reach":[],"client_secret":"U_oawB8-6TL9WnVe0mtmmXPfTpsFWBXZHiMTS396mas"}
 ```
 
 ## The service account's ceiling

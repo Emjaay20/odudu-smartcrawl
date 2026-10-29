@@ -136,7 +136,11 @@ curl -sS -X POST \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"name": "billing", "include_in_id_token": false}' \
-  http://localhost:3082/admin/tenants/demo/scopes
+  http://localhost:3000/admin/tenants/demo/scopes
+```
+
+```
+{"id":"01a18710-6604-7e9d-a0c8-3a76091e2df8","name":"billing","description":null,"include_in_id_token":false,"include_in_access_token":true,"default_client_assignment":null,"consent_text":null,"description_i18n":{},"consent_text_i18n":{},"display_order":0,"created_at":"2026-10-29T09:49:21.283Z"}
 ```
 
 In `demo`: `billing` given a consent text, a place on the consent screen and a
@@ -144,25 +148,21 @@ client default, then a default that is none of the three values refused by name,
 then a client created afterwards — its `scopes`, narrowed with `jq`, carry
 `billing` as `optional` beside the vocabulary a new tenant marks:
 
-```
-{"id":"01a109bb-41fa-7343-8d50-a86f9070aefc","name":"billing","description":null,"include_in_id_token":false,"include_in_access_token":true,"default_client_assignment":null,"consent_text":null,"display_order":0,"created_at":"2026-10-05T01:43:49.498Z"}
-```
-
 ```bash
 curl -sS -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
   -d '{"consent_text": "See and pay your invoices", "display_order": 10, "default_client_assignment": "optional"}' \
-  http://localhost:3082/admin/tenants/demo/scopes/01a109bb-41fa-7343-8d50-a86f9070aefc; echo
+  http://localhost:3000/admin/tenants/demo/scopes/$BILLING; echo
 curl -sS -X PATCH -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
   -d '{"default_client_assignment": "always"}' \
-  http://localhost:3082/admin/tenants/demo/scopes/01a109bb-41fa-7343-8d50-a86f9070aefc; echo
+  http://localhost:3000/admin/tenants/demo/scopes/$BILLING; echo
 curl -sS -X POST -H "Authorization: Bearer $ADMIN_TOKEN" -H "Content-Type: application/json" \
   -d '{"client_id": "billing-portal", "redirect_uris": ["https://billing.demo.example/callback"]}' \
-  http://localhost:3082/admin/tenants/demo/clients | jq -c '[.scopes[] | {name, assignment}]'
+  http://localhost:3000/admin/tenants/demo/clients | jq -c '[.scopes[] | {name, assignment}]'
 ```
 
 ```
-{"id":"01a109bb-41fa-7343-8d50-a86f9070aefc","name":"billing","description":null,"include_in_id_token":false,"include_in_access_token":true,"default_client_assignment":"optional","consent_text":"See and pay your invoices","display_order":10,"created_at":"2026-10-05T01:43:49.498Z"}
-{"type":"about:blank","title":"Bad Request","status":400,"detail":"default_client_assignment: default_client_assignment must be default, optional or null","errors":[{"path":"default_client_assignment","message":"default_client_assignment must be default, optional or null"}],"instance":"01a109bb-4228-7553-8179-293e52c0675f"}
+{"id":"01a18710-6604-7e9d-a0c8-3a76091e2df8","name":"billing","description":null,"include_in_id_token":false,"include_in_access_token":true,"default_client_assignment":"optional","consent_text":"See and pay your invoices","description_i18n":{},"consent_text_i18n":{},"display_order":10,"created_at":"2026-10-29T09:49:21.283Z"}
+{"type":"about:blank","title":"Bad Request","status":400,"detail":"default_client_assignment: default_client_assignment must be default, optional or null","errors":[{"path":"default_client_assignment","message":"default_client_assignment must be default, optional or null"}],"instance":"01a18710-664f-78cb-844a-f2eb3e228b7a"}
 [{"name":"openid","assignment":"default"},{"name":"profile","assignment":"default"},{"name":"email","assignment":"default"},{"name":"address","assignment":"default"},{"name":"phone","assignment":"default"},{"name":"roles","assignment":"default"},{"name":"groups","assignment":"default"},{"name":"offline_access","assignment":"optional"},{"name":"billing","assignment":"optional"}]
 ```
 

@@ -134,12 +134,12 @@ creating nothing, when the missing scopes would pass the tenant's limit of 1,000
 scopes or of 200 scopes marked for every new client.
 
 ```bash
-curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:3192/admin/tenants/builtins-demo/scopes/01a163f6-3e95-77a2-8c20-0621710b44f2; echo
-curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:3192/admin/tenants/builtins-demo/scopes/01a163f6-3e95-77a2-8c20-0621710b44f2/impact; echo
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:3000/admin/tenants/builtins-demo/scopes/$ROLES; echo
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:3000/admin/tenants/builtins-demo/scopes/$ROLES/impact; echo
 ```
 
 ```
-{"id":"01a163f6-3e95-77a2-8c20-0621710b44f2","name":"roles","description":null,"include_in_id_token":false,"include_in_access_token":true,"default_client_assignment":"default","consent_text":null,"display_order":0,"created_at":"2026-10-22T14:14:04.689Z"}
+{"id":"01a18711-0f05-75dd-b054-fa362fcc05b3","name":"roles","description":null,"include_in_id_token":false,"include_in_access_token":true,"default_client_assignment":"default","consent_text":null,"description_i18n":{},"consent_text_i18n":{},"display_order":0,"created_at":"2026-10-29T09:50:04.546Z"}
 {"builtin":true,"client_assignments":{"count":0,"capped":false},"role_mappings":{"count":0,"capped":false}}
 ```
 
