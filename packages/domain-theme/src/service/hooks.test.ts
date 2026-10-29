@@ -179,6 +179,7 @@ describe('the lists the checker accepts', () => {
       expect(accepted(`.page { color: var(${token}); }`), token).toBe(true);
     }
     expect(accepted('.page { color: var(--not-a-token); }')).toBe(false);
+    expect(accepted('.page { --mine: red; }')).toBe(false);
   });
 
   it('refuses a class, an element and a state that no list holds', () => {

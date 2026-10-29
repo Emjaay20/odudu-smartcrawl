@@ -7,7 +7,7 @@ description: 'A tenant’s branding, and a client’s over it, saved as a draft 
 
 > The theme views below predate `tenant_sources` (a client's view says what the tenant's published theme supplies; null on the tenant's own), which Task 26 re-runs on a live stack along with the rest of this page.
 
-This page covers `GET /theme`, `PUT /theme`, `POST /theme/publish`, `GET /theme/versions`, `POST /theme/versions/{versionId}/restore`, `DELETE /theme`, `GET /theme/preview`, `GET /theme/preview/info`, `GET /clients/:id/theme`, `PUT /clients/:id/theme`, `POST /clients/:id/theme/publish`, `GET /clients/:id/theme/versions`, `POST /clients/:id/theme/versions/{versionId}/restore`, `DELETE /clients/:id/theme` `GET /clients/:id/theme/preview` and `GET /clients/:id/theme/preview/info`, and the tenant's image routes `POST /theme/assets`, `GET /theme/assets/{assetId}/content` and `DELETE /theme/assets/{assetId}`.
+This page covers `GET /theme`, `PUT /theme`, `POST /theme/publish`, `GET /theme/versions`, `POST /theme/versions/{versionId}/restore`, `DELETE /theme`, `GET /theme/preview`, `GET /theme/preview/info`, `GET /clients/:id/theme`, `PUT /clients/:id/theme`, `POST /clients/:id/theme/publish`, `GET /clients/:id/theme/versions`, `POST /clients/:id/theme/versions/{versionId}/restore`, `DELETE /clients/:id/theme` `GET /clients/:id/theme/preview` and `GET /clients/:id/theme/preview/info`, and the tenant's image routes `POST /theme/assets`, `GET /theme/assets/{assetId}/content` and `DELETE /theme/assets/{assetId}`, and `GET /theme/stylesheet-hooks`.
 
 **No captured output yet.** The theme API is built and tested against a real
 database, but a transcript of it needs a published theme to render against, and
@@ -96,6 +96,13 @@ one of another tenant, or that does not exist, answers `404`.
   image that does not exist or is another tenant's, `400` for an id that is not
   one. It changes nothing and writes no audit event. The console's Theme tab
   reads it for the thumbnail beside each slot.
+- `GET /theme/stylesheet-hooks` (the same two capabilities) answers what a
+  stylesheet's rules may name, as the stylesheet check accepts it: `version` of
+  the list, the `classes` the pages render, a `page_kind_classes` entry for each
+  page kind, the `elements`, the `pseudo_classes` and `pseudo_elements` that may
+  follow either, and the design `tokens` a declaration may read with `var()`. A
+  stylesheet cannot define a custom property of its own. The same for every
+  tenant, under 4 KB, and the read touches no table.
 - `DELETE /theme/assets/{assetId}` (the same two capabilities) answers `204`, or `409`
   (`about:blank#asset-in-use`) while a draft or published theme of the tenant or
   of a client names the image, `errors` listing the first 20 by path and
