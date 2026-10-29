@@ -19,7 +19,7 @@ import { themeAssets } from '#/schema/theme-assets';
 import { themeVersionAssets } from '#/schema/theme-version-assets';
 import { themeVersions } from '#/schema/theme-versions';
 import { parseThemeBody, type ThemeBody } from '#/service/body';
-import { type ThemeScope } from '#/service/theme-body';
+import { type ThemeScope } from '#/service/record';
 
 let containerHandle: TestDatabase | undefined;
 let ownerHandle: DatabaseHandle | undefined;
@@ -48,6 +48,11 @@ afterAll(async () => {
 function refusedByPolicy(error: unknown): boolean {
   const cause = error instanceof Error ? (error.cause ?? error) : error;
   return cause instanceof Error && /row-level security/iu.test(cause.message);
+}
+
+function refusedByVersionIndex(error: unknown): boolean {
+  const cause = error instanceof Error ? (error.cause ?? error) : error;
+  return cause instanceof Error && /theme_versions_one_version/u.test(cause.message);
 }
 
 function body(label: string, assetId?: string): ThemeBody {
@@ -148,6 +153,23 @@ describe('themeRepository', () => {
       });
     await insert();
     await expect(insert()).rejects.toThrow();
+  });
+
+  it('refuses a version number used twice in a scope at the index, whichever state holds it', async () => {
+    const tenantId = await freshTenant();
+    const insert = (state: 'published' | 'archived', version: number): Promise<unknown> =>
+      owner.db.insert(themeVersions).values({
+        id: newId(),
+        tenantId,
+        clientId: null,
+        state,
+        version,
+        body: body('x'),
+      });
+    await insert('archived', 1);
+    await expect(insert('archived', 1)).rejects.toSatisfy(refusedByVersionIndex);
+    await expect(insert('published', 1)).rejects.toSatisfy(refusedByVersionIndex);
+    await insert('published', 2);
   });
 
   it('publish archives the previous version', async () => {
