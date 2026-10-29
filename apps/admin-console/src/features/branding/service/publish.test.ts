@@ -21,7 +21,7 @@ describe('what holds Publish', () => {
   it('names unsaved edits first, then a missing draft, then contrast', () => {
     const where = ['Colours and font', 'Page templates'];
     expect(publishHold({ view: bare, unsaved: where, contrast: 'c' })).toBe(
-      'Save your changes first, in Colours and font and Page templates: publishing uses the saved draft.',
+      'Save your changes first, in “Colours and font” and “Page templates”: publishing uses the saved draft.',
     );
     expect(publishHold({ view: bare, unsaved: [], contrast: 'c' })).toMatch(/no draft/u);
     expect(publishHold({ view: drafted, unsaved: [], contrast: 'c' })).toBe('c');

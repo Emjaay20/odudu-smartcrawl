@@ -12,7 +12,7 @@ export const PUBLISH_BODY =
 export const NO_DRAFT_HOLD = 'There is no draft to publish. Save a change first.';
 
 export function unsavedHold(sections: readonly string[]): string {
-  return `Save your changes first, in ${andList(sections)}: publishing uses the saved draft.`;
+  return `Save your changes first, in ${andList(sections.map((title) => `“${title}”`))}: publishing uses the saved draft.`;
 }
 
 export function publishHold({

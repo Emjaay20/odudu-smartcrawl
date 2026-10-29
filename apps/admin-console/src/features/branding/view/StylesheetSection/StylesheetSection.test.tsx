@@ -87,7 +87,7 @@ describe('the stylesheet editor', () => {
     const editor = await section();
     await user.click(box(editor));
     await user.paste('a {}');
-    expect(await screen.findByText(/Save your changes first, in Stylesheet:/u)).toBeVisible();
+    expect(await screen.findByText(/Save your changes first, in “Stylesheet”:/u)).toBeVisible();
     expect(screen.getByRole('tab', { name: /Theme/u })).toHaveTextContent(/unsaved|●|•|changes/iu);
   });
 
