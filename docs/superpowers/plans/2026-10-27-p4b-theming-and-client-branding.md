@@ -472,6 +472,14 @@ Client rules (spec 6): authorization-session pages use the pending request's `cl
 
 - [ ] **Steps 1–3:** finding table; tests first; commit per area; the transcript and screenshots stay owed to Task 26.
 
+### Task 25e: Selectors you can use, beside the stylesheet editor
+
+**Files:** `packages/protocol-admin` (a static read beside the message catalogue, wired the same way), `packages/domain-theme/src/service/hooks.ts` (the one list the read answers from), `apps/admin-console/src/features/branding/**` (adapter, repository, service, view), `apps/docs/content/en/admin-console/branding.mdx`.
+
+**Interfaces:** `GET /admin/tenants/:tenant/theme/stylesheet-hooks` answers the hook version, the rendered classes, the `page-<kind>` classes and the plain elements the stylesheet checker accepts (manage-tenant, also admitting manage-clients; static, unpaged, no database read, foreign-tenant probe, statement count asserted, `test:plans`, OpenAPI and capability rows). The Stylesheet section shows a bounded "Selectors you can use" list that narrows by text and inserts the chosen selector at the caret as one undo step, the way the message picker does; wording comes from service constants, and the list is the server's, never a copy in the console. The refusal for a selector outside the list says where the list is.
+
+- [ ] **Steps 1–4:** server tests first (answer equals `CSS_HOOKS`, `RENDERED_HOOKS` and `CSS_ELEMENTS`, so a hook added to the checker cannot be missing from the answer); console tests including axe and the one-undo-step insert; implement; the transcript, OpenAPI figures and a screenshot are owed to Task 26 (add the rows to `docs/phases/p4b.md`). Quote the layering, comment and Reuse-scan rules in the dispatch.
+
 ---
 
 ## Increment I — documentation close
@@ -483,7 +491,7 @@ Client rules (spec 6): authorization-session pages use the pending request's `cl
 **Interfaces:** Documentation rules in CLAUDE.md "The documentation an increment owns": responses carry no language tag; each transcript says what ran before it; a refusal's precondition is shown; a page's prose names no ADR, path or phase (`console-areas.test.ts`).
 
 - [ ] **Step 1:** Bring up a stack (`docs/phases/p4g.md` records the compose invocation) and run every new or changed route, including the ones Task 25 changed after their transcripts were written and which carry a note saying so: `GET /clients/{id}` and `PATCH /clients/{id}` (`supported_locales`) in `get-clients-post-clients-and-get-clientsid.md` and `patch-clientsid.md`, the client theme read in `get-theme-put-theme-and-the-theme-routes.md` (`tenant_sources`), and `get-adminopenapijson.md`, whose `content-length`, size and path count were hand-edited to the derived values beside an old `Date` header and so is no longer a capture; remove each note when its block is re-run, a rejected template and a rejected upload, the always-confirm logout and a themed sign-in; paste real output only.
-- [ ] **Step 2:** Write `concepts/branding.mdx` (layers, parts and slots, the safety model, the versioned CSS hooks reference generated from `CSS_HOOKS`), the guide, and the console pages; run `pnpm exec vitest run apps/docs tests/docs` and `pnpm docs:screenshots`, then `--check`.
+- [ ] **Step 2:** Write `concepts/branding.mdx` (layers, parts and slots, the safety model, the versioned CSS hooks reference generated from `CSS_HOOKS`, the same list the editor's selector reference shows), the guide, and the console pages; run `pnpm exec vitest run apps/docs tests/docs` and `pnpm docs:screenshots`, then `--check`.
 - [ ] **Step 3:** Commit: `Docs: branding transcripts, console page, concept and guide`.
 
 ### Task 27: Landing page, server-page shots, README, roadmap close
