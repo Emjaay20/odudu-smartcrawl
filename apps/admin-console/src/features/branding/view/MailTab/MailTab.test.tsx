@@ -61,6 +61,28 @@ it('shows the logo the mail carries, and says when there is none', async () => {
   expect(logo).toHaveTextContent('light logo is shown in both schemes');
 });
 
+it('shows the logo itself when it is served from the console’s own address', async () => {
+  const src = `${globalThis.location.origin}/tenants/acme/brand/a.png`;
+  renderConsoleAt(
+    AT,
+    languagesRoutes({
+      [`GET ${ML}`]: json(
+        mailBranding({ logo: { src, alt: 'Acme logo', width: 160, height: 32 } }),
+      ),
+    }),
+  );
+  const logo = await screen.findByRole('region', { name: 'Logo' });
+  expect(within(logo).getByRole('img', { name: 'Acme logo' })).toHaveAttribute('src', src);
+  expect(logo).not.toHaveTextContent('preview above');
+});
+
+it('points at the preview when the logo is served from another address', async () => {
+  renderConsoleAt(AT, languagesRoutes());
+  const logo = await screen.findByRole('region', { name: 'Logo' });
+  expect(within(logo).queryByRole('img')).toBeNull();
+  expect(logo).toHaveTextContent('shown in the preview above');
+});
+
 it('says the mail keeps Odudu’s own mark when the theme sets no logo', async () => {
   renderConsoleAt(AT, languagesRoutes({ [`GET ${ML}`]: json(mailBranding({ logo: null })) }));
   expect(await screen.findByText(/shows Odudu’s own mark/u)).toBeVisible();
@@ -92,6 +114,24 @@ it('has nothing axe can find in either theme', async () => {
   const found = await axeInBothThemes(
     () => element,
     () => screen.findByRole('region', { name: 'Light colours' }),
+    { frames: false },
+  );
+  expect(found).toEqual({ light: [], dark: [] });
+});
+
+it('has nothing axe can find in either theme with the logo drawn', async () => {
+  const src = `${globalThis.location.origin}/tenants/acme/brand/a.png`;
+  const { element } = consoleAt(
+    AT,
+    languagesRoutes({
+      [`GET ${ML}`]: json(
+        mailBranding({ logo: { src, alt: 'Acme logo', width: 160, height: 32 } }),
+      ),
+    }),
+  );
+  const found = await axeInBothThemes(
+    () => element,
+    () => screen.findByRole('img', { name: 'Acme logo' }),
     { frames: false },
   );
   expect(found).toEqual({ light: [], dark: [] });

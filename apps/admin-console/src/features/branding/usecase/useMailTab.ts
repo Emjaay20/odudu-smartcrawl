@@ -20,6 +20,8 @@ export interface MailTab {
   setScheme: (scheme: Scheme) => void;
   setLocale: (locale: string) => void;
   branding: Read<MailBrandingView>;
+  // The address the console is served from.
+  origin: string;
 }
 
 // The verification mail as the published theme dresses it, and what it inherits.
@@ -42,6 +44,7 @@ export function useMailTab(tenant: string, view: ThemeView | undefined, asked: b
     setLocale: (locale) => {
       setChoice((was) => mailChoiceWith(was, { locale }));
     },
+    origin: globalThis.location.origin,
     branding: useMailBranding(tenant, version, asked),
   };
 }

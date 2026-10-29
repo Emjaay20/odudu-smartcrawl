@@ -13,6 +13,7 @@ import {
   MAIL_PREVIEW_NOTE,
   MAIL_PREVIEW_TITLE,
   MAIL_SCHEME_LABEL,
+  LOGO_ELSEWHERE,
   LOGO_TITLE,
   mailLocaleOf,
   paletteRows,
@@ -68,11 +69,11 @@ export function MailPreview({ mail }: { mail: Mail }) {
   );
 }
 
-function Logos({ branding }: { branding: MailBrandingView }) {
+function Logos({ branding, origin }: { branding: MailBrandingView; origin: string }) {
   return (
     <Panel title={LOGO_TITLE}>
       <dl className={styles.facts}>
-        {logoViews(branding).map((logo) => (
+        {logoViews(branding, origin).map((logo) => (
           <div key={logo.label} className={styles.fact}>
             <dt>{logo.label}</dt>
             <dd>
@@ -80,8 +81,16 @@ function Logos({ branding }: { branding: MailBrandingView }) {
                 logo.empty
               ) : (
                 <>
-                  <span>{logo.alt}</span> <span className={styles.size}>{logo.size}</span>
+                  {logo.picture === null ? (
+                    <span>{logo.alt}</span>
+                  ) : (
+                    <img className={styles.picture} src={logo.picture} alt={logo.alt ?? ''} />
+                  )}{' '}
+                  <span className={styles.size}>{logo.size}</span>
                   <code className={styles.address}>{logo.src}</code>
+                  {logo.picture === null ? (
+                    <span className={styles.size}>{LOGO_ELSEWHERE}</span>
+                  ) : null}
                 </>
               )}
             </dd>
@@ -144,7 +153,7 @@ export function MailInherits({ mail }: { mail: Mail }) {
         <p className={recordTab.rule}>{MAIL_INHERITS_LEAD}</p>
         <p className={recordTab.rule}>{MAIL_CLIENTS_NOTE}</p>
       </section>
-      <Logos branding={branding.data} />
+      <Logos branding={branding.data} origin={mail.origin} />
       <Palette scheme="light" view={branding.data.light} />
       <Palette scheme="dark" view={branding.data.dark} />
     </div>

@@ -45,6 +45,14 @@
   color: var(--ink-muted);
 }
 
+.picture {
+  display: block;
+  max-inline-size: 100%;
+  max-block-size: calc(var(--space-8) * 2);
+  margin-block: var(--space-1);
+  background: var(--surface-sunken);
+}
+
 .address {
   display: block;
   font-size: var(--type-13);

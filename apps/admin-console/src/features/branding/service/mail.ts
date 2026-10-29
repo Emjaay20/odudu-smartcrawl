@@ -36,6 +36,9 @@ export const LOGO_LABEL = 'Logo';
 
 export const DARK_LOGO_LABEL = 'Logo for the dark scheme';
 
+export const LOGO_ELSEWHERE =
+  'Not drawn here: this page loads pictures only from its own address. It is shown in the preview above.';
+
 export const MAIL_FAILED = 'The colours and logo could not be loaded.';
 
 export const MAIL_LOADING_BRANDING = 'Loading what the mail inherits';
@@ -106,15 +109,22 @@ export interface LogoView {
   label: string;
   empty: string;
   src: string | null;
+  // The address this page may draw the picture from, when it is its own.
+  picture: string | null;
   alt: string | null;
   size: string | null;
 }
 
-export function logoViews(branding: MailBrandingView): readonly LogoView[] {
+function ownAddress(src: string, origin: string): string | null {
+  return URL.canParse(src) && new URL(src).origin === origin ? src : null;
+}
+
+export function logoViews(branding: MailBrandingView, origin: string): readonly LogoView[] {
   const view = (label: string, empty: string, logo: MailBrandingView['logo']): LogoView => ({
     label,
     empty,
     src: logo?.src ?? null,
+    picture: logo === null ? null : ownAddress(logo.src, origin),
     alt: logo?.alt ?? null,
     size: logo === null ? null : `${String(logo.width)} by ${String(logo.height)} pixels`,
   });
