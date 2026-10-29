@@ -98,10 +98,14 @@ function LanguagesSection({ tenant, data, etag, gone }: Props) {
             role="group"
             aria-label={ADD_LABEL}
             onKeyDown={(event) => {
-              const pointing =
-                event.target instanceof HTMLElement &&
-                event.target.getAttribute('aria-activedescendant') !== null;
-              if (!addsOnKey(event.key, pointing)) return;
+              const pointed =
+                event.target instanceof HTMLElement
+                  ? event.target.getAttribute('aria-activedescendant')
+                  : null;
+              const choosing =
+                pointed !== null &&
+                document.getElementById(pointed)?.getAttribute('aria-selected') !== 'true';
+              if (!addsOnKey(event.key, choosing)) return;
               event.preventDefault();
               add();
             }}

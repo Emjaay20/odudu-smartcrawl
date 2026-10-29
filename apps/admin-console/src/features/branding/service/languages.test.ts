@@ -123,7 +123,7 @@ describe('adding what was typed', () => {
     expect(refused.accepted).not.toHaveBeenCalled();
   });
 
-  it('is done by Enter, except when Enter chooses the option the list points at', () => {
+  it('is done by Enter, except when Enter chooses another option', () => {
     expect(addsOnKey('Enter', false)).toBe(true);
     expect(addsOnKey('Enter', true)).toBe(false);
     expect(addsOnKey('a', false)).toBe(false);

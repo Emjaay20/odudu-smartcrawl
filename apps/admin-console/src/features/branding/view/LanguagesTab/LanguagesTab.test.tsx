@@ -255,6 +255,16 @@ it('adds the typed tag on Enter and does not save the section', async () => {
   expect(sent.some((request) => request.method === 'PATCH')).toBe(false);
 });
 
+it('adds a tag that arrived whole, with its option already chosen, on the first Enter', async () => {
+  const user = userEvent.setup();
+  renderConsoleAt(AT, languagesRoutes());
+  await screen.findByRole('grid', { name: 'Message overrides' });
+  await user.click(screen.getByRole('combobox', { name: /Add a language/u }));
+  await user.paste('pt-BR');
+  await user.keyboard('{Enter}');
+  expect(await screen.findByRole('checkbox', { name: /pt-BR/u })).toBeChecked();
+});
+
 it('marks the tab with an unsaved dot while a language is added and not saved', async () => {
   const user = userEvent.setup();
   renderConsoleAt(AT, languagesRoutes());

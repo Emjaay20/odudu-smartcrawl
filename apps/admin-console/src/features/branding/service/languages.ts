@@ -169,7 +169,8 @@ export function addLanguage(supported: readonly string[], text: string, to: Adde
   if (added.supported !== null) to.accepted(added.supported);
 }
 
-// Enter adds the typed tag, unless it is choosing the option the list points at.
-export function addsOnKey(key: string, optionPointedAt: boolean): boolean {
-  return key === 'Enter' && !optionPointedAt;
+// Enter adds the typed tag, unless it is choosing an option the list points at
+// that is not the one already chosen.
+export function addsOnKey(key: string, choosing: boolean): boolean {
+  return key === 'Enter' && !choosing;
 }
