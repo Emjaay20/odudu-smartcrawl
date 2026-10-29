@@ -85,7 +85,8 @@ export function isSameOriginPath(value: unknown): value is string {
 // A problem message quotes tenant input, so it quotes a bounded part of it,
 // escaped to stay on one line and free of bidi and C1 controls, and at most
 // QUOTE_LIMIT characters long.
-const UNSAFE_IN_LOG = /[\u007f-\u009f\u061c\u200e\u200f\u2028\u2029\u202a-\u202e\u2066-\u2069]/gu;
+const UNSAFE_IN_LOG =
+  /[\u007f-\u009f\u061c\u200b-\u200f\u2028\u2029\u202a-\u202e\u2060\u2066-\u2069\ufeff]/gu;
 const QUOTE_LIMIT = 120;
 
 function quoted(value: string): string {
@@ -96,7 +97,7 @@ function quoted(value: string): string {
   );
   const chars = Array.from(escaped);
   const cut = chars.length > QUOTE_LIMIT;
-  const shown = cut ? `${chars.slice(0, QUOTE_LIMIT).join('')}…` : escaped;
+  const shown = cut ? chars.slice(0, QUOTE_LIMIT).join('') : escaped;
   return value.length <= 64 && !cut ? shown : `${shown}… (${String(value.length)} chars)`;
 }
 

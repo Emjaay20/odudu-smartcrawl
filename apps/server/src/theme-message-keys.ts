@@ -9,6 +9,7 @@ import {
   isAuthnMessageKey,
 } from '@odudu/authn-flows';
 import { type MessageCatalogueResponse } from '@odudu/contracts/admin';
+import { overrideProblem, placeholderProblem } from '@odudu/i18n';
 import { type PageKind } from '@odudu/kernel';
 import {
   DEFAULT_TEMPLATES as OIDC_KINDS,
@@ -58,6 +59,21 @@ function buildCatalogue(): MessageCatalogueResponse {
 }
 
 const CATALOGUE = buildCatalogue();
+
+const ENGLISH: Readonly<Record<string, string>> = Object.fromEntries(
+  CATALOGUE.sections.flatMap((section) => section.messages.map(({ key, en }) => [key, en])),
+);
+
+// What is wrong with a tenant's text for a message, or null: its own syntax
+// and size, then the arguments, which must be among those the English text of
+// the same key reads, because that is what the page supplies. A key no page
+// has is the route's to refuse, so only the first rules apply.
+export function overrideProblemFor(key: string, message: string): string | null {
+  const own = overrideProblem(message);
+  if (own !== null) return own;
+  const english = Object.hasOwn(ENGLISH, key) ? ENGLISH[key] : undefined;
+  return english === undefined ? null : placeholderProblem(message, english);
+}
 
 export function pageMessageCatalogue(): MessageCatalogueResponse {
   return CATALOGUE;

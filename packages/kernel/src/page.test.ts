@@ -786,6 +786,23 @@ describe('a problem message stays short and clean', () => {
   });
 });
 
+describe('a quoted value in a problem message', () => {
+  it('escapes zero-width and joiner characters, which print as nothing', () => {
+    const [problem] = brandingProblems(branding({ stylesheetUrl: '/a​‌‍⁠﻿b' }));
+    expect(problem).not.toMatch(/[​-‍⁠﻿]/u);
+    expect(problem).toContain('\\u200b');
+    expect(problem).toContain('\\ufeff');
+  });
+
+  it('says it was cut with one ellipsis, then how long the value was', () => {
+    const [cut] = brandingProblems(branding({ stylesheetUrl: `/${'‮'.repeat(60)}` }));
+    expect(cut).toMatch(/…\s\(61 chars\)$/u);
+    expect(cut).not.toContain('……');
+    const [long] = brandingProblems(branding({ stylesheetUrl: `/${'a'.repeat(100)}^` }));
+    expect(long).toMatch(/[^…]…\s\(102 chars\)$/u);
+  });
+});
+
 describe('brandMarkup', () => {
   const MARK = '<svg class="mark"></svg>';
   const STOCK = `<p class="brand">${MARK}<span class="wordmark">odudu</span></p>`;

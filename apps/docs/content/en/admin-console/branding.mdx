@@ -12,7 +12,7 @@ Nothing you change is seen until you publish it. Edits are saved as a draft, the
 
 ## 1. Set the colours and images
 
-On the **Theme** tab, **Colours and font** holds a light palette and a dark palette. Each is used whole: turn on **Use my own light colours** and every colour in that scheme is yours, starting from Instrument's own. A scheme you leave alone keeps Instrument's colours. Under **Images**, upload a logo (with the alt text it needs), a logo for the dark scheme, a favicon and a background image. PNG, JPEG and WebP are accepted, and each slot states its size limit beside it.
+On the **Theme** tab, **Colours and font** holds a light palette and a dark palette. Each is used whole: turn on **Use my own light colours** and every colour in that scheme is yours, starting from Instrument's own. A scheme you leave alone keeps Instrument's colours. Under **Images**, upload a logo (with the alt text it needs), a logo for the dark scheme, a favicon and a background image. PNG, JPEG and WebP are accepted, and each slot states its size limit beside it. A slot that holds an image shows it, whole and small, under its description, whether or not any published theme uses it and after a reload; if the image cannot be read the slot says so and offers to try again.
 
 Each palette has eleven colours: Page background, Panel background, Field background, Text, Muted text, Accent background, Accent text, Error background, Error text, Border and Focus ring. Type each as `#rrggbb` or pick it. The Font is Instrument’s own, IBM Plex Sans or IBM Plex Mono, and is set for both schemes at once.
 
@@ -42,4 +42,4 @@ On the **Languages** tab, **Supported languages** is the list of languages the t
 
 ## Do the same through the API
 
-The calls are in the [theme](../reference/generated/admin-api/theme/index.md) area of the admin API: reading and saving the draft, publishing, versions and restore, reset, image upload and delete, and the preview, with `GET /theme/preview/info` saying what that preview shows and why. The mail preview and what the mail inherits are `GET /mail/preview` and `GET /mail/branding`; the overrides are the `/message-overrides` routes, and the keys offered are `GET /message-catalogue`.
+The calls are in the [theme](../reference/generated/admin-api/theme/index.md) area of the admin API: reading and saving the draft, publishing, versions and restore, reset, image upload, read and delete (`GET /theme/assets/{assetId}/content` answers the stored bytes the thumbnails show), and the preview, with `GET /theme/preview/info` saying what that preview shows and why. The mail preview and what the mail inherits are `GET /mail/preview` and `GET /mail/branding`; the overrides are the `/message-overrides` routes, and the keys offered are `GET /message-catalogue`.

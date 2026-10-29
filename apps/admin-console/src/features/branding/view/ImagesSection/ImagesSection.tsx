@@ -23,6 +23,7 @@ import type { Images } from '#/features/branding/usecase/useImages';
 import type { ImageAsk } from '#/features/branding/usecase/useImageDeletion';
 import { Button } from '#/shared/view/Button';
 import { TextField } from '#/shared/view/Field';
+import { SlotThumbnail } from '#/features/branding/view/SlotThumbnail';
 import { SaveSection } from '#/shared/view/SaveSection';
 import styles from '#/features/branding/view/ImagesSection/ImagesSection.module.css';
 
@@ -49,6 +50,7 @@ function Slot({
       <p className={styles.hint}>{sourceReading(scope, view, imageField(slot))}</p>
       <p className={styles.hint}>{limitText(slot)}</p>
       <p className={styles.state}>{shown.note}</p>
+      <SlotThumbnail slot={slot} thumbnail={images.thumbnails[slot]} alt={shown.alt} />
       {shown.alt === null ? null : (
         <TextField
           label={`${shown.label}: ${ALT_LABEL.toLowerCase()}`}

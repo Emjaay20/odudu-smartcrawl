@@ -324,7 +324,7 @@ export interface AdminRoutesDeps {
   // cached overrides in this process once a write has committed.
   messageOverrides: {
     isKnownKey: (key: string) => boolean;
-    messageProblem: (message: string) => string | null;
+    messageProblem: (key: string, message: string) => string | null;
     invalidate: (tenantId: string) => void;
   };
   // Each page kind rendered by its own package's renderer with sample values,
@@ -728,6 +728,7 @@ function buildAdminRoutes(
       'POST /admin/tenants/:tenant/theme/publish': tenantTheme.publish,
       'POST /admin/tenants/:tenant/theme/assets': themeAssets.upload,
       'DELETE /admin/tenants/:tenant/theme/assets/:assetId': themeAssets.remove,
+      'GET /admin/tenants/:tenant/theme/assets/:assetId/content': themeAssets.content,
       'GET /admin/tenants/:tenant/theme/preview': tenantPreview,
       'GET /admin/tenants/:tenant/theme/preview/info': tenantPreviewInfo,
       'GET /admin/tenants/:tenant/mail/preview': mailPreviewHandler(mailDeps),

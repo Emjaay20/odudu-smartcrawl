@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildBranding } from '#/service/build-branding';
-import { type PublishedLayer } from '#/service/theme-body';
+import { type PublishedLayer } from '#/service/record';
 
 const ORIGIN = 'https://id.example.test';
 

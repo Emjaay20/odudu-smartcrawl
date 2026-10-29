@@ -502,3 +502,72 @@ describe('issue positions', () => {
     }
   });
 });
+
+describe('issue positions, in awkward text', () => {
+  const where = (template: string, code: string): { line: number | null; column: number | null } =>
+    checkTemplate('sign-in', template)
+      .filter((issue) => issue.code === code)
+      .map(({ line, column }) => ({ line, column }))[0] ?? { line: -1, column: -1 };
+
+  it('counts a carriage return as a character and only a line feed as a break', () => {
+    expect(where(`${SIGN_IN}\r\n<p onclick=x>a</p>`, 'attribute-not-allowed')).toEqual({
+      line: 2,
+      column: 1,
+    });
+    expect(where(`${SIGN_IN}\r\n\r\n  <p onclick=x>a</p>`, 'attribute-not-allowed')).toEqual({
+      line: 3,
+      column: 3,
+    });
+  });
+
+  it('counts a tab as one column', () => {
+    expect(where(`${SIGN_IN}\n\t\t<p onclick=x>a</p>`, 'attribute-not-allowed')).toEqual({
+      line: 2,
+      column: 3,
+    });
+  });
+
+  it('counts a leading byte order mark as a column of its own', () => {
+    const template = `﻿${SIGN_IN}\n<p onclick=x>a</p>`;
+    expect(where(template, 'attribute-not-allowed')).toEqual({ line: 2, column: 1 });
+    const same = `﻿${SIGN_IN}<p onclick=x>a</p>`;
+    expect(where(same, 'attribute-not-allowed').column).toBe(same.indexOf('<p onclick') + 1);
+  });
+
+  it('counts an astral character as two UTF-16 units', () => {
+    expect(where(`${SIGN_IN}\n\u{1F600}<p onclick=x>a</p>`, 'attribute-not-allowed')).toEqual({
+      line: 2,
+      column: 3,
+    });
+  });
+
+  it('places a slot written in an attribute on the line it is on', () => {
+    const template = `${SIGN_IN}\n\n\n<p class="{{links}}">x</p>`;
+    const issue = checkTemplate('sign-in', template).find((found) => found.line !== null);
+    expect(issue?.line).toBe(4);
+  });
+
+  it('answers the same issues, in the same order, every time', () => {
+    const template = `${SIGN_IN}\n<frame>\n<p onclick=x>a</p>\n<span>\n{{nope}}`;
+    expect(checkTemplate('sign-in', template)).toEqual(checkTemplate('sign-in', template));
+  });
+});
+
+describe('the issue cap', () => {
+  it('stops listing repeats but still names a kind of problem it has not listed', () => {
+    const noise = Array.from({ length: 150 }, (_, n) => `<e${String(n)}></e${String(n)}>`).join('');
+    const found = checkTemplate('sign-in', `${SIGN_IN}${noise}<p onclick=x>a</p>`);
+    const kinds = new Set(found.map((issue) => issue.code));
+    expect(found.filter((issue) => issue.code === 'element-not-allowed')).toHaveLength(100);
+    expect(kinds.has('attribute-not-allowed')).toBe(true);
+    expect(found.length).toBeLessThanOrEqual(100 + kinds.size);
+  });
+});
+
+describe('an unterminated construct', () => {
+  it('is placed where the construct starts, not at the end of the template', () => {
+    const template = `${SIGN_IN}\n<a href="https://evil.example/?`;
+    const issue = checkTemplate('sign-in', template).find((found) => found.code === 'unterminated');
+    expect(issue).toMatchObject({ line: 2, column: 1 });
+  });
+});

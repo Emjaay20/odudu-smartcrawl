@@ -7,7 +7,7 @@ import {
   TENANT_ASSET_CAP_BYTES,
   type AssetKind,
 } from '#/service/asset-limits';
-import { type AssetRef } from '#/service/theme-body';
+import { type AssetRef } from '#/service/record';
 import { uploadAsset, type UploadRefusal } from '#/usecase/upload-asset';
 
 const KINDS: AssetKind[] = ['logo', 'darkLogo', 'favicon', 'background'];

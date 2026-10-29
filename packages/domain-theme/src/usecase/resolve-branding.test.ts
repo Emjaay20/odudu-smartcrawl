@@ -1,10 +1,6 @@
 import { type PageBranding, type TemplateFallback } from '@odudu/kernel';
 import { describe, expect, it, vi } from 'vitest';
-import {
-  type PublishedAsset,
-  type PublishedLayer,
-  type PublishedLayers,
-} from '#/service/theme-body';
+import { type PublishedAsset, type PublishedLayer, type PublishedLayers } from '#/service/record';
 import { type Palette, type ThemeBody } from '#/service/body';
 import { brandingCache, createBrandingCache } from '#/service/branding-cache';
 import {

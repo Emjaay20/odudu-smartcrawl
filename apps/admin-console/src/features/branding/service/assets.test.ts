@@ -3,11 +3,15 @@ import {
   altEdited,
   altProblem,
   imageAfterUpload,
+  imageDataUrl,
   imagesHold,
   inUse,
   inUseTitle,
   limitText,
+  slotAssetIds,
+  slotThumbnail,
   slotView,
+  thumbnailAlt,
   uploadFailureOf,
   uploadFailureText,
   uploadRefusal,
@@ -116,5 +120,51 @@ describe('logos', () => {
       alt: 'A',
     });
     expect(slotView('favicon', none)).toMatchObject({ uploadName: 'Upload favicon', alt: null });
+  });
+});
+
+describe('the thumbnail of an uploaded image', () => {
+  it('is a data address for a PNG, a JPEG or a WebP, whatever the case of its type', () => {
+    const bytes = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0xff]);
+    expect(imageDataUrl(bytes, 'image/png')).toBe('data:image/png;base64,iVBOR/8=');
+    expect(imageDataUrl(bytes, 'Image/JPEG; charset=x')).toBe('data:image/jpeg;base64,iVBOR/8=');
+    expect(imageDataUrl(bytes, 'image/webp')).toMatch(/^data:image\/webp;base64,/u);
+  });
+
+  it('is nothing for any other type, since a data address carries whatever it is given', () => {
+    const bytes = new Uint8Array([1]);
+    for (const type of ['image/svg+xml', 'text/html', 'application/octet-stream', '', null]) {
+      expect(imageDataUrl(bytes, type), String(type)).toBeNull();
+    }
+  });
+
+  it('encodes a whole image without running out of stack', () => {
+    const big = new Uint8Array(1_300_000).fill(7);
+    expect(imageDataUrl(big, 'image/png')?.length).toBeGreaterThan(1_700_000);
+  });
+
+  it('is asked of the image each slot holds, and of none for an empty one', () => {
+    expect(
+      slotAssetIds({
+        ...none,
+        'assets.logo': { assetId: 'a', alt: 'A' },
+        'assets.background': { assetId: 'b' },
+      }),
+    ).toEqual({ logo: 'a', darkLogo: null, favicon: null, background: 'b' });
+  });
+
+  it('is nothing for an empty slot, whatever its read says, and the read for a held one', () => {
+    const loading = { status: 'loading' } as const;
+    expect(slotThumbnail(null, loading)).toEqual({ status: 'none' });
+    expect(slotThumbnail('a', loading)).toEqual(loading);
+    const ready = { status: 'ready', data: 'data:image/png;base64,AA==' } as const;
+    expect(slotThumbnail('a', ready)).toEqual(ready);
+  });
+
+  it('says what it shows from the logo’s alt text, else from the slot', () => {
+    expect(thumbnailAlt('logo', 'Acme')).toBe('Acme');
+    expect(thumbnailAlt('logo', '  ')).toBe('Logo');
+    expect(thumbnailAlt('favicon', null)).toBe('Favicon');
+    expect(thumbnailAlt('background', null)).toBe('Background image');
   });
 });

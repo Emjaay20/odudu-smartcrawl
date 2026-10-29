@@ -3,10 +3,13 @@ import {
   MIGRATIONS_DIR,
   runMigrations,
   tenants,
+  withTenant,
   type DatabaseHandle,
 } from '@odudu/db';
+import { assetRepository } from '@odudu/domain-theme';
 import { newId } from '@odudu/kernel';
 import { createAppRole, makePng, startTestDatabase, type TestDatabase } from '@odudu/testkit';
+import { createHash } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import { type LightMyRequestResponse } from 'fastify';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -210,6 +213,44 @@ describe('the preview through the console', () => {
     expect(res.headers['x-content-type-options']).toBe('nosniff');
     expect(res.headers['cache-control']).toBe('no-store');
     expect(res.headers['x-frame-options']).toBeUndefined();
+  });
+
+  it('answers an uploaded image’s bytes unchanged, with its type and no caching', async () => {
+    const { jar, tenant: name } = await signedIn();
+    const [row] = await owner.db
+      .select({ id: tenants.id })
+      .from(tenants)
+      .where(eq(tenants.name, name));
+    const tenantId = row?.id ?? '';
+    const bytes = makePng({ width: 12, height: 7 });
+    const stored = await withTenant(appDb.db, tenantId, (tx) =>
+      assetRepository(tx).put({
+        tenantId,
+        sha256: createHash('sha256').update(bytes).digest('hex'),
+        mime: 'image/png',
+        width: 12,
+        height: 7,
+        bytes,
+        tenantCapBytes: 1024 * 1024,
+      }),
+    );
+    if (stored === 'over_cap') throw new Error('over cap');
+
+    const res = await get(
+      jar,
+      `/console/api/admin/tenants/${name}/theme/assets/${stored.id}/content`,
+    );
+
+    expect(res.statusCode, res.body.slice(0, 200)).toBe(200);
+    expect(res.rawPayload.equals(bytes)).toBe(true);
+    expect(res.headers['content-type']).toBe('image/png');
+    expect(res.headers['x-content-type-options']).toBe('nosniff');
+    expect(res.headers['cache-control']).toBe('private, no-store');
+    const anonymous = await get(
+      new Jar(),
+      `/console/api/admin/tenants/${name}/theme/assets/${stored.id}/content`,
+    );
+    expect(anonymous.statusCode).toBe(401);
   });
 
   it('is refused without an admin session', async () => {

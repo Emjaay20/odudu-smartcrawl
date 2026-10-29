@@ -506,19 +506,19 @@ describe('checkStylesheet: positions and caps', () => {
     expect(issues[99]?.code).toBe('too-many-issues');
   });
 
-  it('refuses pathological input fast', () => {
-    const inputs = [
-      `${'a{'.repeat(32_000)}${'}'.repeat(32_000)}`,
-      'a{'.repeat(32_000),
-      `${'a,'.repeat(60_000)}a{color:red}`,
-      'a{}'.repeat(40_000),
-      `a{color:${'x'.repeat(128 * 1024)}}`,
-      `a{color:${'('.repeat(60_000)}}`,
-      `@media ${'('.repeat(60_000)}{}`,
+  it('refuses pathological input fast, each for its own reason', () => {
+    const inputs: [string, string][] = [
+      [`${'a{'.repeat(32_000)}${'}'.repeat(32_000)}`, 'selector-not-allowed'],
+      ['a{'.repeat(32_000), 'unparsable'],
+      [`${'a,'.repeat(60_000)}a{color:red}`, 'too-long'],
+      ['a{}'.repeat(40_000), 'too-many-rules'],
+      [`a{color:${'x'.repeat(128 * 1024)}}`, 'too-large'],
+      [`a{color:${'('.repeat(60_000)}}`, 'unparsable'],
+      [`@media ${'('.repeat(60_000)}{}`, 'at-rule-not-allowed'],
     ];
-    for (const css of inputs) {
+    for (const [css, code] of inputs) {
       const started = performance.now();
-      expect(checkStylesheet(css).length).toBeGreaterThan(0);
+      expect(checkStylesheet(css)[0]?.code).toBe(code);
       expect(performance.now() - started).toBeLessThan(CATASTROPHIC_MS);
     }
   });

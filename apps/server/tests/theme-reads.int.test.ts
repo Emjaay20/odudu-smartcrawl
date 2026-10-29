@@ -165,6 +165,7 @@ const CATALOGUE_STATEMENTS = 6;
 const INFO_STATEMENTS = 9;
 const CLIENT_THEME_STATEMENTS = 10;
 const CLIENT_READ_STATEMENTS = 9;
+const CONTENT_STATEMENTS = 7;
 
 async function statementsFor(w: World, path: string, capabilities?: string[]): Promise<number> {
   branding.invalidateTenant(w.tenantId);
@@ -307,5 +308,40 @@ describe('what a preview says about itself', () => {
     const theirs = await world();
     const res = await get(theirs, '/theme/preview/info', await token(mine));
     expect(res.statusCode).toBe(401);
+  });
+});
+
+describe('an uploaded image’s content', () => {
+  it('is the stored bytes of an image no published theme names', async () => {
+    const w = await world();
+    const logo = await putLogo(w, { width: 40, height: 20 });
+    const res = await get(w, `/theme/assets/${logo.id}/content`);
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['content-type']).toBe('image/png');
+    expect(res.headers['cache-control']).toBe('private, no-store');
+    expect(res.headers['x-content-type-options']).toBe('nosniff');
+    expect(res.rawPayload.equals(makePng({ width: 40, height: 20 }))).toBe(true);
+    expect((await app.inject({ url: logo.url.replace(BASE, '') })).statusCode).toBe(404);
+  });
+
+  it('costs the same few statements for a large image among many as for a small one alone', async () => {
+    const alone = await world();
+    const crowded = await world();
+    const small = await putLogo(alone, { width: 4, height: 4 });
+    for (let n = 0; n < 5; n += 1) await putLogo(crowded, { width: 8 + n, height: 8 });
+    const large = await putLogo(crowded, { width: 600, height: 400 });
+    const few = await statementsFor(alone, `/theme/assets/${small.id}/content`);
+    const many = await statementsFor(crowded, `/theme/assets/${large.id}/content`);
+    expect(many).toBe(few);
+    expect(many).toBeLessThanOrEqual(CONTENT_STATEMENTS);
+  });
+
+  it('is refused another tenant’s token, and finds no other tenant’s image', async () => {
+    const mine = await world();
+    const theirs = await world();
+    const logo = await putLogo(theirs, { width: 6, height: 6 });
+    const path = `/theme/assets/${logo.id}/content`;
+    expect((await get(theirs, path, await token(mine))).statusCode).toBe(401);
+    expect((await get(mine, path)).statusCode).toBe(404);
   });
 });

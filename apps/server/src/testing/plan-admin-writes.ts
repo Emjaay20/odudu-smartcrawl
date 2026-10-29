@@ -605,6 +605,7 @@ function assetCalls(T: string): [string, Call][] {
   return [
     ['upload an image', { method: 'POST', url: upload, image: png, saveAs: 'asset' }],
     ['upload the same image again', { method: 'POST', url: upload, image: png }],
+    ['read the uploaded image', { method: 'GET', url: `${T}/theme/assets/{asset}/content` }],
     [
       'save a draft that names the image',
       {

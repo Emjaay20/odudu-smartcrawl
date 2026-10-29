@@ -1,10 +1,11 @@
 import { type TenantScopedDatabase } from '@odudu/db';
-import { newId } from '@odudu/kernel';
+import { isUuid, newId } from '@odudu/kernel';
 import { and, eq, inArray, sql } from 'drizzle-orm';
 import { themeAssets } from '#/schema/theme-assets';
 import { themeVersionAssets } from '#/schema/theme-version-assets';
 import { themeVersions } from '#/schema/theme-versions';
-import { type AssetRecord, type AssetRef, type ThemeState } from '#/service/theme-body';
+import { MAX_STORED_ASSET_BYTES } from '#/service/asset-limits';
+import { type AssetRecord, type AssetRef, type ThemeState } from '#/service/record';
 
 export interface NewAsset {
   tenantId: string;
@@ -101,6 +102,27 @@ export function assetRepository(tx: TenantScopedDatabase) {
         height: row.height,
         bytes: row.bytes,
       };
+    },
+
+    // One of the tenant's images by id, published or not, for an admin who
+    // looks at what they uploaded. A row over MAX_STORED_ASSET_BYTES, which no
+    // upload makes, is not read.
+    async content(
+      tenantId: string,
+      assetId: string,
+    ): Promise<{ mime: string; bytes: Buffer } | null> {
+      if (!isUuid(assetId)) return null;
+      const [row] = await tx
+        .select({ mime: themeAssets.mime, bytes: themeAssets.bytes })
+        .from(themeAssets)
+        .where(
+          and(
+            eq(themeAssets.tenantId, tenantId),
+            eq(themeAssets.id, assetId),
+            sql`octet_length(${themeAssets.bytes}) <= ${MAX_STORED_ASSET_BYTES}`,
+          ),
+        );
+      return row ?? null;
     },
 
     // The image a published version of the tenant names, by its hash: what a

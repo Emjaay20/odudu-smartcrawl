@@ -2,7 +2,7 @@ import { type PageBranding } from '@odudu/kernel';
 import { describe, expect, it } from 'vitest';
 import { type Palette } from '#/service/body';
 import { createBrandingCache } from '#/service/branding-cache';
-import { type PublishedLayer, type PublishedLayers } from '#/service/theme-body';
+import { type PublishedLayer, type PublishedLayers } from '#/service/record';
 import { resolveBranding, resolveMailBranding } from '#/usecase/resolve-branding';
 
 const ORIGIN = 'https://idp.example';

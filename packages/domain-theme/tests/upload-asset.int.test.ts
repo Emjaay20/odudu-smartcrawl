@@ -13,7 +13,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { assetRepository, type NewAsset } from '#/repository/assets';
 import { ASSET_LIMITS, TENANT_ASSET_CAP_BYTES, type AssetKind } from '#/service/asset-limits';
 import { inspectImage, isImageRefusal } from '#/service/image';
-import { type AssetRef } from '#/service/theme-body';
+import { type AssetRef } from '#/service/record';
 import { uploadAsset, type UploadRefusal } from '#/usecase/upload-asset';
 
 let containerHandle: TestDatabase | undefined;

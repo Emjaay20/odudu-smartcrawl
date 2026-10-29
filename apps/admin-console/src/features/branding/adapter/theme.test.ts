@@ -4,6 +4,7 @@ import {
   previewSource,
   publishTheme,
   putTheme,
+  readAssetImage,
   readPreviewInfo,
   readTheme,
   readVersions,
@@ -13,7 +14,7 @@ import {
 } from '#/features/branding/adapter/theme';
 import { NO_DRAFT_TAG } from '#/features/branding/service';
 import { draftedView, EMPTY, PI, previewInfo, TH, themeView } from '#/testing/brandingFixtures';
-import { fakeTransport, json, problem } from '#/testing/fakeTransport';
+import { fakeTransport, image, json, problem } from '#/testing/fakeTransport';
 
 const CLIENT_TH = '/console/api/admin/tenants/acme/clients/c1/theme';
 
@@ -142,6 +143,34 @@ describe('images', () => {
       [`DELETE ${TH}/assets/a%2F1`]: () => new Response(null, { status: 204 }),
     });
     expect(await deleteAsset(fake.transport.gateway, 'acme', 'a/1')).toMatchObject({ ok: true });
+  });
+
+  it('reads an image’s content as a data address, whether or not any theme names it', async () => {
+    const bytes = new Uint8Array([0x89, 0x50, 0xff, 0x00]);
+    const fake = fakeTransport({ [`GET ${TH}/assets/a%2F1/content`]: image(bytes) });
+    expect(await readAssetImage(fake.transport.gateway, 'acme', 'a/1')).toEqual({
+      ok: true,
+      status: 200,
+      data: 'data:image/png;base64,iVD/AA==',
+      etag: null,
+      next: null,
+    });
+  });
+
+  it('refuses an answer that is not a PNG, a JPEG or a WebP, and passes a refusal on', async () => {
+    const odd = fakeTransport({
+      [`GET ${TH}/assets/a/content`]: image(new Uint8Array([1]), 'image/svg+xml'),
+    });
+    expect(await readAssetImage(odd.transport.gateway, 'acme', 'a')).toMatchObject({
+      ok: false,
+      kind: 'schema',
+    });
+    const missing = fakeTransport({});
+    expect(await readAssetImage(missing.transport.gateway, 'acme', 'a')).toMatchObject({
+      ok: false,
+      kind: 'problem',
+      problem: { status: 404 },
+    });
   });
 });
 
