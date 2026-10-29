@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { applyEdit, indentEdit, keyStep, type KeyPress } from '#/shared/service/code';
+import { indentEdit, keyStep, type KeyPress, type TextEdit } from '#/shared/service/code';
+
+function applyEdit(value: string, edit: TextEdit): string {
+  return value.slice(0, edit.from) + edit.text + value.slice(edit.to);
+}
 
 const press = (key: string, more: Partial<KeyPress> = {}): KeyPress => ({
   key,

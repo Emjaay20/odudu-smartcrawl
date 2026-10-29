@@ -129,8 +129,3 @@ export function indentEdit(
   }
   return indentLines(value, start, end);
 }
-
-// The text with the edit made, for a browser that cannot insert at a selection.
-export function applyEdit(value: string, edit: TextEdit): string {
-  return value.slice(0, edit.from) + edit.text + value.slice(edit.to);
-}

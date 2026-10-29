@@ -7,7 +7,6 @@ export {
   type LineIssue,
 } from '#/shared/service/code/gutter';
 export {
-  applyEdit,
   indentEdit,
   INDENT,
   keyStep,
