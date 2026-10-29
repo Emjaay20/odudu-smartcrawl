@@ -112,12 +112,12 @@ describe.each(each)('the %s mail shell', (_name, kind) => {
   it('loads one image, the mark by content id, and names it with its size', () => {
     const images = html.match(/<img\b[^>]*>/gu) ?? [];
     expect(images).toHaveLength(1);
-    expect(images[0]).toContain('src="cid:odudu-mark"');
-    expect(images[0]).toContain('alt="odudu"');
+    expect(images[0]).toContain('src="cid:smartcrawl-mark"');
+    expect(images[0]).toContain('alt="SmartCrawl"');
     expect(images[0]).not.toContain('class=');
     expect(images[0]).toContain('width="40"');
     expect(images[0]).toContain('height="40"');
-    expect(attr(html, 'src')).toEqual(['cid:odudu-mark']);
+    expect(attr(html, 'src')).toEqual(['cid:smartcrawl-mark']);
   });
 
   it('links only to web addresses', () => {
@@ -147,15 +147,17 @@ describe.each(each)('the %s mail shell', (_name, kind) => {
   });
 
   it('names the tenant in the header, isolated', () => {
-    expect(html).toMatch(/alt="odudu"[^>]*><\/td><td[^>]*><bdi>Demo<\/bdi><\/td>/u);
+    expect(html).toMatch(/alt="SmartCrawl"[^>]*><\/td><td[^>]*><bdi>Demo<\/bdi><\/td>/u);
   });
 
   it("says why it was sent, then the year and who it is powered by, in the footer's muted text", () => {
     const footer = html.slice(html.lastIndexOf('<tr><td style="padding:20px'));
     expect(footer).toMatch(/You received this because .*<bdi>Demo<\/bdi>/u);
-    expect(footer).toContain('© 2026 Odudu &middot; Powered by odudu');
+    expect(footer).toContain('© 2026 SmartCrawl &middot; SmartCrawl account security');
     expect(footer).not.toContain('<a ');
-    expect(text).toMatch(/\n--\nYou received this because .*\n© 2026 Odudu · Powered by odudu$/u);
+    expect(text).toMatch(
+      /\n--\nYou received this because .*\n© 2026 SmartCrawl · SmartCrawl account security$/u,
+    );
   });
 
   it('has the button and the raw link, or neither', () => {
@@ -198,9 +200,9 @@ describe('the year in the footer', () => {
     ['2031-06-01T12:00:00Z', '2031'],
   ])('is the UTC year of %s: %s', (instant, year) => {
     const msg = render('Demo', new Date(instant));
-    expect(msg.html).toContain(`© ${year} Odudu`);
-    expect(msg.text).toContain(`© ${year} Odudu`);
-    expect(msg.html).not.toContain(`© ${String(Number(year) + 1)} Odudu`);
+    expect(msg.html).toContain(`© ${year} SmartCrawl`);
+    expect(msg.text).toContain(`© ${year} SmartCrawl`);
+    expect(msg.html).not.toContain(`© ${String(Number(year) + 1)} SmartCrawl`);
   });
 });
 
@@ -266,7 +268,7 @@ describe.each(each)('the %s mail preheader', (_name, kind) => {
     expect(hidden?.[1]).toContain('mso-hide:all');
     const [sentence = '', padding = ''] = (hidden?.[2] ?? '').split('‌');
     expect(sentence.length).toBeGreaterThan(20);
-    expect(sentence).not.toContain('odudu');
+    expect(sentence).not.toContain('SmartCrawl');
     expect(padding.length + (hidden?.[2] ?? '').length).toBeGreaterThan(100);
   });
 });

@@ -5,9 +5,9 @@ import { escapeHtml } from '#/service/escape';
 // complete; another locale may omit a key and shows English for it. A message
 // is plain text: markup stays in the template, and the link is never a message.
 export const en = {
-  'mail.brand': 'odudu',
-  'mail.copyright': '\u00a9 {year} Odudu',
-  'mail.poweredBy': 'Powered by odudu',
+  'mail.brand': 'SmartCrawl',
+  'mail.copyright': '\u00a9 {year} SmartCrawl',
+  'mail.poweredBy': 'SmartCrawl account security',
   'mail.linkFallback': 'If the button does not work, copy this link into your browser:',
   'mail.notRequested': 'If you did not request this, you can ignore this message.',
   'verify.subject': 'Verify your {tenant} account',
@@ -74,10 +74,10 @@ export const en = {
   'recoveryRevoked.newSet': 'You will be asked to save a new set the next time you sign in.',
   'recoveryRevoked.reason':
     'You received this because the recovery codes on your account at {tenant} were changed.',
-  'smtpTest.subject': 'Odudu SMTP test',
+  'smtpTest.subject': 'SmartCrawl SMTP test',
   'smtpTest.preheader': 'This message was sent to check the mail settings.',
   'smtpTest.heading': 'SMTP test',
-  'smtpTest.text': 'This is a test message from Odudu.',
+  'smtpTest.text': 'This is a test message from SmartCrawl.',
   'smtpTest.reason':
     'You received this because a test message was sent from the mail settings of {tenant}.',
   'action.update-password': 'Choose a new password',

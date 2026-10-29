@@ -48,7 +48,7 @@ describe('page', () => {
 
   it('names the product beside the mark, outside the body a theme replaces', () => {
     const rendered = page('Sign in', '<p>hello</p>');
-    expect(rendered.html).toContain('<span class="wordmark">odudu</span></p>');
+    expect(rendered.html).toContain('<span class="wordmark">SmartCrawl</span></p>');
     expect(rendered.body).not.toContain('wordmark');
   });
 
