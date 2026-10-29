@@ -5,6 +5,7 @@ import {
   placedProblems,
   type PlacedProblems,
 } from '#/features/branding/service/problems';
+import { bytesText } from '#/features/branding/service/assets';
 import type { PublishOutcome } from '#/features/branding/service/edits';
 import type { PageKind } from '#/features/branding/service/values';
 import type { FieldError } from '@odudu/contracts/admin';
@@ -134,7 +135,7 @@ export const TEMPLATE_RULES =
 export const TEMPLATE_LABEL = 'Template';
 
 export function templateDescription(): string {
-  return `Up to ${String(MAX_TEMPLATE_BYTES / 1024)} KiB. Empty uses the layer below.`;
+  return `Up to ${bytesText(MAX_TEMPLATE_BYTES)}. Empty uses the layer below.`;
 }
 
 export const PARTS_TITLE = 'Parts of this page';

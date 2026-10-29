@@ -1,5 +1,6 @@
 import { languageLabel } from '#/shared/service/locales';
 import { andList } from '#/shared/service/format';
+import { uniqueIds } from '#/shared/service/ids';
 import type { Read } from '#/shared/service/read';
 
 // Text by language tag, as a client's name or a scope's description is kept.
@@ -20,7 +21,7 @@ export const NOT_OFFERED =
 // A language per tab: those the tenant offers, then any the map holds that it
 // does not, so text written under a language since dropped can still be cleared.
 export function translationTabs(offered: readonly string[], map: Translations): string[] {
-  return [...new Set([...offered, ...Object.keys(map)])];
+  return uniqueIds([...offered, ...Object.keys(map)]);
 }
 
 export function isTranslated(map: Translations, tag: string): boolean {

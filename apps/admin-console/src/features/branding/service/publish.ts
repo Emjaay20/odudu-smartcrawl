@@ -1,5 +1,7 @@
 import type { FieldError, PublishThemeResponse, ThemeView } from '@odudu/contracts/admin';
-import { andList, counted } from '#/shared/service/format';
+import { problemSubtype } from '#/shared/service/failure';
+import { andList } from '#/shared/service/format';
+import { moreProblems, PROBLEMS_SHOWN } from '#/features/branding/service/problems';
 import type { Problem } from '#/shared/service/result';
 
 export const PUBLISH_TITLE = 'Publish';
@@ -45,9 +47,6 @@ export function draftText(view: ThemeView): string {
 
 export const PUBLISHED_TOAST = 'Theme published';
 
-// The most refusals listed at once; the server stops at 100.
-export const ISSUES_SHOWN = 20;
-
 export function issueLine(error: FieldError): string {
   const place =
     error.line === undefined || error.line === null
@@ -64,11 +63,11 @@ export interface Issues {
 
 export function issuesOf(errors: readonly FieldError[] | undefined): Issues {
   const all = errors ?? [];
-  const lines = all.slice(0, ISSUES_SHOWN).map(issueLine);
+  const lines = all.slice(0, PROBLEMS_SHOWN).map(issueLine);
   const rest = all.length - lines.length;
   return {
     lines,
-    more: rest > 0 ? `and ${counted(rest, 'more problem', 'more problems')}` : null,
+    more: rest > 0 ? `and ${moreProblems(rest)}` : null,
   };
 }
 
@@ -85,11 +84,12 @@ export const WARNINGS_NOTE =
 
 // What the server's refusal of a publish or restore comes to in words.
 export function refusalText(problem: Problem, verb: string): string | null {
-  if (problem.type.endsWith('#theme-no-draft')) return NO_DRAFT_HOLD;
-  if (problem.type.endsWith('#theme-assets-missing')) {
+  const subtype = problemSubtype(problem);
+  if (subtype === 'theme-no-draft') return NO_DRAFT_HOLD;
+  if (subtype === 'theme-assets-missing') {
     return `This version cannot be ${verb}: an image it names has been deleted.`;
   }
-  if (problem.type.endsWith('#theme-version-fails-checks')) {
+  if (subtype === 'theme-version-fails-checks') {
     return `This version cannot be ${verb}: some of its pieces fail today’s checks.`;
   }
   if (problem.status === 400) return `The theme was not ${verb}. Fix what is listed.`;
@@ -104,7 +104,7 @@ export function publishConflict(): string {
 export function limitedIssues(text: string | undefined): string | undefined {
   if (text === undefined) return undefined;
   const parts = text.split('; ');
-  if (parts.length <= ISSUES_SHOWN) return text;
-  const rest = parts.length - ISSUES_SHOWN;
-  return `${parts.slice(0, ISSUES_SHOWN).join('; ')}; and ${counted(rest, 'more problem', 'more problems')}`;
+  if (parts.length <= PROBLEMS_SHOWN) return text;
+  const rest = parts.length - PROBLEMS_SHOWN;
+  return `${parts.slice(0, PROBLEMS_SHOWN).join('; ')}; and ${moreProblems(rest)}`;
 }

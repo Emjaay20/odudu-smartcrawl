@@ -1,3 +1,5 @@
+import { dirtyTabs, tabNamed } from '#/shared/service/record';
+
 // Every tab of the Branding area, in the order they join it.
 export const BRANDING_TABS = ['theme', 'pages', 'mail', 'languages'] as const;
 
@@ -24,9 +26,7 @@ export const BRANDING_TAB_SECTIONS: Readonly<Record<BrandingTab, readonly string
 };
 
 export function tabsWithEdits(dirty: ReadonlySet<string>): ReadonlySet<OfferedTab> {
-  return new Set(
-    OFFERED_TABS.filter((tab) => BRANDING_TAB_SECTIONS[tab].some((section) => dirty.has(section))),
-  );
+  return dirtyTabs(OFFERED_TABS, (tab) => BRANDING_TAB_SECTIONS[tab], dirty);
 }
 
 // The tabs that frame a preview of a page.
@@ -42,6 +42,6 @@ export type ScopedTab = (typeof SCOPED_TABS)[number];
 
 // Runs `select` for a tab a scope has, and for no other name.
 export function selectScopedTab(name: string, select: (tab: ScopedTab) => void): void {
-  const tab = SCOPED_TABS.find((each) => each === name);
+  const tab = tabNamed(SCOPED_TABS, name);
   if (tab !== undefined) select(tab);
 }

@@ -2,7 +2,7 @@ import { MAX_STYLESHEET_BYTES, MAX_TEMPLATE_BYTES } from '@odudu/contracts';
 import type { FieldError, ThemeView } from '@odudu/contracts/admin';
 import { describe, expect, it } from 'vitest';
 import {
-  PLACED_SHOWN,
+  PROBLEMS_SHOWN,
   firstProblems,
   NO_OUTCOME,
   NO_PROBLEMS,
@@ -96,11 +96,11 @@ describe('what a refused stylesheet says', () => {
   });
 
   it('marks at most as many as it lists, and counts the rest', () => {
-    const many = Array.from({ length: PLACED_SHOWN + 5 }, (_, index) =>
+    const many = Array.from({ length: PROBLEMS_SHOWN + 5 }, (_, index) =>
       error({ code: 'selector-not-allowed', line: index + 1 }),
     );
     const problems = stylesheetProblems(many, 'x');
-    expect(problems.lines).toHaveLength(PLACED_SHOWN);
+    expect(problems.lines).toHaveLength(PROBLEMS_SHOWN);
     expect(problems.message).toBe(`${STYLESHEET_REFUSED} And 5 more problems.`);
   });
 

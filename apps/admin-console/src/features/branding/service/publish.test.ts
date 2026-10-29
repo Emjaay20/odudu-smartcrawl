@@ -2,7 +2,7 @@ import type { ThemeView } from '@odudu/contracts/admin';
 import { describe, expect, it } from 'vitest';
 import {
   draftText,
-  ISSUES_SHOWN,
+  PROBLEMS_SHOWN,
   issueLine,
   issuesOf,
   limitedIssues,
@@ -51,7 +51,7 @@ describe('what the server refused', () => {
   it('shows at most twenty and says how many more', () => {
     const errors = Array.from({ length: 100 }, (_, i) => ({ path: `p${String(i)}`, message: 'm' }));
     const shown = issuesOf(errors);
-    expect(shown.lines).toHaveLength(ISSUES_SHOWN);
+    expect(shown.lines).toHaveLength(PROBLEMS_SHOWN);
     expect(shown.more).toBe('and 80 more problems');
     expect(issuesOf(undefined)).toEqual({ lines: [], more: null });
   });

@@ -1,6 +1,7 @@
 import { LOCALISED_TEXT_ENTRIES_MAX } from '@odudu/contracts';
 import { MAIL_PREVIEW_LOCALES, type AmendSettingsRequest } from '@odudu/contracts/admin';
 import { languageChoices, localeProblem } from '#/shared/service/locales';
+import { uniqueIds } from '#/shared/service/ids';
 import { offeredLocales } from '#/shared/service/offeredLocales';
 import type { Choice } from '#/shared/service/choice';
 import type { SectionFields } from '#/shared/service/sectionSave';
@@ -70,7 +71,7 @@ export function languagesOf(settings: LanguageSettings): LanguageValues {
 // The shipped languages, then every other the tenant offers or is adding,
 // each once.
 export function languageTags(...offered: readonly (readonly string[])[]): string[] {
-  return [...new Set([...SHIPPED_LANGUAGES, ...offered.flat()])];
+  return uniqueIds([...SHIPPED_LANGUAGES, ...offered.flat()]);
 }
 
 // Saved languages stay listed when unticked, so a tick can be undone; one
