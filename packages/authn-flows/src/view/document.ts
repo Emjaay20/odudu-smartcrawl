@@ -84,6 +84,7 @@ export function page(
 <main class="page">
 <p class="brand">${MARK}<span class="wordmark">${PRODUCT_NAME}</span></p>
 ${body}
+<p class="powered-by">Secure authentication powered by <strong>Odudu</strong></p>
 </main>
 </body>
 </html>`,

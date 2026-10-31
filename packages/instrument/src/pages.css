@@ -19,6 +19,20 @@ html {
 }
 
 body {
+  /* SmartCrawl owns these customer-facing pages. Keep the system console's
+     shared tokens untouched, then give this secure flow its own calm palette. */
+  color-scheme: light;
+  --surface-page: #f9f5ef;
+  --surface-grid: #eee7dc;
+  --surface-panel: #fffefc;
+  --surface-sunken: #f7f2eb;
+  --border: #ede3d6;
+  --border-strong: #ddd0be;
+  --ink-primary: #1d1b19;
+  --ink-muted: #6e6863;
+  --signal-active-ink: #4a7c59;
+  --focus-ring: #4a7c59;
+  --shadow-overlay: 0 1px 2px rgb(29 27 25 / 4%), 0 12px 30px rgb(29 27 25 / 7%);
   margin: 0;
   min-block-size: 100vb;
   display: grid;
@@ -47,8 +61,8 @@ body > section {
   padding: var(--space-8);
   background: #fffefc;
   border: 1px solid #ede3d6;
-  border-radius: var(--radius-m);
-  box-shadow: var(--shadow-overlay);
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgb(29 27 25 / 4%), 0 12px 30px rgb(29 27 25 / 7%);
 }
 
 main > :nth-last-child(1 of :not(iframe, script, noscript, [hidden])),
@@ -127,6 +141,7 @@ form > * + *,
 label {
   display: grid;
   gap: var(--space-2);
+  color: #514b46;
   font-size: var(--type-13);
   font-weight: 500;
   line-height: var(--label-line);
@@ -147,7 +162,7 @@ label:has(> input[type='checkbox'], > input[type='radio']) > input {
 input {
   display: block;
   inline-size: 100%;
-  min-block-size: var(--control-height);
+  min-block-size: 46px;
   padding: var(--space-2) var(--space-3);
   background: #f7f2eb;
   border: 1px solid #ddd0be;
@@ -170,7 +185,7 @@ input::placeholder {
 }
 
 button {
-  min-block-size: var(--control-height);
+  min-block-size: 46px;
   min-inline-size: var(--target-min);
   padding: var(--space-2) var(--space-4);
   background: #1d1b19;
@@ -201,6 +216,27 @@ button.secondary {
 button.secondary:hover {
   background: var(--surface-sunken);
   border-color: var(--ink-muted);
+}
+
+/* The passkey choice is useful, but should read as an alternate route rather
+   than a second competing primary action. */
+#passkey-form {
+  margin-block-start: var(--space-3);
+}
+
+#passkey-form::before {
+  content: 'OR USE A PASSKEY';
+  display: block;
+  margin-block: 20px var(--space-3);
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-align: center;
+}
+
+#passkey-form p {
+  margin: 0;
 }
 
 button.quiet {
@@ -297,6 +333,20 @@ input[aria-invalid='true'] {
 .links a {
   display: inline-block;
   padding-block: var(--space-2);
+}
+
+.powered-by {
+  margin: var(--space-6) 0 0;
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+
+.powered-by strong {
+  color: #514b46;
+  font-weight: 500;
 }
 
 .brand {

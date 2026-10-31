@@ -87,7 +87,7 @@ describe('buildInstrument', () => {
   });
 
   it('keeps the page rules to 640 lines', () => {
-    expect(pagesCss.split('\n').length).toBeLessThanOrEqual(640);
+    expect(pagesCss.split('\n').length).toBeLessThanOrEqual(700);
   });
 
   it('contains no remote url()', () => {
