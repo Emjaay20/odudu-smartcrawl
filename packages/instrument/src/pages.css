@@ -22,6 +22,10 @@ body {
   /* SmartCrawl owns these customer-facing pages. Keep the system console's
      shared tokens untouched, then give this secure flow its own calm palette. */
   color-scheme: light;
+  /* `html` resolves Odudu's shared light/dark token before this customer
+     page overrides it. Set the inherited ink here so a dark OS preference
+     cannot wash the SmartCrawl copy out on warm paper. */
+  color: #1d1b19;
   --surface-page: #f9f5ef;
   --surface-grid: #eee7dc;
   --surface-panel: #fffefc;
