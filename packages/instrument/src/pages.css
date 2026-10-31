@@ -19,18 +19,36 @@ html {
 }
 
 body {
+  /* SmartCrawl owns these customer-facing pages. Keep the system console's
+     shared tokens untouched, then give this secure flow its own calm palette. */
+  color-scheme: light;
+  /* `html` resolves Odudu's shared light/dark token before this customer
+     page overrides it. Set the inherited ink here so a dark OS preference
+     cannot wash the SmartCrawl copy out on warm paper. */
+  color: #1d1b19;
+  --surface-page: #f9f5ef;
+  --surface-grid: #eee7dc;
+  --surface-panel: #fffefc;
+  --surface-sunken: #f7f2eb;
+  --border: #ede3d6;
+  --border-strong: #ddd0be;
+  --ink-primary: #1d1b19;
+  --ink-muted: #6e6863;
+  --signal-active-ink: #4a7c59;
+  --focus-ring: #4a7c59;
+  --shadow-overlay: 0 1px 2px rgb(29 27 25 / 4%), 0 12px 30px rgb(29 27 25 / 7%);
   margin: 0;
   min-block-size: 100vb;
   display: grid;
   /* One width for every page and every state: a long sentence wraps inside it. */
-  grid-template-columns: minmax(0, 28rem);
+  grid-template-columns: minmax(0, 31rem);
   justify-content: center;
   align-content: center;
   padding: var(--space-6) var(--space-4);
-  background-color: var(--surface-page);
+  background-color: #f9f5ef;
   background-image:
-    linear-gradient(var(--surface-grid) 1px, transparent 1px),
-    linear-gradient(90deg, var(--surface-grid) 1px, transparent 1px);
+    linear-gradient(#eee7dc 1px, transparent 1px),
+    linear-gradient(90deg, #eee7dc 1px, transparent 1px);
   background-size: var(--space-8) var(--space-8);
 }
 
@@ -44,11 +62,11 @@ main,
 body > form,
 body > div,
 body > section {
-  padding: var(--space-6);
-  background: var(--surface-panel);
-  border: var(--hairline);
-  border-radius: var(--radius-m);
-  box-shadow: var(--shadow-overlay);
+  padding: var(--space-8);
+  background: #fffefc;
+  border: 1px solid #ede3d6;
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgb(29 27 25 / 4%), 0 12px 30px rgb(29 27 25 / 7%);
 }
 
 main > :nth-last-child(1 of :not(iframe, script, noscript, [hidden])),
@@ -58,9 +76,11 @@ form > :last-child {
 
 h1 {
   margin: 0 0 var(--space-4);
-  font-size: var(--type-20);
-  font-weight: 600;
-  line-height: 1.3;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: var(--type-28);
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
 }
 
 h2 {
@@ -125,6 +145,7 @@ form > * + *,
 label {
   display: grid;
   gap: var(--space-2);
+  color: #514b46;
   font-size: var(--type-13);
   font-weight: 500;
   line-height: var(--label-line);
@@ -145,11 +166,11 @@ label:has(> input[type='checkbox'], > input[type='radio']) > input {
 input {
   display: block;
   inline-size: 100%;
-  min-block-size: var(--control-height);
+  min-block-size: 46px;
   padding: var(--space-2) var(--space-3);
-  background: var(--surface-sunken);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-m);
+  background: #f7f2eb;
+  border: 1px solid #ddd0be;
+  border-radius: 10px;
   color: inherit;
   font: inherit;
 }
@@ -168,12 +189,12 @@ input::placeholder {
 }
 
 button {
-  min-block-size: var(--control-height);
+  min-block-size: 46px;
   min-inline-size: var(--target-min);
   padding: var(--space-2) var(--space-4);
-  background: var(--ink-primary);
-  border: 1px solid var(--ink-primary);
-  border-radius: var(--radius-m);
+  background: #1d1b19;
+  border: 1px solid #1d1b19;
+  border-radius: 10px;
   color: var(--surface-panel);
   cursor: pointer;
   font: inherit;
@@ -182,8 +203,8 @@ button {
 }
 
 button:hover {
-  background: var(--ink-muted);
-  border-color: var(--ink-muted);
+  background: #000;
+  border-color: #000;
 }
 
 button[type='submit'] {
@@ -199,6 +220,27 @@ button.secondary {
 button.secondary:hover {
   background: var(--surface-sunken);
   border-color: var(--ink-muted);
+}
+
+/* The passkey choice is useful, but should read as an alternate route rather
+   than a second competing primary action. */
+#passkey-form {
+  margin-block-start: var(--space-3);
+}
+
+#passkey-form::before {
+  content: 'OR USE A PASSKEY';
+  display: block;
+  margin-block: 20px var(--space-3);
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-align: center;
+}
+
+#passkey-form p {
+  margin: 0;
 }
 
 button.quiet {
@@ -220,7 +262,7 @@ button.choice {
 }
 
 :focus-visible {
-  outline: 2px solid var(--focus-ring);
+  outline: 2px solid #4a7c59;
   outline-offset: 2px;
 }
 
@@ -297,25 +339,48 @@ input[aria-invalid='true'] {
   padding-block: var(--space-2);
 }
 
+.powered-by {
+  margin: var(--space-6) 0 0;
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+
+.powered-by strong {
+  color: #514b46;
+  font-weight: 500;
+}
+
 .brand {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  margin: 0 0 var(--space-6);
+  margin: 0 0 var(--space-8);
 }
 
 .mark {
   flex: none;
   display: block;
-  inline-size: var(--space-6);
-  block-size: var(--space-6);
+  inline-size: 28px;
+  block-size: 28px;
 }
 
 .wordmark {
-  font-family: var(--font-mono);
-  font-size: var(--type-15);
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 21px;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: -0.025em;
+}
+
+.brand::after {
+  content: 'SECURE ACCESS';
+  margin-inline-start: auto;
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.11em;
 }
 
 .intro {
@@ -594,5 +659,23 @@ iframe {
   .lost .lost-staff,
   .lost:hover .lost-staff {
     animation: none;
+  }
+}
+
+@media (max-width: 34rem) {
+  body {
+    align-content: start;
+    padding: var(--space-4);
+  }
+
+  main,
+  body > form,
+  body > div,
+  body > section {
+    padding: var(--space-6);
+  }
+
+  .brand::after {
+    display: none;
   }
 }

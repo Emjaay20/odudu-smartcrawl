@@ -99,7 +99,7 @@ function formActionSource(redirectUri: string): string | null {
 export const INSTRUMENT_STYLESHEET = '/instrument/instrument.css';
 
 // The product's name as the pages' brand line spells it.
-export const PRODUCT_NAME = 'odudu';
+export const PRODUCT_NAME = 'SmartCrawl';
 
 // RFC 6749 §10.13's framing defence for the pages rendered to an end-user.
 // Almost all of these pages are markup only — no script or frame of their

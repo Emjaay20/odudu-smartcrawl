@@ -22,15 +22,15 @@ vi.mock('#/service/messages', async (importOriginal) => {
     'verify.button': 'Vérifier l’e-mail',
     'verify.reason': 'Vous recevez ce message car cette adresse a servi chez {tenant}.',
     'mail.linkFallback': 'Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :',
-    'mail.copyright': '© {year} Odudu',
-    'mail.poweredBy': 'Propulsé par odudu',
+    'mail.copyright': '© {year} SmartCrawl',
+    'mail.poweredBy': 'Sécurité de compte SmartCrawl',
     'reset.subject': 'Réinitialisez votre mot de passe {tenant}',
     'actions.subject': 'Mettez à jour votre compte {tenant}',
     'action.update-password': 'Choisir un nouveau mot de passe',
     'factorRemoved.subject': 'Une méthode de connexion a été retirée de votre compte {tenant}',
     'recoveryRevoked.subject': 'Les codes de récupération de {tenant} ont été révoqués',
-    'smtpTest.subject': 'Test SMTP Odudu',
-    'smtpTest.text': 'Ceci est un message de test d’Odudu.',
+    'smtpTest.subject': 'Test SMTP SmartCrawl',
+    'smtpTest.text': 'Ceci est un message de test de SmartCrawl.',
   });
 });
 
@@ -72,7 +72,7 @@ describe('renderVerifyEmail', () => {
     const msg = renderVerifyEmail(input);
     expect(msg.subject).toBe('Verify your Demo account');
     expect(msg.text).toBe(
-      `Confirm your email address for ${FSI}Demo${PDI} by visiting this link:\n\n${LINK}\n\nIf you did not request this, you can ignore this message.\n\n--\nYou received this because this email address was used to create or update an account at ${FSI}Demo${PDI}.\n© 2026 Odudu · Powered by odudu`,
+      `Confirm your email address for ${FSI}Demo${PDI} by visiting this link:\n\n${LINK}\n\nIf you did not request this, you can ignore this message.\n\n--\nYou received this because this email address was used to create or update an account at ${FSI}Demo${PDI}.\n© 2026 SmartCrawl · SmartCrawl account security`,
     );
   });
 
@@ -89,13 +89,13 @@ describe('renderVerifyEmail', () => {
     expect(msg.text).toContain(
       `Confirmez votre adresse e-mail pour ${FSI}Demo${PDI} en ouvrant ce lien :\n\n${LINK}\n\n${en['mail.notRequested']}`,
     );
-    expect(msg.text).toContain('© 2026 Odudu · Propulsé par odudu');
+    expect(msg.text).toContain('© 2026 SmartCrawl · Sécurité de compte SmartCrawl');
     expect(msg.html).toContain('<html lang="fr" dir="ltr">');
     expect(msg.html).toContain('Vérifier l’e-mail');
     expect(msg.html).toContain(
       'Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :',
     );
-    expect(msg.html).toContain('Propulsé par odudu');
+    expect(msg.html).toContain('Sécurité de compte SmartCrawl');
     expect(msg.html).toContain(
       'Confirmez votre adresse pour terminer la création de votre compte.',
     );
@@ -330,23 +330,23 @@ describe('renderSmtpTest', () => {
   it('keeps the English test mail, with the tenant it was sent from', () => {
     const msg = renderSmtpTest(input);
     expect(msg.to).toBe('ops@example.test');
-    expect(msg.subject).toBe('Odudu SMTP test');
+    expect(msg.subject).toBe('SmartCrawl SMTP test');
     expect(msg.text).toBe(
-      `This is a test message from Odudu.\n\n${footerText(en['smtpTest.reason'], 'Demo')}`,
+      `This is a test message from SmartCrawl.\n\n${footerText(en['smtpTest.reason'], 'Demo')}`,
     );
-    expect(msg.html).toContain('This is a test message from Odudu.');
+    expect(msg.html).toContain('This is a test message from SmartCrawl.');
     expect(msg.html).toContain('<bdi>Demo</bdi>');
   });
 
   it('reads subject and text from the catalogue, in the locale asked for', () => {
     const msg = renderSmtpTest({ ...input, locale: 'fr' });
-    expect(msg.subject).toBe('Test SMTP Odudu');
-    expect(msg.text).toContain('Ceci est un message de test d’Odudu.');
-    expect(msg.html).toContain('Ceci est un message de test d’Odudu.');
+    expect(msg.subject).toBe('Test SMTP SmartCrawl');
+    expect(msg.text).toContain('Ceci est un message de test de SmartCrawl.');
+    expect(msg.html).toContain('Ceci est un message de test de SmartCrawl.');
   });
 
   it('falls back to English for a locale it holds no catalogue for', () => {
-    expect(renderSmtpTest({ ...input, locale: 'ja' }).subject).toBe('Odudu SMTP test');
+    expect(renderSmtpTest({ ...input, locale: 'ja' }).subject).toBe('SmartCrawl SMTP test');
   });
 });
 

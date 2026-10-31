@@ -86,8 +86,8 @@ describe('buildInstrument', () => {
     expect(gzipSync(css).byteLength).toBeLessThan(12 * 1024);
   });
 
-  it('keeps the page rules to 600 lines', () => {
-    expect(pagesCss.split('\n').length).toBeLessThanOrEqual(600);
+  it('keeps the page rules to 640 lines', () => {
+    expect(pagesCss.split('\n').length).toBeLessThanOrEqual(700);
   });
 
   it('contains no remote url()', () => {

@@ -24,8 +24,8 @@ export function escapeHtml(value: string): string {
     .replace(/'/g, '&#39;');
 }
 
-// A staff, a ring on a shaft with a collar, in `currentColor`, so the page's own ink colours
-// it in either theme, with no inline style for the policy to refuse.
+// A mark in `currentColor`, so the page's own ink colours it in either theme,
+// with no inline style for the policy to refuse.
 const MARK =
   '<svg class="mark" viewBox="0 0 32 32" width="32" height="32" fill="none" ' +
   'stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false">' +
@@ -84,6 +84,7 @@ export function page(
 <main class="page">
 <p class="brand">${MARK}<span class="wordmark">${PRODUCT_NAME}</span></p>
 ${body}
+<p class="powered-by">Secure authentication powered by <strong>Odudu</strong></p>
 </main>
 </body>
 </html>`,
